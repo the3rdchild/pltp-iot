@@ -12,7 +12,6 @@ An interactive IoT-based SCADA system built to monitor **steam quality**, **stea
 
 <p float="left">
   <img src="https://github.com/the3rdchild/pltp-iot/blob/main/documentation/ds1.png" width="32%" />
-  <img src="https://github.com/the3rdchild/pltp-iot/blob/main/documentation/ds2.png" width="32%" />
   <img src="https://github.com/the3rdchild/pltp-iot/blob/main/documentation/ds3.png" width="32%" />
 </p>
 
