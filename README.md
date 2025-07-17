@@ -80,3 +80,16 @@ npm run build
 
 # Deploy to Firebase (configured)
 firebase deploy
+
+---
+
+## 🤝 Collaboration
+
+This project is part of a research and development collaboration between  
+🎓 **Universitas Padjadjaran (UNPAD)** & 🏭 **PT Pertamina Geothermal Energy / URTI**.
+
+---
+
+## 📄 License
+
+This project is licensed. See the [LICENSE](./LICENSE) file for details.
