@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react';
 import { generateAnalyticData } from 'data/simulasi';
 import { getRiskPrediction } from 'data/riskprediction';
 import simulasiImage from 'assets/images/users/simulasi-banner.png';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; 
 
 
 // project imports
