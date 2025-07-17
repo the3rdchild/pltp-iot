@@ -9,6 +9,10 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 
+import Grid from '@mui/material/Grid2';
+import Box from '@mui/material/Box';
+
+
 // project imports
 import MainCard from 'components/MainCard';
 
@@ -52,6 +56,7 @@ const riskPredictionData = [
 
 export default function SamplePage() {
   return (
+    <>
     <MainCard title="">
       <Typography variant="h6" gutterBottom>
         Tabel Klasifikasi Risiko Operasional Turbin Berdasarkan Dryness Fraction dan TDS
@@ -81,5 +86,18 @@ export default function SamplePage() {
         </Table>
       </TableContainer>
     </MainCard>
+
+  <Grid container rowSpacing={4.5} columnSpacing={2.75}>
+      {/* row 4 - full width image */}
+      <Box
+      title="Diagram Flow"
+      component="img"
+      src={simulasiImage}
+      alt="Simulation"
+      sx={{ width: '100%', borderRadius: 2 }}
+        />
+  </Grid>
+  </>
+
   );
 }

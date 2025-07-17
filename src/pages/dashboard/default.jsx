@@ -8,7 +8,7 @@ import Box from '@mui/material/Box';
 import { useState, useEffect } from 'react';
 import { generateAnalyticData } from 'data/simulasi';
 import { getRiskPrediction } from 'data/riskprediction';
-import simulasiImage from 'assets/images/users/simulasi-banner.png';
+import simulasiVideo from 'assets/videos/10001-0090.mp4';
 import { Link } from 'react-router-dom'; 
 
 
@@ -253,13 +253,14 @@ export default function DashboardDefault() {
       </Grid>
        
       {/* row 4 - full width image */}
-        <Box
-      title="Diagram Flow"
-      component="img"
-      src={simulasiImage}
-      alt="Simulation"
-      sx={{ width: '100%', borderRadius: 2 }}
-        />
+      <video
+  src={simulasiVideo}
+  autoPlay
+  muted
+  loop
+  playsInline
+  style={{ width: '100%', borderRadius: '8px' }}
+/>
     </Grid>
     </>
   );
