@@ -24,7 +24,7 @@ export default function HeaderContent() {
       {downLG && <Box sx={{ width: '100%', ml: 1 }} />}
       <IconButton
         component={Link}
-        href="https://github.com/the3rdchild"
+        href="https://github.com/the3rdchild/pltp-iot.git"
         target="_blank"
         disableRipple
         color="secondary"
