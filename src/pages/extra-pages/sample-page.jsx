@@ -8,6 +8,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
+import simulasiVideo from 'assets/videos/10001-0090.mp4';
 
 import Grid from '@mui/material/Grid2';
 import Box from '@mui/material/Box';
@@ -89,13 +90,14 @@ export default function SamplePage() {
 
   <Grid container rowSpacing={4.5} columnSpacing={2.75}>
       {/* row 4 - full width image */}
-      <Box
-      title="Diagram Flow"
-      component="img"
-      src={simulasiImage}
-      alt="Simulation"
-      sx={{ width: '100%', borderRadius: 2 }}
-        />
+      <video
+  src={simulasiVideo}
+  autoPlay
+  muted
+  loop
+  playsInline
+  style={{ width: '100%', borderRadius: '8px' }}
+/>
   </Grid>
   </>
 

@@ -1,8 +1,8 @@
 // material-ui
 import { useTheme } from '@mui/material/styles';
 import { Typography } from '@mui/material';
-import logoDark from 'assets/images/opensource.png';
-import logo from 'assets/images/opensource.png';
+import logoIcon from 'assets/images/pertamina4x1.svg'; // adjust if needed
+import logoIconDark from 'assets/images/pertamina4x1.svg';
 
 
 // ==============================|| LOGO SVG ||============================== //
@@ -19,9 +19,14 @@ export default function LogoMain() {
   /**
      * if you want to use teks instead of image uncomment following, and comment out <img> element.
      */
-  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-  IOT Dashboard
-  </Typography>
+  <img
+    src={theme.palette.mode === 'dark' ? logoIconDark : logoIcon}
+    alt="PLTP Logo"
+    width="170"
+  />
+  // <Typography variant="h6" sx={{ fontWeight: 600 }}>
+  // IOT Dashboard
+  // </Typography>
 
     // <>
     //   <svg width="118" height="35" viewBox="0 0 118 35" fill="none" xmlns="http://www.w3.org/2000/svg">
