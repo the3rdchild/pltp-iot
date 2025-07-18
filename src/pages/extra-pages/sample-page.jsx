@@ -43,7 +43,7 @@ export default function SamplePage() {
 
         {/* Kolom Video – lebar 5/12 */}
         <Grid item xs={12} md={5}>
-          <Typography variant="h7">Video Simulation Overview</Typography>
+          <Typography variant="h7">Video Simulation Overview (Klik Label Prediksi Risiko)</Typography>
           <RiskVideoPreview src={selectedVideo} />
         </Grid>
       </Grid>
