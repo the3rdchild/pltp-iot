@@ -108,3 +108,11 @@ dist
 
 # wincompare file
 .bak
+
+
+.firebase
+.idx
+.vite/deps
+.vscode
+.firebaserc
+firebase.json
