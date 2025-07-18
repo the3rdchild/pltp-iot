@@ -15,8 +15,8 @@ import { Link } from 'react-router-dom';
 // project imports
 import MainCard from 'components/MainCard';
 import AnalyticEcommerce from 'components/cards/statistics/AnalyticEcommerce';
-import MonthlyBarChart from 'sections/dashboard/default/MonthlyBarChart';
-import UniqueVisitorCard from 'sections/dashboard/default/UniqueVisitorCard';
+import TDSChart from 'sections/dashboard/default/TDSChart';
+import TempGraph from 'sections/dashboard/default/TemperatureGraph';
 
 // avatar style
 const avatarSX = {
@@ -229,7 +229,7 @@ export default function DashboardDefault() {
       {/* row 2 */}
       <Grid container rowSpacing={4.5} columnSpacing={2.75}>
       <Grid size={{ xs: 12, md: 7, lg: 8 }}>
-        <UniqueVisitorCard/>
+        <TempGraph/>
       </Grid>
       
       <Grid size={{ xs: 12, md: 5, lg: 4 }}>
@@ -248,7 +248,7 @@ export default function DashboardDefault() {
               <Typography variant="h3">50 PPM</Typography>
             </Stack>
           </Box>
-          <MonthlyBarChart />
+          <TDSChart />
         </MainCard>
       </Grid>
        

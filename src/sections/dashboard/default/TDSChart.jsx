@@ -6,7 +6,7 @@ import { BarChart } from '@mui/x-charts/BarChart';
 const data = [45, 60, 50, 56, 47, 45, 56];
 const xLabels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
-// ==============================|| MONTHLY BAR CHART ||============================== //
+// ==============================|| TDS Overall (ppm) Chart ||============================== //
 
 export default function MonthlyBarChart() {
   const theme = useTheme();

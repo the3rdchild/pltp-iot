@@ -11,7 +11,7 @@ import Box from '@mui/material/Box';
 import MainCard from 'components/MainCard';
 import IncomeAreaChart from './IncomeAreaChart';
 
-// ==============================|| DEFAULT - UNIQUE VISITOR ||============================== //
+// ==============================|| Temperature Graph ||============================== //
 
 export default function UniqueVisitorCard() {
   const [view, setView] = useState('monthly'); // 'monthly' or 'weekly'
