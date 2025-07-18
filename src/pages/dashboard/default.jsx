@@ -206,7 +206,7 @@ export default function DashboardDefault() {
                   {data.riskPrediction}
                 </span>
               }
-              color="success"
+              color="warning"
               extra="Wet Clean - Ideal"
             />
           </Grid>
