@@ -14,9 +14,22 @@ import { Link } from 'react-router-dom';
 
 // project imports
 import MainCard from 'components/MainCard';
-import AnalyticEcommerce from 'components/cards/statistics/AnalyticEcommerce';
+import CensorBox from 'components/cards/statistics/CensorBox';
 import TDSChart from 'sections/dashboard/default/TDSChart';
 import TempGraph from 'sections/dashboard/default/TemperatureGraph';
+
+// Pertanima Color Pick
+// Red: #fa061d rgba(255,1,27,255)
+// Green: #9cea09 rgb(156,234,9)
+// Blue: #1a74fe rgba(26,116,254,255)
+
+// CensorBOX Color Pick: Original Location: /themes/overrides/Chip.js. Change there if you want custom name!
+// 'primary', Blue
+// 'secondary' Gray
+// 'error', Red
+// 'info', Green
+// 'success', More Green
+// 'warning', Orange-yelow
 
 // avatar style
 const avatarSX = {
@@ -38,11 +51,11 @@ const actionSX = {
 function getRiskColor(riskPrediction) {
   switch (riskPrediction) {
     case 'Ideal':
-      return '#52c41a'; // Green
+      return '#9cea09'; // Green
     case 'Contaminated Dry':
       return '#faad14'; // Yellow
     case 'Wet Clean':
-      return '#fa541c'; // Orange
+      return '#fa061d'; // Orange
     case 'Failure Due to Moisture':
       return '#f5222d'; // Red
     case 'Critical Contamination':
@@ -97,54 +110,59 @@ export default function DashboardDefault() {
         <Grid container rowSpacing={4.5} columnSpacing={2.75}>
           {/* Steam Purity Row */}
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce
+            <CensorBox
               title="Steam Purity: TDS Overall"
               count={data.tdsOverall + " ppm"}
               percentage={1.2}
+              color="error"
               extra="Ref: <100 ppm"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce
+            <CensorBox
               title="CO₂ Concentration"
               count={data.co2 + " ppm"}
               percentage={0.5}
               isLoss
-              color="warning"    
-              extra="Max: 25 ppm"
+              color="success"    
+              extra="Max: 15 ppm"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce
+            <CensorBox
               title="Argon Concentration"
               count={data.argon + " ppm"}
               percentage={0.3}
-              extra="Trace"
+              color="warning"    
+              extra="3 ppm"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce
+            <CensorBox
               title="Methane (CH₄)"
               count={data.methane + " ppm"}
-              percentage={0.4}
-              extra="Trace"
+              isLoss
+              color="primary"
+              percentage={1.4}
+              extra="2.2 ppm"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce
+            <CensorBox
               title="MA₃ Concentration"
               count={data.ma3 + " ppm"}
               percentage={0.2}
               isLoss
-              color="warning" 
-              extra="Trace"
+              color="success" 
+              extra="1.5 ppm"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce
+            <CensorBox
               title="Scaling Deposit"
               count={data.scalingDeposit + " ppm"}
               percentage={0.8}
+              color="error"
               extra="Max: 2 ppm"
             />
           </Grid>
@@ -156,25 +174,26 @@ export default function DashboardDefault() {
         <Grid container rowSpacing={4.5} columnSpacing={2.75}>
           {/* Steam Quality Row */}
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce
+            <CensorBox
               title="Dryness Fraction"
               count={data.drynessFraction}
               percentage={0.9}
+              color="success"
               extra="Ideal: >0.9"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce
+            <CensorBox
               title="Anomaly Score"
               count={data.anomalyScore}
               percentage={0.1}
               isLoss
-              color="warning"    
+              color="primary"    
               extra="Low Risk if <0.3"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce
+            <CensorBox
               title={
                 <Link
                   to="/documentation"
@@ -187,6 +206,7 @@ export default function DashboardDefault() {
                   {data.riskPrediction}
                 </span>
               }
+              color="success"
               extra="Wet Clean - Ideal"
             />
           </Grid>
@@ -198,23 +218,25 @@ export default function DashboardDefault() {
         <Grid container rowSpacing={4.5} columnSpacing={2.75}>
           {/* Steam & Water System Status Row */}
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce
+            <CensorBox
               title="Pressure Meter: Water Reservoir"
               count={data.pressureReservoir + " kPa"}
               percentage={1.3}
+              color="success"
               extra="Normal: 10-14 kPa"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce
+            <CensorBox
               title="Pressure Meter: Output Steam"
               count={data.pressureSteam + " kPa"}
               percentage={1.5}
+              color="error"
               extra="Target: 210-230 kPa"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
-            <AnalyticEcommerce
+            <CensorBox
               title="Steam Pipe: Temp Monitor"
               count={data.boilerTemp + " °C"}
               percentage={0.8}

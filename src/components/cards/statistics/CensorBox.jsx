@@ -15,7 +15,7 @@ import FallOutlined from '@ant-design/icons/FallOutlined';
 
 const iconSX = { fontSize: '0.75rem', color: 'inherit', marginLeft: 0, marginRight: 0 };
 
-export default function AnalyticEcommerce({ color = 'primary', title, count, percentage, isLoss, extra }) {
+export default function CensorBox({ color = 'primary', title, count, percentage, isLoss, extra }) {
   return (
     <MainCard contentSX={{ p: 2.25 }}>
       <Stack sx={{ gap: 0.5 }}>
@@ -55,7 +55,7 @@ export default function AnalyticEcommerce({ color = 'primary', title, count, per
   );
 }
 
-AnalyticEcommerce.propTypes = {
+CensorBox.propTypes = {
   color: PropTypes.string,
   title: PropTypes.string,
   count: PropTypes.string,
