@@ -109,7 +109,7 @@ dist
 # wincompare file
 .bak
 
-
+# Firebase-related files and folders
 .firebase
 .idx
 .vite/deps
