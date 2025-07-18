@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Grid from '@mui/material/Grid';
 import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+
 import MainCard from 'components/MainCard';
 import RiskTable from './RiskTable';
 import RiskVideoPreview from './RiskVideoPreview';
@@ -41,6 +43,7 @@ export default function SamplePage() {
 
         {/* Kolom Video – lebar 5/12 */}
         <Grid item xs={12} md={5}>
+          <Typography variant="h7">Video Simulation Overview</Typography>
           <RiskVideoPreview src={selectedVideo} />
         </Grid>
       </Grid>
