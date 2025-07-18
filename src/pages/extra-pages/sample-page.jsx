@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import Grid from '@mui/material/Grid';
+import Box from '@mui/material/Box';
 import MainCard from 'components/MainCard';
 import RiskTable from './RiskTable';
 import RiskVideoPreview from './RiskVideoPreview';
 
-// import video assets
+// import semua video
 import Ideal from 'assets/videos/predict/1_Ideal_0001-0088.mp4';
 import Contaminated from 'assets/videos/predict/2_Contaminated Dry_0001-0088.mp4';
 import WetClean from 'assets/videos/predict/3_Wet Clean_0001-0088.mp4';
@@ -13,9 +15,14 @@ import CriticalDamage from 'assets/videos/predict/5_Critical Damage_0001-0088.mp
 export default function SamplePage() {
   const [selectedVideo, setSelectedVideo] = useState(null);
 
+  // Set default video ke 'Ideal' saat load awal
+  useEffect(() => {
+    setSelectedVideo(Ideal);
+  }, []);
+
   const handleRiskClick = (label) => {
     const videoMap = {
-      'Ideal': Ideal,
+      Ideal: Ideal,
       'Contaminated Dry': Contaminated,
       'Wet Clean': WetClean,
       'Moisture Failure': MoistureFailure,
@@ -25,11 +32,18 @@ export default function SamplePage() {
   };
 
   return (
-    <>
-      <MainCard title="Klasifikasi Risiko Operasional Turbin">
-        <RiskTable onRiskClick={handleRiskClick} />
-      </MainCard>
-      <RiskVideoPreview src={selectedVideo} />
-    </>
+    <MainCard title="Klasifikasi Risiko Operasional Turbin">
+      <Grid container spacing={3}>
+        {/* Kolom Tabel – lebar 7/12 */}
+        <Grid item xs={12} md={7}>
+          <RiskTable onRiskClick={handleRiskClick} />
+        </Grid>
+
+        {/* Kolom Video – lebar 5/12 */}
+        <Grid item xs={12} md={5}>
+          <RiskVideoPreview src={selectedVideo} />
+        </Grid>
+      </Grid>
+    </MainCard>
   );
 }
