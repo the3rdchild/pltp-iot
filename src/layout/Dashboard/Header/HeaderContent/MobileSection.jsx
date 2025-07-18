@@ -14,6 +14,9 @@ import Profile from './Profile';
 import IconButton from 'components/@extended/IconButton';
 import Transitions from 'components/@extended/Transitions';
 
+import ProfileSettingsPopper from './Profile/ProfileSettingsPopper';
+
+
 // assets
 import MoreOutlined from '@ant-design/icons/MoreOutlined';
 
@@ -64,10 +67,12 @@ export default function MobileSection() {
           <MoreOutlined />
         </IconButton>
       </Box>
-      <Popper
+
+      <ProfileSettingsPopper 
         placement="bottom-end"
         open={open}
         anchorEl={anchorRef.current}
+        onClose={handleClose}
         role={undefined}
         transition
         disablePortal
@@ -83,6 +88,7 @@ export default function MobileSection() {
           ]
         }}
       >
+
         {({ TransitionProps }) => (
           <Transitions type="fade" in={open} {...TransitionProps}>
             <Paper sx={(theme) => ({ boxShadow: theme.customShadows.z1 })}>
@@ -97,7 +103,7 @@ export default function MobileSection() {
             </Paper>
           </Transitions>
         )}
-      </Popper>
+      </ProfileSettingsPopper>
     </>
   );
 }

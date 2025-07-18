@@ -1,12 +1,9 @@
 // material-ui
-import useMediaQuery from '@mui/material/useMediaQuery';
 import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
 import Box from '@mui/material/Box';
 
 // project imports
-import Search from './Search';
-import Profile from './Profile';
 import Notification from './Notification';
 import MobileSection from './MobileSection';
 
@@ -16,12 +13,10 @@ import { GithubOutlined } from '@ant-design/icons';
 // ==============================|| HEADER - CONTENT ||============================== //
 
 export default function HeaderContent() {
-  const downLG = useMediaQuery((theme) => theme.breakpoints.down('lg'));
-
   return (
     <>
-      {!downLG && <Search />}
-      {downLG && <Box sx={{ width: '100%', ml: 1 }} />}
+      <Box sx={{ flexGrow: 1 }} /> {/* Pushes content to the right */}
+
       <IconButton
         component={Link}
         href="https://github.com/the3rdchild/pltp-iot.git"
@@ -35,8 +30,9 @@ export default function HeaderContent() {
       </IconButton>
 
       <Notification />
-      {!downLG && <Profile />}
-      {downLG && <MobileSection />}
+
+      {/* Always use 3-dot icon version */}
+      <MobileSection />
     </>
   );
 }

@@ -90,7 +90,7 @@ export default function Profile() {
         <Stack direction="row" sx={{ gap: 1.25, alignItems: 'center', p: 0.5 }}>
           <Avatar alt="profile user" src={avatar1} size="sm" />
           <Typography variant="subtitle1" sx={{ textTransform: 'capitalize' }}>
-            PLTP
+            Menu 
           </Typography>
         </Stack>
       </ButtonBase>
@@ -117,7 +117,7 @@ export default function Profile() {
             <Paper sx={(theme) => ({ boxShadow: theme.customShadows.z1, width: 290, minWidth: 240, maxWidth: { xs: 250, md: 290 } })}>
               <ClickAwayListener onClickAway={handleClose}>
                 <MainCard elevation={0} border={false} content={false}>
-                  <CardContent sx={{ px: 2.5, pt: 3 }}>
+                  {/* <CardContent sx={{ px: 2.5, pt: 3 }}>
                     <Grid container justifyContent="space-between" alignItems="center">
                       <Grid>
                         <Stack direction="row" sx={{ gap: 1.25, alignItems: 'center' }}>
@@ -138,11 +138,11 @@ export default function Profile() {
                         </Tooltip>
                       </Grid>
                     </Grid>
-                  </CardContent>
+                  </CardContent> */}
 
                   <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                     <Tabs variant="fullWidth" value={value} onChange={handleChange} aria-label="profile tabs">
-                      <Tab
+                      {/* <Tab
                         sx={{
                           display: 'flex',
                           flexDirection: 'row',
@@ -157,7 +157,7 @@ export default function Profile() {
                         icon={<UserOutlined />}
                         label="Profile"
                         {...a11yProps(0)}
-                      />
+                      /> */}
                       <Tab
                         sx={{
                           display: 'flex',
@@ -176,10 +176,10 @@ export default function Profile() {
                       />
                     </Tabs>
                   </Box>
-                  <TabPanel value={value} index={0} dir={theme.direction}>
+                  {/* <TabPanel value={value} index={1} dir={theme.direction}>
                     <ProfileTab />
-                  </TabPanel>
-                  <TabPanel value={value} index={1} dir={theme.direction}>
+                  </TabPanel> */}
+                  <TabPanel value={value} index={0} dir={theme.direction}>
                     <SettingTab />
                   </TabPanel>
                 </MainCard>
