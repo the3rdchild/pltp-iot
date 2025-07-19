@@ -1,28 +1,99 @@
-// material-ui
-import { useTheme } from '@mui/material/styles';
+// File: TDSChart.jsx
 
-import { BarChart } from '@mui/x-charts/BarChart';
+import React from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { Chart } from 'react-chartjs-2';
 
-const data = [45, 60, 50, 56, 47, 45, 56];
-const xLabels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  LineElement,
+  PointElement,
+  Tooltip,
+  Legend
+);
 
-// ==============================|| TDS Overall (ppm) Chart ||============================== //
+const TDSChart = () => {
+  const labels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+  const tdsData = [45, 60, 50, 56, 47, 45, 56];
+  const avg = 51;
+  const min = 45;
+  const max = 53;
 
-export default function MonthlyBarChart() {
-  const theme = useTheme();
-  const axisFonstyle = { fontSize: 10, fill: theme.palette.text.secondary };
+  const data = {
+    labels,
+    datasets: [
+      {
+        type: 'bar',
+        label: 'TDS (ppm)',
+        data: tdsData,
+        backgroundColor: '#9cea09',
+        borderRadius: 5,
+        barPercentage: 0.6
+      },
+      {
+        type: 'line',
+        label: `Avg (${avg})`,
+        data: Array(labels.length).fill(avg),
+        borderColor: 'gray',
+        borderWidth: 1.5,
+        borderDash: [5, 5],
+        pointRadius: 0
+      },
+      {
+        type: 'line',
+        label: `Min (${min})`,
+        data: Array(labels.length).fill(min),
+        borderColor: 'orange',
+        borderWidth: 1.5,
+        borderDash: [5, 5],
+        pointRadius: 0
+      },
+      {
+        type: 'line',
+        label: `Max (${max})`,
+        data: Array(labels.length).fill(max),
+        borderColor: 'green',
+        borderWidth: 1.5,
+        borderDash: [5, 5],
+        pointRadius: 0
+      }
+    ]
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top'
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        ticks: {
+          callback: (value) => `${value} PPM`
+        }
+      }
+    }
+  };
 
   return (
-    <BarChart
-      height={380}
-      series={[{ data, label: 'Series-1' }]}
-      xAxis={[{ data: xLabels, scaleType: 'band', disableLine: true, disableTicks: true, tickLabelStyle: axisFonstyle }]}
-      leftAxis={null}
-      slotProps={{ legend: { hidden: true }, bar: { rx: 5, ry: 5 } }}
-      axisHighlight={{ x: 'none' }}
-      margin={{ left: 20, right: 20 }}
-      colors={["#9cea09"]}
-      sx={{ '& .MuiBarElement-root:hover': { opacity: 0.6 } }}
-    />
+    <div style={{ height: '380px' }}>
+      <Chart type='bar' data={data} options={options} />
+    </div>
   );
-}
+};
+
+export default TDSChart;

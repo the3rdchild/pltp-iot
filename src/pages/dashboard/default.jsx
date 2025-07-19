@@ -4,6 +4,12 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+
 //simulasi
 import { useState, useEffect } from 'react';
 import { generateAnalyticData } from 'data/simulasi';
@@ -17,6 +23,8 @@ import MainCard from 'components/MainCard';
 import CensorBox from 'components/cards/statistics/CensorBox';
 import TDSChart from 'sections/dashboard/default/TDSChart';
 import TempGraph from 'sections/dashboard/default/TemperatureGraph';
+import DrynessChart from 'components/DrynessChart';
+import ReportAreaChart from 'sections/dashboard/default/ReportAreaChart';
 
 // Pertanima Color Pick
 // Red: #fa061d rgba(255,1,27,255)
@@ -249,9 +257,29 @@ export default function DashboardDefault() {
       </section> 
 
       {/* row 2 */}
+
       <Grid container rowSpacing={4.5} columnSpacing={2.75}>
       <Grid size={{ xs: 12, md: 7, lg: 8 }}>
-        <TempGraph/>
+      <Grid>
+            <Typography variant="h5">Dryness Fraction Monthly Chart</Typography>
+          </Grid>
+      <MainCard sx={{ mt: 2 }} content={false}>
+          <List sx={{ p: 0, '& .MuiListItemButton-root': { py: 2 } }}>
+            <ListItemButton divider>
+              <ListItemText primary="Average Drayness Fraction Value" />
+              <Typography variant="h5">88.0%</Typography>
+            </ListItemButton>
+            <ListItemButton divider>
+              <ListItemText primary="Minimum Drayness Fraction Value" />
+              <Typography variant="h5">90.0%</Typography>
+            </ListItemButton>
+            <ListItemButton>
+              <ListItemText primary="Maximum Drayness Fraction Value" />
+              <Typography variant="h5">95.0%</Typography>
+            </ListItemButton>
+          </List>
+          <ReportAreaChart />
+        </MainCard>
       </Grid>
       
       <Grid size={{ xs: 12, md: 5, lg: 4 }}>
@@ -274,16 +302,16 @@ export default function DashboardDefault() {
         </MainCard>
       </Grid>
        
-      {/* row 4 - full width image */}
-      <video
-  src={simulasiVideo}
-  autoPlay
-  muted
-  loop
-  playsInline
-  style={{ width: '100%', borderRadius: '8px' }}
-/>
     </Grid>
+
+    <Grid size={{ xs: 12, md: 5, lg: 4 }}>
+        <Grid container alignItems="center" justifyContent="space-between">
+          <Grid />
+        </Grid>
+        <TempGraph/>
+      </Grid>
+
+      
     </>
   );
 }

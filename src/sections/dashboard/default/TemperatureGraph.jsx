@@ -20,7 +20,7 @@ export default function UniqueVisitorCard() {
     <>
       <Grid container alignItems="center" justifyContent="space-between">
         <Grid>
-          <Typography variant="h5">Temperature Output</Typography>
+          <Typography variant="h5">Pipe Temperature Output</Typography>
         </Grid>
         <Grid>
           <Stack direction="row" sx={{ alignItems: 'center' }}>

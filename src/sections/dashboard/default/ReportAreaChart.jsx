@@ -1,36 +1,83 @@
 // material-ui
 import { useTheme } from '@mui/material/styles';
-
 import { chartsGridClasses, LineChart } from '@mui/x-charts';
 
-const data = [58, 115, 28, 83, 63, 75, 35];
-const labels = ['Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const drynessData = [90, 89, 91, 86, 88, 86, 92, 90, 88, 95, 96, 90];
 
-// ==============================|| REPORT AREA CHART ||============================== //
+const avgValue = 88;
+const minThreshold = 90;
+const maxThreshold = 95;
 
 export default function ReportAreaChart() {
   const theme = useTheme();
-  const axisFonstyle = { fill: theme.palette.text.secondary };
+  const axisStyle = { fill: theme.palette.text.secondary };
 
   return (
     <LineChart
-      grid={{ horizontal: true }}
-      xAxis={[{ data: labels, scaleType: 'point', disableLine: true, disableTicks: true, tickLabelStyle: axisFonstyle }]}
-      yAxis={[{ tickMaxStep: 10 }]}
-      leftAxis={null}
+      height={340}
       series={[
         {
-          data,
+          id: 'Dryness Fraction',
+          data: drynessData,
+          color: theme.palette.primary.main,
+          showMark: true,
+          label: 'Dryness Fraction'
+        },
+        {
+          id: 'Average',
+          data: new Array(drynessData.length).fill(avgValue),
+          color: theme.palette.secondary.main,
           showMark: false,
-          id: 'ReportAreaChart',
+          label: 'Average',
+          curve: 'linear',
+          area: false
+        },
+        {
+          id: 'Min Threshold (90%)',
+          data: new Array(drynessData.length).fill(minThreshold),
           color: theme.palette.warning.main,
-          label: 'Series 1'
+          showMark: false,
+          label: 'Min (90%)',
+          curve: 'linear',
+          area: false
+        },
+        {
+          id: 'Max Threshold (95%)',
+          data: new Array(drynessData.length).fill(maxThreshold),
+          color: theme.palette.success.main,
+          showMark: false,
+          label: 'Max (95%)',
+          curve: 'linear',
+          area: false
         }
       ]}
-      slotProps={{ legend: { hidden: true } }}
-      height={340}
-      margin={{ top: 30, bottom: 50, left: 20, right: 20 }}
-      sx={{ '& .MuiLineElement-root': { strokeWidth: 1 }, [`& .${chartsGridClasses.line}`]: { strokeDasharray: '5 3' } }}
+      xAxis={[
+        {
+          scaleType: 'point',
+          data: labels,
+          tickLabelStyle: axisStyle,
+          disableLine: true,
+          disableTicks: true
+        }
+      ]}
+      yAxis={[
+        {
+          label: 'Dryness Fraction (%)',
+          min: 83,
+          max: 98,
+          tickLabelStyle: axisStyle
+        }
+      ]}
+      sx={{
+        '& .MuiLineElement-root': { strokeWidth: 2 },
+        [`& .${chartsGridClasses.line}`]: {
+          strokeDasharray: '4 2',
+          stroke: theme.palette.divider
+        }
+      }}
+      grid={{ horizontal: true }}
+      margin={{ top: 30, bottom: 50, left: 40, right: 20 }}
     />
   );
 }
