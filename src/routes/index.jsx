@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 // layout dan halaman
 import DashboardLayout from 'layout/Dashboard';
 import DashboardDefault from 'pages/dashboard/default';
-import SamplePage from 'pages/extra-pages/sample-page';
+import SamplePage from 'pages/extra-pages/documentationpage';
 
 const router = createBrowserRouter([
   {
@@ -19,7 +19,7 @@ const router = createBrowserRouter([
         element: <DashboardDefault />
       },
       {
-        path: 'documentation', //sample-page
+        path: 'documentation', //documentationpage
         element: <SamplePage />
       }
     ]

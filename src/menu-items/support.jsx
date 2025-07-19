@@ -15,7 +15,7 @@ const support = {
   type: 'group',
   children: [
     {
-      id: 'sample-page',
+      id: 'documentationpage',
       title: 'Documentation',
       type: 'item',
       url: '/documentation',

@@ -13,7 +13,7 @@ const Typography = Loadable(lazy(() => import('pages/component-overview/typograp
 const Shadow = Loadable(lazy(() => import('pages/component-overview/shadows')));
 
 // render - sample page
-const SamplePage = Loadable(lazy(() => import('pages/extra-pages/sample-page')));
+const SamplePage = Loadable(lazy(() => import('pages/extra-pages/documentationpage')));
 
 // ==============================|| MAIN ROUTING ||============================== //
 
@@ -47,7 +47,7 @@ const MainRoutes = {
       element: <Shadow />
     },
     {
-      path: 'sample-page',
+      path: 'documentationpage',
       element: <SamplePage />
     }
   ]
