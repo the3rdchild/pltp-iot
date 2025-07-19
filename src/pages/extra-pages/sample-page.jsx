@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography';
 import MainCard from 'components/MainCard';
 import RiskTable from './RiskTable';
 import RiskVideoPreview from './RiskVideoPreview';
+import DrynessFractionDoc from './DrynessFractionDoc';
 
 // import semua video
 import Ideal from 'assets/videos/predict/1_Ideal_0001-0088.mp4';
@@ -51,7 +52,9 @@ export default function SamplePage() {
       <Grid>
 
       </Grid>
-
+      <DrynessFractionDoc />
     </MainCard>
+
+    
   );
 }
