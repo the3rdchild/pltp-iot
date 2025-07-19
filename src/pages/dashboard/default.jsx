@@ -267,7 +267,7 @@ export default function DashboardDefault() {
           <List sx={{ p: 0, '& .MuiListItemButton-root': { py: 2 } }}>
             <ListItemButton divider>
               <ListItemText primary="Average Dryness Fraction Value" />
-              <Typography variant="h5">88.0%</Typography>
+              <Typography variant="h5">97.0%</Typography>
             </ListItemButton>
             <ListItemButton divider>
               <ListItemText primary="Minimum Dryness Fraction Value" />
@@ -275,7 +275,11 @@ export default function DashboardDefault() {
             </ListItemButton>
             <ListItemButton>
               <ListItemText primary="Maximum Dryness Fraction Value" />
-              <Typography variant="h5">95.0%</Typography>
+              <Typography variant="h5">100.0%</Typography>
+            </ListItemButton>
+            <ListItemButton>
+              <ListItemText primary="Ideal Dryness Fraction Value" />
+              <Typography variant="h5">99.0% - 100.0%</Typography>
             </ListItemButton>
           </List>
           <ReportAreaChart />

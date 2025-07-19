@@ -3,11 +3,11 @@ import { useTheme } from '@mui/material/styles';
 import { chartsGridClasses, LineChart } from '@mui/x-charts';
 
 const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const drynessData = [90, 89, 91, 86, 88, 86, 92, 90, 88, 95, 96, 90];
+const drynessData = [95, 99, 96, 99, 95, 97, 98, 94, 100, 95, 90, 97];
 
-const avgValue = 88;
-const minThreshold = 90;
-const maxThreshold = 95;
+const avgValue = 97;
+const minThreshold = 93;
+const maxThreshold = 100;
 
 export default function ReportAreaChart() {
   const theme = useTheme();
@@ -38,7 +38,7 @@ export default function ReportAreaChart() {
           data: new Array(drynessData.length).fill(minThreshold),
           color: theme.palette.warning.main,
           showMark: false,
-          label: 'Min (90%)',
+          label: 'Min (95%)',
           curve: 'linear',
           area: false
         },
@@ -47,7 +47,7 @@ export default function ReportAreaChart() {
           data: new Array(drynessData.length).fill(maxThreshold),
           color: theme.palette.success.main,
           showMark: false,
-          label: 'Max (95%)',
+          label: 'Max (100%)',
           curve: 'linear',
           area: false
         }
@@ -64,8 +64,8 @@ export default function ReportAreaChart() {
       yAxis={[
         {
           label: 'Dryness Fraction (%)',
-          min: 83,
-          max: 98,
+          min: 90,
+          max: 105,
           tickLabelStyle: axisStyle
         }
       ]}

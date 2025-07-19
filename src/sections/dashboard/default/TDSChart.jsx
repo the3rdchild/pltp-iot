@@ -113,7 +113,7 @@ const options = {
 
 export default function TDSChart() {
   return (
-    <div style={{ height: '434px', padding: '0 12px' }}>
+    <div style={{ height: '493px', padding: '0 12px' }}>
       <Chart type='bar' data={data} options={options} />
     </div>
   );

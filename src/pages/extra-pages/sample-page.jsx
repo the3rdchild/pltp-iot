@@ -52,7 +52,7 @@ export default function SamplePage() {
         </Grid>
       </Grid>
       
-      <Grid container spacing={3}>
+      <Grid container spacing={3} sx={{ mt: 2 }}>
       <DrynessFractionDoc />
       </Grid>
 
