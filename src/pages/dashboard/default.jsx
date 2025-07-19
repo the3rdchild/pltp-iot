@@ -223,7 +223,7 @@ export default function DashboardDefault() {
 
       <h3>Steam & Water System Status</h3> 
       <section>
-        <Grid container rowSpacing={4.5} columnSpacing={2.75}>
+        <Grid container rowSpacing={2.5} columnSpacing={2.75} >
           {/* Steam & Water System Status Row */}
           <Grid item xs={12} sm={6} md={4} lg={3}>
             <CensorBox
@@ -258,7 +258,7 @@ export default function DashboardDefault() {
 
       {/* row 2 */}
 
-      <Grid container rowSpacing={4.5} columnSpacing={2.75}>
+      <Grid container rowSpacing={2.5} columnSpacing={2.75} sx={{ mt: 2 }}>
       <Grid size={{ xs: 12, md: 7, lg: 8 }}>
       <Grid>
             <Typography variant="h5">Dryness Fraction Monthly Chart</Typography>
@@ -283,7 +283,7 @@ export default function DashboardDefault() {
       </Grid>
       
       <Grid size={{ xs: 12, md: 5, lg: 4 }}>
-        <Grid container alignItems="center" justifyContent="space-between">
+        <Grid container alignItems="center" justifyContent="space-between" >
           <Grid>
             <Typography variant="h5">TDS Overall (ppm)</Typography>
           </Grid>
@@ -304,7 +304,7 @@ export default function DashboardDefault() {
        
     </Grid>
 
-    <Grid size={{ xs: 12, md: 5, lg: 4 }}>
+    <Grid size={{ xs: 12, md: 5, lg: 4 }} sx={{ mt: 2 }}>
         <Grid container alignItems="center" justifyContent="space-between">
           <Grid />
         </Grid>
