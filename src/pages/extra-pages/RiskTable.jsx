@@ -13,7 +13,7 @@ import {
 const riskPredictionData = [
   {
     id: 1,
-    drynessRange: '0.90 ≤ x ≤ 0.95',
+    drynessRange: '0.99 ≤ x ≤ 1.00',
     tdsRange: '≤ 60',
     label: '✅ Ideal',
     riskKey: 'Ideal',
@@ -21,7 +21,7 @@ const riskPredictionData = [
   },
   {
     id: 2,
-    drynessRange: '0.90 ≤ x ≤ 0.95',
+    drynessRange: '0.95 ≤ x ≤ 0.99',
     tdsRange: '> 100',
     label: '⚠️ Contaminated Dry',
     riskKey: 'Contaminated Dry',
@@ -29,7 +29,7 @@ const riskPredictionData = [
   },
   {
     id: 3,
-    drynessRange: '0.80 ≤ x < 0.90',
+    drynessRange: '0.90 ≤ x < 0.95',
     tdsRange: '≤ 60',
     label: '⚠️ Wet Clean',
     riskKey: 'Wet Clean',
@@ -37,7 +37,7 @@ const riskPredictionData = [
   },
   {
     id: 4,
-    drynessRange: 'x < 0.80',
+    drynessRange: 'x < 0.90',
     tdsRange: '≤ 60',
     label: '❌ Failure Due to Moisture',
     riskKey: 'Moisture Failure',

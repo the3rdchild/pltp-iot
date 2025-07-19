@@ -33,9 +33,9 @@ export default function DrynessFractionDoc() {
 
         <Grid item xs={12}>
           <Typography variant="body1" paragraph>
-            Dalam proyek ini, rentang ideal fraksi kekeringan berada antara <strong>0.90 – 0.95</strong>. Di bawah nilai tersebut, uap
+            Dalam proyek ini, rentang ideal fraksi kekeringan berada antara <strong>0.99 – 1.0</strong>. Di bawah nilai tersebut, uap
             mengandung terlalu banyak air, yang dapat menyebabkan erosi dan penurunan efisiensi turbin.
-            Sebaliknya, fraksi di atas 0.95 menunjukkan uap sangat kering dan relatif aman.
+            Sebaliknya, fraksi di atas 1.0 menunjukkan uap sangat kering (uap superheated), asumsi dryness fraction diatas titik ini bisa menyebabkan overestimasi energi yang tersedia untuk turbin, dan berisiko pada desain sistem.
           </Typography>
         </Grid>
 
