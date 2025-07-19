@@ -2,8 +2,8 @@
 import { useTheme } from '@mui/material/styles';
 import { chartsGridClasses, LineChart } from '@mui/x-charts';
 
-const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const drynessData = [95, 99, 96, 99, 95, 97, 98, 94, 100, 95, 90, 97];
+const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fry', 'Sat', 'Sun'];
+const drynessData = [95, 99, 96, 99, 95, 97, 98];
 
 const avgValue = 97;
 const minThreshold = 93;
@@ -20,14 +20,17 @@ export default function ReportAreaChart() {
         {
           id: 'Dryness Fraction',
           data: drynessData,
-          color: theme.palette.primary.main,
+          color: '#1d018a',
           showMark: true,
-          label: 'Dryness Fraction'
+          label: 'Dryness Fraction',
+          lineStyle: {
+            strokeDasharray: '6 4'
+          }
         },
         {
           id: 'Average',
           data: new Array(drynessData.length).fill(avgValue),
-          color: theme.palette.secondary.main,
+          color: '#a1fdb4',
           showMark: false,
           label: 'Average',
           curve: 'linear',
@@ -36,7 +39,7 @@ export default function ReportAreaChart() {
         {
           id: 'Min Threshold (90%)',
           data: new Array(drynessData.length).fill(minThreshold),
-          color: theme.palette.warning.main,
+          color: '#fdcdce',
           showMark: false,
           label: 'Min (95%)',
           curve: 'linear',
@@ -45,13 +48,14 @@ export default function ReportAreaChart() {
         {
           id: 'Max Threshold (95%)',
           data: new Array(drynessData.length).fill(maxThreshold),
-          color: theme.palette.success.main,
+          color: '#d0c6ff',
           showMark: false,
           label: 'Max (100%)',
           curve: 'linear',
           area: false
         }
       ]}
+
       xAxis={[
         {
           scaleType: 'point',
@@ -72,7 +76,7 @@ export default function ReportAreaChart() {
       sx={{
         '& .MuiLineElement-root': { strokeWidth: 2 },
         [`& .${chartsGridClasses.line}`]: {
-          strokeDasharray: '4 2',
+          strokeDasharray: '5 5',
           stroke: theme.palette.divider
         }
       }}

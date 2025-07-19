@@ -23,8 +23,7 @@ import MainCard from 'components/MainCard';
 import CensorBox from 'components/cards/statistics/CensorBox';
 import TDSChart from 'sections/dashboard/default/TDSChart';
 import TempGraph from 'sections/dashboard/default/TemperatureGraph';
-import DrynessChart from 'components/DrynessChart';
-import ReportAreaChart from 'sections/dashboard/default/ReportAreaChart';
+import DFraction from 'sections/dashboard/default/DFraction';
 
 // Pertanima Color Pick
 // Red: #fa061d rgba(255,1,27,255)
@@ -282,7 +281,7 @@ export default function DashboardDefault() {
               <Typography variant="h5">99.0% - 100.0%</Typography>
             </ListItemButton>
           </List>
-          <ReportAreaChart />
+          <DFraction />
         </MainCard>
       </Grid>
       
