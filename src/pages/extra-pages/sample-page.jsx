@@ -7,6 +7,7 @@ import MainCard from 'components/MainCard';
 import RiskTable from './RiskTable';
 import RiskVideoPreview from './RiskVideoPreview';
 import DrynessFractionDoc from './DrynessFractionDoc';
+import RForest from './RForest';
 
 // import semua video
 import Ideal from 'assets/videos/predict/1_Ideal_0001-0088.mp4';
@@ -35,7 +36,9 @@ export default function SamplePage() {
   };
 
   return (
-    <MainCard title="Klasifikasi Risiko Operasional Turbin">
+    <MainCard 
+    title={<span style={{ fontSize: '18px' }}>Klasifikasi Risiko Operasional Turbin</span>}
+    >
       <Grid container spacing={3}>
         {/* Kolom Tabel – lebar 7/12 */}
         <Grid item xs={12} md={7}>
@@ -48,11 +51,14 @@ export default function SamplePage() {
           <RiskVideoPreview src={selectedVideo} />
         </Grid>
       </Grid>
-
-      <Grid>
-
-      </Grid>
+      
+      <Grid container spacing={3}>
       <DrynessFractionDoc />
+      </Grid>
+
+      <Grid container spacing={3}>
+      <RForest />
+      </Grid>
     </MainCard>
 
     

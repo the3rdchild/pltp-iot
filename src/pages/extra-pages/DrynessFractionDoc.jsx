@@ -3,7 +3,9 @@ import MainCard from 'components/MainCard';
 
 export default function DrynessFractionDoc() {
   return (
-    <MainCard title="Dryness Fraction">
+    <MainCard
+        title={<span style={{ fontSize: '18px' }}>Dryness Fraction</span>}
+    >
       <Grid container spacing={3}>
         <Grid item xs={12}>
           <Typography variant="body1" paragraph>
