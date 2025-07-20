@@ -19,8 +19,7 @@ function clamp(value, min, max) {
 function createRow() {
   const pressureSeparator = clamp(Math.random() * 111 + 1000, 1000, 1300);
   const pressureSteam = clamp(Math.random() * 20 + 910, 900, 1133);
-  const boilerTemp = clamp(Math.random() * 10 + 180, 180, 190);
-  const tankLevel = clamp(Math.random() * 20 + 46, 0, 100);
+  const pipeTemp = clamp(Math.random() * 10 + 180, 180, 190);
 
   const tdsOverall = clamp(Math.random() * 20 + 40, 30, 60);
   const co2 = clamp(Math.random() * 10 + 10, 5, 25);
@@ -40,8 +39,7 @@ function createRow() {
   return {
     pressureSeparator,
     pressureSteam,
-    boilerTemp,
-    tankLevel,
+    pipeTemp,
     tdsOverall,
     co2,
     argon,
@@ -68,8 +66,7 @@ export default function HistoryTable() {
             <TableRow>
               <TableCell>Separator (kPa)</TableCell>
               <TableCell>Steam (kPa)</TableCell>
-              <TableCell>Boiler Temp (°C)</TableCell>
-              <TableCell>Tank Level (%)</TableCell>
+              <TableCell>Pipe Temp (°C)</TableCell>
               <TableCell>TDS (ppm)</TableCell>
               <TableCell>CO2 (ppm)</TableCell>
               <TableCell>Argon (ppm)</TableCell>
@@ -87,8 +84,7 @@ export default function HistoryTable() {
               <TableRow key={i}>
                 <TableCell>{row.pressureSeparator.toFixed(2)}</TableCell>
                 <TableCell>{row.pressureSteam.toFixed(2)}</TableCell>
-                <TableCell>{row.boilerTemp.toFixed(1)}</TableCell>
-                <TableCell>{row.tankLevel.toFixed(1)}</TableCell>
+                <TableCell>{row.pipeTemp.toFixed(1)}</TableCell>
                 <TableCell>{row.tdsOverall.toFixed(1)}</TableCell>
                 <TableCell>{row.co2.toFixed(1)}</TableCell>
                 <TableCell>{row.argon.toFixed(1)}</TableCell>
