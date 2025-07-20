@@ -16,6 +16,7 @@ import { generateAnalyticData } from 'data/simulasi';
 import { getRiskPrediction } from 'data/riskprediction';
 import simulasiVideo from 'assets/videos/10001-0090.mp4';
 import { Link } from 'react-router-dom'; 
+import PressureGraphsCard from 'sections/dashboard/default/PSeparator';
 
 
 // project imports
@@ -75,7 +76,7 @@ function getRiskColor(riskPrediction) {
 // ==============================|| DASHBOARD - DEFAULT ||============================== //
 export default function DashboardDefault() {
   const [data, setData] = useState({
-    pressureReservoir: '0',
+    pressureSeparator: '0',
     pressureSteam: '0',
     boilerTemp: '0',
     tankLevel: '0',
@@ -226,11 +227,11 @@ export default function DashboardDefault() {
           {/* Steam & Water System Status Row */}
           <Grid item xs={12} sm={6} md={4} lg={3}>
             <CensorBox
-              title="Pressure Meter: Water Reservoir"
-              count={data.pressureReservoir + " kPa"}
+              title="Pressure Meter: Water Separator Tank"
+              count={data.pressureSeparator + " kPa"}
               percentage={1.3}
               color="success"
-              extra="Normal: 10-14 kPa"
+              extra="Normal: 650-1355 kPa"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
@@ -239,7 +240,7 @@ export default function DashboardDefault() {
               count={data.pressureSteam + " kPa"}
               percentage={1.5}
               color="error"
-              extra="Target: 210-230 kPa"
+              extra="Target: 900-1200 kPa"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
@@ -259,10 +260,10 @@ export default function DashboardDefault() {
 
       <Grid container rowSpacing={2.5} columnSpacing={2.75} sx={{ mt: 2 }}>
       <Grid size={{ xs: 12, md: 7, lg: 8 }}>
-      <Grid>
-            <Typography variant="h5">Dryness Fraction Monthly Chart</Typography>
-          </Grid>
-      <MainCard sx={{ mt: 2 }} content={false}>
+        <Grid>
+          <Typography variant="h5">Dryness Fraction Monthly Chart</Typography>
+        </Grid>
+        <MainCard sx={{ mt: 2 }} content={false}>
           <List sx={{ p: 0, '& .MuiListItemButton-root': { py: 2 } }}>
             <ListItemButton divider>
               <ListItemText primary="Average Dryness Fraction Value" />
@@ -307,14 +308,23 @@ export default function DashboardDefault() {
        
     </Grid>
 
-    <Grid size={{ xs: 12, md: 5, lg: 4 }} sx={{ mt: 2 }}>
-        <Grid container alignItems="center" justifyContent="space-between">
-          <Grid />
-        </Grid>
-        <TempGraph/>
-      </Grid>
 
-      
+  <Grid size={{ xs: 12, md: 7, lg: 8 }} sx={{ mt: 2 }}>
+    <TempGraph />
+  </Grid>
+
+
+  {/* Pressure Separator & Steam */}
+  <Grid size={{ xs: 12, md: 7, lg: 8 }}>
+    <MainCard content={false}>
+      <PressureGraphsCard />
+    </MainCard>
+  </Grid>
+
+
+
+
+    
     </>
   );
 }

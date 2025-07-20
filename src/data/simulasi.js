@@ -1,8 +1,8 @@
 export function generateAnalyticData() {
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
-  const pressureReservoir = clamp(Math.random() * 10 + 7, 10, 14);
-  const pressureSteam = clamp(Math.random() * 20 + 210, 180, 233); // 210–230
+  const pressureSeparator = clamp(Math.random() * 111 + 1000, 1000, 1300);
+  const pressureSteam = clamp(Math.random() * 20 + 910, 900, 1133); // 210–230
   const boilerTemp = clamp(Math.random() * 10 + 180, 180, 190);      // 85–95
   const tankLevel = clamp(Math.random() * 20 + 46, 0, 100);        // 46–66
 
@@ -22,7 +22,7 @@ export function generateAnalyticData() {
   const riskPrediction = riskLevels[riskIndex];
 
   return {
-    pressureReservoir: pressureReservoir.toFixed(0),
+    pressureSeparator: pressureSeparator.toFixed(0),
     pressureSteam: pressureSteam.toFixed(0),
     boilerTemp: boilerTemp.toFixed(0),
     tankLevel: tankLevel.toFixed(0),

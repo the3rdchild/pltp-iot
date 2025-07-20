@@ -2,7 +2,7 @@
 import { useTheme } from '@mui/material/styles';
 import { chartsGridClasses, LineChart } from '@mui/x-charts';
 
-const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fry', 'Sat', 'Sun'];
+const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const drynessData = [95, 99, 96, 99, 95, 97, 98];
 
 const avgValue = 97;
