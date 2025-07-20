@@ -9,7 +9,9 @@ import Box from '@mui/material/Box';
 
 // project imports
 import MainCard from 'components/MainCard';
-import IncomeAreaChart from './IncomeAreaChart';
+import PSteamChart from './PSteamChart';
+import PSeparatorChart from './PSeparatorChart';
+
 
 // Dummy data generators
 const generatePressureData = (min, max, count = 12) =>
@@ -26,11 +28,12 @@ export default function PressureGraphsCard() {
   return (
     <>
       <Grid container spacing={2}>
+        
         {/* Pressure Separator */}
         <Grid size={{ xs: 12, md: 7, lg: 6}} sx={{ mt: 2 }}>
           <Grid container alignItems="center" justifyContent="space-between">
             <Grid>
-              <Typography variant="h5">Pressure Separator</Typography>
+              <Typography variant="h5">&nbsp;&nbsp;Pressure Separator Tank</Typography>
             </Grid>
             <Grid>
               <Stack direction="row" sx={{ alignItems: 'center' }}>
@@ -55,7 +58,7 @@ export default function PressureGraphsCard() {
           </Grid>
           <MainCard content={false} sx={{ mt: 1.5 }}>
             <Box sx={{ pt: 1, pr: 2 }}>
-              <IncomeAreaChart view={view} data={pressureSeparator} label="Separator Pressure" />
+              <PSeparatorChart view={view} data={pressureSeparator} label="Separator Pressure" />
             </Box>
           </MainCard>
         </Grid>
@@ -64,7 +67,7 @@ export default function PressureGraphsCard() {
         <Grid size={{ xs: 12, md: 7, lg: 6}} sx={{ mt: 2 }}>
           <Grid container alignItems="center" justifyContent="space-between">
             <Grid>
-              <Typography variant="h5">Pressure Steam</Typography>
+              <Typography variant="h5">&nbsp;&nbsp;Pressure Pipe Steam</Typography>
             </Grid>
             <Grid>
               <Stack direction="row" sx={{ alignItems: 'center' }}>
@@ -89,7 +92,7 @@ export default function PressureGraphsCard() {
           </Grid>
           <MainCard content={false} sx={{ mt: 1.5 }}>
             <Box sx={{ pt: 1, pr: 2 }}>
-              <IncomeAreaChart view={view} data={pressureSteam} label="Steam Pressure" />
+              <PSteamChart view={view} data={pressureSteam} label="Steam Pressure" />
             </Box>
           </MainCard>
         </Grid>

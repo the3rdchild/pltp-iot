@@ -9,7 +9,7 @@ import Box from '@mui/material/Box';
 
 // project imports
 import MainCard from 'components/MainCard';
-import IncomeAreaChart from './IncomeAreaChart';
+import TChart from './TChart';
 
 // ==============================|| Temperature Graph ||============================== //
 
@@ -45,7 +45,7 @@ export default function UniqueVisitorCard() {
       </Grid>
       <MainCard content={false} sx={{ mt: 2 }}>
         <Box sx={{ pt: 1, pr: 2 }}>
-          <IncomeAreaChart view={view} />
+          <TChart view={view} />
         </Box>
       </MainCard>
     </>

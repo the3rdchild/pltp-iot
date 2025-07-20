@@ -16,7 +16,7 @@ import { generateAnalyticData } from 'data/simulasi';
 import { getRiskPrediction } from 'data/riskprediction';
 import simulasiVideo from 'assets/videos/10001-0090.mp4';
 import { Link } from 'react-router-dom'; 
-import PressureGraphsCard from 'sections/dashboard/default/PSeparator';
+import PressureGraphsCard from 'sections/dashboard/default/PMonitor';
 
 
 // project imports
@@ -313,9 +313,11 @@ export default function DashboardDefault() {
     <TempGraph />
   </Grid>
 
-
+  <Grid size={{ xs: 12, md: 7, lg: 8 }} sx={{ mt: 2 }} >
+          <Typography variant="h5"> Pressure Monitor</Typography>
+        </Grid>
   {/* Pressure Separator & Steam */}
-  <Grid size={{ xs: 12, md: 7, lg: 8 }}>
+  <Grid size={{ xs: 12, md: 7, lg: 8 }} sx={{ mt: 2 }}>
     <MainCard content={false}>
       <PressureGraphsCard />
     </MainCard>

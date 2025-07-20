@@ -13,11 +13,12 @@ import { LineChart } from '@mui/x-charts/LineChart';
 const monthlyLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const weeklyLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-const monthlyData1 = [185, 186, 185, 187, 186, 185, 185, 186, 185, 187, 186, 185];
-const weeklyData1 = [185, 186, 185, 187, 186, 185, 186];
+const monthlyData1 = [1013, 1026, 1018, 1005, 1043, 1055, 1032, 1061, 1038, 1018, 1009, 1035];
+const weeklyData1 = [1027, 1014, 1031, 1022, 1015, 1048, 1037];
 
-const monthlyData2 = [188, 189, 188, 190, 189, 188, 189, 188, 189, 190, 189, 188];
-const weeklyData2 = [188, 189, 188, 190, 189, 188, 189];
+const monthlyData2 = [1029, 1038, 1030, 1019, 1051, 1061, 1048, 1076, 1043, 1028, 1026, 1046];
+const weeklyData2 = [1042, 1028, 1038, 1039, 1032, 1063, 1054];
+
 
 function Legend({ items, onToggle }) {
   return (
@@ -90,9 +91,9 @@ export default function IncomeAreaChart({ view }) {
         height={450}
         yAxis={[
           {
-            label: 'Temperature (°C)',
-            min: 150,
-            max: 200,
+            label: 'kPa',
+            min: 800,
+            max: 1300,
             tickInterval: 20 // akan menghasilkan label 0, 20, 40, dst.
           }
         ]}
