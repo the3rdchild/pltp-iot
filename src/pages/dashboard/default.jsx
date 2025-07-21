@@ -261,7 +261,7 @@ export default function DashboardDefault() {
       <Grid container rowSpacing={2.5} columnSpacing={2.75} sx={{ mt: 2 }}>
       <Grid size={{ xs: 12, md: 7, lg: 8 }}>
         <Grid>
-          <Typography variant="h5">Dryness Fraction Monthly Chart</Typography>
+          <Typography variant="h5">Dryness Fraction Daily Chart</Typography>
         </Grid>
         <MainCard sx={{ mt: 2 }} content={false}>
           <List sx={{ p: 0, '& .MuiListItemButton-root': { py: 2 } }}>
