@@ -123,7 +123,7 @@ export default function DashboardDefault() {
               count={data.tdsOverall + " ppm"}
               percentage={1.2}
               color="error"
-              extra="Ref: <100 ppm"
+              extra="Ref: <10 ppm"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
@@ -133,7 +133,7 @@ export default function DashboardDefault() {
               percentage={0.5}
               isLoss
               color="success"    
-              extra="Max: 15 ppm"
+              extra="Max: 5 ppm"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
@@ -142,7 +142,7 @@ export default function DashboardDefault() {
               count={data.argon + " ppm"}
               percentage={0.3}
               color="warning"    
-              extra="3 ppm"
+              extra="1.5 ppm"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
@@ -152,7 +152,7 @@ export default function DashboardDefault() {
               isLoss
               color="primary"
               percentage={1.4}
-              extra="2.2 ppm"
+              extra="1.2 ppm"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
@@ -162,7 +162,7 @@ export default function DashboardDefault() {
               percentage={0.2}
               isLoss
               color="success" 
-              extra="1.5 ppm"
+              extra="0.3 ppm"
             />
           </Grid>
           <Grid item xs={12} sm={6} md={4} lg={3}>
@@ -214,8 +214,8 @@ export default function DashboardDefault() {
                   {data.riskPrediction}
                 </span>
               }
-              color="warning"
-              extra="Wet Clean - Ideal"
+              color="success"
+              extra="Ideal"
             />
           </Grid>
         </Grid>
@@ -299,7 +299,7 @@ export default function DashboardDefault() {
               <Typography variant="h6" color="text.secondary">
                 Average
               </Typography>
-              <Typography variant="h3">50 PPM</Typography>
+              <Typography variant="h3">5 PPM</Typography>
             </Stack>
           </Box>
           <TDSChart />

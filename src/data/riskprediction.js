@@ -4,7 +4,7 @@ export function getRiskPrediction(drynessFraction, tdsOverall) {
     const tds = parseFloat(tdsOverall);
   
     // Kondisi 1: Ideal
-    if (x >= 0.90 && x <= 0.95 && tds <= 60) {
+    if (x >= 0.90 && x <= 1 && tds <= 60) {
       return 'Ideal';
     }
   

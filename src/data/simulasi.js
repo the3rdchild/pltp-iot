@@ -7,15 +7,15 @@ export function generateAnalyticData() {
   const tankLevel = clamp(Math.random() * 20 + 46, 0, 100);        // 46–66
 
   // Steam Purity: TDS & Deposit Index
-  const tdsOverall = clamp(Math.random() * 20 + 40, 30, 60); // 40–60 ppm
-  const co2 = clamp(Math.random() * 10 + 10, 5, 25);         // 10–20 ppm
-  const argon = clamp(Math.random() * 5 + 2, 1, 8);          // 2–7 ppm
-  const methane = clamp(Math.random() * 3 + 1, 1, 5);        // 1–4 ppm
-  const ma3 = clamp(Math.random() * 2 + 1, 1, 3);            // 1–3 ppm
+  const tdsOverall = clamp(Math.random() * 5 + 5, 5, 10); // 5–10 ppm
+  const co2 = clamp(Math.random() * 1 + 2, 2, 3);         // 10–20 ppm
+  const argon = clamp(Math.random() * 1 + 1, 0.1, 2);          // 2–7 ppm
+  const methane = clamp(Math.random() * 0.5 + 1, 0.1, 2);        // 1–4 ppm
+  const ma3 = clamp(Math.random() * 0.3 + 0.2, 0, 1);            // 1–3 ppm
   const scalingDeposit = clamp(Math.random() * 1.5 + 0.5, 0.5, 2); // 0.5–2 ppm
 
   // Steam Quality: Dryness & AI
-  const drynessFraction = clamp(Math.random() * 0.1 + 0.85, 0.85, 1); // 0.85–0.95
+  const drynessFraction = clamp(Math.random() * 0.1 + 0.94, 0.85, 1); // 0.85–0.95
   const anomalyScore = clamp(Math.random() * 0.1 + 0.05, 0, 1);       // 0.05–0.15
   const riskLevels = ['Low', 'Medium', 'High'];
   const riskIndex = drynessFraction < 0.9 || anomalyScore > 0.3 ? 2 : (anomalyScore > 0.15 ? 1 : 0);

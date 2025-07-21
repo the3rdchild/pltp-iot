@@ -33,15 +33,15 @@ const data = {
     {
       type: 'bar',
       label: 'TDS (ppm)',
-      data: [45, 60, 50, 56, 47, 45, 56],
+      data: [6, 5, 4, 8, 7, 4, 5],
       backgroundColor: '#9cea09',
       borderRadius: 6,
       barThickness: 20
     },
     {
       type: 'line',
-      label: 'Avg (51 ppm)',
-      data: new Array(7).fill(51),
+      label: 'Avg (5 ppm)',
+      data: new Array(7).fill(5),
       borderColor: '#FFA500',
       borderDash: [6, 6],
       pointRadius: 0,
@@ -50,8 +50,8 @@ const data = {
     },
     {
       type: 'line',
-      label: 'Max (53 ppm)',
-      data: new Array(7).fill(53),
+      label: 'Max (10 ppm)',
+      data: new Array(7).fill(8),
       borderColor: '#ff4d4f',
       borderDash: [4, 4],
       pointRadius: 0,
@@ -60,8 +60,8 @@ const data = {
     },
     {
       type: 'line',
-      label: 'Min (45 ppm)',
-      data: new Array(7).fill(45),
+      label: 'Min (4 ppm)',
+      data: new Array(7).fill(4),
       borderColor: '#1890ff',
       borderDash: [4, 4],
       pointRadius: 0,
@@ -93,8 +93,8 @@ const options = {
   },
   scales: {
     y: {
-      min: 44,
-      max: 60,
+      min: 0,
+      max: 10,
       ticks: {
         stepSize: 2,
         callback: (value) => `${value}`
