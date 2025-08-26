@@ -8,12 +8,11 @@ export function generateAnalyticData() {
 
   // Steam Purity: TDS & Deposit Index
   const tdsOverall = clamp(Math.random() * 5 + 5, 5, 10); // 5–10 ppm
-  const co2 = clamp(Math.random() * 1 + 2, 2, 3);         // 10–20 ppm
-  const argon = clamp(Math.random() * 1 + 1, 0.1, 2);          // 2–7 ppm
-  const methane = clamp(Math.random() * 0.5 + 1, 0.1, 2);        // 1–4 ppm
-  const ma3 = clamp(Math.random() * 0.3 + 0.2, 0, 1);            // 1–3 ppm
-  const scalingDeposit = clamp(Math.random() * 1.5 + 0.5, 0.5, 2); // 0.5–2 ppm
-
+  const co2 = clamp(Math.random() * 2 + 4, 1, 5);
+  const argon = clamp(Math.random() * 5 + 2, 1, 8);
+  const methane = clamp(Math.random() * 3 + 1, 1, 5);
+  const ma3 = clamp(Math.random() * 2 + 1, 1, 3);          
+  const scalingDeposit = clamp(Math.random() * 1.5 + 0.5, 0.5, 2); // 
   // Steam Quality: Dryness & AI
   const drynessFraction = clamp(Math.random() * 0.1 + 0.94, 0.85, 1); // 0.85–0.95
   const anomalyScore = clamp(Math.random() * 0.1 + 0.05, 0, 1);       // 0.05–0.15

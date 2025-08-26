@@ -21,8 +21,8 @@ function createRow() {
   const pressureSteam = clamp(Math.random() * 20 + 910, 900, 1133);
   const pipeTemp = clamp(Math.random() * 10 + 180, 180, 190);
 
-  const tdsOverall = clamp(Math.random() * 20 + 40, 30, 60);
-  const co2 = clamp(Math.random() * 10 + 10, 5, 25);
+  const tdsOverall = clamp(Math.random() * 5 + 5, 5, 10);
+  const co2 = clamp(Math.random() * 2 + 4, 1, 5);
   const argon = clamp(Math.random() * 5 + 2, 1, 8);
   const methane = clamp(Math.random() * 3 + 1, 1, 5);
   const ma3 = clamp(Math.random() * 2 + 1, 1, 3);
