@@ -36,8 +36,6 @@ The platform includes a machine learning model (Random Forest) to assist in pred
 ### Steam & Water System Status
 - Reservoir pressure
 - Steam output pressure
-- Boiler base temperature
-- Tank water level
 
 ### Steam Purity
 - TDS (0.6–0.7 ppm ideal range)
