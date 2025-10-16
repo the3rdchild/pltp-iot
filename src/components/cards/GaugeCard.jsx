@@ -16,7 +16,9 @@ export default function GaugeCard({
   warningHigh = 60,
   abnormalHigh = 80,
   linkTo = null,
-  linkText = null
+  linkText = null,
+  gaugeWidth = 140,
+  gaugeHeight = 100
 }) {
   const canvasRef = useRef(null);
 
@@ -176,7 +178,7 @@ export default function GaugeCard({
         justifyContent: 'center',
         px: 1
       }}>
-        <canvas ref={canvasRef} width={140} height={100} />
+        <canvas ref={canvasRef} width={gaugeWidth} height={gaugeHeight} />
       </Box>
 
       {/* Value | Unit | Status - Horizontal layout below gauge */}
@@ -226,5 +228,7 @@ GaugeCard.propTypes = {
   warningHigh: PropTypes.number,
   abnormalHigh: PropTypes.number,
   linkTo: PropTypes.string,
-  linkText: PropTypes.string
+  linkText: PropTypes.string,
+  gaugeWidth: PropTypes.number,
+  gaugeHeight: PropTypes.number
 };

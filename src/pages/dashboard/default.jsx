@@ -72,9 +72,85 @@ export default function DashboardDefault() {
 
   const predConfig = getPredictionConfig(riskPrediction);
 
-  // Card size - more compact
-  const cardWidth = 150;
-  const cardHeight = 220;
+  // ==================== DASHBOARD CONFIGURATION ====================
+
+  // Card Dimensions Configuration
+  const CARD_CONFIG = {
+    sensor: {
+      width: 200,
+      height: 220
+    },
+    power: {
+      width: 250,
+      height: 150
+    },
+    ai: {
+      width: 160,
+      height: 120
+    }
+  };
+
+  // Gauge Size Configuration (relative to card)
+  const GAUGE_CONFIG = {
+    width: 140,  // Canvas width
+    height: 100  // Canvas height
+  };
+
+  // Image Configuration
+  const IMAGE_CONFIG = {
+    width: '70%',      // Width relative to container
+    top: 0,            // Top position
+    left: '50%',       // Left position (centered)
+    opacity: 0.95      // Image opacity
+  };
+
+  // Card Positioning Configuration
+  // Desktop positions (percentage based)
+  const DESKTOP_POSITIONS = {
+    // Left column - Sensors
+    tds: { top: '0%', left: '2%' },
+    dryness: { top: '33%', left: '2%' },
+    ncg: { top: '66%', left: '2%' },
+
+    // Center-left column
+    pressure: { top: '33%', left: '20%' },
+    temperature: { top: '66%', left: '20%' },
+
+    // Center
+    ai: { top: '83%', left: '2%' },
+    flow: { top: '66%', left: '38%' },
+
+    // Center-right column - Power
+    activePower: { top: '33%', left: '60%' },
+    voltage: { top: '66%', left: '60%' },
+    current: { top: '83%', left: '60%' },
+
+    // Right column - Power
+    reactivePower: { top: '33%', left: '78%' },
+    stSpeed: { top: '66%', left: '78%' }
+  };
+
+  // Mobile positions (for responsive layout)
+  const MOBILE_POSITIONS = {
+    // Stack vertically on mobile
+    tds: { top: '0%', left: '5%' },
+    dryness: { top: '15%', left: '5%' },
+    ncg: { top: '30%', left: '5%' },
+    pressure: { top: '45%', left: '5%' },
+    temperature: { top: '60%', left: '5%' },
+    flow: { top: '75%', left: '5%' },
+    ai: { top: '90%', left: '5%' },
+    activePower: { top: '105%', left: '5%' },
+    reactivePower: { top: '120%', left: '5%' },
+    voltage: { top: '135%', left: '5%' },
+    stSpeed: { top: '150%', left: '5%' },
+    current: { top: '165%', left: '5%' }
+  };
+
+  // Use desktop positions by default (can be switched based on screen size)
+  const POSITIONS = DESKTOP_POSITIONS;
+
+  // ================================================================
 
   return (
     <Box sx={{ position: 'relative', width: '100%', pb: 4 }}>
@@ -156,7 +232,7 @@ export default function DashboardDefault() {
 
         {/* Column 1 - Left */}
         {/* TDS */}
-        <Box sx={{ position: 'absolute', top: '0%', left: '2%', width: cardWidth, zIndex: 2 }}>
+        <Box sx={{ position: 'absolute', ...POSITIONS.tds, width: CARD_CONFIG.sensor.width, zIndex: 2 }}>
           <GaugeCard
             label="TDS: Overall"
             value={tds}
@@ -169,11 +245,13 @@ export default function DashboardDefault() {
             abnormalHigh={9.5}
             linkTo="/tds"
             linkText="*Link ke Page Analytics"
+            gaugeWidth={GAUGE_CONFIG.width}
+            gaugeHeight={GAUGE_CONFIG.height}
           />
         </Box>
 
         {/* Dryness */}
-        <Box sx={{ position: 'absolute', top: '33%', left: '2%', width: cardWidth, zIndex: 2 }}>
+        <Box sx={{ position: 'absolute', ...POSITIONS.dryness, width: CARD_CONFIG.sensor.width, zIndex: 2 }}>
           <GaugeCard
             label="Dryness Fractions"
             value={dryness}
@@ -188,7 +266,7 @@ export default function DashboardDefault() {
         </Box>
 
         {/* NCG */}
-        <Box sx={{ position: 'absolute', top: '66%', left: '2%', width: cardWidth, zIndex: 2 }}>
+        <Box sx={{ position: 'absolute', ...POSITIONS.ncg, width: CARD_CONFIG.sensor.width, zIndex: 2 }}>
           <GaugeCard
             label="NCG"
             value={ncg}
@@ -204,7 +282,7 @@ export default function DashboardDefault() {
 
         {/* Column 2 - Center Left */}
         {/* Pressure */}
-        <Box sx={{ position: 'absolute', top: '33%', left: '20%', width: cardWidth, zIndex: 2 }}>
+        <Box sx={{ position: 'absolute', ...POSITIONS.pressure, width: CARD_CONFIG.sensor.width, zIndex: 2 }}>
           <GaugeCard
             label="Pressure"
             value={pressure}
@@ -219,7 +297,7 @@ export default function DashboardDefault() {
         </Box>
 
         {/* Temperature */}
-        <Box sx={{ position: 'absolute', top: '66%', left: '20%', width: cardWidth, zIndex: 2 }}>
+        <Box sx={{ position: 'absolute', ...POSITIONS.temperature, width: CARD_CONFIG.sensor.width, zIndex: 2 }}>
           <GaugeCard
             label="Temperature"
             value={temperature}
@@ -235,36 +313,48 @@ export default function DashboardDefault() {
 
         {/* Column 3 - Center */}
         {/* AI Prediction */}
-        <Box sx={{ position: 'absolute', top: '83%', left: '2%', width: cardWidth, zIndex: 2 }}>
-          <MainCard
-            contentSX={{
-              p: 1.5,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, fontSize: '0.75rem' }}>
-              Prediksi Resiko Turbin
-            </Typography>
-            <Typography
-              variant="h2"
-              sx={{
-                fontSize: '1.75rem',
-                fontWeight: 700,
-                color: predConfig.color,
-                textAlign: 'center',
-                lineHeight: 1
-              }}
-            >
-              {predConfig.label}
-            </Typography>
+        <Box sx={{ position: 'absolute', ...POSITIONS.ai, width: CARD_CONFIG.ai.width, zIndex: 2 }}>
+          <MainCard contentSX={{ p: 1.5 }}>
+            <Box>
+              {/* Label - Top Left */}
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{
+                  display: 'block',
+                  mb: 1,
+                  fontSize: '0.75rem'
+                }}
+              >
+                Prediksi Resiko Turbin
+              </Typography>
+
+              {/* Value - Large centered */}
+              <Box sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                minHeight: '60px'
+              }}>
+                <Typography
+                  variant="h1"
+                  sx={{
+                    fontSize: '2.5rem',
+                    fontWeight: 700,
+                    color: predConfig.color,
+                    textAlign: 'center',
+                    lineHeight: 1
+                  }}
+                >
+                  {predConfig.label}
+                </Typography>
+              </Box>
+            </Box>
           </MainCard>
         </Box>
 
         {/* Flow */}
-        <Box sx={{ position: 'absolute', top: '66%', left: '38%', width: cardWidth, zIndex: 2 }}>
+        <Box sx={{ position: 'absolute', ...POSITIONS.flow, width: CARD_CONFIG.sensor.width, zIndex: 2 }}>
           <GaugeCard
             label="Flow"
             value={flow}
@@ -280,7 +370,7 @@ export default function DashboardDefault() {
 
         {/* Column 4 - Center Right */}
         {/* Active Power */}
-        <Box sx={{ position: 'absolute', top: '33%', left: '60%', width: cardWidth, zIndex: 2 }}>
+        <Box sx={{ position: 'absolute', ...POSITIONS.activePower, width: CARD_CONFIG.power.width, zIndex: 2 }}>
           <MetricCard
             label="ACTIVE POWER"
             value={activePower}
@@ -290,7 +380,7 @@ export default function DashboardDefault() {
         </Box>
 
         {/* Voltage */}
-        <Box sx={{ position: 'absolute', top: '66%', left: '60%', width: cardWidth, zIndex: 2 }}>
+        <Box sx={{ position: 'absolute', ...POSITIONS.voltage, width: CARD_CONFIG.power.width, zIndex: 2 }}>
           <MetricCard
             label="Voltage"
             value={voltage}
@@ -300,7 +390,7 @@ export default function DashboardDefault() {
         </Box>
 
         {/* Current */}
-        <Box sx={{ position: 'absolute', top: '83%', left: '60%', width: cardWidth, zIndex: 2 }}>
+        <Box sx={{ position: 'absolute', ...POSITIONS.current, width: CARD_CONFIG.power.width, zIndex: 2 }}>
           <MetricCard
             label="Current"
             value={current}
@@ -311,7 +401,7 @@ export default function DashboardDefault() {
 
         {/* Column 5 - Right */}
         {/* Reactive Power */}
-        <Box sx={{ position: 'absolute', top: '33%', left: '78%', width: cardWidth, zIndex: 2 }}>
+        <Box sx={{ position: 'absolute', ...POSITIONS.reactivePower, width: CARD_CONFIG.power.width, zIndex: 2 }}>
           <MetricCard
             label="Reactive Power"
             value={reactivePower}
@@ -321,7 +411,7 @@ export default function DashboardDefault() {
         </Box>
 
         {/* ST Speed */}
-        <Box sx={{ position: 'absolute', top: '66%', left: '78%', width: cardWidth, zIndex: 2 }}>
+        <Box sx={{ position: 'absolute', ...POSITIONS.stSpeed, width: CARD_CONFIG.power.width, zIndex: 2 }}>
           <MetricCard
             label="S.T Speed"
             value={stSpeed}

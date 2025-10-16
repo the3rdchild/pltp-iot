@@ -21,38 +21,69 @@ export default function MetricCard({ label, value, unit, status }) {
 
   return (
     <MainCard contentSX={{ p: 1.5 }}>
-      <Box sx={{ textAlign: 'center' }}>
-        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, fontSize: '0.75rem' }}>
+      <Box>
+        {/* Label - Top Left */}
+        <Typography
+          variant="caption"
+          color="text.secondary"
+          sx={{
+            display: 'block',
+            mb: 1.5,
+            fontSize: '0.75rem',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}
+        >
           {label}
         </Typography>
-        <Typography
-          variant="h3"
-          sx={{
-            fontWeight: 700,
-            color: statusColor,
-            lineHeight: 1.2,
-            mb: 0.3,
-            fontSize: '1.75rem'
-          }}
-        >
-          {value}
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5, fontSize: '0.75rem' }}>
-          {unit}
-        </Typography>
-        <Box
-          sx={{
-            px: 1.5,
-            py: 0.3,
-            borderRadius: 1.5,
-            bgcolor: statusColor + '20',
-            color: statusColor,
-            fontSize: '0.65rem',
-            fontWeight: 600,
-            display: 'inline-block'
-          }}
-        >
-          {status}
+
+        {/* Value + Unit + Status - Horizontal layout */}
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1
+        }}>
+          {/* Value + Unit */}
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 700,
+                color: statusColor,
+                lineHeight: 1,
+                fontSize: '2rem'
+              }}
+            >
+              {value}
+            </Typography>
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{
+                fontSize: '0.875rem',
+                fontWeight: 500
+              }}
+            >
+              {unit}
+            </Typography>
+          </Box>
+
+          {/* Status Badge - Right side */}
+          <Box
+            sx={{
+              px: 2,
+              py: 0.5,
+              borderRadius: 2,
+              bgcolor: statusColor + '20',
+              color: statusColor,
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {status}
+          </Box>
         </Box>
       </Box>
     </MainCard>
