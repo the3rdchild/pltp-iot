@@ -2,7 +2,7 @@
 
 An interactive IoT-based SCADA system built to monitor **steam quality**, **steam purity**, and **water system status** in real time for **PLTP Kamojang**. This project is developed using **React + Vite**, visualized with **Material UI**, and deployed via **Firebase Hosting**.
 
-> 🚧 Project Status: Under Development
+> 🚧 Project Status: Under Development v0.2
 
 ---
 
@@ -36,8 +36,6 @@ The platform includes a machine learning model (Random Forest) to assist in pred
 ### Steam & Water System Status
 - Reservoir pressure
 - Steam output pressure
-- Boiler base temperature
-- Tank water level
 
 ### Steam Purity
 - TDS (0.6–0.7 ppm ideal range)
