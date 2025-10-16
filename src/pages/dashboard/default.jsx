@@ -78,7 +78,7 @@ export default function DashboardDefault() {
   const CARD_CONFIG = {
     sensor: {
       width: 200,
-      height: 220
+      height: 120
     },
     power: {
       width: 250,
