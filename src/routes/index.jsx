@@ -5,18 +5,19 @@ import DashboardLayout from 'layout/Dashboard';
 import DashboardDefault from 'pages/dashboard/default';
 import SamplePage from 'pages/extra-pages/documentationpage';
 import History from 'pages/component-overview/history';
+import HomePage from 'pages/home/home';
 
 const router = createBrowserRouter([
   {
     path: '/',
+    element: <HomePage />,
+  },
+  {
+    path: '/dashboard',
     element: <DashboardLayout />,
     children: [
       {
         index: true,
-        element: <Navigate to="/dashboard" replace />
-      },
-      {
-        path: 'dashboard',
         element: <DashboardDefault />
       },
       {
