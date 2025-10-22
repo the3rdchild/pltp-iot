@@ -112,7 +112,6 @@ dist
 # Firebase-related files and folders
 .firebase
 .idx
-.vite/deps
 .vscode
 .firebaserc
 firebase.json
