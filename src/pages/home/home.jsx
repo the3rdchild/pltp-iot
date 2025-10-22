@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const SteamMonitoring = () => {
   return (
@@ -61,9 +62,8 @@ const SteamMonitoring = () => {
                   <span className="metric-value">32.46 MW</span>
                 </div>
               </div>
-
-              <button className="btn-dashboard">Dashboard</button>
-            </div>
+              <Link to="/dashboard" className="btn-dashboard">Dashboard</Link>
+              </div>
 
             {/* PLTP Ulubelu Unit 3 */}
             <div className="dashboard-card">
