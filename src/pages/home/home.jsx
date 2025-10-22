@@ -1,6 +1,9 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import PertaSmart from './images/PertaSmart.svg';
+import kamojang from './images/kamojang.webp'
+import ulubelu from './images/ulubelu.jpg'
 
 const HomePage = () => {
     const styles = `
@@ -163,8 +166,8 @@ const HomePage = () => {
         <React.Fragment>
             <style>{styles}</style>
             <header>
-                <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Pertamina_logo.svg" alt="Pertamina Logo" className="logo" />
-                <h1>Pertasmart</h1>
+            <img src={PertaSmart} alt="Pertamina Logo" className="logo" />
+            <h1>Pertasmart</h1>
             </header>
 
             <div className="container">
@@ -172,7 +175,7 @@ const HomePage = () => {
                 <p className="subtitle">kerjasama Pertamina x Universitas Padjadjaran</p>
                 <div className="cards">
                     <div className="card">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/9/9b/PLTP_Kamojang_Unit_5.jpg" alt="PLTP Kamojang Unit 5" />
+                    <img src={kamojang} alt="Pertamina Logo" className="logo" />
                         <h3>PLTP Kamojang Unit 5</h3>
                         <div className="progress-bar-bg">
                             <div className="progress-bar-fill"></div>
@@ -196,7 +199,7 @@ const HomePage = () => {
                     </div>
 
                     <div className="card">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/4/4c/PLTP_Ulubelu.jpg" alt="PLTP Ulubelu" />
+                    <img src={ulubelu} alt="Pertamina Logo" className="logo" />
                         <h3>PLTP Ulubelu</h3>
                         <div className="progress-bar-bg">
                             <div className="progress-bar-fill" style={{ width: '97.5%' }}></div>
