@@ -100,11 +100,17 @@ export default function DashboardDefault() {
 
   // ================================================================
   // Dashboard configuration
-  // CARD_CONFIG: widths/heights are explicit px values for inner card sizing
   const CARD_CONFIG = {
     sensor: { width: 220, height: 190 },
     power: { width: 250, height: 100 },
     ai: { width: 250, height: 110 }
+  };
+
+  const TITLE_CONFIG = {
+    fontSize: '1rem',
+    fontWeight: 600,
+    color: '#334155',
+    justifyContent: 'left'
   };
 
   const IMAGE_CONFIG = {
@@ -191,8 +197,8 @@ export default function DashboardDefault() {
           <line x1="15%" y1="30%" x2="38%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="30%" y1="75%" x2="40%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="48%" y1="75%" x2="45%" y2="40%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          
-          <line x1="12%" y1="90%" x2="50%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
+
+                  <line x1="12%" y1="90%" x2="50%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="70%" y1="45%" x2="65%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="88%" y1="45%" x2="75%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="70%" y1="75%" x2="68%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
@@ -216,6 +222,8 @@ export default function DashboardDefault() {
               warningHigh={8}
               abnormalHigh={9.5}
               // size={CARD_CONFIG.sensor.height - 40}
+              linkTo="/tds-analytics"
+              titleConfig={TITLE_CONFIG}
             />
           </Box>
         </Positioned>
@@ -234,6 +242,7 @@ export default function DashboardDefault() {
               warningHigh={99.5}
               abnormalHigh={100}
               // size={CARD_CONFIG.sensor.height - 40}
+              titleConfig={TITLE_CONFIG}
             />
           </Box>
         </Positioned>
@@ -252,6 +261,7 @@ export default function DashboardDefault() {
               warningHigh={8}
               abnormalHigh={9.5}
               // size={CARD_CONFIG.sensor.height - 40}
+              titleConfig={TITLE_CONFIG}
             />
           </Box>
         </Positioned>
@@ -270,6 +280,7 @@ export default function DashboardDefault() {
               warningHigh={1556}
               abnormalHigh={1778}
               // size={CARD_CONFIG.sensor.height - 40}
+              titleConfig={TITLE_CONFIG}
             />
           </Box>
         </Positioned>
@@ -288,6 +299,7 @@ export default function DashboardDefault() {
               warningHigh={150}
               abnormalHigh={190}
               // size={CARD_CONFIG.sensor.height - 40}
+              titleConfig={TITLE_CONFIG}
             />
           </Box>
         </Positioned>
@@ -324,6 +336,7 @@ export default function DashboardDefault() {
               warningHigh={270}
               abnormalHigh={285}
               // size={CARD_CONFIG.sensor.height - 40}
+              titleConfig={TITLE_CONFIG}
             />
           </Box>
         </Positioned>

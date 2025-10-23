@@ -31,6 +31,7 @@
     "@fontsource/public-sans": "5.1.2",
     "@fontsource/roboto": "5.1.1",
     "@mui/base": "5.0.0-beta.69",
+    "@mui/icons-material": "^7.3.4",
     "@mui/lab": "6.0.0-beta.24",
     "@mui/material": "6.4.1",
     "@mui/system": "6.4.1",

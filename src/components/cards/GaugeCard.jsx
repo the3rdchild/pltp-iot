@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Link } from '@mui/material';
+import LaunchIcon from '@mui/icons-material/Launch';
 import MainCard from 'components/MainCard';
 import Chart from 'chart.js/auto';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -18,7 +19,9 @@ export default function GaugeCard({
   warningLow = 40,
   warningHigh = 60,
   abnormalHigh = 80,
-  size = 150 // controls canvas container height (px)
+  size = 150, // controls canvas container height (px)
+  linkTo,
+  titleConfig = {}
 }) {
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
@@ -29,7 +32,6 @@ export default function GaugeCard({
     return { label: 'Abnormal', color: '#ef4444', bg: 'rgba(239,68,68,0.08)' };
   };
 
-  // Needle plugin (adapted from your verified gauge.html)
   const gaugeNeedle = {
     id: 'gaugeNeedle',
     afterDatasetsDraw(chart) {
@@ -39,10 +41,8 @@ export default function GaugeCard({
       const needleValue = data.datasets[0].data[0] ?? value;
       const dataTotal = max - min || 1;
       const normalizedValue = needleValue - min;
-      // angle mapping: start at PI (left) + pct * PI -> semicircle top left->right
       const angle = Math.PI + (normalizedValue / dataTotal) * Math.PI;
 
-      // center and radius taken from dataset meta (dataset index 1 is the segments)
       const meta = chart.getDatasetMeta(1);
       if (!meta || !meta.data || !meta.data[0]) return;
       const cx = width / 2;
@@ -57,7 +57,6 @@ export default function GaugeCard({
       ctx.lineTo(0, 6);
       ctx.fillStyle = '#374151';
       ctx.fill();
-      // needle dot
       ctx.beginPath();
       ctx.arc(0, 0, 8, 0, Math.PI * 2, false);
       ctx.fillStyle = '#0f172a';
@@ -67,7 +66,6 @@ export default function GaugeCard({
     }
   };
 
-  // Threshold lines plugin
   const gaugeThresholdLines = {
     id: 'gaugeThresholdLines',
     afterDatasetsDraw(chart) {
@@ -96,14 +94,12 @@ export default function GaugeCard({
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // label
         const textX = cx + (radius + 18) * Math.cos(angle);
         const textY = cy + (radius + 18) * Math.sin(angle);
         ctx.font = 'bold 11px Inter, Roboto, sans-serif';
         ctx.fillStyle = '#374151';
         ctx.textBaseline = 'middle';
-        if (val < (min + max) / 2) ctx.textAlign = 'center';
-        else ctx.textAlign = 'center';
+        ctx.textAlign = val < (min + max) / 2 ? 'right' : 'left';
         ctx.fillText(String(val), textX, textY);
       });
 
@@ -112,13 +108,9 @@ export default function GaugeCard({
   };
 
   useEffect(() => {
-    // create chart (or recreate if exists)
     const ctx = canvasRef.current.getContext('2d');
-
-    // destroy previous
     if (chartRef.current) {
       chartRef.current.destroy();
-      chartRef.current = null;
     }
 
     const segData = [
@@ -129,60 +121,29 @@ export default function GaugeCard({
       Math.max(0, max - abnormalHigh)
     ];
 
-    const segColors = [
-      '#ef4444', // abnormal low
-      '#f59e0b', // warning low
-      '#22c55e', // normal
-      '#f59e0b', // warning high
-      '#ef4444'  // abnormal high
-    ];
+    const segColors = ['#ef4444', '#f59e0b', '#22c55e', '#f59e0b', '#ef4444'];
 
     chartRef.current = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: ['ab-low', 'warn-low', 'normal', 'warn-high', 'ab-high'],
         datasets: [
-          {
-            // invisible dataset used only for needle mapping
-            data: [value, max - value],
-            backgroundColor: ['transparent', 'transparent'],
-            borderWidth: 0
-          },
-          {
-            data: segData,
-            backgroundColor: segColors,
-            borderWidth: 0,
-            circumference: 180,
-            rotation: 270
-          }
+          { data: [value, max - value], backgroundColor: ['transparent', 'transparent'], borderWidth: 0 },
+          { data: segData, backgroundColor: segColors, borderWidth: 0, circumference: 180, rotation: 270 }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         cutout: '70%',
-        plugins: {
-          legend: { display: false },
-          tooltip: { enabled: false },
-          datalabels: { display: false }
-        }
+        plugins: { legend: { display: false }, tooltip: { enabled: false }, datalabels: { display: false } }
       },
       plugins: [gaugeNeedle, gaugeThresholdLines]
     });
 
-    // initial update
-    chartRef.current.update();
-
-    return () => {
-      if (chartRef.current) {
-        chartRef.current.destroy();
-        chartRef.current = null;
-      }
-    };
-    // recreate chart whenever core config changes (thresholds/min/max)
+    return () => chartRef.current?.destroy();
   }, [min, max, abnormalLow, warningLow, warningHigh, abnormalHigh, size]);
 
-  // update needle/value on prop change
   useEffect(() => {
     if (!chartRef.current) return;
     chartRef.current.data.datasets[0].data = [value, Math.max(0, max - value)];
@@ -191,20 +152,31 @@ export default function GaugeCard({
 
   const status = getStatus(value);
 
+  const defaultTitleStyles = {
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    color: 'text.secondary',
+    justifyContent: 'flex-start'
+  };
+
+  const titleStyles = { ...defaultTitleStyles, ...titleConfig };
+
   return (
     <MainCard sx={{ width: '100%', height: '100%' }} contentSX={{ p: 0, height: '100%' }}>
       <Box sx={{ p: 1 }}>
-        {/* top label row */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 0.5 }}>
-          <Typography variant="caption" color="text.secondary">{label}</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: titleStyles.justifyContent, mb: 0.5 }}>
+          <Link href={linkTo} target="_blank" rel="noopener noreferrer" underline={linkTo ? 'hover' : 'none'} color="inherit">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Typography sx={titleStyles}>{label}</Typography>
+              {linkTo && <LaunchIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />}
+            </Box>
+          </Link>
         </Box>
 
-        {/* canvas area */}
         <Box sx={{ position: 'relative', width: '100%', height: `${size}px`, display: 'flex', justifyContent: 'center', alignItems: 'center', px: 1 }}>
           <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
         </Box>
 
-        {/* digital readout */}
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: -6, mb: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
             <Typography sx={{ fontSize: '1.6rem', fontWeight: 700, color: status.color }}>{value}</Typography>
@@ -229,5 +201,7 @@ GaugeCard.propTypes = {
   warningLow: PropTypes.number,
   warningHigh: PropTypes.number,
   abnormalHigh: PropTypes.number,
-  size: PropTypes.number
+  size: PropTypes.number,
+  linkTo: PropTypes.string,
+  titleConfig: PropTypes.object
 };
