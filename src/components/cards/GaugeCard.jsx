@@ -52,13 +52,17 @@ export default function GaugeCard({
       ctx.translate(cx, cy);
       ctx.rotate(angle);
       ctx.beginPath();
+      //Arrow Edit
       ctx.moveTo(0, -6);
-      ctx.lineTo(radius - 15, 0);
-      ctx.lineTo(0, 6);
+      ctx.lineTo(radius - 3, 0);
+      ctx.lineTo(0, 5);
+
       ctx.fillStyle = '#374151';
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(0, 0, 8, 0, Math.PI * 2, false);
+
+      //Bola pangkal arrow
+      ctx.arc(0, 0, 7, 0, Math.PI * 2, false);
       ctx.fillStyle = '#0f172a';
       ctx.fill();
       ctx.translate(-cx, -cy);
