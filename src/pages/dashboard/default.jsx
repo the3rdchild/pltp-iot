@@ -104,7 +104,7 @@ export default function DashboardDefault() {
   const CARD_CONFIG = {
     sensor: { width: 250, height: 220 },
     power: { width: 220, height: 120 },
-    ai: { width: 180, height: 110 }
+    ai: { width: 250, height: 110 }
   };
 
   const IMAGE_CONFIG = {
@@ -115,18 +115,20 @@ export default function DashboardDefault() {
   };
 
   const DESKTOP_POSITIONS = {
-    tds: { top: '6%', left: '8%' },
-    dryness: { top: '36%', left: '8%' },
-    ncg: { top: '66%', left: '8%' },
-    pressure: { top: '36%', left: '28%' },
-    temperature: { top: '66%', left: '28%' },
-    ai: { top: '86%', left: '8%' },
-    flow: { top: '66%', left: '48%' },
-    activePower: { top: '36%', left: '68%' },
-    voltage: { top: '66%', left: '68%' },
-    current: { top: '86%', left: '68%' },
-    reactivePower: { top: '36%', left: '88%' },
-    stSpeed: { top: '66%', left: '88%' }
+    tds: { top: '12%', left: '4%' },
+    dryness: { top: '40%', left: '4%' },
+    ncg: { top: '68%', left: '4%' },
+    ai: { top: '90%', left: '4%' },
+
+    pressure: { top: '30%', left: '37%' },
+    temperature: { top: '58%', left: '37%' },
+    flow: { top: '86%', left: '37%' },
+
+    activePower: { top: '50%', left: '64%' },
+    voltage: { top: '66%', left: '64%' },
+    current: { top: '83%', left: '64%' },
+    reactivePower: { top: '50%', left: '85%' },
+    stSpeed: { top: '66%', left: '85%' }
   };
 
   const MOBILE_POSITIONS = {
@@ -181,12 +183,14 @@ export default function DashboardDefault() {
             zIndex: 1
           }}
         >
-          <line x1="12%" y1="15%" x2="28%" y2="8%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="12%" y1="45%" x2="25%" y2="20%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="12%" y1="75%" x2="23%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
+          <line x1="15%" y1="6.5%" x2="22%" y2="6.5%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
+          <line x1="15%" y1="6.5%" x2="15%" y2="90%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
+
+          <line x1="15%" y1="12%" x2="5%" y2="12%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="30%" y1="45%" x2="38%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="30%" y1="75%" x2="40%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="48%" y1="75%" x2="45%" y2="40%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
+          
           <line x1="12%" y1="90%" x2="50%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="70%" y1="45%" x2="65%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="88%" y1="45%" x2="75%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
