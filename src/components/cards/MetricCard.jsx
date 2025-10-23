@@ -20,7 +20,7 @@ export default function MetricCard({ label, value, unit, status }) {
   const statusColor = getStatusColor(status);
 
   return (
-    <MainCard contentSX={{ p: 1.5 }}>
+    <MainCard sx={{ width: '100%', height: '100%' }} contentSX={{ p: 1.5 }}>
       <Box>
         {/* Label - Top Left */}
         <Typography

@@ -102,21 +102,11 @@ export default function DashboardDefault() {
   // Dashboard configuration
   // CARD_CONFIG: widths/heights are explicit px values for inner card sizing
   const CARD_CONFIG = {
-    sensor: { width: 250, height: 120 },
+    sensor: { width: 250, height: 220 },
     power: { width: 220, height: 120 },
     ai: { width: 180, height: 110 }
   };
 
-  // GAUGE_CONFIG: fraction of card to allocate to gauge rendering
-  const GAUGE_CONFIG = {
-    outerPadding: 0,
-    topPadding: 20,
-    bottomPadding: -50,
-    barScale: 1,
-    baseMaxWidth: 220,
-    baseMaxHeight: 120
-  };
-  
   const IMAGE_CONFIG = {
     width: '70%',
     top: '0%',
@@ -156,39 +146,6 @@ export default function DashboardDefault() {
 
   const isMobile = windowWidth < 900;
   const POSITIONS = isMobile ? MOBILE_POSITIONS : DESKTOP_POSITIONS;
-
-  const getGaugeSizeForCard = (cardType = 'sensor') => {
-    const c = CARD_CONFIG[cardType] || CARD_CONFIG.sensor;
-  
-    // canvas should fill the card area (minus any card chrome); use full card width
-    // ensure px numbers
-    const canvasW = Math.min(c.width, GAUGE_CONFIG.baseMaxWidth);
-    const canvasH = Math.min(c.height, GAUGE_CONFIG.baseMaxHeight);
-  
-    // compute inner drawing box (where the arc and bar are centered)
-    const innerW = Math.max(0, canvasW - (GAUGE_CONFIG.outerPadding * 2));
-    const innerH = Math.max(0, canvasH - (GAUGE_CONFIG.topPadding + GAUGE_CONFIG.bottomPadding));
-  
-    // effective drawing radius/sizing uses barScale relative to inner box min dimension
-    const effectiveSize = Math.round(Math.min(innerW, innerH) * GAUGE_CONFIG.barScale);
-  
-    // return canvas size (DOM attrs) and drawing layout hints
-    return {
-      gaugeWidth: canvasW,
-      gaugeHeight: canvasH,
-      innerWidth: innerW,
-      innerHeight: innerH,
-      drawSize: effectiveSize,
-      outerPadding: GAUGE_CONFIG.outerPadding,
-      topPadding: GAUGE_CONFIG.topPadding,
-      bottomPadding: GAUGE_CONFIG.bottomPadding,
-      barScale: GAUGE_CONFIG.barScale
-    };
-  };
-
-  const sensorGauge = getGaugeSizeForCard('sensor');
-  const powerGauge = getGaugeSizeForCard('power');
-  const aiGauge = getGaugeSizeForCard('ai');
 
   // ================================================================
 
@@ -242,7 +199,7 @@ export default function DashboardDefault() {
 
         {/* TDS */}
         <Positioned pos={POSITIONS.tds}>
-          <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
             <GaugeCard
               label="TDS: Overall"
               value={tds}
@@ -253,22 +210,14 @@ export default function DashboardDefault() {
               warningLow={2}
               warningHigh={8}
               abnormalHigh={9.5}
-              linkTo="/tds"
-              linkText="*Link ke Page Analytics"
-              gaugeWidth={sensorGauge.gaugeWidth}
-              gaugeHeight={sensorGauge.gaugeHeight}
-              drawSize={sensorGauge.drawSize}
-              outerPadding={sensorGauge.outerPadding}
-              topPadding={sensorGauge.topPadding}
-              bottomPadding={sensorGauge.bottomPadding}
-              barScale={sensorGauge.barScale}
+              // size={CARD_CONFIG.sensor.height - 40}
             />
           </Box>
         </Positioned>
 
         {/* Dryness */}
         <Positioned pos={POSITIONS.dryness}>
-          <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
             <GaugeCard
               label="Dryness Fractions"
               value={dryness}
@@ -279,20 +228,14 @@ export default function DashboardDefault() {
               warningLow={90}
               warningHigh={99.5}
               abnormalHigh={100}
-              gaugeWidth={sensorGauge.gaugeWidth}
-              gaugeHeight={sensorGauge.gaugeHeight}
-              drawSize={sensorGauge.drawSize}
-              outerPadding={sensorGauge.outerPadding}
-              topPadding={sensorGauge.topPadding}
-              bottomPadding={sensorGauge.bottomPadding}
-              barScale={sensorGauge.barScale}
+              // size={CARD_CONFIG.sensor.height - 40}
             />
           </Box>
         </Positioned>
 
         {/* NCG */}
         <Positioned pos={POSITIONS.ncg}>
-          <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
             <GaugeCard
               label="NCG"
               value={ncg}
@@ -303,20 +246,14 @@ export default function DashboardDefault() {
               warningLow={2}
               warningHigh={8}
               abnormalHigh={9.5}
-              gaugeWidth={sensorGauge.gaugeWidth}
-              gaugeHeight={sensorGauge.gaugeHeight}
-              drawSize={sensorGauge.drawSize}
-              outerPadding={sensorGauge.outerPadding}
-              topPadding={sensorGauge.topPadding}
-              bottomPadding={sensorGauge.bottomPadding}
-              barScale={sensorGauge.barScale}
+              // size={CARD_CONFIG.sensor.height - 40}
             />
           </Box>
         </Positioned>
 
         {/* Pressure */}
         <Positioned pos={POSITIONS.pressure}>
-          <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
             <GaugeCard
               label="Pressure"
               value={pressure}
@@ -327,20 +264,14 @@ export default function DashboardDefault() {
               warningLow={444}
               warningHigh={1556}
               abnormalHigh={1778}
-              gaugeWidth={sensorGauge.gaugeWidth}
-              gaugeHeight={sensorGauge.gaugeHeight}
-              drawSize={sensorGauge.drawSize}
-              outerPadding={sensorGauge.outerPadding}
-              topPadding={sensorGauge.topPadding}
-              bottomPadding={sensorGauge.bottomPadding}
-              barScale={sensorGauge.barScale}
+              // size={CARD_CONFIG.sensor.height - 40}
             />
           </Box>
         </Positioned>
 
         {/* Temperature */}
         <Positioned pos={POSITIONS.temperature}>
-          <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
             <GaugeCard
               label="Temperature"
               value={temperature}
@@ -351,13 +282,7 @@ export default function DashboardDefault() {
               warningLow={135}
               warningHigh={150}
               abnormalHigh={190}
-              gaugeWidth={sensorGauge.gaugeWidth}
-              gaugeHeight={sensorGauge.gaugeHeight}
-              drawSize={sensorGauge.drawSize}
-              outerPadding={sensorGauge.outerPadding}
-              topPadding={sensorGauge.topPadding}
-              bottomPadding={sensorGauge.bottomPadding}
-              barScale={sensorGauge.barScale}
+              // size={CARD_CONFIG.sensor.height - 40}
             />
           </Box>
         </Positioned>
@@ -365,7 +290,7 @@ export default function DashboardDefault() {
         {/* AI Prediction */}
         <Positioned pos={POSITIONS.ai}>
           <Box sx={{ width: `${CARD_CONFIG.ai.width}px`, height: `${CARD_CONFIG.ai.height}px` }}>
-            <MainCard contentSX={{ p: 1.5 }}>
+            <MainCard sx={{ width: '100%', height: '100%' }} contentSX={{ p: 1.5 }}>
               <Box>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontSize: '0.75rem' }}>
                   Prediksi Resiko Turbin
@@ -382,7 +307,7 @@ export default function DashboardDefault() {
 
         {/* Flow */}
         <Positioned pos={POSITIONS.flow}>
-          <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
             <GaugeCard
               label="Flow"
               value={flow}
@@ -393,13 +318,7 @@ export default function DashboardDefault() {
               warningLow={220}
               warningHigh={270}
               abnormalHigh={285}
-              gaugeWidth={sensorGauge.gaugeWidth}
-              gaugeHeight={sensorGauge.gaugeHeight}
-              drawSize={sensorGauge.drawSize}
-              outerPadding={sensorGauge.outerPadding}
-              topPadding={sensorGauge.topPadding}
-              bottomPadding={sensorGauge.bottomPadding}
-              barScale={sensorGauge.barScale}
+              // size={CARD_CONFIG.sensor.height - 40}
             />
           </Box>
         </Positioned>

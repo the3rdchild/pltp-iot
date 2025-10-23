@@ -192,7 +192,7 @@ export default function GaugeCard({
   const status = getStatus(value);
 
   return (
-    <MainCard contentSX={{ p: 0, height: '100%' }}>
+    <MainCard sx={{ width: '100%', height: '100%' }} contentSX={{ p: 0, height: '100%' }}>
       <Box sx={{ p: 1 }}>
         {/* top label row */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 0.5 }}>
