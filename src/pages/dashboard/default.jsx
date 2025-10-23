@@ -112,17 +112,17 @@ export default function DashboardDefault() {
 
   const DESKTOP_POSITIONS = {
     tds: { top: '12%', left: '4%' },
-    dryness: { top: '40%', left: '4%' },
-    ncg: { top: '68%', left: '4%' },
-    ai: { top: '90%', left: '4%' },
+    dryness: { top: '35%', left: '4%' },
+    ncg: { top: '58%', left: '4%' },
+    ai: { top: '77%', left: '4%' },
     pressure: { top: '30%', left: '37%' },
-    temperature: { top: '58%', left: '37%' },
-    flow: { top: '86%', left: '37%' },
+    temperature: { top: '53.5%', left: '37%' },
+    flow: { top: '77%', left: '37%' },
     activePower: { top: '50%', left: '64%' },
-    voltage: { top: '66%', left: '64%' },
-    current: { top: '83%', left: '64%' },
+    voltage: { top: '64%', left: '64%' },
+    current: { top: '78%', left: '64%' },
     reactivePower: { top: '50%', left: '85%' },
-    stSpeed: { top: '66%', left: '85%' }
+    stSpeed: { top: '64%', left: '85%' }
   };
 
   const MOBILE_POSITIONS = {
@@ -175,7 +175,8 @@ export default function DashboardDefault() {
           <line x1="15%" y1="6.5%" x2="22%" y2="6.5%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="15%" y1="6.5%" x2="15%" y2="90%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="15%" y1="12%" x2="5%" y2="12%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="15%" y1="30%" x2="38%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
+
+          <line x1="15%" y1="35%" x2="5%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="30%" y1="75%" x2="40%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="48%" y1="75%" x2="45%" y2="40%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="12%" y1="90%" x2="50%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
@@ -209,12 +210,12 @@ export default function DashboardDefault() {
             <GaugeCard
               label="Dryness Fractions"
               value={dryness}
-              min={80}
-              max={100.1}
+              min={94}
+              max={100.5}
               unit="%"
-              abnormalLow={90}
-              warningLow={90}
-              warningHigh={99.5}
+              abnormalLow={95}
+              warningLow={97}
+              warningHigh={99.9}
               abnormalHigh={100}
               titleConfig={TITLE_CONFIG}
             />
