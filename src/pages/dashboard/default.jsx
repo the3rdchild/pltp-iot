@@ -102,7 +102,7 @@ export default function DashboardDefault() {
   // Dashboard configuration
   // CARD_CONFIG: widths/heights are explicit px values for inner card sizing
   const CARD_CONFIG = {
-    sensor: { width: 220, height: 120 },
+    sensor: { width: 250, height: 120 },
     power: { width: 220, height: 120 },
     ai: { width: 180, height: 110 }
   };
