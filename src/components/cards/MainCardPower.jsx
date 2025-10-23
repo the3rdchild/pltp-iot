@@ -72,7 +72,7 @@ export default function MainCardPower({ powerData }) {
     <MainCard title="GENERATOR & TURBINE" contentSX={{ p: 2 }}>
       <Grid container spacing={2}>
         <Grid size={{ xs: 6, sm: 6 }}>
-          <PowerMetric label="ACTIVE POWER" {...activePower} />
+          <PowerMetric label="Active Power" {...activePower} />
         </Grid>
         <Grid size={{ xs: 6, sm: 6 }}>
           <PowerMetric label="Reactive Power" {...reactivePower} />

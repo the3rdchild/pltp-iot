@@ -1,6 +1,6 @@
 // material-ui
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
+import { Typography, Box, Link } from '@mui/material';
+import LaunchIcon from '@mui/icons-material/Launch';
 
 //simulasi
 import { useState, useEffect } from 'react';
@@ -16,8 +16,6 @@ import MainCard from 'components/MainCard';
 import mainImage from './image/main.png';
 
 function Positioned({ pos, children, center = true }) {
-  // pos: { top: '33%', left: '20%' } (strings allowed)
-  // center: if true, interpret pos as center anchor (apply translate -50%)
   return (
     <Box
       sx={{
@@ -40,20 +38,16 @@ export default function DashboardDefault() {
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
 
   useEffect(() => {
-    // Simulate data fetching
     const interval = setInterval(() => {
       const data = generateAnalyticData();
       setAnalyticData(data);
-
       const risk = getRiskPrediction();
       setRiskPrediction(risk);
     }, 3000);
 
-    // Initial data
     setAnalyticData(generateAnalyticData());
     setRiskPrediction(getRiskPrediction());
 
-    // resize listener for responsiveness
     const onResize = () => setWindowWidth(window.innerWidth);
     window.addEventListener('resize', onResize);
 
@@ -63,14 +57,12 @@ export default function DashboardDefault() {
     };
   }, []);
 
-  // Default values (fallback)
   const pressure = analyticData?.pressure ?? 1437;
   const temperature = analyticData?.temperature ?? 131;
   const flow = analyticData?.flow ?? 298;
   const tds = analyticData?.tds ?? 6.8;
   const dryness = analyticData?.dryness ?? 99.0;
   const ncg = analyticData?.ncg ?? 8.3;
-
   const activePower = analyticData?.activePower ?? 25.46;
   const reactivePower = analyticData?.reactivePower ?? 4421;
   const voltage = analyticData?.voltage ?? 13.86;
@@ -98,10 +90,8 @@ export default function DashboardDefault() {
 
   const predConfig = getPredictionConfig(riskPrediction);
 
-  // ================================================================
-  // Dashboard configuration
   const CARD_CONFIG = {
-    sensor: { width: 220, height: 190 },
+    sensor: { width: 247, height: 190 },
     power: { width: 250, height: 100 },
     ai: { width: 250, height: 110 }
   };
@@ -125,11 +115,9 @@ export default function DashboardDefault() {
     dryness: { top: '40%', left: '4%' },
     ncg: { top: '68%', left: '4%' },
     ai: { top: '90%', left: '4%' },
-
     pressure: { top: '30%', left: '37%' },
     temperature: { top: '58%', left: '37%' },
     flow: { top: '86%', left: '37%' },
-
     activePower: { top: '50%', left: '64%' },
     voltage: { top: '66%', left: '64%' },
     current: { top: '83%', left: '64%' },
@@ -155,12 +143,9 @@ export default function DashboardDefault() {
   const isMobile = windowWidth < 900;
   const POSITIONS = isMobile ? MOBILE_POSITIONS : DESKTOP_POSITIONS;
 
-  // ================================================================
-
   return (
     <Box sx={{ position: 'relative', width: '100%', pb: 4 }}>
       <Box sx={{ position: 'relative', width: '100%', maxWidth: '1400px', mx: 'auto', minHeight: '900px' }}>
-        {/* Background Image */}
         <Box
           component="img"
           src={mainImage}
@@ -176,8 +161,6 @@ export default function DashboardDefault() {
             opacity: IMAGE_CONFIG.opacity
           }}
         />
-
-        {/* SVG connector lines */}
         <svg
           style={{
             position: 'absolute',
@@ -191,14 +174,11 @@ export default function DashboardDefault() {
         >
           <line x1="15%" y1="6.5%" x2="22%" y2="6.5%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="15%" y1="6.5%" x2="15%" y2="90%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-
           <line x1="15%" y1="12%" x2="5%" y2="12%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-
           <line x1="15%" y1="30%" x2="38%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="30%" y1="75%" x2="40%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="48%" y1="75%" x2="45%" y2="40%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-
-                  <line x1="12%" y1="90%" x2="50%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
+          <line x1="12%" y1="90%" x2="50%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="70%" y1="45%" x2="65%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="88%" y1="45%" x2="75%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="70%" y1="75%" x2="68%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
@@ -206,9 +186,6 @@ export default function DashboardDefault() {
           <line x1="70%" y1="90%" x2="70%" y2="40%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
         </svg>
 
-        {/* Cards using Positioned + inner size-box */}
-
-        {/* TDS */}
         <Positioned pos={POSITIONS.tds}>
           <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
             <GaugeCard
@@ -221,14 +198,12 @@ export default function DashboardDefault() {
               warningLow={2}
               warningHigh={8}
               abnormalHigh={9.5}
-              // size={CARD_CONFIG.sensor.height - 40}
               linkTo="/tds-analytics"
               titleConfig={TITLE_CONFIG}
             />
           </Box>
         </Positioned>
 
-        {/* Dryness */}
         <Positioned pos={POSITIONS.dryness}>
           <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
             <GaugeCard
@@ -241,13 +216,11 @@ export default function DashboardDefault() {
               warningLow={90}
               warningHigh={99.5}
               abnormalHigh={100}
-              // size={CARD_CONFIG.sensor.height - 40}
               titleConfig={TITLE_CONFIG}
             />
           </Box>
         </Positioned>
 
-        {/* NCG */}
         <Positioned pos={POSITIONS.ncg}>
           <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
             <GaugeCard
@@ -260,13 +233,11 @@ export default function DashboardDefault() {
               warningLow={2}
               warningHigh={8}
               abnormalHigh={9.5}
-              // size={CARD_CONFIG.sensor.height - 40}
               titleConfig={TITLE_CONFIG}
             />
           </Box>
         </Positioned>
 
-        {/* Pressure */}
         <Positioned pos={POSITIONS.pressure}>
           <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
             <GaugeCard
@@ -279,13 +250,11 @@ export default function DashboardDefault() {
               warningLow={444}
               warningHigh={1556}
               abnormalHigh={1778}
-              // size={CARD_CONFIG.sensor.height - 40}
               titleConfig={TITLE_CONFIG}
             />
           </Box>
         </Positioned>
 
-        {/* Temperature */}
         <Positioned pos={POSITIONS.temperature}>
           <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
             <GaugeCard
@@ -298,20 +267,21 @@ export default function DashboardDefault() {
               warningLow={135}
               warningHigh={150}
               abnormalHigh={190}
-              // size={CARD_CONFIG.sensor.height - 40}
               titleConfig={TITLE_CONFIG}
             />
           </Box>
         </Positioned>
 
-        {/* AI Prediction */}
         <Positioned pos={POSITIONS.ai}>
           <Box sx={{ width: `${CARD_CONFIG.ai.width}px`, height: `${CARD_CONFIG.ai.height}px` }}>
             <MainCard sx={{ width: '100%', height: '100%' }} contentSX={{ p: 1.5 }}>
               <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1, fontSize: '0.75rem' }}>
-                  Prediksi Resiko Turbin
-                </Typography>
+                <Link href="#" target="_blank" rel="noopener noreferrer" underline="hover" color="inherit">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography sx={TITLE_CONFIG}>Prediksi Resiko Turbin</Typography>
+                    <LaunchIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />
+                  </Box>
+                </Link>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60px' }}>
                   <Typography variant="h1" sx={{ fontSize: '2.5rem', fontWeight: 700, color: predConfig.color, textAlign: 'center', lineHeight: 1 }}>
                     {predConfig.label}
@@ -322,7 +292,6 @@ export default function DashboardDefault() {
           </Box>
         </Positioned>
 
-        {/* Flow */}
         <Positioned pos={POSITIONS.flow}>
           <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
             <GaugeCard
@@ -335,49 +304,42 @@ export default function DashboardDefault() {
               warningLow={220}
               warningHigh={270}
               abnormalHigh={285}
-              // size={CARD_CONFIG.sensor.height - 40}
               titleConfig={TITLE_CONFIG}
             />
           </Box>
         </Positioned>
 
-        {/* Active Power */}
         <Positioned pos={POSITIONS.activePower}>
           <Box sx={{ width: `${CARD_CONFIG.power.width}px`, height: `${CARD_CONFIG.power.height}px` }}>
-            <MetricCard label="ACTIVE POWER" value={activePower} unit="MW" status={getPowerStatus(activePower, 30, 50)} />
+            <MetricCard label="Active Power" value={activePower} unit="MW" status={getPowerStatus(activePower, 30, 50)} linkTo="#" titleConfig={TITLE_CONFIG} />
           </Box>
         </Positioned>
 
-        {/* Voltage */}
         <Positioned pos={POSITIONS.voltage}>
           <Box sx={{ width: `${CARD_CONFIG.power.width}px`, height: `${CARD_CONFIG.power.height}px` }}>
-            <MetricCard label="Voltage" value={voltage} unit="kV" status="Normal" />
+            <MetricCard label="Voltage" value={voltage} unit="kV" status="Normal" linkTo="#" titleConfig={TITLE_CONFIG} />
           </Box>
         </Positioned>
 
-        {/* Current */}
         <Positioned pos={POSITIONS.current}>
           <Box sx={{ width: `${CARD_CONFIG.power.width}px`, height: `${CARD_CONFIG.power.height}px` }}>
-            <MetricCard label="Current" value={current} unit="A" status={getPowerStatus(current, 1000, 1500)} />
+            <MetricCard label="Current" value={current} unit="A" status={getPowerStatus(current, 1000, 1500)} linkTo="#" titleConfig={TITLE_CONFIG} />
           </Box>
         </Positioned>
 
-        {/* Reactive Power */}
         <Positioned pos={POSITIONS.reactivePower}>
           <Box sx={{ width: `${CARD_CONFIG.power.width}px`, height: `${CARD_CONFIG.power.height}px` }}>
-            <MetricCard label="Reactive Power" value={reactivePower} unit="MVAR" status={getPowerStatus(reactivePower, 2000, 4000)} />
+            <MetricCard label="Reactive Power" value={reactivePower} unit="MVAR" status={getPowerStatus(reactivePower, 2000, 4000)} linkTo="#" titleConfig={TITLE_CONFIG} />
           </Box>
         </Positioned>
 
-        {/* ST Speed */}
         <Positioned pos={POSITIONS.stSpeed}>
           <Box sx={{ width: `${CARD_CONFIG.power.width}px`, height: `${CARD_CONFIG.power.height}px` }}>
-            <MetricCard label="S.T Speed" value={stSpeed} unit="rpm" status={getPowerStatus(stSpeed, 3000, 3500)} />
+            <MetricCard label="S.T Speed" value={stSpeed} unit="rpm" status={getPowerStatus(stSpeed, 3000, 3500)} linkTo="#" titleConfig={TITLE_CONFIG} />
           </Box>
         </Positioned>
       </Box>
 
-      {/* Footer */}
       <Box sx={{ textAlign: 'center', py: 3, mt: 4 }}>
         <Typography variant="body2" color="text.secondary">
           2025 <strong>SMART</strong> (System Monitoring Analysis Real Time). All Right Reserved.

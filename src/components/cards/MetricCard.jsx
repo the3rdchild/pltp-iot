@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Link } from '@mui/material';
+import LaunchIcon from '@mui/icons-material/Launch';
 import MainCard from 'components/MainCard';
 
 const getStatusColor = (status) => {
@@ -16,34 +17,34 @@ const getStatusColor = (status) => {
   }
 };
 
-export default function MetricCard({ label, value, unit, status }) {
+export default function MetricCard({ label, value, unit, status, linkTo, titleConfig = {} }) {
   const statusColor = getStatusColor(status);
+
+  const defaultTitleStyles = {
+    fontSize: '0.75rem',
+    textTransform: 'capitalize',
+    letterSpacing: '0.5px',
+    color: 'text.secondary',
+    justifyContent: 'flex-start'
+  };
+
+  const titleStyles = { ...defaultTitleStyles, ...titleConfig };
 
   return (
     <MainCard sx={{ width: '100%', height: '100%' }} contentSX={{ p: 1.5 }}>
       <Box>
-        {/* Label - Top Left */}
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{
-            display: 'block',
-            mb: 1.5,
-            fontSize: '0.75rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.5px'
-          }}
-        >
-          {label}
-        </Typography>
+        {/* Label - Top */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: titleStyles.justifyContent, mb: 1.5 }}>
+          <Link href={linkTo} target="_blank" rel="noopener noreferrer" underline={linkTo ? 'hover' : 'none'} color="inherit">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Typography sx={titleStyles}>{label}</Typography>
+              {linkTo && <LaunchIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />}
+            </Box>
+          </Link>
+        </Box>
 
         {/* Value + Unit + Status - Horizontal layout */}
-        <Box sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 1
-        }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
           {/* Value + Unit */}
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
             <Typography
@@ -94,5 +95,7 @@ MetricCard.propTypes = {
   label: PropTypes.string,
   value: PropTypes.number,
   unit: PropTypes.string,
-  status: PropTypes.string
+  status: PropTypes.string,
+  linkTo: PropTypes.string,
+  titleConfig: PropTypes.object
 };
