@@ -102,8 +102,8 @@ export default function DashboardDefault() {
   // Dashboard configuration
   // CARD_CONFIG: widths/heights are explicit px values for inner card sizing
   const CARD_CONFIG = {
-    sensor: { width: 250, height: 220 },
-    power: { width: 220, height: 120 },
+    sensor: { width: 220, height: 190 },
+    power: { width: 250, height: 100 },
     ai: { width: 250, height: 110 }
   };
 
@@ -187,7 +187,8 @@ export default function DashboardDefault() {
           <line x1="15%" y1="6.5%" x2="15%" y2="90%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
 
           <line x1="15%" y1="12%" x2="5%" y2="12%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="30%" y1="45%" x2="38%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
+
+          <line x1="15%" y1="30%" x2="38%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="30%" y1="75%" x2="40%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           <line x1="48%" y1="75%" x2="45%" y2="40%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
           

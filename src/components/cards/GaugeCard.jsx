@@ -102,8 +102,8 @@ export default function GaugeCard({
         ctx.font = 'bold 11px Inter, Roboto, sans-serif';
         ctx.fillStyle = '#374151';
         ctx.textBaseline = 'middle';
-        if (val < (min + max) / 2) ctx.textAlign = 'right';
-        else ctx.textAlign = 'left';
+        if (val < (min + max) / 2) ctx.textAlign = 'center';
+        else ctx.textAlign = 'center';
         ctx.fillText(String(val), textX, textY);
       });
 
@@ -205,10 +205,12 @@ export default function GaugeCard({
         </Box>
 
         {/* digital readout */}
-        <Box sx={{ textAlign: 'center', mt: -6, mb: 1 }}>
-          <Typography sx={{ fontSize: '1.6rem', fontWeight: 700, color: status.color }}>{value}</Typography>
-          <Typography variant="caption" color="text.secondary">{unit}</Typography>
-          <Box sx={{ mt: 1, display: 'inline-block', px: 1.25, py: 0.4, borderRadius: 2, bgcolor: status.bg, color: status.color, fontWeight: 600 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: -6, mb: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+            <Typography sx={{ fontSize: '1.6rem', fontWeight: 700, color: status.color }}>{value}</Typography>
+            <Typography variant="caption" color="text.secondary">{unit}</Typography>
+          </Box>
+          <Box sx={{ px: 1.25, py: 0.4, borderRadius: 2, bgcolor: status.bg, color: status.color, fontWeight: 600 }}>
             {status.label}
           </Box>
         </Box>
