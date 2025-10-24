@@ -348,12 +348,6 @@ export default function DashboardDefault() {
           </Box>
         </Positioned>
       </Box>
-
-      <Box sx={{ textAlign: 'center', py: 3, mt: 4 }}>
-        <Typography variant="body2" color="text.secondary">
-          2025 <strong>SMART</strong> (System Monitoring Analysis Real Time). All Right Reserved.
-        </Typography>
-      </Box>
     </Box>
   );
 }
