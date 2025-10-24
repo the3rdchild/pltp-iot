@@ -1,7 +1,7 @@
 // material-ui
 import { useTheme } from '@mui/material/styles';
-import logoIcon from 'assets/images/pertamina1x1.svg'; // adjust if needed
-import logoIconDark from 'assets/images/pertamina1x1.svg'; // use a different dark version if available
+import logoIcon from 'assets/images/PertaSmart1x1.svg'; // adjust if needed
+import logoIconDark from 'assets/images/PertaSmart1x1.svg'; // use a different dark version if available
 
 /**
  * if you want to use image instead of <svg> uncomment following.

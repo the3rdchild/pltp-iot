@@ -104,13 +104,6 @@ export default function DashboardDefault() {
     justifyContent: 'left'
   };
 
-  const IMAGE_CONFIG = {
-    width: '70%',
-    top: '0%',
-    left: '50%',
-    opacity: 0.95
-  };
-
   const DESKTOP_POSITIONS = {
     tds: { top: '12%', left: '4%' },
     dryness: { top: '35%', left: '4%' },
@@ -143,6 +136,13 @@ export default function DashboardDefault() {
 
   const isMobile = windowWidth < 900;
   const POSITIONS = isMobile ? MOBILE_POSITIONS : DESKTOP_POSITIONS;
+
+  const IMAGE_CONFIG = {
+    width: isMobile ? '90%' : '980px',
+    top: '0%',
+    left: '50%',
+    opacity: 0.95
+  };
 
   return (
     <Box sx={{ position: 'relative', width: '100%', pb: 4 }}>
@@ -350,7 +350,7 @@ export default function DashboardDefault() {
         </Positioned>
       </Box>
 
-      <Footer sx={{ mt: -4 }} />
+      <Footer sx={{ mt: 0 }} />
     </Box>
   );
 }

@@ -1,8 +1,8 @@
 // material-ui
 import { useTheme } from '@mui/material/styles';
 import { Typography } from '@mui/material';
-import logoIcon from 'assets/images/pertamina4x1.svg'; // adjust if needed
-import logoIconDark from 'assets/images/pertamina4x1.svg';
+import logoIcon from 'assets/images/Pertasmart4x1.svg'; // adjust if needed
+import logoIconDark from 'assets/images/Pertasmart4x1.svg';
 
 
 // ==============================|| LOGO SVG ||============================== //
