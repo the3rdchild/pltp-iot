@@ -172,19 +172,27 @@ export default function DashboardDefault() {
             zIndex: 1
           }}
         >
-          <line x1="15%" y1="6.5%" x2="22%" y2="6.5%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="15%" y1="6.5%" x2="15%" y2="90%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="15%" y1="12%" x2="5%" y2="12%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
+          <line x1="15%" y1="6.7%" x2="22%" y2="6.7%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="15%" y1="6.5%" x2="15%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
 
-          <line x1="15%" y1="35%" x2="5%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="30%" y1="75%" x2="40%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="48%" y1="75%" x2="45%" y2="40%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="12%" y1="90%" x2="50%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="70%" y1="45%" x2="65%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="88%" y1="45%" x2="75%" y2="25%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="70%" y1="75%" x2="68%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="88%" y1="75%" x2="72%" y2="35%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-          <line x1="70%" y1="90%" x2="70%" y2="40%" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
+          <line x1="15%" y1="12%" x2="5%" y2="12%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="15%" y1="35%" x2="5%" y2="35%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="15%" y1="58%" x2="5%" y2="58%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="15%" y1="78%" x2="5%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+
+          <line x1="49%" y1="6.5%" x2="49%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="49%" y1="31%" x2="45%" y2="31%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="49%" y1="55%" x2="45%" y2="55%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="49%" y1="78%" x2="45%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+
+          <line x1="60%" y1="30.5%" x2="60%" y2="38%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="60%" y1="38%" x2="74.5%" y2="38%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="74.5%" y1="38%" x2="74.5%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+
+          <line x1="70%" y1="50%" x2="78%" y2="50%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="70%" y1="64%" x2="78%" y2="64%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="74.4%" y1="78%" x2="70%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+
         </svg>
 
         <Positioned pos={POSITIONS.tds}>
