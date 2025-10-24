@@ -11,6 +11,7 @@ import { getRiskPrediction } from 'data/riskprediction';
 import GaugeCard from 'components/cards/GaugeCard';
 import MetricCard from 'components/cards/MetricCard';
 import MainCard from 'components/MainCard';
+import Footer from 'components/layout/Footer';
 
 // Image import
 import mainImage from './image/main.png';
@@ -348,6 +349,8 @@ export default function DashboardDefault() {
           </Box>
         </Positioned>
       </Box>
+
+      <Footer sx={{ mt: -4 }} />
     </Box>
   );
 }
