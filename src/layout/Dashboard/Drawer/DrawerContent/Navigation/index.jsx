@@ -1,14 +1,20 @@
 // material-ui
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
+import { Box, Typography } from '@mui/material';
 
 // project import
 import NavGroup from './NavGroup';
 import menuItem from 'menu-items';
+import NavItem from './NavItem';
+
+import { PoweroffOutlined } from '@ant-design/icons';
+
+const icons = {
+  PoweroffOutlined
+};
 
 // ==============================|| DRAWER CONTENT - NAVIGATION ||============================== //
 
-export default function Navigation() {
+const Navigation = () => {
   const navGroups = menuItem.items.map((item) => {
     switch (item.type) {
       case 'group':
@@ -22,5 +28,21 @@ export default function Navigation() {
     }
   });
 
-  return <Box sx={{ pt: 2 }}>{navGroups}</Box>;
-}
+  return (
+    <Box sx={{ pt: 2 }}>
+      {navGroups}
+      {/* <NavItem
+        item={{
+          id: 'logout',
+          title: 'Logout',
+          type: 'item',
+          url: '/logout',
+          icon: icons.PoweroffOutlined
+        }}
+        level={1}
+      /> */}
+    </Box>
+  );
+};
+
+export default Navigation;

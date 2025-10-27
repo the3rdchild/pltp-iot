@@ -10,7 +10,7 @@ const icons = {
 
 const dashboard = {
   id: 'group-dashboard',
-  title: 'Navigation',
+  title: 'Navigation', // This title will appear above the dashboard item
   type: 'group',
   children: [
     {
