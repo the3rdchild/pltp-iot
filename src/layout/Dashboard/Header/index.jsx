@@ -4,6 +4,8 @@ import { useMemo } from 'react';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
 
 // project imports
 import AppBarStyled from './AppBarStyled';
@@ -46,6 +48,11 @@ export default function Header() {
       >
         {!drawerOpen ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
       </IconButton>
+      <Box sx={{ ml: 2 }}>
+        <Typography variant="h5" component="div" sx={{ fontWeight: 'bold' }}>
+          Monitoring Unit 5 Kamojang
+        </Typography>
+      </Box>
       {headerContent}
     </Toolbar>
   );

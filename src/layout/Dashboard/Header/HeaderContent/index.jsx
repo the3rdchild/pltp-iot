@@ -17,7 +17,7 @@ export default function HeaderContent() {
     <>
       <Box sx={{ flexGrow: 1 }} /> {/* Pushes content to the right */}
 
-      <IconButton
+      {/* <IconButton
         component={Link}
         href="https://github.com/the3rdchild/pltp-iot.git"
         target="_blank"
@@ -27,7 +27,7 @@ export default function HeaderContent() {
         sx={{ color: 'text.primary', bgcolor: 'grey.100' }}
       >
         <GithubOutlined />
-      </IconButton>
+      </IconButton> */}
 
       <Notification />
 

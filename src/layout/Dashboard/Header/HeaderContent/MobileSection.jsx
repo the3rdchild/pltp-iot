@@ -50,7 +50,7 @@ export default function MobileSection() {
   return (
     <>
       <Box sx={{ flexShrink: 0, ml: 0.75 }}>
-        <IconButton
+        {/* <IconButton
           sx={(theme) => ({
             color: 'text.primary',
             bgcolor: open ? 'grey.300' : 'grey.100',
@@ -65,7 +65,7 @@ export default function MobileSection() {
           variant="light"
         >
           <MoreOutlined />
-        </IconButton>
+        </IconButton> */}
       </Box>
 
       <ProfileSettingsPopper 
