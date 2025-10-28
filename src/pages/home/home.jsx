@@ -1,5 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import pertaminaLogo from '../../assets/images/pertamina1x1.svg';
+import unpadLogo from '../../assets/images/Logo-Unpad.svg';
+import Footer from 'components/layout/Footer';
 
 const SteamMonitoring = () => {
   return (
@@ -8,7 +11,7 @@ const SteamMonitoring = () => {
       <section className="hero">
         <div className="hero-content">
           <div className="logo-left">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/0/04/Pertamina_logo.svg" alt="Pertamina Logo" />
+            <img src={pertaminaLogo} alt="Pertamina Logo" />
           </div>
           <div className="hero-text">
             <h1 className="hero-title">
@@ -21,7 +24,7 @@ const SteamMonitoring = () => {
             </p>
           </div>
           <div className="logo-right">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Universitas_Padjadjaran_logo.svg/240px-Universitas_Padjadjaran_logo.svg.png" alt="Unpad Logo" />
+            <img src={unpadLogo} alt="Unpad Logo" />
           </div>
         </div>
       </section>
@@ -29,8 +32,6 @@ const SteamMonitoring = () => {
       {/* Dashboard Cards - Revised Version */}
       <section className="dashboard-section">
         <div className="container">
-          <h2 className="dashboard-title">STEAM MONITORING ANALISIS REAL TIME (SMART)</h2>
-          
           <div className="dashboard-grid">
             {/* PLTP Kamojang Unit 5 */}
             <div className="dashboard-card">
@@ -41,11 +42,24 @@ const SteamMonitoring = () => {
               />
               <h3 className="card-title">PLTP Kamojang Unit 5</h3>
               
-              <div className="progress-bar-container">
+              <div className="quality-metrics-container">
+                <div className="quality-metrics-grid">
+                  <div className="quality-metric-item">
+                    <span className="quality-metric-label">Dryness Fraction</span>
+                    <span className="quality-metric-value">98.23%</span>
+                  </div>
+                  <div className="quality-metric-item">
+                    <span className="quality-metric-label">Total Dissolve Solid (TDS)</span>
+                    <span className="quality-metric-value">0.021%</span>
+                  </div>
+                  <div className="quality-metric-item">
+                    <span className="quality-metric-label">Non Condensed Gas (NCG)</span>
+                    <span className="quality-metric-value">0.012%</span>
+                  </div>
+                </div>
                 <div className="progress-bar">
                   <div className="progress-fill" style={{ width: '98.23%' }}></div>
                 </div>
-                <span className="steam-quality">Steam Quality 98.23%</span>
               </div>
 
               <div className="metrics-row">
@@ -62,7 +76,7 @@ const SteamMonitoring = () => {
                   <span className="metric-value">32.46 MW</span>
                 </div>
               </div>
-              <Link to="/dashboard" className="btn-dashboard">Dashboard</Link>
+              <Link to="" className="btn-dashboard btn-dashboard-link">Dashboard</Link>
               </div>
 
             {/* PLTP Ulubelu Unit 3 */}
@@ -74,11 +88,24 @@ const SteamMonitoring = () => {
               />
               <h3 className="card-title">PLTP Ulubelu Unit 3</h3>
               
-              <div className="progress-bar-container">
+              <div className="quality-metrics-container">
+                <div className="quality-metrics-grid">
+                  <div className="quality-metric-item">
+                    <span className="quality-metric-label">Dryness Fraction</span>
+                    <span className="quality-metric-value">98.23%</span>
+                  </div>
+                  <div className="quality-metric-item">
+                    <span className="quality-metric-label">Total Dissolve Solid (TDS)</span>
+                    <span className="quality-metric-value">0.021%</span>
+                  </div>
+                  <div className="quality-metric-item">
+                    <span className="quality-metric-label">Non Condensed Gas (NCG)</span>
+                    <span className="quality-metric-value">0.012%</span>
+                  </div>
+                </div>
                 <div className="progress-bar">
                   <div className="progress-fill" style={{ width: '98.23%' }}></div>
                 </div>
-                <span className="steam-quality">Steam Quality 98.23%</span>
               </div>
 
               <div className="metrics-row">
@@ -111,7 +138,6 @@ const SteamMonitoring = () => {
             className="info-image" 
           />
           <h2 className="section-title">Pembangkit Listrik Tenaga Panas Bumi (PLTP)</h2>
-          <h3 className="section-subtitle">Cara Kerja Pembangkit</h3>
 
           <div className="steps">
             <div className="step">
@@ -299,12 +325,7 @@ const SteamMonitoring = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="footer">
-        <div className="container">
-          <p>&copy; 2024 Steam Quality Monitoring System - PT. Pertamina & Universitas Padjadjaran</p>
-        </div>
-      </footer>
+      <Footer sx={{ mt: 0 }} />
 
       <style jsx>{`
         .steam-monitoring {
@@ -327,12 +348,12 @@ const SteamMonitoring = () => {
         }
 
         .hero {
-          background: linear-gradient(135deg, #8fa3b8 0%, #a8b9ca 100%);
+          background: #1a3a52;
           color: white;
           padding: 40px 0;
-          border: 3px solid #4a6b8a;
-          border-radius: 12px;
-          margin: 20px 24px;
+          border: none;
+          border-radius: 0;
+          margin: 0;
         }
 
         .hero-content {
@@ -347,12 +368,14 @@ const SteamMonitoring = () => {
 
         .logo-left,
         .logo-right {
+          width: 160px;
+          height: auto;
           flex-shrink: 0;
         }
 
         .logo-left img,
         .logo-right img {
-          width: 100px;
+          width: 150px;
           height: auto;
           filter: brightness(1.2);
         }
@@ -363,16 +386,17 @@ const SteamMonitoring = () => {
         }
 
         .hero-title {
-          font-size: 1.75rem;
+          font-size: 2.0rem;
           font-weight: 700;
           margin-bottom: 12px;
           line-height: 1.3;
         }
 
         .hero-subtitle {
-          font-size: 1rem;
-          font-weight: 400;
-          opacity: 0.95;
+          font-size: 1.5rem;
+          font-weight: 500;
+          opacity: 1;
+          color: #FFA500;
         }
 
         .dashboard-section {
@@ -424,8 +448,34 @@ const SteamMonitoring = () => {
           margin-bottom: 20px;
         }
 
-        .progress-bar-container {
+        .quality-metrics-container {
           margin-bottom: 20px;
+        }
+
+        .quality-metrics-grid {
+          display: flex;
+          flex-direction: column;  /* ← JADI INI */
+          gap: 8px;
+          margin-bottom: 16px;
+        }
+
+        .quality-metric-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 0;
+        }
+
+        .quality-metric-label {
+          font-size: 0.85rem;
+          color: #495057;
+          font-weight: 500;
+        }
+
+        .quality-metric-value {
+          font-size: 0.9rem;
+          color: #1a1a1a;
+          font-weight: 700;
         }
 
         .progress-bar {
@@ -433,7 +483,6 @@ const SteamMonitoring = () => {
           height: 8px;
           border-radius: 4px;
           overflow: hidden;
-          margin-bottom: 8px;
         }
 
         .progress-fill {
@@ -441,12 +490,6 @@ const SteamMonitoring = () => {
           height: 100%;
           border-radius: 4px;
           transition: width 0.3s ease;
-        }
-
-        .steam-quality {
-          font-size: 0.95rem;
-          color: #495057;
-          font-weight: 600;
         }
 
         .metrics-row {
@@ -488,6 +531,16 @@ const SteamMonitoring = () => {
           transition: transform 0.2s ease, box-shadow 0.2s ease;
           box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
           width: 100%;
+          height:60px;
+          display: flex;              /* ← GANTI INI */
+          align-items: center;        /* ← TAMBAH INI */
+          justify-content: center;    /* ← TAMBAH INI */
+          text-decoration: none;
+          text-align: center;
+        }
+        .btn-dashboard-link {
+          font-size: 1.1rem;
+          font-weight: 700;
         }
 
         .btn-dashboard:hover {
@@ -497,7 +550,7 @@ const SteamMonitoring = () => {
 
         .info-section {
           padding: 80px 0;
-          background: white;
+          background: #f8f9fa;
         }
 
         .info-image {
@@ -537,9 +590,9 @@ const SteamMonitoring = () => {
 
         .step {
           padding: 30px;
-          background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+          background: linear-gradient(135deg, #e9ecef 0%, #e9ecef 100%);
           border-radius: 16px;
-          border-left: 4px solid #667eea;
+          // border-left: 4px solid #667eea;
         }
 
         .step h4 {
@@ -563,7 +616,7 @@ const SteamMonitoring = () => {
 
         .quality-section {
           padding: 80px 0;
-          background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+          background: #f8f9fa;
         }
 
         .quality-cards {
@@ -639,7 +692,7 @@ const SteamMonitoring = () => {
 
         .comparison-section {
           padding: 80px 0;
-          background: white;
+          background: #f8f9fa;
         }
 
         .comparison-grid {

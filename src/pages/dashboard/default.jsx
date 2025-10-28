@@ -16,6 +16,23 @@ import Footer from 'components/layout/Footer';
 // Image import
 import mainImage from './image/main.png';
 
+// ==============================|| DASHBOARD CONFIG ||============================== //
+// Customize these values to adjust dashboard height and spacing
+const DASHBOARD_CONFIG = {
+  // Minimum height for dashboard content area
+  // You can use: 'calc(100vh - 200px)' for full viewport height
+  // or fixed values like '900px', '1000px', etc.
+  minHeight: {
+    mobile: '900px',        // Height on mobile/tablet screens
+    desktop: 'calc(100vh - 160px)'  // Height on desktop screens (1080p+)
+  },
+  // Footer spacing
+  footer: {
+    marginTop: 'auto',      // 'auto' pushes footer to bottom, or use '0', '2rem', etc.
+    paddingTop: 4           // Padding above footer (in theme spacing units: 1 = 8px)
+  }
+};
+
 function Positioned({ pos, children, center = true }) {
   return (
     <Box
@@ -145,8 +162,15 @@ export default function DashboardDefault() {
   };
 
   return (
-    <Box sx={{ position: 'relative', width: '100%', pb: 4 }}>
-      <Box sx={{ position: 'relative', width: '100%', maxWidth: '1400px', mx: 'auto', minHeight: '900px' }}>
+    <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{
+        position: 'relative',
+        width: '100%',
+        maxWidth: '1400px',
+        mx: 'auto',
+        minHeight: { xs: DASHBOARD_CONFIG.minHeight.mobile, lg: DASHBOARD_CONFIG.minHeight.desktop },
+        flexGrow: 1
+      }}>
         <Box
           component="img"
           src={mainImage}
@@ -350,7 +374,7 @@ export default function DashboardDefault() {
         </Positioned>
       </Box>
 
-      <Footer sx={{ mt: 0 }} />
+      <Footer sx={{ mt: DASHBOARD_CONFIG.footer.marginTop, pt: DASHBOARD_CONFIG.footer.paddingTop }} />
     </Box>
   );
 }

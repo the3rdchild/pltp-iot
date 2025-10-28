@@ -7,8 +7,11 @@ export default function Footer({ sx }) {
   const footerStyles = {
     textAlign: 'center',
     py: 3,
-    mt: 4, // Default margin-top
-    ...sx // Allow overriding
+    mt: 4,
+    bgcolor: 'background.paper', // White background (adapts to theme)
+    borderTop: '1px solid',
+    borderTopColor: 'divider',
+    ...sx // Allow custom styling
   };
 
   return (
