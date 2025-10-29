@@ -20,8 +20,8 @@ import mainImage from './image/main.png';
 // Dashboard scales automatically to fit any screen size (like zoom to fit)
 const DASHBOARD_CONFIG = {
   // Base dimensions - dashboard designed for these dimensions
-  baseWidth: 1400,          // Design width (1080p reference)
-  baseHeight: 880,          // Design height (fits viewport with header/footer)
+  baseWidth: 1350,          // Design width (1080p reference)
+  baseHeight: 850,          // Design height (fits viewport with header/footer)
 
   // Footer spacing (appears below scaled dashboard)
   footer: {

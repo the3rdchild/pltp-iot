@@ -21,6 +21,9 @@ export default function DashboardLayout() {
   const { menuMasterLoading } = useGetMenuMaster();
   const downXL = useMediaQuery((theme) => theme.breakpoints.down('xl'));
 
+  // Check if current page is dashboard default
+  const isDashboard = pathname === '/dashboard' || pathname === '/dashboard/default';
+
   // set media wise responsive drawer
   useEffect(() => {
     handlerDrawerOpen(!downXL);
@@ -33,20 +36,20 @@ export default function DashboardLayout() {
       <Header />
       <Drawer />
 
-      <Box component="main" sx={{ width: 'calc(100% - 260px)', flexGrow: 1, p: { xs: 2, sm: 3 } }}>
+      <Box component="main" sx={{ width: 'calc(100% + 260px)', flexGrow: 1, p: isDashboard ? 0 : { xs: 2, sm: 3 } }}>
         <Toolbar sx={{ mt: 'inherit' }} />
         <Box
           sx={{
-            ...{ px: { xs: 0, sm: 2 } },
+            ...{ px: isDashboard ? 0 : { xs: 0, sm: 2 } },
             position: 'relative',
             minHeight: 'calc(100vh - 110px)',
             display: 'flex',
             flexDirection: 'column'
           }}
         >
-          {pathname !== '/apps/profiles/account/my-account' && <Breadcrumbs />}
+          {pathname !== '/apps/profiles/account/my-account' && !isDashboard && <Breadcrumbs />}
           <Outlet />
-          <Footer />
+          {!isDashboard && <Footer />}
         </Box>
       </Box>
     </Box>
