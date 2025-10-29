@@ -8,7 +8,7 @@ import Notification from './Notification';
 import MobileSection from './MobileSection';
 
 // project import
-import { GithubOutlined } from '@ant-design/icons';
+import { HomeOutlined } from '@ant-design/icons';
 
 // ==============================|| HEADER - CONTENT ||============================== //
 
@@ -17,17 +17,17 @@ export default function HeaderContent() {
     <>
       <Box sx={{ flexGrow: 1 }} /> {/* Pushes content to the right */}
 
-      {/* <IconButton
+      <IconButton
         component={Link}
-        href="https://github.com/the3rdchild/pltp-iot.git"
-        target="_blank"
+        href="https://pertasmart.unpad.ac.id/"
+        target="" //_blank
         disableRipple
         color="secondary"
-        title="Github"
+        title="Home"
         sx={{ color: 'text.primary', bgcolor: 'grey.100' }}
       >
-        <GithubOutlined />
-      </IconButton> */}
+        <HomeOutlined />
+      </IconButton>
 
       <Notification />
 
