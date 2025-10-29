@@ -17,19 +17,16 @@ import Footer from 'components/layout/Footer';
 import mainImage from './image/main.png';
 
 // ==============================|| DASHBOARD CONFIG ||============================== //
-// Customize these values to adjust dashboard height and spacing
+// Dashboard scales automatically to fit any screen size (like zoom to fit)
 const DASHBOARD_CONFIG = {
-  // Minimum height for dashboard content area
-  // You can use: 'calc(100vh - 200px)' for full viewport height
-  // or fixed values like '900px', '1000px', etc.
-  minHeight: {
-    mobile: '900px',        // Height on mobile/tablet screens
-    desktop: 'calc(100vh - 160px)'  // Height on desktop screens (1080p+)
-  },
-  // Footer spacing
+  // Base dimensions - dashboard designed for these dimensions
+  baseWidth: 1400,          // Design width (1080p reference)
+  baseHeight: 880,          // Design height (fits viewport with header/footer)
+
+  // Footer spacing (appears below scaled dashboard)
   footer: {
-    marginTop: 'auto',      // 'auto' pushes footer to bottom, or use '0', '2rem', etc.
-    paddingTop: 4           // Padding above footer (in theme spacing units: 1 = 8px)
+    marginTop: 'auto',      // Pushes footer to bottom
+    paddingTop: 2           // Padding above footer (in theme spacing units: 1 = 8px)
   }
 };
 
@@ -53,7 +50,7 @@ function Positioned({ pos, children, center = true }) {
 export default function DashboardDefault() {
   const [analyticData, setAnalyticData] = useState(null);
   const [riskPrediction, setRiskPrediction] = useState('Ideal');
-  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  const [scale, setScale] = useState(1);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -66,12 +63,32 @@ export default function DashboardDefault() {
     setAnalyticData(generateAnalyticData());
     setRiskPrediction(getRiskPrediction());
 
-    const onResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', onResize);
-
     return () => {
       clearInterval(interval);
-      window.removeEventListener('resize', onResize);
+    };
+  }, []);
+
+  // Calculate scale to fit viewport
+  useEffect(() => {
+    const calculateScale = () => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight - 150; // Subtract space for header/footer
+
+      // Calculate scale factors
+      const scaleX = viewportWidth / DASHBOARD_CONFIG.baseWidth;
+      const scaleY = viewportHeight / DASHBOARD_CONFIG.baseHeight;
+
+      // Use the smaller scale to ensure everything fits
+      const newScale = Math.min(scaleX, scaleY, 1); // Max scale is 1 (no zoom in)
+
+      setScale(newScale);
+    };
+
+    calculateScale();
+    window.addEventListener('resize', calculateScale);
+
+    return () => {
+      window.removeEventListener('resize', calculateScale);
     };
   }, []);
 
@@ -151,25 +168,34 @@ export default function DashboardDefault() {
     current: { top: '158%', left: '10%' }
   };
 
-  const isMobile = windowWidth < 900;
-  const POSITIONS = isMobile ? MOBILE_POSITIONS : DESKTOP_POSITIONS;
+  // Fixed layout - always use desktop positions regardless of screen size
+  const POSITIONS = DESKTOP_POSITIONS;
 
   const IMAGE_CONFIG = {
-    width: isMobile ? '90%' : '980px',
+    width: '980px',  // Fixed width - no responsive scaling
     top: '0%',
     left: '50%',
     opacity: 0.95
   };
 
   return (
-    <Box sx={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      overflow: 'hidden'
+    }}>
       <Box sx={{
         position: 'relative',
-        width: '100%',
-        maxWidth: '1400px',
-        mx: 'auto',
-        minHeight: { xs: DASHBOARD_CONFIG.minHeight.mobile, lg: DASHBOARD_CONFIG.minHeight.desktop },
-        flexGrow: 1
+        width: `${DASHBOARD_CONFIG.baseWidth}px`,
+        height: `${DASHBOARD_CONFIG.baseHeight}px`,
+        transform: `scale(${scale})`,
+        transformOrigin: 'top center',
+        transition: 'transform 0.3s ease-out'
       }}>
         <Box
           component="img"
