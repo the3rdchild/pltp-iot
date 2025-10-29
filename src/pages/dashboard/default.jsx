@@ -21,7 +21,7 @@ import mainImage from './image/main.png';
 const DASHBOARD_CONFIG = {
   // Base dimensions - dashboard designed for these dimensions
   baseWidth: 1350,          // Design width (1080p reference)
-  baseHeight: 850,          // Design height (fits viewport with header/footer)
+  baseHeight: 900,          // Design height (fits viewport with header/footer)
 
   // Footer spacing (appears below scaled dashboard)
   footer: {
@@ -74,9 +74,24 @@ export default function DashboardDefault() {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight - 150; // Subtract space for header/footer
 
+      // Detect orientation
+      const isPortrait = viewportHeight > viewportWidth;
+
+      // Adjust base dimensions for mobile portrait mode
+      // In portrait, prioritize width scaling to prevent horizontal overflow
+      let effectiveBaseWidth = DASHBOARD_CONFIG.baseWidth;
+      let effectiveBaseHeight = DASHBOARD_CONFIG.baseHeight;
+
+      if (isPortrait && viewportWidth < 768) {
+        // For mobile portrait: use width-based scaling primarily
+        // This ensures no horizontal scroll and elements don't overlap horizontally
+        effectiveBaseWidth = DASHBOARD_CONFIG.baseWidth;
+        effectiveBaseHeight = DASHBOARD_CONFIG.baseHeight * 1.2; // Allow more vertical space
+      }
+
       // Calculate scale factors
-      const scaleX = viewportWidth / DASHBOARD_CONFIG.baseWidth;
-      const scaleY = viewportHeight / DASHBOARD_CONFIG.baseHeight;
+      const scaleX = viewportWidth / effectiveBaseWidth;
+      const scaleY = viewportHeight / effectiveBaseHeight;
 
       // Use the smaller scale to ensure everything fits
       const newScale = Math.min(scaleX, scaleY, 1); // Max scale is 1 (no zoom in)
@@ -182,21 +197,28 @@ export default function DashboardDefault() {
     <Box sx={{
       position: 'relative',
       width: '100%',
-      height: '100%',
+      minHeight: '90vh',
       display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-      overflow: 'hidden'
+      overflow: 'auto' // Allow vertical scroll on mobile if needed
     }}>
+      {/* Scaled dashboard content */}
       <Box sx={{
-        position: 'relative',
-        width: `${DASHBOARD_CONFIG.baseWidth}px`,
-        height: `${DASHBOARD_CONFIG.baseHeight}px`,
-        transform: `scale(${scale})`,
-        transformOrigin: 'top center',
-        transition: 'transform 0.3s ease-out'
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+        flexGrow: 1,
+        width: '100%',
+        overflow: 'hidden' // Prevent horizontal scroll
       }}>
+        <Box sx={{
+          position: 'relative',
+          width: `${DASHBOARD_CONFIG.baseWidth}px`,
+          height: `${DASHBOARD_CONFIG.baseHeight}px`,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top center',
+          transition: 'transform 0.3s ease-out'
+        }}>
         <Box
           component="img"
           src={mainImage}
@@ -398,9 +420,11 @@ export default function DashboardDefault() {
             <MetricCard label="S.T Speed" value={stSpeed} unit="rpm" status={getPowerStatus(stSpeed, 3000, 3500)} linkTo="#" titleConfig={TITLE_CONFIG} />
           </Box>
         </Positioned>
+        </Box>
       </Box>
 
-      <Footer sx={{ mt: DASHBOARD_CONFIG.footer.marginTop, pt: DASHBOARD_CONFIG.footer.paddingTop }} />
+      {/* Footer - outside scaled content, always at bottom */}
+      <Footer sx={{ mt: 'auto', pt: 2, pb: 2 }} />
     </Box>
   );
 }

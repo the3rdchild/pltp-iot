@@ -19,8 +19,8 @@ export default function HeaderContent() {
 
       <IconButton
         component={Link}
-        href="https://pertasmart.unpad.ac.id/"
-        target="" //_blank
+        href="/"
+        target="_self"
         disableRipple
         color="secondary"
         title="Home"
