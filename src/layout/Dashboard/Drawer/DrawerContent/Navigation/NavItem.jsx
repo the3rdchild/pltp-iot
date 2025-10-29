@@ -53,7 +53,7 @@ export default function NavItem({ item, level, isParents = false, setSelectedID 
   const isSelected = !!matchPath({ path: item?.link ? item.link : item.url, end: false }, pathname);
 
   const textColor = 'text.primary';
-  const iconSelectedColor = 'primary.main';
+  const iconSelectedColor = 'primary.main'; //teks navbar
 
   return (
     <>
@@ -71,10 +71,10 @@ export default function NavItem({ item, level, isParents = false, setSelectedID 
             ...(drawerOpen && {
               '&:hover': { bgcolor: 'primary.lighter', ...theme.applyStyles('dark', { bgcolor: 'divider' }) },
               '&.Mui-selected': {
-                bgcolor: 'primary.lighter',
+                bgcolor: 'primary.lighter', //bg kotak
                 ...theme.applyStyles('dark', { bgcolor: 'divider' }),
                 borderRight: '2px solid',
-                borderColor: 'primary.main',
+                borderColor: 'primary.main', //kotak kecil plat
                 color: iconSelectedColor,
                 '&:hover': { color: iconSelectedColor, bgcolor: 'primary.lighter', ...theme.applyStyles('dark', { bgcolor: 'divider' }) }
               }
