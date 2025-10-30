@@ -71,7 +71,9 @@ export default function DashboardDefault() {
   useEffect(() => {
     const calculateScale = () => {
       const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight - 100; // Subtract space for header/footer
+      // More accurate header/footer spacing calculation
+      // Header (Toolbar) ~64px + Footer (py:3 + mt:4 + content) ~80px + buffer ~20px = ~164px
+      const viewportHeight = window.innerHeight - 164;
 
       // Detect orientation
       const isPortrait = viewportHeight > viewportWidth;
@@ -196,8 +198,8 @@ export default function DashboardDefault() {
     <Box sx={{
       position: 'relative',
       width: '100%',
-      flexGrow: 1,
       display: 'flex',
+      flexGrow: 1,
       flexDirection: 'column',
       overflow: 'auto',
       p: 0,
@@ -206,13 +208,16 @@ export default function DashboardDefault() {
       {/* Scaled dashboard content */}
       <Box sx={{
         display: 'flex',
+        flexGrow: 1,
         justifyContent: 'center',
         alignItems: 'flex-start',
-        flexGrow: 1,
         width: '100%',
         overflow: 'hidden',
         p: 0,
-        m: 0
+        m: 0,
+        // Container height should match the scaled content height
+        height: `${DASHBOARD_CONFIG.baseHeight * scale}px`,
+        transition: 'height 0.3s ease-out'
       }}>
         <Box sx={{
           position: 'relative',
