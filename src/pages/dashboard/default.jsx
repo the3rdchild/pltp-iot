@@ -19,7 +19,7 @@ import mainImage from './image/main.png';
 // Dashboard scales automatically to fit any screen size (like zoom to fit)
 const DASHBOARD_CONFIG = {
   // Base dimensions - dashboard designed for these dimensions
-  baseWidth: 1350,          // Design width (1080p reference)
+  baseWidth: 1400,          // Design width (1080p reference)
   baseHeight: 900,          // Design height (fits viewport with header/footer)
 
   // Footer spacing (appears below scaled dashboard)
@@ -71,7 +71,7 @@ export default function DashboardDefault() {
   useEffect(() => {
     const calculateScale = () => {
       const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight - 150; // Subtract space for header/footer
+      const viewportHeight = window.innerHeight - 100; // Subtract space for header/footer
 
       // Detect orientation
       const isPortrait = viewportHeight > viewportWidth;
@@ -85,7 +85,7 @@ export default function DashboardDefault() {
         // For mobile portrait: use width-based scaling primarily
         // This ensures no horizontal scroll and elements don't overlap horizontally
         effectiveBaseWidth = DASHBOARD_CONFIG.baseWidth;
-        effectiveBaseHeight = DASHBOARD_CONFIG.baseHeight * 1.2; // Allow more vertical space
+        effectiveBaseHeight = DASHBOARD_CONFIG.baseHeight * 1; // Allow more vertical space
       }
 
       // Calculate scale factors

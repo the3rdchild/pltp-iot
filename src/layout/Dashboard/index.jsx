@@ -8,7 +8,7 @@ import Box from '@mui/material/Box';
 // project imports
 import Drawer from './Drawer';
 import Header from './Header';
-import Footer from './Footer';
+import Footer from 'components/layout/Footer';
 import Loader from 'components/Loader';
 import Breadcrumbs from 'components/@extended/Breadcrumbs';
 
@@ -36,21 +36,26 @@ export default function DashboardLayout() {
       <Header />
       <Drawer />
 
-      <Box component="main" sx={{ width: 'calc(100% - 260px)', flexGrow: 1, p: isDashboard ? 0 : { xs: 2, sm: 3 } }}>
+      <Box component="main" sx={{
+        width: 'calc(100% - 260px)',
+        flexGrow: 1,
+        p: isDashboard ? 0 : { xs: 2, sm: 3 },
+        m: 0
+      }}>
         {!isDashboard && <Toolbar sx={{ mt: 'inherit' }} />}
         <Box
           sx={{
-            ...{ px: isDashboard ? 0 : { xs: 0, sm: 2 } },
             position: 'relative',
-            minHeight: 'calc(100vh - 110px)',
+            minHeight: 'calc(100vh - 64px)',
             display: 'flex',
             flexDirection: 'column',
-            ...(isDashboard && { p: 0, m: 0 })
+            p: 0,
+            m: 0
           }}
         >
           {pathname !== '/apps/profiles/account/my-account' && !isDashboard && <Breadcrumbs />}
           <Outlet />
-          <Footer sx={{ mt: 'auto', p: 0, m: 0 }} />
+          <Footer sx={{ mt: 'auto', py: 2, px: 0, mx: 0 }} />
         </Box>
       </Box>
     </Box>
