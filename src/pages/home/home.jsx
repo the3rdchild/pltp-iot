@@ -50,7 +50,7 @@ const SteamMonitoring = () => {
                   </div>
                   <div className="quality-metric-item">
                     <span className="quality-metric-label">Total Dissolve Solid (TDS)</span>
-                    <span className="quality-metric-value">0.021%</span>
+                    <span className="quality-metric-value">1.18ppm</span>
                   </div>
                   <div className="quality-metric-item">
                     <span className="quality-metric-label">Non Condensed Gas (NCG)</span>
@@ -96,7 +96,7 @@ const SteamMonitoring = () => {
                   </div>
                   <div className="quality-metric-item">
                     <span className="quality-metric-label">Total Dissolve Solid (TDS)</span>
-                    <span className="quality-metric-value">0.021%</span>
+                    <span className="quality-metric-value">1.18ppm</span>
                   </div>
                   <div className="quality-metric-item">
                     <span className="quality-metric-label">Non Condensed Gas (NCG)</span>
@@ -714,8 +714,8 @@ const SteamMonitoring = () => {
         }
 
         .comparison-card.existing {
-          background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
-          border: 2px solid #ffc9c9;
+          background: linear-gradient(135deg, #e9ecef 0%, #e9ecef 100%);
+          border: 2px solid #495057;
         }
 
         .comparison-card.development {
@@ -730,7 +730,7 @@ const SteamMonitoring = () => {
         }
 
         .comparison-card.existing h2 {
-          color: #dc3545;
+          color:rgb(0, 0, 0);
         }
 
         .comparison-card.development h2 {
