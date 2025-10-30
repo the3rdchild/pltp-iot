@@ -11,7 +11,6 @@ import { getRiskPrediction } from 'data/riskprediction';
 import GaugeCard from 'components/cards/GaugeCard';
 import MetricCard from 'components/cards/MetricCard';
 import MainCard from 'components/MainCard';
-import Footer from 'components/layout/Footer';
 
 // Image import
 import mainImage from './image/main.png';
@@ -26,7 +25,7 @@ const DASHBOARD_CONFIG = {
   // Footer spacing (appears below scaled dashboard)
   footer: {
     marginTop: 'auto',      // Pushes footer to bottom
-    paddingTop: 2           // Padding above footer (in theme spacing units: 1 = 8px)
+    paddingTop: 0           // Padding above footer (in theme spacing units: 1 = 8px)
   }
 };
 
@@ -197,10 +196,12 @@ export default function DashboardDefault() {
     <Box sx={{
       position: 'relative',
       width: '100%',
-      minHeight: '90vh',
+      flexGrow: 1,
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'auto' // Allow vertical scroll on mobile if needed
+      overflow: 'auto',
+      p: 0,
+      m: 0
     }}>
       {/* Scaled dashboard content */}
       <Box sx={{
@@ -209,7 +210,9 @@ export default function DashboardDefault() {
         alignItems: 'flex-start',
         flexGrow: 1,
         width: '100%',
-        overflow: 'hidden' // Prevent horizontal scroll
+        overflow: 'hidden',
+        p: 0,
+        m: 0
       }}>
         <Box sx={{
           position: 'relative',
@@ -422,9 +425,6 @@ export default function DashboardDefault() {
         </Positioned>
         </Box>
       </Box>
-
-      {/* Footer - outside scaled content, always at bottom */}
-      <Footer sx={{ mt: 'auto', pt: 2, pb: 2 }} />
     </Box>
   );
 }

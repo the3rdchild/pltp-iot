@@ -36,20 +36,21 @@ export default function DashboardLayout() {
       <Header />
       <Drawer />
 
-      <Box component="main" sx={{ width: 'calc(100% + 260px)', flexGrow: 1, p: isDashboard ? 0 : { xs: 2, sm: 3 } }}>
-        <Toolbar sx={{ mt: 'inherit' }} />
+      <Box component="main" sx={{ width: 'calc(100% - 260px)', flexGrow: 1, p: isDashboard ? 0 : { xs: 2, sm: 3 } }}>
+        {!isDashboard && <Toolbar sx={{ mt: 'inherit' }} />}
         <Box
           sx={{
             ...{ px: isDashboard ? 0 : { xs: 0, sm: 2 } },
             position: 'relative',
             minHeight: 'calc(100vh - 110px)',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            ...(isDashboard && { p: 0, m: 0 })
           }}
         >
           {pathname !== '/apps/profiles/account/my-account' && !isDashboard && <Breadcrumbs />}
           <Outlet />
-          {!isDashboard && <Footer />}
+          <Footer sx={{ mt: 'auto', p: 0, m: 0 }} />
         </Box>
       </Box>
     </Box>
