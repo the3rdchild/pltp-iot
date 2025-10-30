@@ -35,28 +35,33 @@ export default function DashboardLayout() {
     <Box sx={{ display: 'flex', width: '100%' }}>
       <Header />
       <Drawer />
-
-      <Box component="main" sx={{
-        width: 'calc(100% - 260px)',
-        flexGrow: 1,
-        p: isDashboard ? 0 : { xs: 2, sm: 3 },
-        m: 0
-      }}>
-        {!isDashboard && <Toolbar sx={{ mt: 'inherit' }} />}
+      <Box
+        component="main"
+        sx={{
+          width: 'calc(100% - 260px)',
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          p: 0, // No padding on the main container
+          m: 0
+        }}
+      >
+        {/* Content area with padding */}
         <Box
           sx={{
-            position: 'relative',
-            minHeight: 'calc(100vh - 64px)',
+            flexGrow: 1,
+            p: isDashboard ? 0 : { xs: 2, sm: 3 }, // Apply padding here
+            m: 0,
             display: 'flex',
-            flexDirection: 'column',
-            p: 0,
-            m: 0
+            flexDirection: 'column'
           }}
         >
+          {!isDashboard && <Toolbar sx={{ mt: 'inherit' }} />}
           {pathname !== '/apps/profiles/account/my-account' && !isDashboard && <Breadcrumbs />}
           <Outlet />
-          <Footer sx={{ mt: 'auto', py: 2, px: 0, mx: 0 }} />
         </Box>
+        {/* Footer outside the padded content area */}
+        <Footer sx={{ mt: 'auto', py: 2, px: isDashboard ? 0 : 3 }} />
       </Box>
     </Box>
   );
