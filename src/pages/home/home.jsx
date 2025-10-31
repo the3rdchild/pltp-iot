@@ -76,7 +76,7 @@ const SteamMonitoring = () => {
                   <span className="metric-value">32.46 MW</span>
                 </div>
               </div>
-              <Link to="/Dashboard" className="btn-dashboard btn-dashboard-link">Dashboard</Link>
+              <Link to="/login" className="btn-dashboard btn-dashboard-link">Dashboard</Link>
               </div>
 
             {/* PLTP Ulubelu Unit 3 */}

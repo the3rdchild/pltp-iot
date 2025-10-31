@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 
 // material-ui
 import Button from '@mui/material/Button';
@@ -14,6 +14,8 @@ import InputLabel from '@mui/material/InputLabel';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
 
 // third-party
 import * as Yup from 'yup';
@@ -22,6 +24,7 @@ import { Formik } from 'formik';
 // project imports
 import IconButton from 'components/@extended/IconButton';
 import AnimateButton from 'components/@extended/AnimateButton';
+import { login } from 'services/authService';
 
 // assets
 import EyeOutlined from '@ant-design/icons/EyeOutlined';
@@ -30,9 +33,12 @@ import EyeInvisibleOutlined from '@ant-design/icons/EyeInvisibleOutlined';
 // ============================|| JWT - LOGIN ||============================ //
 
 export default function AuthLogin({ isDemo = false }) {
+  const navigate = useNavigate();
   const [checked, setChecked] = React.useState(false);
-
   const [showPassword, setShowPassword] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
+
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
   };
@@ -41,24 +47,49 @@ export default function AuthLogin({ isDemo = false }) {
     event.preventDefault();
   };
 
+  const handleSubmit = async (values, { setSubmitting, setErrors }) => {
+    try {
+      setError('');
+      setLoading(true);
+
+      // Call login API
+      const response = await login(values.email, values.password);
+
+      if (response.success) {
+        // Redirect to dashboard
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      setError(err.message || 'Login failed. Please try again.');
+      setErrors({ submit: err.message });
+    } finally {
+      setLoading(false);
+      setSubmitting(false);
+    }
+  };
+
   return (
     <>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
       <Formik
         initialValues={{
-          email: 'info@codedthemes.com',
-          password: '123456',
+          email: 'pertasmart@unpad.ac.id',
+          password: 'pertasmart.unpad!!2025',
           submit: null
         }}
         validationSchema={Yup.object().shape({
           email: Yup.string().email('Must be a valid email').max(255).required('Email is required'),
-          password: Yup.string()
-            .required('Password is required')
-            .test('no-leading-trailing-whitespace', 'Password cannot start or end with spaces', (value) => value === value.trim())
-            .max(10, 'Password must be less than 10 characters')
+          password: Yup.string().required('Password is required')
         })}
+        onSubmit={handleSubmit}
       >
-        {({ errors, handleBlur, handleChange, touched, values }) => (
-          <form noValidate>
+        {({ errors, handleBlur, handleChange, handleSubmit, touched, values }) => (
+          <form noValidate onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               <Grid size={12}>
                 <Stack sx={{ gap: 1 }}>
@@ -73,6 +104,7 @@ export default function AuthLogin({ isDemo = false }) {
                     placeholder="Enter email address"
                     fullWidth
                     error={Boolean(touched.email && errors.email)}
+                    disabled={loading}
                   />
                 </Stack>
                 {touched.email && errors.email && (
@@ -87,7 +119,7 @@ export default function AuthLogin({ isDemo = false }) {
                   <OutlinedInput
                     fullWidth
                     error={Boolean(touched.password && errors.password)}
-                    id="-password-login"
+                    id="password-login"
                     type={showPassword ? 'text' : 'password'}
                     value={values.password}
                     name="password"
@@ -101,12 +133,14 @@ export default function AuthLogin({ isDemo = false }) {
                           onMouseDown={handleMouseDownPassword}
                           edge="end"
                           color="secondary"
+                          disabled={loading}
                         >
                           {showPassword ? <EyeOutlined /> : <EyeInvisibleOutlined />}
                         </IconButton>
                       </InputAdornment>
                     }
                     placeholder="Enter password"
+                    disabled={loading}
                   />
                 </Stack>
                 {touched.password && errors.password && (
@@ -125,6 +159,7 @@ export default function AuthLogin({ isDemo = false }) {
                         name="checked"
                         color="primary"
                         size="small"
+                        disabled={loading}
                       />
                     }
                     label={<Typography variant="h6">Keep me sign in</Typography>}
@@ -134,10 +169,22 @@ export default function AuthLogin({ isDemo = false }) {
                   </Link>
                 </Stack>
               </Grid>
+              {errors.submit && (
+                <Grid size={12}>
+                  <FormHelperText error>{errors.submit}</FormHelperText>
+                </Grid>
+              )}
               <Grid size={12}>
                 <AnimateButton>
-                  <Button fullWidth size="large" variant="contained" color="primary">
-                    Login
+                  <Button
+                    fullWidth
+                    size="large"
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    disabled={loading}
+                  >
+                    {loading ? <CircularProgress size={24} color="inherit" /> : 'Login'}
                   </Button>
                 </AnimateButton>
               </Grid>
