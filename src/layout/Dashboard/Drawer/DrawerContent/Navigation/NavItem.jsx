@@ -110,7 +110,7 @@ export default function NavItem({ item, level, isParents = false, setSelectedID 
               {itemIcon}
             </ListItemIcon>
           )}
-          {(drawerOpen || (!drawerOpen && level !== 1)) && (
+          {drawerOpen && (
             <ListItemText
               primary={
                 <Typography variant="h6" sx={{ color: isSelected ? iconSelectedColor : textColor }}>
@@ -119,7 +119,7 @@ export default function NavItem({ item, level, isParents = false, setSelectedID 
               }
             />
           )}
-          {(drawerOpen || (!drawerOpen && level !== 1)) && item.chip && (
+          {drawerOpen && item.chip && (
             <Chip
               color={item.chip.color}
               variant={item.chip.variant}
@@ -129,7 +129,7 @@ export default function NavItem({ item, level, isParents = false, setSelectedID 
             />
           )}
         </ListItemButton>
-        {(drawerOpen || (!drawerOpen && level !== 1)) &&
+        {drawerOpen &&
           item?.actions &&
           item?.actions.map((action, index) => {
             const ActionIcon = action.icon;
