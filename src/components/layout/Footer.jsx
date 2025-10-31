@@ -18,7 +18,7 @@ export default function Footer({ sx }) {
     <Box sx={footerStyles}>
       <Typography variant="body2" color="text.secondary">
         &copy; {new Date().getFullYear()}{' '}
-        <Link color="inherit" href="https://venturihpc.com/" target="_blank">
+        <Link color="inherit" href="" target="_blank">
           <strong>SMART</strong> (System Monitoring Analysis Real Time)
         </Link>
         . All Rights Reserved.

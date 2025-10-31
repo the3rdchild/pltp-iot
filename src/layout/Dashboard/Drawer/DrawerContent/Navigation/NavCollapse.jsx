@@ -53,7 +53,8 @@ export default function NavCollapse({ item, level }) {
           },
           '&.Mui-selected': {
             bgcolor: theme.palette.mode === 'dark' ? 'divider' : 'primary.lighter',
-            borderRight: `2px solid ${theme.palette.primary.main}`,
+            borderRight: `0px solid ${theme.palette.primary.main}`, //borderRight: 2px solid ${theme.palette.primary.main}`,
+
             '&:hover': {
               bgcolor: theme.palette.mode === 'dark' ? 'divider' : 'primary.lighter'
             }
