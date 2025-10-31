@@ -67,7 +67,7 @@ export default function NavCollapse({ item, level }) {
               minWidth: 28,
               color: selected === item.id ? iconSelectedColor : textColor,
               ...(!drawerOpen && {
-                borderRadius: 1.5,
+                borderRadius: 1.5, //borderRadius: 1.5,
                 width: 36,
                 height: 36,
                 alignItems: 'center',
