@@ -1,75 +1,71 @@
-// ==============================|| SERVER SETUP ||============================== //
-// Main Express server for PertaSmart Backend API
-
 const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-require('dotenv').config();
-
-const authRoutes = require('./routes/authRoutes');
-
+const mysql = require('mysql2');
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-// ==============================|| MIDDLEWARE ||============================== //
+// Middleware untuk parsing JSON
+app.use(express.json());
 
-// CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
-
-// Body parser
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// Logging middleware
-app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-  next();
+// Konfigurasi koneksi MySQL
+const db = mysql.createConnection({
+  host: '10.9.40.17',
+  user: 'Pertasmart',      // Ganti dengan username MySQL Anda
+  password: 'pertasmart.unpad!!2025',  // Ganti dengan password MySQL Anda
+  database: 'pertasmart'   // Ganti dengan nama database Anda
 });
 
-// ==============================|| ROUTES ||============================== //
+// Koneksi ke database
+db.connect((err) => {
+  if (err) {
+    console.error('Error connecting to database:', err);
+    return;
+  }
+  console.log('Connected to MySQL database');
+});
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({
-    success: true,
-    message: 'PertaSmart API is running',
-    timestamp: new Date().toISOString()
+
+// Route GET
+app.get('/api/data', (req, res) => {
+  res.send('get OKE');
+});
+
+// Route POST untuk insert data
+app.post('/api/data', (req, res) => {
+  const { content } = req.body;
+
+  // Validasi input
+  if (!content) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Content is required' 
+    });
+  }
+
+  // Query SQL untuk insert data
+  const sql = 'INSERT INTO test (content) VALUES (?)';
+
+  db.query(sql, [content], (err, result) => {
+    if (err) {
+      console.error('Error inserting data:', err);
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Error inserting data',
+        error: err.message 
+      });
+    }
+
+    res.status(201).json({ 
+      success: true, 
+      message: 'Data inserted successfully',
+      data: {
+        id: result.insertId,
+        content: content
+      }
+    });
   });
 });
 
-// Auth routes
-app.use('/api/auth', authRoutes);
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
-  });
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
-});
-
-// ==============================|| START SERVER ||============================== //
-
+// Jalankan server
+const PORT = 3000;
 app.listen(PORT, () => {
-  console.log('========================================');
-  console.log('🚀 PertaSmart Backend API Server');
-  console.log('========================================');
-  console.log(`📡 Server running on port ${PORT}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 API URL: http://localhost:${PORT}`);
-  console.log(`✅ Health check: http://localhost:${PORT}/api/health`);
-  console.log('========================================');
+  console.log(`Server running on port ${PORT}`);
 });
