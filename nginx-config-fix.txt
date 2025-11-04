@@ -1,0 +1,91 @@
+# FIX untuk aaPanel Nginx Config
+# Edit di: Website > PHP Project > Site modification > pertasmart.unpad.ac.id > Config
+
+# GANTI SECTION INI:
+location /be/ {
+    proxy_pass http://localhost:3000/;   # ❌ SALAH
+    ...
+}
+
+# MENJADI:
+location /be/ {
+    proxy_pass http://localhost:5000/;   # ✅ BENAR - Backend di port 5000
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_cache_bypass $http_upgrade;
+}
+
+# Config lengkap yang sudah benar:
+server
+{
+    listen 80;
+    server_name pertasmart.unpad.ac.id;
+    index index.php index.html index.htm default.php default.htm default.html;
+    root /www/wwwroot/frontend/dist;
+
+    #SSL-START SSL related configuration
+    #error_page 404/404.html;
+    #SSL-END
+
+    #ERROR-PAGE-START
+    error_page 404 /404.html;
+    error_page 502 /502.html;
+    #ERROR-PAGE-END
+
+    #PHP-INFO-START
+    include enable-php-83.conf;
+    #PHP-INFO-END
+
+    #REWRITE-START
+    include /www/server/panel/vhost/rewrite/pertasmart.unpad.ac.id.conf;
+    #REWRITE-END
+
+    # Backend API proxy - UBAH PORT JADI 5000
+    location /be/ {
+        proxy_pass http://localhost:5000/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    # Forbidden files or directories
+    location ~ ^/(\.user.ini|\.htaccess|\.git|\.env|\.svn|\.project|LICENSE|README.md)
+    {
+        return 404;
+    }
+
+    location ~ \.well-known{
+        allow all;
+    }
+
+    if ( $uri ~ "^/\.well-known/.*\.(php|jsp|py|js|css|lua|ts|go|zip|tar\.gz|rar|7z|sql|bak)$" ) {
+        return 403;
+    }
+
+    location ~ .*\.(gif|jpg|jpeg|png|bmp|swf)$
+    {
+        expires      30d;
+        error_log /dev/null;
+        access_log /dev/null;
+    }
+
+    location ~ .*\.(js|css)?$
+    {
+        expires      12h;
+        error_log /dev/null;
+        access_log /dev/null;
+    }
+
+    access_log  /www/wwwlogs/pertasmart.unpad.ac.id.log;
+    error_log  /www/wwwlogs/pertasmart.unpad.ac.id.error.log;
+}
