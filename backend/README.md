@@ -110,10 +110,10 @@ NODE_ENV=production
 PORT=5000
 
 # Database Configuration
-DB_HOST=10.9.40.17
+DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=pertasmart_db
-DB_USER=pertasmart_user
+DB_NAME= 
+DB_USER= 
 DB_PASSWORD=your_password_here
 
 # JWT Configuration
@@ -170,63 +170,6 @@ RATE_LIMIT_MAX_REQUESTS=100
 | POST | `/api/data/field` | Create field data | Yes |
 | GET | `/api/data/dashboard/stats` | Dashboard statistics | No |
 
-## 🔐 Authentication
-
-### Login Request
-
-```bash
-curl -X POST https://pertasmart.unpad.ac.id/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "pertasmart@unpad.ac.id",
-    "password": "pertasmart.unpad!!2025"
-  }'
-```
-
-### Response
-
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
-      "id": 1,
-      "email": "pertasmart@unpad.ac.id",
-      "name": "PertaSmart Admin",
-      "role": "admin"
-    }
-  }
-}
-```
-
-### Using Token
-
-Include token in Authorization header:
-
-```bash
-curl -X GET https://pertasmart.unpad.ac.id/api/auth/verify \
-  -H "Authorization: Bearer YOUR_TOKEN_HERE"
-```
-
-## 📡 Example: Sending Sensor Data
-
-```bash
-curl -X POST https://pertasmart.unpad.ac.id/api/external/sensor-data \
-  -H "Content-Type: application/json" \
-  -d '{
-    "device_id": "HW-001",
-    "timestamp": "2025-11-05T10:30:00Z",
-    "temperature": 85.5,
-    "pressure": 1013.25,
-    "flow_rate": 150.8,
-    "humidity": 65.2,
-    "voltage": 220.5,
-    "current": 10.2,
-    "status": "normal"
-  }'
-```
 
 ## 🔧 PM2 Commands
 
@@ -271,49 +214,6 @@ Logs are available through:
    tail -f /www/wwwlogs/pertasmart.unpad.ac.id.error.log
    ```
 
-## 🐛 Troubleshooting
-
-### Backend not starting
-
-```bash
-# Check logs
-pm2 logs pertasmart-api
-
-# Check if port is in use
-netstat -tlnp | grep 5000
-
-# Restart PM2
-pm2 restart pertasmart-api
-```
-
-### Database connection issues
-
-```bash
-# Test database connection
-psql -h 10.9.40.17 -p 5432 -U pertasmart_user -d pertasmart_db
-
-# Check WireGuard status
-wg show
-
-# Restart WireGuard
-systemctl restart wg-quick@wg0
-```
-
-### NGINX 502 Bad Gateway
-
-```bash
-# Check backend status
-pm2 status
-
-# Check if backend is listening
-netstat -tlnp | grep 5000
-
-# Test NGINX config
-nginx -t
-
-# Reload NGINX
-systemctl reload nginx
-```
 
 ## 🔒 Security Considerations
 
@@ -332,46 +232,6 @@ systemctl reload nginx
 - **Caching**: Static file caching via NGINX
 - **Compression**: Gzip compression enabled
 - **PM2 Clustering**: Can be enabled for multi-core systems
-
-## 🔄 Updates & Deployment
-
-### Quick Deployment
-
-```bash
-cd /www/wwwroot/frontend/backend
-sudo ./deploy.sh
-```
-
-### Manual Deployment
-
-```bash
-cd /www/wwwroot/frontend/backend
-git pull  # if using git
-npm install --production
-pm2 restart pertasmart-api
-nginx -t && systemctl reload nginx
-```
-
-## 📚 Additional Documentation
-
-- [Setup Guide](SETUP_GUIDE.md) - Complete setup instructions
-- [API Testing](API_TESTING.md) - API testing examples
-- [NGINX Config](nginx-config/) - NGINX configuration files
-
-## 👥 Default Login
-
-- **Email**: pertasmart@unpad.ac.id
-- **Password**: pertasmart.unpad!!2025
-
-**⚠️ IMPORTANT**: Change these credentials in production!
-
-## 📞 Support
-
-For issues or questions:
-1. Check logs: `pm2 logs pertasmart-api`
-2. Review NGINX logs
-3. Verify database connection
-4. Check firewall rules
 
 ## 📄 License
 
