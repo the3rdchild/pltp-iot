@@ -203,6 +203,7 @@ export default function DashboardDefault() {
       flexDirection: 'column',
       overflow: 'auto',
       p: 0,
+      pt: 5, // Add top padding
       m: 0
     }}>
       {/* Scaled dashboard content */}

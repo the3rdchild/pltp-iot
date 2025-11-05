@@ -21,8 +21,8 @@ export default function DashboardLayout() {
   const { menuMasterLoading } = useGetMenuMaster();
   const downXL = useMediaQuery((theme) => theme.breakpoints.down('xl'));
 
-  // Check if current page is dashboard default
-  const isDashboard = pathname === '/dashboard' || pathname === '/dashboard/default';
+  // Check if current page is dashboard default (case-insensitive)
+  const isDashboard = pathname.toLowerCase() === '/dashboard' || pathname.toLowerCase() === '/dashboard/default';
 
   // set media wise responsive drawer
   useEffect(() => {
@@ -46,17 +46,18 @@ export default function DashboardLayout() {
           m: 0
         }}
       >
+        {/* Toolbar spacer for fixed header - always needed */}
+        <Toolbar />
         {/* Content area with padding */}
         <Box
           sx={{
-            flexGrow: 1,
+            flexGrow: 2,
             p: isDashboard ? 0 : { xs: 2, sm: 3 }, // Apply padding here
             m: 0,
             display: 'flex',
             flexDirection: 'column'
           }}
         >
-          {!isDashboard && <Toolbar sx={{ mt: 'inherit' }} />}
           {pathname !== '/apps/profiles/account/my-account' && !isDashboard && <Breadcrumbs />}
           <Outlet />
         </Box>
