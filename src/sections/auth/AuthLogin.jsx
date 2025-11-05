@@ -78,8 +78,8 @@ export default function AuthLogin({ isDemo = false }) {
 
       <Formik
         initialValues={{
-          email: 'pertasmart@unpad.ac.id',
-          password: 'pertasmart.unpad!!2025',
+          email: '',
+          password: '',
           submit: null
         }}
         validationSchema={Yup.object().shape({

@@ -38,6 +38,7 @@
     "@mui/x-charts": "7.24.1",
     "@vitejs/plugin-react": "4.3.4",
     "apexcharts": "^5.2.0",
+    "axios": "^1.13.2",
     "chart.js": "^4.5.0",
     "chartjs-plugin-datalabels": "^2.2.0",
     "firebase": "^11.10.0",
