@@ -2,7 +2,7 @@
 -- Created: 2025-11-05
 
 -- Enable UUID extension (if needed)
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Table 1: Users (untuk authentication)
 CREATE TABLE IF NOT EXISTS users (
