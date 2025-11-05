@@ -1,16 +1,14 @@
-// ==============================|| AUTH CONTROLLER ||============================== //
-// Controller untuk handle authentication (login, register, logout)
-
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const db = require('../config/database');
+const { query } = require('../config/database');
+require('dotenv').config();
 
-// Login user
-exports.login = async (req, res) => {
+// Login
+const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validasi input
+    // Validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -18,53 +16,43 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Cari user berdasarkan email
-    const [users] = await db.query(
-      'SELECT * FROM users WHERE email = ? AND is_active = TRUE',
+    // Find user
+    const result = await query(
+      'SELECT * FROM users WHERE email = $1 AND is_active = true',
       [email]
     );
 
-    if (users.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid credentials'
       });
     }
 
-    const user = users[0];
+    const user = result.rows[0];
 
-    // Verify password
-    // CATATAN: Jika menggunakan plain password (tidak di-hash), gunakan perbandingan langsung
-    // const isPasswordValid = password === user.password; // Plain password
-
-    // Untuk bcrypt hash:
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid credentials'
       });
     }
-
-    // Update last login
-    await db.query(
-      'UPDATE users SET last_login = NOW() WHERE id = ?',
-      [user.id]
-    );
 
     // Generate JWT token
     const token = jwt.sign(
       {
-        id: user.id,
+        userId: user.id,
         email: user.email,
         role: user.role
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
     );
 
-    // Return success response
+    // Return user data and token
     res.json({
       success: true,
       message: 'Login successful',
@@ -83,106 +71,46 @@ exports.login = async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
-      error: error.message
+      message: 'Internal server error'
     });
   }
 };
 
-// Register user (optional)
-exports.register = async (req, res) => {
+// Verify Token (untuk check apakah token masih valid)
+const verifyToken = async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    // User sudah di-attach di middleware
+    const userId = req.user.userId;
 
-    // Validasi input
-    if (!email || !password || !name) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email, password, and name are required'
-      });
-    }
-
-    // Cek apakah email sudah terdaftar
-    const [existingUsers] = await db.query(
-      'SELECT * FROM users WHERE email = ?',
-      [email]
+    const result = await query(
+      'SELECT id, email, name, role FROM users WHERE id = $1 AND is_active = true',
+      [userId]
     );
 
-    if (existingUsers.length > 0) {
-      return res.status(409).json({
+    if (result.rows.length === 0) {
+      return res.status(404).json({
         success: false,
-        message: 'Email already registered'
-      });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insert user baru
-    const [result] = await db.query(
-      'INSERT INTO users (email, password, name) VALUES (?, ?, ?)',
-      [email, hashedPassword, name]
-    );
-
-    res.status(201).json({
-      success: true,
-      message: 'Registration successful',
-      data: {
-        id: result.insertId,
-        email,
-        name
-      }
-    });
-
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: error.message
-    });
-  }
-};
-
-// Verify token (untuk protected routes)
-exports.verifyToken = async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: 'No token provided'
-      });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Get user data
-    const [users] = await db.query(
-      'SELECT id, email, name, role FROM users WHERE id = ? AND is_active = TRUE',
-      [decoded.id]
-    );
-
-    if (users.length === 0) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token'
+        message: 'User not found'
       });
     }
 
     res.json({
       success: true,
       data: {
-        user: users[0]
+        user: result.rows[0]
       }
     });
 
   } catch (error) {
-    console.error('Token verification error:', error);
-    res.status(401).json({
+    console.error('Verify token error:', error);
+    res.status(500).json({
       success: false,
-      message: 'Invalid or expired token'
+      message: 'Internal server error'
     });
   }
+};
+
+module.exports = {
+  login,
+  verifyToken
 };
