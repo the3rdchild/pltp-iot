@@ -10,7 +10,7 @@ import Drawer from './Drawer';
 import Header from './Header';
 import Footer from 'components/layout/Footer';
 import Loader from 'components/Loader';
-import Breadcrumbs from 'components/@extended/Breadcrumbs';
+import Breadcrumbs from 'components/@extended/Breadcrumbs'; //{pathname !== '/apps/profiles/account/my-account' && !isDashboard && <Breadcrumbs />}
 
 import { handlerDrawerOpen, useGetMenuMaster } from 'api/menu';
 
@@ -59,7 +59,7 @@ export default function DashboardLayout() {
             flexDirection: 'column'
           }}
         >
-          {pathname !== '/apps/profiles/account/my-account' && !isDashboard && <Breadcrumbs />}
+          {pathname !== '/apps/profiles/account/my-account' && !isDashboard }
           <Outlet />
         </Box>
         {/* Footer outside the padded content area */}
