@@ -11,10 +11,17 @@ import HomePage from 'pages/home/home';
 import Loadable from 'components/Loadable';
 import Typography from 'pages/component-overview/typography';
 import Color from 'pages/component-overview/color';
-
+//analytics pages
 import Dryness from 'pages/analytics/dryness';
-
+import NCG from 'pages/analytics/NCG';
+import TDS from 'pages/analytics/TDS';
+import PTF from 'pages/analytics/ptf'
+//settings pages
 import DataInput from 'pages/settings/dataInput'
+import Calibration from 'pages/settings/calibration';
+import Limit from 'pages/settings/limit';
+
+// dashboard pages
 
 // auth pages
 const LoginPage = Loadable(lazy(() => import('pages/auth/Login')));
@@ -71,6 +78,7 @@ const router = createBrowserRouter([
       }
     ]
   },
+  //Analytics Pages
   {
     path: '/dryness',
     element: <DashboardLayout />,
@@ -81,7 +89,37 @@ const router = createBrowserRouter([
       }
     ]
   },
-
+  {
+    path: '/ncg',
+    element: <DashboardLayout />,
+    children: [
+      {
+        index: true,
+        element: <NCG />
+      }
+    ]
+  },
+  {
+    path: '/tds',
+    element: <DashboardLayout />,
+    children: [
+      {
+        index: true,
+        element: <TDS />
+      }
+    ]
+  },
+  {
+    path: '/ptf',
+    element: <DashboardLayout />,
+    children: [
+      {
+        index: true,
+        element: <PTF />
+      }
+    ]
+  },
+  //Settings Pages
   {
     path: '/dataInput',
     element: <DashboardLayout />,
@@ -89,6 +127,26 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <DataInput />
+      }
+    ]
+  },
+  {
+    path: '/settings/calibration',
+    element: <DashboardLayout />,
+    children: [
+      {
+        index: true,
+        element: <Calibration />
+      }
+    ]
+  },
+  {
+    path: '/settings/limit',
+    element: <DashboardLayout />,
+    children: [ 
+      {
+        index: true,
+        element: <Limit />
       }
     ]
   }

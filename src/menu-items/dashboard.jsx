@@ -58,21 +58,21 @@ const dashboard = {
           id: 'ncg',
           title: 'NCG',
           type: 'item',
-          url: '/analytics/ncg',
+          url: '/ncg',
           icon: icons.HourglassOutlined,
         },
         {
           id: 'tds',
           title: 'TDS',
           type: 'item',
-          url: '/analytics/tds',
+          url: '/tds',
           icon: icons.DatabaseOutlined,
         },
         {
           id: 'ptf',
           title: 'P, T, F',
           type: 'item',
-          url: '/analytics/ptf',
+          url: '/ptf',
           icon: icons.DashboardOutlined,
         }
       ]
