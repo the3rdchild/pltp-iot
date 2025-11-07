@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 
 // material-ui
 import { useTheme } from '@mui/material/styles';
@@ -19,12 +20,22 @@ import { DownOutlined, UpOutlined } from '@ant-design/icons';
 
 export default function NavCollapse({ item, level }) {
   const theme = useTheme();
+  const { pathname } = useLocation();
 
   const { menuMaster } = useGetMenuMaster();
   const drawerOpen = menuMaster.isDashboardDrawerOpened;
 
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(null);
+
+  const isChildSelected = item.children?.some((child) => child.url === pathname);
+
+  useEffect(() => {
+    if (isChildSelected) {
+      setOpen(true);
+      setSelected(item.id);
+    }
+  }, [isChildSelected, item.id]);
 
   const handleClick = () => {
     setOpen(!open);
@@ -41,7 +52,7 @@ export default function NavCollapse({ item, level }) {
     <>
       <ListItemButton
         disableRipple
-        selected={selected === item.id}
+        selected={selected === item.id || isChildSelected}
         onClick={handleClick}
         sx={{
           pl: drawerOpen ? `${level * 28}px` : 1.5,
@@ -53,7 +64,7 @@ export default function NavCollapse({ item, level }) {
           },
           '&.Mui-selected': {
             bgcolor: theme.palette.mode === 'dark' ? 'divider' : 'primary.lighter',
-            borderRight: `0px solid ${theme.palette.primary.main}`, //borderRight: 2px solid ${theme.palette.primary.main}`,
+            borderRight: `0px solid ${theme.palette.primary.main}`,
 
             '&:hover': {
               bgcolor: theme.palette.mode === 'dark' ? 'divider' : 'primary.lighter'
@@ -65,9 +76,9 @@ export default function NavCollapse({ item, level }) {
           <ListItemIcon
             sx={{
               minWidth: 28,
-              color: selected === item.id ? iconSelectedColor : textColor,
+              color: selected === item.id || isChildSelected ? iconSelectedColor : textColor,
               ...(!drawerOpen && {
-                borderRadius: 1.5, //borderRadius: 1.5,
+                borderRadius: 1.5,
                 width: 36,
                 height: 36,
                 alignItems: 'center',
@@ -77,7 +88,7 @@ export default function NavCollapse({ item, level }) {
                 }
               }),
               ...(!drawerOpen &&
-                selected === item.id && {
+                (selected === item.id || isChildSelected) && {
                   bgcolor: theme.palette.mode === 'dark' ? 'primary.900' : 'primary.lighter',
                   '&:hover': {
                     bgcolor: theme.palette.mode === 'dark' ? 'primary.darker' : 'primary.lighter'
@@ -91,19 +102,18 @@ export default function NavCollapse({ item, level }) {
         {(drawerOpen || (!drawerOpen && level !== 1)) && (
           <ListItemText
             primary={
-              <Typography variant="h6" sx={{ color: selected === item.id ? iconSelectedColor : textColor }}>
+              <Typography variant="h6" sx={{ color: selected === item.id || isChildSelected ? iconSelectedColor : textColor }}>
                 {item.title}
               </Typography>
             }
           />
         )}
-        {(drawerOpen || (!drawerOpen && level !== 1)) && (
-          open ? (
+        {(drawerOpen || (!drawerOpen && level !== 1)) &&
+          (open ? (
             <UpOutlined style={{ fontSize: '0.625rem', marginLeft: 1, color: textColor }} />
           ) : (
             <DownOutlined style={{ fontSize: '0.625rem', marginLeft: 1, color: textColor }} />
-          )
-        )}
+          ))}
       </ListItemButton>
       <Collapse in={open} timeout="auto" unmountOnExit>
         <List component="div" disablePadding>
