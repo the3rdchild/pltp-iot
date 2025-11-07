@@ -51,7 +51,7 @@ const dashboard = {
           id: 'dryness',
           title: 'Dryness',
           type: 'item',
-          url: '/analytics/dryness',
+          url: '/dryness',
           icon: icons.ExperimentFilled,
         },
         {

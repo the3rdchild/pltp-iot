@@ -9,6 +9,11 @@ import SamplePage from 'pages/extra-pages/documentationpage';
 import History from 'pages/component-overview/history';
 import HomePage from 'pages/home/home';
 import Loadable from 'components/Loadable';
+import Typography from 'pages/component-overview/typography';
+import Color from 'pages/component-overview/color';
+
+import Dryness from 'pages/analytics/dryness';
+
 
 // auth pages
 const LoginPage = Loadable(lazy(() => import('pages/auth/Login')));
@@ -40,10 +45,6 @@ const router = createBrowserRouter([
     ]
   },
   {
-    path: '/Dashboard',
-    element: <Navigate to="/dashboard" replace />
-  },
-  {
     path: '/dashboard',
     element: <DashboardLayout />,
     children: [
@@ -58,6 +59,24 @@ const router = createBrowserRouter([
       {
         path: 'History', //documentationpage
         element: <History />
+      },
+      {
+        path: 'typography',
+        element: <Typography />
+      },
+      {
+        path: 'color',
+        element: <Color />
+      }
+    ]
+  },
+  {
+    path: '/dryness',
+    element: <DashboardLayout />,
+    children: [
+      {
+        index: true,
+        element: <Dryness />
       }
     ]
   }
