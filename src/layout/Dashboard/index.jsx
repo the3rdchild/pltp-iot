@@ -42,6 +42,7 @@ export default function DashboardLayout() {
           flexGrow: 1,
           display: 'flex',
           flexDirection: 'column',
+          minHeight: '100vh',
           p: 0, // No padding on the main container
           m: 0
         }}
@@ -51,7 +52,7 @@ export default function DashboardLayout() {
         {/* Content area with padding */}
         <Box
           sx={{
-            flexGrow: 2,
+            flex: 1, // Let the content grow to push the footer down
             p: isDashboard ? 0 : { xs: 2, sm: 3 }, // Apply padding here
             m: 0,
             display: 'flex',
