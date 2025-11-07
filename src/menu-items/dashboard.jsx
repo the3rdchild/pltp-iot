@@ -84,10 +84,10 @@ const dashboard = {
       icon: icons.SettingOutlined,
       children: [
         {
-          id: 'manual-data-input',
+          id: 'dataInput',
           title: 'Manual Data Input',
           type: 'item',
-          url: '/settings/manual-data-input',
+          url: '/dataInput',
           icon: icons.EditOutlined,
         },
         {
@@ -110,7 +110,7 @@ const dashboard = {
       id: 'logout',
       title: 'Logout',
       type: 'item',
-      url: '/logout',
+      url: '/login',
       icon: icons.LogoutOutlined
     }
   ]

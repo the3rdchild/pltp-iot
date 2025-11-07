@@ -14,6 +14,7 @@ import Color from 'pages/component-overview/color';
 
 import Dryness from 'pages/analytics/dryness';
 
+import DataInput from 'pages/settings/dataInput'
 
 // auth pages
 const LoginPage = Loadable(lazy(() => import('pages/auth/Login')));
@@ -79,7 +80,19 @@ const router = createBrowserRouter([
         element: <Dryness />
       }
     ]
+  },
+
+  {
+    path: '/dataInput',
+    element: <DashboardLayout />,
+    children: [
+      {
+        index: true,
+        element: <DataInput />
+      }
+    ]
   }
+  
 ]);
 
 export default router;
