@@ -7,10 +7,10 @@ const Dryness = () => {
   return (
     <Box>
       <Typography variant="h4" sx={{ mb: 2 }}>
-        Settings
+        Settings - Limit
       </Typography>
       <Typography>
-        This is a blank canvas. Start building your new look for the settings page here.
+      This is a blank canvas. This page is under construction.
       </Typography>
     </Box>
   );

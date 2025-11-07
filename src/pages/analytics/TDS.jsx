@@ -10,7 +10,7 @@ const Dryness = () => {
         TDS Analytics
       </Typography>
       <Typography>
-        This is a blank canvas. Start building your new look for the TDS page here.
+      This is a blank canvas. This page is under construction.
       </Typography>
     </Box>
   );
