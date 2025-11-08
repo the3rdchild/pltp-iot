@@ -11,13 +11,13 @@ export default function AuthBackground() {
   return (
     <Box
       sx={{
-        position: 'absolute',
+        position: 'fixed',
         filter: 'blur(18px)',
         zIndex: -1,
-        top: -30,
-        left: -300,
-        width: '50%',
-        height: '110%'
+        top: 0,
+        left: 0,
+        width: '50vw',
+        height: '100vh'
       }}
     >
       {/* <svg width="100%" height="calc(100vh - 175px)" viewBox="0 0 405 809" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -37,10 +37,16 @@ export default function AuthBackground() {
         />
       </svg> */}
 
-  <svg width="100%" height="100%" viewBox="0 0 620 620" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMaxYMid slice">
+    <svg width="100%" height="100%" viewBox="310 0 310 620" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMid meet">
+    <defs>
+    <mask id="rightMask">
+      <rect x="0" y="0" width="620" height="620" fill="black"/>
+      <rect x="310" y="0" width="310" height="620" fill="white"/>
+    </mask>
+    </defs>
+    <g mask="url(#rightMask)">
     <circle cx="310" cy="310" r="310" fill="#fff"/>
     <g transform="translate(0 58)">
-      
       <path d="M315.5 1.085c-150.5 3.5-222 85.5-254 197.5h32c9.5-72 88.5-170.5 222-170.5s190.903 83.483 
       230.5 178.5h26c-30.202-104.237-106-209-256.5-205.5z" fill="#525868" stroke="#525868"/>
       <path fill="#525868" stroke="#525868" d="M102.5 150.085h99v16h-99zm-29 130h181v16h-181z"/>
@@ -72,9 +78,9 @@ export default function AuthBackground() {
       177 46.5-125.5 30 55 14 22h35V231h-28L420 137l-44 110.5z" fill="#525868" stroke="#525868"/>
       <circle cx="323.5" cy="89.5" r="24" fill="#525868" stroke="#525868"/>
       <circle cx="375.5" cy="284.5" r="24" fill="#525868" stroke="#525868"/>
-      </g>
-      </svg>
-
+    </g>
+    </g>
+    </svg>
     </Box>
   );
 
@@ -116,4 +122,3 @@ export default function AuthBackground() {
 
 
 }
-
