@@ -8,12 +8,8 @@ An interactive IoT-based SCADA system built to monitor **steam quality**, **stea
 
 ## 🌐 Live Dashboard
 
-📍 **Live demo**: [Steam Quality & Purity Online Monitoring Dashboard](https://pltp-ef8b9.web.app)
+📍 **Live demo**: [Steam Quality & Purity Online Monitoring Dashboard](https://pertasmart.unpad.ac.id/)
 
-<p float="left">
-  <img src="https://github.com/the3rdchild/pltp-iot/blob/main/documentation/ds1.png" width="32%" />
-  <img src="https://github.com/the3rdchild/pltp-iot/blob/main/documentation/ds2.png" width="32%" />
-</p>
 
 ---
 
