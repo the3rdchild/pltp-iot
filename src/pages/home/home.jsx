@@ -1,335 +1,586 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+
+import React, { useState, useRef, useEffect } from 'react';
 import pertaminaLogo from '../../assets/images/pertamina1x1.svg';
 import unpadLogo from '../../assets/images/Logo-Unpad.svg';
-import Footer from 'components/layout/Footer';
+import heroImage from '../../assets/images/landing_page_image.jpg';
+import engineerImage from '../../assets/images/landing_page_image_2.png';
+import tdsImage from '../../assets/images/tds.png';
+import drynessImage from '../../assets/images/dryness.png';
+import ncgImage from '../../assets/images/ncg.png';
+import indonesiaMap from '../../assets/images/indonesia-map.png';
 
-const SteamMonitoring = () => {
+const Home = () => {
+  const [activeUnit, setActiveUnit] = useState(null);
+  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0, side: 'right' });
+  const popupRef = useRef(null);
+  const mapRef = useRef(null);
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if click is outside popup and not on a pin
+      if (
+        activeUnit && 
+        popupRef.current && 
+        !popupRef.current.contains(event.target) &&
+        !event.target.closest('.map-pin')
+      ) {
+        setActiveUnit(null);
+      }
+    };
+
+    if (activeUnit) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeUnit]);
+  
+  const units = {
+    kamojang: {
+      name: 'Kamojang',
+      location: 'Jawa Barat',
+      dryness: '99.23%',
+      tds: '154.2°C',
+      ncg: '5.87 barg',
+      pressure: '32.45 MPa',
+      temp: '185°C',
+      power: '55 MW'
+    },
+    ulubelu: {
+      name: 'Ulubelu',
+      location: 'Lampung',
+      dryness: '98.45%',
+      tds: '162.8°C',
+      ncg: '6.12 barg',
+      pressure: '28.67 MPa',
+      temp: '178°C',
+      power: '110 MW'
+    }
+  };
+
+  // Calculate popup position dynamically
+  const handlePinClick = (unit, event) => {
+    const pin = event.currentTarget;
+    const mapContainer = mapRef.current;
+    
+    if (!mapContainer) return;
+    
+    const pinRect = pin.getBoundingClientRect();
+    const mapRect = mapContainer.getBoundingClientRect();
+    
+    const popupWidth = 420;
+    const popupHeight = 500;
+    const offset = 20;
+    
+    // Calculate relative position to map container
+    let top = pinRect.top - mapRect.top;
+    let left = pinRect.right - mapRect.left + offset;
+    let side = 'right';
+    
+    // Check if popup fits on the right
+    if (left + popupWidth > mapRect.width) {
+      // Try left side
+      left = pinRect.left - mapRect.left - popupWidth - offset;
+      side = 'left';
+      
+      // If still doesn't fit on left, center it
+      if (left < 0) {
+        left = Math.max(20, (mapRect.width - popupWidth) / 2);
+        side = 'center';
+      }
+    }
+    
+    // Adjust vertical position
+    if (top + popupHeight > mapRect.height) {
+      top = Math.max(20, mapRect.height - popupHeight - 20);
+    }
+    if (top < 20) top = 20;
+    
+    setPopupPosition({ top, left, side });
+    setActiveUnit(unit);
+  };
+
   return (
-    <div className="steam-monitoring">
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-content">
-          <div className="logo-left">
-            <img src={pertaminaLogo} alt="Pertamina Logo" />
+    <div className="home">
+      {/* Header Navigation */}
+      <header className="header">
+        <div className="header-container">
+          <div className="header-logos">
+            <img src={pertaminaLogo} alt="Pertamina" className="header-logo" />
+            <div className="logo-divider"></div>
+            <img src={unpadLogo} alt="UNPAD" className="header-logo" />
           </div>
-          <div className="hero-text">
-            <h1 className="hero-title">
-              Pengembangan Online Steam Quality - Purity<br />
-              Monitoring Smart System di Lapangan<br />
-              Geotermal
-            </h1>
-            <p className="hero-subtitle">
-              Kerjasama Penelitian PT.Pertamina dengan Universitas Padjadjaran
+          <nav className="nav">
+            <a href="#home" className="nav-link">HOME</a>
+            <a href="#about" className="nav-link">About Us</a>
+            <a href="#services" className="nav-link">SERVICES</a>
+            <a href="#faq" className="nav-link">FAQ</a>
+            <a href="#monitoring" className="nav-link">STEAM MONITORING</a>
+          </nav>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <section id="home" className="hero-section">
+        <div className="container">
+          <div className="brand-logos">
+            <img src={pertaminaLogo} alt="Pertamina" className="brand-logo" />
+            <img src={unpadLogo} alt="UNPAD" className="brand-logo" />
+          </div>
+          
+          <h1 className="hero-title">
+            Pengembangan Online Steam Quality - Purity<br />
+            <span className="hero-highlight">Monitoring Smart System</span> di Lapangan<br />
+            Geothermal
+          </h1>
+          
+          <div className="hero-content-wrapper">
+            <p className="hero-text">
+              Kolaborasi antara PT Pertamina dan Universitas Padjadjaran dalam pengembangan Online Steam Quality–Purity Monitoring Smart System untuk memantau kualitas dan kemurnian uap geotermal secara real-time, mendukung efisiensi dan keberlanjutan energi terbarukan di Indonesia.
+            </p>
+            <p className="hero-text">
+              Inisiatif ini mendorong digitalisasi monitoring geotermal di Indonesia melalui sensor cerdas, analisis IoT, dan pemantauan real–time untuk meningkatkan akurasi dan mendukung energi bersih berkelanjutan.
             </p>
           </div>
-          <div className="logo-right">
-            <img src={unpadLogo} alt="Unpad Logo" />
+
+          <div className="hero-image-container">
+            <img 
+              src={heroImage} 
+              alt="PLTP Geothermal Facility" 
+              className="hero-image"
+            />
           </div>
         </div>
       </section>
 
-      {/* Dashboard Cards - Revised Version */}
-      <section className="dashboard-section">
+      {/* Mission Section */}
+      <section id="about" className="mission-section">
         <div className="container">
-          <div className="dashboard-grid">
-            {/* PLTP Kamojang Unit 5 */}
-            <div className="dashboard-card">
+          <h2 className="section-title">
+            Misi Kami Berakar pada Inovasi
+          </h2>
+          <p className="section-intro">
+            Kami hadir untuk mengembangkan inovasi dalam di industri energi panas bumi melalui 
+            teknologi monitoring yang canggih dan berkelanjutan. Dengan berkolaborasi bersama 
+            institusi pendidikan terkemuka, kami menciptakan solusi yang tidak hanya efisien 
+            tetapi juga ramah lingkungan untuk masa depan energi Indonesia.
+          </p>
+
+          <div className="mission-grid">
+            <div className="mission-cards">
+              <div className="mission-card">
+                <div className="mission-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
+                    <path d="M9 18h6"></path>
+                    <path d="M10 22h4"></path>
+                  </svg>
+                </div>
+                <h3 className="mission-card-title">
+                  Meningkatkan Efisiensi Geothermal
+                </h3>
+                <p className="mission-card-text">
+                  Dengan monitoring real-time terhadap kualitas uap, kami membantu 
+                  mengoptimalkan performa turbin dan mengurangi downtime operasional, 
+                  sehingga produktivitas PLTP meningkat secara signifikan.
+                </p>
+              </div>
+
+              <div className="mission-card">
+                <div className="mission-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                </div>
+                <h3 className="mission-card-title">
+                  Kolaborasi untuk Inovasi Energi
+                </h3>
+                <p className="mission-card-text">
+                  Sinergi antara industri dan akademisi menghasilkan riset dan 
+                  pengembangan teknologi yang aplikatif, menjawab tantangan energi 
+                  terbarukan dengan solusi yang inovatif dan berkelanjutan.
+                </p>
+              </div>
+            </div>
+
+            <div className="engineer-image-container">
               <img 
-                src="https://framerusercontent.com/images/fxCvwkQgyA8fWju3S9RurCWJQ.png?width=715&height=403" 
-                alt="PLTP Kamojang" 
-                className="card-image" 
+                src={engineerImage} 
+                alt="Pertamina Engineer" 
+                className="engineer-image"
               />
-              <h3 className="card-title">PLTP Kamojang Unit 5</h3>
-              
-              <div className="quality-metrics-container">
-                <div className="quality-metrics-grid">
-                  <div className="quality-metric-item">
-                    <span className="quality-metric-label">Dryness Fraction</span>
-                    <span className="quality-metric-value">98.23%</span>
-                  </div>
-                  <div className="quality-metric-item">
-                    <span className="quality-metric-label">Total Dissolve Solid (TDS)</span>
-                    <span className="quality-metric-value">1.18ppm</span>
-                  </div>
-                  <div className="quality-metric-item">
-                    <span className="quality-metric-label">Non Condensed Gas (NCG)</span>
-                    <span className="quality-metric-value">0.012%</span>
-                  </div>
-                </div>
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: '98.23%' }}></div>
-                </div>
-              </div>
+            </div>
+            <div className="mission-button-container">
 
-              <div className="metrics-row">
-                <div className="metric-item">
-                  <span className="metric-label">Temp</span>
-                  <span className="metric-value">165.2°C</span>
-                </div>
-                <div className="metric-item">
-                  <span className="metric-label">Pressure</span>
-                  <span className="metric-value">5.87 barg</span>
-                </div>
-                <div className="metric-item">
-                  <span className="metric-label">Power</span>
-                  <span className="metric-value">32.46 MW</span>
-                </div>
-              </div>
-              <Link to="/login" className="btn-dashboard btn-dashboard-link">Dashboard</Link>
-              </div>
+            <button className="btn-read-more">
+              READ MORE
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="m9 18 6-6-6-6"/>
+              </svg>
+            </button>
+          </div>
+          </div>
+        </div>
+      </section>
 
-            {/* PLTP Ulubelu Unit 3 */}
-            <div className="dashboard-card">
-              <img 
-                src="https://framerusercontent.com/images/z3X7nyBGwXDrmzDeGnN08549CVo.webp?width=1189&height=690" 
-                alt="PLTP Ulubelu" 
-                className="card-image" 
-              />
-              <h3 className="card-title">PLTP Ulubelu Unit 3</h3>
-              
-              <div className="quality-metrics-container">
-                <div className="quality-metrics-grid">
-                  <div className="quality-metric-item">
-                    <span className="quality-metric-label">Dryness Fraction</span>
-                    <span className="quality-metric-value">98.23%</span>
-                  </div>
-                  <div className="quality-metric-item">
-                    <span className="quality-metric-label">Total Dissolve Solid (TDS)</span>
-                    <span className="quality-metric-value">1.18ppm</span>
-                  </div>
-                  <div className="quality-metric-item">
-                    <span className="quality-metric-label">Non Condensed Gas (NCG)</span>
-                    <span className="quality-metric-value">0.012%</span>
-                  </div>
-                </div>
-                <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: '98.23%' }}></div>
-                </div>
-              </div>
+      {/* Services Section */}
+      <section id="services" className="services-section">
+        <div className="container">
+            <div className="services-intro-grid">
+            <div>
+              <h2 className="section-title">Layanan Kami</h2>
+            </div>
+            <div>
+              <p className="section-intro">
+                Sebagai bagian dari komitmen terhadap inovasi dan efisiensi energi panas bumi, kami menghadirkan berbagai layanan berbasis teknologi cerdas yang mendukung pemantauan, analisis, dan optimalisasi sistem geotermal. Melalui kolaborasi riset antara PT Pertamina dan Universitas Padjadjaran, setiap layanan kami dirancang untuk meningkatkan keandalan operasional serta mendorong transformasi menuju energi bersih yang berkelanjutan.
+              </p>
+            </div>
+          </div>
 
-              <div className="metrics-row">
-                <div className="metric-item">
-                  <span className="metric-label">Temp</span>
-                  <span className="metric-value">165.2°C</span>
-                </div>
-                <div className="metric-item">
-                  <span className="metric-label">Pressure</span>
-                  <span className="metric-value">5.87 barg</span>
-                </div>
-                <div className="metric-item">
-                  <span className="metric-label">Power</span>
-                  <span className="metric-value">32.46 MW</span>
-                </div>
+          <div className="services-grid">
+            <div className="service-card">
+              <div className="service-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
               </div>
+              <h3 className="service-title">
+                Memantau Kualitas Uap Real-Time
+              </h3>
+              <p className="service-text">
+                Sistem monitoring yang memberikan data akurat setiap saat untuk 
+                memastikan kualitas uap yang masuk ke turbin selalu dalam kondisi optimal.
+              </p>
+            </div>
 
-              <button className="btn-dashboard">Dashboard</button>
+            <div className="service-card">
+              <div className="service-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="20" x2="18" y2="10"></line>
+                  <line x1="12" y1="20" x2="12" y2="4"></line>
+                  <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+              </div>
+              <h3 className="service-title">
+                Analisis Data Berbasis IoT
+              </h3>
+              <p className="service-text">
+                Platform IoT yang mengintegrasikan sensor dan cloud computing untuk 
+                analisis data mendalam dan pengambilan keputusan yang lebih cepat.
+              </p>
+            </div>
+
+            <div className="service-card">
+              <div className="service-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path>
+                </svg>
+              </div>
+              <h3 className="service-title">
+                Optimisasi Kinerja Turbin
+              </h3>
+              <p className="service-text">
+                Membantu meningkatkan efisiensi turbin dengan monitoring parameter 
+                kritis yang mempengaruhi performa dan umur peralatan.
+              </p>
+            </div>
+
+            <div className="service-card">
+              <div className="service-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z"></path>
+                </svg>
+              </div>
+              <h3 className="service-title">
+                Solusi Digital Berkelanjutan
+              </h3>
+              <p className="service-text">
+                Teknologi ramah lingkungan yang mendukung operasional PLTP yang 
+                efisien dan berkelanjutan untuk masa depan energi terbarukan.
+              </p>
+            </div>
+
+            <div className="service-card">
+              <div className="service-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </div>
+              <h3 className="service-title">
+                Kolaborasi Riset dan Inovasi
+              </h3>
+              <p className="service-text">
+                Kerjasama antara industri dan akademisi dalam mengembangkan 
+                teknologi baru untuk meningkatkan efisiensi energi geothermal.
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* PLTP Information */}
-      <section className="info-section">
+      {/* Monitoring Units Section */}
+      <section id="monitoring" className="monitoring-section">
         <div className="container">
-          <img 
-            src="https://framerusercontent.com/images/qPB02uBw6FuErZttYN5NN4TTnY.png?scale-down-to=1024&width=1126&height=626" 
-            alt="PLTP Diagram" 
-            className="info-image" 
-          />
-          <h2 className="section-title">Pembangkit Listrik Tenaga Panas Bumi (PLTP)</h2>
-
-          <div className="steps">
-            <div className="step">
-              <h4>Sumber panas bumi (reservoir):</h4>
-              <p>Di bawah permukaan bumi terdapat kantong uap panas alami dari aktivitas magma.</p>
-
-              <h4>Produksi uap:</h4>
-              <p>
-                Air tanah yang meresap ke dalam bumi dipanaskan oleh magma hingga berubah menjadi uap 
-                bertekanan tinggi. Uap ini kemudian dikeluarkan melalui sumur produksi (production well) 
-                menuju permukaan.
+          <div className="monitoring-intro-grid">
+            <div>
+              <h2 className="section-title-light">Unit Pemantauan Kami</h2>
+              <button className="btn-discover">
+                DISCOVER
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </button>
+            </div>
+            <div>
+              <p className="section-intro-light">
+                Unit pemantauan kami dirancang untuk mengawasi kualitas dan kemurnian uap secara real-time di setiap titik lapangan geotermal. Melalui integrasi sensor cerdas dan sistem berbasis IoT, kami memastikan setiap data yang dikumpulkan akurat, responsif, dan mudah diakses melalui dashboard interaktif. Dengan pendekatan ini, efisiensi operasional dan keandalan sistem energi panas bumi dapat terus terjaga.
               </p>
+            </div>
+          </div>
 
-              <h4>Pemanfaatan uap di pembangkit:</h4>
-              <p>
-                Uap panas tersebut dialirkan melalui pipa menuju turbin uap. Tekanan uap memutar turbin → 
-                turbin memutar generator → menghasilkan listrik.
-              </p>
+          <div className="map-container" ref={mapRef}>
+            {/* Background Map */}
+            <div className="map-background" style={{ backgroundImage: `url(${indonesiaMap})` }}>
+              <div className="globe-effect"></div>
+              
+              {/* Pin Kamojang */}
+              <div 
+                className={`map-pin kamojang-pin ${activeUnit === 'kamojang' ? 'active' : ''}`}
+                onClick={(e) => handlePinClick('kamojang', e)}
+              >
+                <svg className="pin-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+              </div>
 
-              <h4>Kondensasi & injeksi ulang:</h4>
-              <p>
-                Setelah melewati turbin, uap dikondensasikan menjadi air di kondensor. Air hasil kondensasi 
-                kemudian diinjeksikan kembali ke dalam bumi melalui sumur injeksi (injection well) agar 
-                siklus panas bumi berkelanjutan.
-              </p>
+              {/* Pin Ulubelu */}
+              <div 
+                className={`map-pin ulubelu-pin ${activeUnit === 'ulubelu' ? 'active' : ''}`}
+                onClick={(e) => handlePinClick('ulubelu', e)}
+              >
+                <svg className="pin-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                </svg>
+              </div>
 
-              <h4>Distribusi listrik:</h4>
-              <p>
-                Listrik dari generator dinaikkan tegangannya oleh transformator, lalu disalurkan ke jaringan 
-                listrik PLN.
-              </p>
+              {/* Monitoring Card - Pop up saat pin di-click */}
+              {activeUnit && (
+                <div 
+                  ref={popupRef}
+                  className="monitoring-popup" 
+                  style={{
+                    top: `${popupPosition.top}px`,
+                    left: `${popupPosition.left}px`
+                  }}
+                >
+                  <div className="monitoring-card-compact">
+                    <div className="popup-header">
+                      <div>
+                        <h3 className="monitoring-title">{units[activeUnit].name}</h3>
+                        <p className="monitoring-location">{units[activeUnit].location}</p>
+                      </div>
+                      <button className="btn-unit-dropdown">
+                        Unit 5
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className="metrics-grid-compact">
+                      <div className="metric-box-compact">
+                        <p className="metric-label-compact">Dryness Fraction</p>
+                        <p className="metric-value-compact">{units[activeUnit].dryness}</p>
+                      </div>
+                      <div className="metric-box-compact">
+                        <p className="metric-label-compact">TDS<br/><span>(Total Dissolve Solid)</span></p>
+                        <p className="metric-value-compact">{units[activeUnit].tds}</p>
+                      </div>
+                      <div className="metric-box-compact">
+                        <p className="metric-label-compact">NCG<br/><span>(Non Condensed Gas)</span></p>
+                        <p className="metric-value-compact">{units[activeUnit].ncg}</p>
+                      </div>
+                    </div>
+
+                    <div className="metrics-row-compact">
+                      <div className="metric-item-compact">
+                        <span className="metric-label-compact">Power</span>
+                        <span className="metric-value-compact">{units[activeUnit].power}</span>
+                      </div>
+                      <div className="metric-item-compact">
+                        <span className="metric-label-compact">Temp</span>
+                        <span className="metric-value-compact">{units[activeUnit].temp}</span>
+                      </div>
+                      <div className="metric-item-compact">
+                        <span className="metric-label-compact">Pressure</span>
+                        <span className="metric-value-compact">{units[activeUnit].pressure}</span>
+                      </div>
+                    </div>
+
+                    <button className="btn-dashboard-compact">Dashboard</button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </section>
+
 
       {/* Steam Quality Section */}
       <section className="quality-section">
         <div className="container">
-          <h2 className="section-title">Pentingnya Memantau Kualitas Uap yang Masuk Turbin</h2>
-          <p className="section-intro">Kualitas dan kemurnian uap sangat mempengaruhi kinerja dari turbin</p>
+          <div className="quality-intro-grid">
+            <div>
+              <h2 className="section-title">
+                Pentingnya Memantau Kualitas Uap yang Masuk Turbin
+              </h2>
+            </div>
+            <div>
+              <p className="section-intro">
+                Kualitas dan kemurnian uap yang masuk ke turbin memiliki peran penting dalam menjaga efisiensi serta umur peralatan pembangkit. Uap yang mengandung kotoran atau kadar air berlebih dapat menurunkan performa turbin, menyebabkan korosi, dan meningkatkan biaya perawatan. Melalui sistem pemantauan kualitas uap secara real-time, potensi gangguan tersebut dapat diminimalkan, sehingga kinerja pembangkit tetap optimal dan berkelanjutan.
+              </p>
+            </div>
+          </div>
 
           <div className="quality-cards">
-            {/* TDS Card */}
             <div className="quality-card">
-              <img 
-                src="https://framerusercontent.com/images/FVi31RljoWcuDczOzaHhMlZhx1g.png?scale-down-to=1024&width=1375&height=583" 
-                alt="TDS" 
-                className="quality-image" 
-              />
-              <h3>TDS (Total Dissolved Solid)</h3>
-              <p className="quality-desc">
-                TDS adalah perbandingan banyaknya zat padat dalam larutan/uap/cairan yang dinyatakan 
-                dalam persentase
-              </p>
-              <p>
-                TDS tinggi bisa menyebabkan carryover (terikutnya zat padat atau cairan dalam uap), yang dapat:
-              </p>
-              <ul>
-                <li>Mengikis sudu turbin</li>
-                <li>Merusak lapisan pelindung (coating)</li>
-                <li>Mengganggu keseimbangan turbin</li>
-              </ul>
+              <div className="quality-image-container">
+                <img 
+                  src={tdsImage} 
+                  alt="TDS - Total Dissolved Solid" 
+                  className="quality-image"
+                />
+              </div>
+              <div className="quality-content">
+                <h3 className="quality-title">
+                  TDS (Total Dissolved Solid)
+                </h3>
+                <p className="quality-description">
+                  TDS adalah perbandingan banyaknya zat padat dalam larutan/uap/cairan yang dinyatakan dalam persentase. TDS tinggi bisa menyebabkan carryover (terikutnya zat padat atau cairan dalam uap).
+                </p>
+                <button className="btn-quality-read-more">
+                  READ MORE
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                </button>
+              </div>
             </div>
 
-            {/* Dryness Fraction Card */}
             <div className="quality-card">
-              <img 
-                src="https://framerusercontent.com/images/wAMDPfSSGtN1k78Js0PWw8BqBg4.png?scale-down-to=1024&width=1530&height=525" 
-                alt="Dryness Fraction" 
-                className="quality-image" 
-              />
-              <h3>Dryness Fraction</h3>
-              <p className="quality-desc">
-                Dryness fraction adalah tingkat kadar air dalam uap yang dinyatakan dalam persentase
-              </p>
-              <p>Banyaknya air dalam uap dapat menyebabkan korosi pada turbin</p>
-              <ul>
-                <li>
-                  <strong>Efisiensi Turbin:</strong> Menurun karena energi digunakan untuk menggerakkan 
-                  air, bukan menghasilkan kerja
-                </li>
-                <li>
-                  <strong>Erosi/korosi:</strong> Bilah turbin cepat aus jika x &lt; 0.9
-                </li>
-              </ul>
+              <div className="quality-image-container">
+                <img 
+                  src={drynessImage} 
+                  alt="Dryness Fraction" 
+                  className="quality-image"
+                />
+              </div>
+              <div className="quality-content">
+                <h3 className="quality-title">
+                  Dryness Fraction
+                </h3>
+                <p className="quality-description">
+                  Dryness fraction adalah tingkat kadar air dalam uap yang dinyatakan dalam persentase. Banyaknya air dalam uap dapat menyebabkan korosi pada turbin
+                </p>
+                <button className="btn-quality-read-more">
+                  READ MORE
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                </button>
+              </div>
             </div>
 
-            {/* NCG Card */}
             <div className="quality-card">
-              <img 
-                src="https://framerusercontent.com/images/8zivXU5iJPzTMagWXuWt6VFzM.png?scale-down-to=1024&width=1541&height=540" 
-                alt="NCG" 
-                className="quality-image" 
-              />
-              <h3>NCG (Non Condensed Gas)</h3>
-              <p className="quality-desc">
-                NCG adalah gas yang tidak dapat dikondensasikan yang dinyatakan dalam persen
-              </p>
-              <p>Contoh: CO₂, H₂S, dan gas lainnya.</p>
-              <p><strong>Dampak:</strong></p>
-              <ul>
-                <li>Kerusakan pada sudu turbin akibat erosi dan korosi.</li>
-                <li>Menurunkan efisiensi pembangkit.</li>
-              </ul>
+              <div className="quality-image-container">
+                <img 
+                  src={ncgImage} 
+                  alt="NCG - Non Condensed Gas" 
+                  className="quality-image"
+                />
+              </div>
+              <div className="quality-content">
+                <h3 className="quality-title">
+                  NCG (Non Condensed Gas)
+                </h3>
+                <p className="quality-description">
+                  NCG adalah gas yang tidak dapat dikondensasikan yang dinyatakan dalam persen. Contoh: CO₂, H₂S, dan gas lainnya.
+                </p>
+                <button className="btn-quality-read-more">
+                  READ MORE
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Existing vs Development Section */}
-      <section className="comparison-section">
+      {/* Footer */}
+      <footer className="footer">
         <div className="container">
-          <div className="comparison-grid">
-            {/* Existing System */}
-            <div className="comparison-card existing">
-              <h2>Existing</h2>
-              <img 
-                src="https://framerusercontent.com/images/x82t3EgGS06sBAtcanrMT886GI.png?scale-down-to=1024&width=1175&height=508" 
-                alt="Existing System" 
-                className="comparison-image" 
-              />
-              <ul className="comparison-list">
-                <li>
-                  <h4>Pengambilan data masih manual</h4>
-                  <p>
-                    Sampel uap atau kondensat diambil secara periodik oleh petugas. Analisis parameter 
-                    seperti TDS dan dryness fraction dilakukan di laboratorium.
-                  </p>
-                </li>
-                <li>
-                  <h4>Data bersifat offline</h4>
-                  <p>
-                    Tidak ada integrasi real-time ke sistem DCS/SCADA. Operator harus menunggu hasil lab 
-                    untuk mengambil keputusan.
-                  </p>
-                </li>
-                <li>
-                  <h4>Risiko keterlambatan mitigasi</h4>
-                  <p>
-                    Anomali hanya terdeteksi setelah data keluar dari lab. Potensi kerusakan bisa terjadi 
-                    sebelum diketahui.
-                  </p>
-                </li>
-                <li>
-                  <h4>Tidak ada histori data terintegrasi</h4>
-                  <p>
-                    Data tidak tersimpan secara time-series. Sulit melakukan analisis tren dan prediksi 
-                    jangka panjang.
-                  </p>
-                </li>
+          <div className="footer-grid">
+            <div className="footer-col">
+              <div className="footer-logos">
+                <img src={pertaminaLogo} alt="Pertamina" className="footer-logo" />
+                <img src={unpadLogo} alt="UNPAD" className="footer-logo" />
+              </div>
+              <p className="footer-text">
+                Kolaborasi PT. Pertamina dan Universitas Padjadjaran dalam 
+                mengembangkan teknologi monitoring steam quality untuk PLTP.
+              </p>
+            </div>
+
+            <div className="footer-col">
+              <h4 className="footer-heading">Navigasi</h4>
+              <ul className="footer-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About Us</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#monitoring">Monitoring</a></li>
               </ul>
             </div>
 
-            {/* Development System */}
-            <div className="comparison-card development">
-              <h2>Pengembangan Sistem Online Monitoring</h2>
-              <img 
-                src="https://framerusercontent.com/images/0fuVB6xdxaME5uXciFT2v1NzN9g.png?scale-down-to=1024&width=1118&height=839" 
-                alt="Development System" 
-                className="comparison-image" 
-              />
-              <ul className="comparison-list">
-                <li>
-                  <h4>Pengukuran real-time langsung dari sensor lapangan</h4>
-                  <p>
-                    Integrasi sensor TDS, suhu, tekanan, FLOW, dryness fraction ke database dan dashboard
-                  </p>
-                </li>
-                <li>
-                  <h4>
-                    Pemrosesan data menggunakan Artificial Intelligence untuk prediksi steam quality 
-                    dan deteksi anomali
-                  </h4>
-                </li>
-                <li>
-                  <h4>Visualisasi data melalui dashboard web secara langsung</h4>
-                </li>
-                <li>
-                  <h4>Notifikasi dini (early warning) jika terjadi anomali parameter</h4>
-                </li>
+            <div className="footer-col">
+              <h4 className="footer-heading">Lokasi PLTP</h4>
+              <ul className="footer-links">
+                <li>Kamojang, Jawa Barat</li>
+                <li>Ulubelu, Lampung</li>
+              </ul>
+            </div>
+
+            <div className="footer-col">
+              <h4 className="footer-heading">Kontak</h4>
+              <ul className="footer-links">
+                <li>PT. Pertamina Geothermal Energy</li>
+                <li>Universitas Padjadjaran</li>
+                <li>Email: info@pertasmart.com</li>
               </ul>
             </div>
           </div>
-        </div>
-      </section>
 
-      <Footer sx={{ mt: 0 }} />
+          <div className="footer-bottom">
+            <p>&copy; 2024 SMART System - PT. Pertamina & UNPAD. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
 
       <style jsx>{`
-        .steam-monitoring {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+        .home {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
           line-height: 1.6;
           color: #1a1a1a;
           background-color: #ffffff;
@@ -341,535 +592,946 @@ const SteamMonitoring = () => {
           padding: 0 24px;
         }
 
-        img {
-          max-width: 100%;
-          height: auto;
-          display: block;
-        }
-
-        .hero {
-          background: #1a3a52;
+        /* Header */
+        .header {
+          background-color: #1a2642;
           color: white;
-          padding: 40px 0;
-          border: none;
-          border-radius: 0;
-          margin: 0;
+          padding: 16px 0;
+          position: sticky;
+          top: 0;
+          z-index: 1000;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .hero-content {
+        .header-container {
           max-width: 1200px;
           margin: 0 auto;
-          padding: 0 24px;
+          padding: 0 32px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 40px;
         }
 
-        .logo-left,
-        .logo-right {
-          width: 160px;
-          height: auto;
-          flex-shrink: 0;
-        }
-
-        .logo-left img,
-        .logo-right img {
-          width: 150px;
-          height: auto;
-          filter: brightness(1.2);
-        }
-
-        .hero-text {
-          flex: 1;
-          text-align: center;
-        }
-
-        .hero-title {
-          font-size: 2.0rem;
-          font-weight: 700;
-          margin-bottom: 12px;
-          line-height: 1.3;
-        }
-
-        .hero-subtitle {
-          font-size: 1.5rem;
-          font-weight: 500;
-          opacity: 1;
-          color: #FFA500;
-        }
-
-        .dashboard-section {
-          padding: 80px 0;
-          background-color: #f8f9fa;
-        }
-
-        .dashboard-title {
-          text-align: center;
-          font-size: 2rem;
-          font-weight: 700;
-          color: #1a1a1a;
-          margin-bottom: 50px;
-        }
-
-        .dashboard-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-          gap: 40px;
-          max-width: 900px;
-          margin: 0 auto;
-        }
-
-        .dashboard-card {
-          background: white;
-          border-radius: 20px;
-          padding: 30px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .dashboard-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 15px 50px rgba(0, 0, 0, 0.12);
-        }
-
-        .card-image {
-          width: 100%;
-          height: 200px;
-          object-fit: cover;
-          border-radius: 12px;
-          margin-bottom: 20px;
-        }
-
-        .card-title {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: #1a1a1a;
-          margin-bottom: 20px;
-        }
-
-        .quality-metrics-container {
-          margin-bottom: 20px;
-        }
-
-        .quality-metrics-grid {
+        .header-logos {
           display: flex;
-          flex-direction: column;  /* ← JADI INI */
-          gap: 8px;
+          align-items: center;
+          gap: 16px;
+        }
+
+        .header-logo {
+          height: 48px;
+          width: auto;
+        }
+
+        .logo-divider {
+          width: 1px;
+          height: 48px;
+          background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .nav {
+          display: flex;
+          align-items: center;
+          gap: 32px;
+        }
+
+        .nav-link {
+          color: white;
+          text-decoration: none;
+          font-weight: 500;
+          transition: color 0.3s ease;
+        }
+
+        .nav-link:hover {
+          color: #f7941d;
+        }
+
+        /* Hero Section */
+        .hero-section {
+          background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+          padding: 64px 0;
+        }
+
+        .brand-logos {
+          display: flex;
+          align-items: center;
+          gap: 16px;
           margin-bottom: 16px;
         }
 
-        .quality-metric-item {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 8px 0;
+        .brand-logo {
+          height: 50px;
+          width: auto;
         }
 
-        .quality-metric-label {
-          font-size: 0.85rem;
-          color: #495057;
-          font-weight: 500;
-        }
-
-        .quality-metric-value {
-          font-size: 0.9rem;
+        .hero-title {
+          font-size: 3rem;
+          font-weight: 700;
           color: #1a1a1a;
-          font-weight: 700;
+          margin-bottom: 16px;
+          line-height: 1.3;
         }
 
-        .progress-bar {
-          background-color: #e9ecef;
-          height: 8px;
-          border-radius: 4px;
-          overflow: hidden;
+        .hero-highlight {
+          color: #2563eb;
         }
 
-        .progress-fill {
-          background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-          height: 100%;
-          border-radius: 4px;
-          transition: width 0.3s ease;
+        .hero-content-wrapper {
+          margin-top: 48px;
+          margin-left: auto;
+          margin-right: 0;
+          max-width: 1100px;
+          padding-left: 100px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 32px;
         }
 
-        .metrics-row {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 25px;
-          gap: 15px;
+        .hero-text {
+          color: #495057;
+          line-height: 1.8;
+          margin-bottom: 24px;
         }
 
-        .metric-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          flex: 1;
-        }
-
-        .metric-label {
-          font-size: 0.875rem;
-          color: #6c757d;
-          font-weight: 500;
-          margin-bottom: 4px;
-        }
-
-        .metric-value {
-          font-size: 1.25rem;
-          font-weight: 700;
-          color: #667eea;
-        }
-
-        .btn-dashboard {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          border: none;
-          padding: 14px 40px;
-          font-size: 1rem;
-          font-weight: 600;
-          border-radius: 50px;
-          cursor: pointer;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-          box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-          width: 100%;
-          height:60px;
-          display: flex;              /* ← GANTI INI */
-          align-items: center;        /* ← TAMBAH INI */
-          justify-content: center;    /* ← TAMBAH INI */
-          text-decoration: none;
-          text-align: center;
-        }
-        .btn-dashboard-link {
-          font-size: 1.1rem;
-          font-weight: 700;
-        }
-
-        .btn-dashboard:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
-        }
-
-        .info-section {
-          padding: 80px 0;
-          background: #f8f9fa;
-        }
-
-        .info-image {
-          width: 100%;
+        .hero-image-container {
+          margin-top: 48px;
           border-radius: 16px;
-          margin-bottom: 40px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+          overflow: hidden;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .hero-image {
+          width: 100%;
+          height: 400px;
+          object-fit: cover;
+        }
+
+        /* Mission Section */
+        .mission-section {
+          padding: 80px 0;
+          background: rgba(184, 184, 184, 0.15);
         }
 
         .section-title {
           font-size: 2.5rem;
           font-weight: 700;
           color: #1a1a1a;
-          margin-bottom: 16px;
-          text-align: center;
-        }
-
-        .section-subtitle {
-          font-size: 1.75rem;
-          font-weight: 600;
-          color: #667eea;
-          margin-bottom: 40px;
-          text-align: center;
+          margin-bottom: 24px;
         }
 
         .section-intro {
-          font-size: 1.25rem;
+          font-size: 1.125rem;
           color: #495057;
-          text-align: center;
-          margin-bottom: 60px;
+          line-height: 1.8;
+          margin-bottom: 48px;
+          max-width: 900px;
         }
 
-        .steps {
+        .mission-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 24px;
+          align-items: stretch;
+          
+        }
+
+        .mission-cards {
+          display: contents;
+        }
+
+        .mission-card {
+          background:transparent;
+          padding: 24px;
+
+          transition: all 0.3s ease;
+          min-height: 320px;
           display: flex;
           flex-direction: column;
         }
 
-        .step {
-          padding: 30px;
-          background: linear-gradient(135deg, #e9ecef 0%, #e9ecef 100%);
-          border-radius: 16px;
-          // border-left: 4px solid #667eea;
+
+
+        .mission-icon {
+          background: #2563eb;
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 16px;
+          color: white;
         }
 
-        .step h4 {
+        .mission-card-title {
           font-size: 1.25rem;
           font-weight: 700;
           color: #1a1a1a;
-          margin-top: 20px;
           margin-bottom: 12px;
         }
 
-        .step h4:first-child {
-          margin-top: 0;
-        }
-
-        .step p {
-          font-size: 1rem;
+        .mission-card-text {
+          font-size: 0.875rem;
           color: #495057;
-          line-height: 1.8;
-          margin-bottom: 12px;
+          line-height: 1.6;
         }
 
-        .quality-section {
+        .engineer-image-container {
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+          min-height: 320px;
+          height: 100%;
+        }
+
+        .engineer-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .mission-button-container {
+          margin-top: 32px;
+          text-align: left;
+        }
+
+        .btn-read-more {
+          background: white;
+          color: #2563eb;
+          border: 2px solid #2563eb;
+          padding: 12px 32px;
+          border-radius: 50px;
+          font-weight: 600;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.3s ease;
+        }
+
+        .btn-read-more:hover {
+          background: #2563eb;
+          color: white;
+        }
+
+        .btn-read-more svg {
+          transition: transform 0.3s ease;
+        }
+
+        .btn-read-more:hover svg {
+          transform: translateX(4px);
+        }
+
+        /* Services Section */
+        .services-section {
           padding: 80px 0;
           background: #f8f9fa;
+        }
+        
+        .services-intro-grid {
+          display: grid;
+          grid-template-columns: 1fr 2fr;
+          gap: 48px;
+          margin-bottom: 48px;
+          align-items: start;
+          border-bottom: 1px solid #e9ecef;
+          padding-bottom: 32px;
+          padding-top: 0;
+        }
+
+        .services-intro-grid .section-title {
+          margin-top: 0;
+          padding-top: 0;
+          font-size: 2.5rem;
+          line-height: 1.2;
+        }
+
+        .services-intro-grid .section-intro {
+          font-size: 1rem;
+          margin-top: 0;
+          padding-top: 0;
+        }
+          
+        .services-grid {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
+          gap: 32px;
+          margin-top: 64px;
+        }
+
+        .service-card {
+          background: white;
+          padding: 32px;
+          border-radius: 16px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+          transition: all 0.3s ease;
+          width: calc(33.333% - 22px);
+          max-width: 380px;
+          min-width: 300px;
+        }
+
+        .service-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+          background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+        }
+
+        .service-card:hover .service-title,
+        .service-card:hover .service-text {
+          color: white;
+        }
+
+        .service-card:hover .service-icon {
+          background: rgba(255, 255, 255, 0.2);
+        }
+
+        .service-icon {
+          background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+          width: 64px;
+          height: 64px;
+          border-radius: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 24px;
+          color: white;
+          transition: transform 0.3s ease;
+        }
+
+        .service-card:hover .service-icon {
+          transform: scale(1.1);
+        }
+
+        .service-title {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: #1a1a1a;
+          margin-bottom: 16px;
+        }
+
+        .service-text {
+          font-size: 0.9375rem;
+          color: #495057;
+          line-height: 1.6;
+        }
+
+        /* Monitoring Section Update */
+
+        .monitoring-section {
+          padding: 80px 0;
+          background: linear-gradient(135deg, #0f1729 0%, #1a2642 50%, #0f1729 100%);
+          color: white;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .monitoring-intro-grid {
+          display: grid;
+          grid-template-columns: 1fr 2fr;
+          gap: 48px;
+          margin-bottom: 48px;
+          align-items: start;
+        }
+
+        .monitoring-intro-grid .section-title-light {
+          margin-top: 0;
+          padding-top: 0;
+          line-height: 1.2;
+        }
+
+        .monitoring-intro-grid .section-intro-light {
+          margin-top: 0;
+          padding-top: 0;
+        }
+
+        .btn-discover {
+          background: transparent;
+          color: white;
+          border: 2px solid white;
+          padding: 12px 32px;
+          border-radius: 50px;
+          font-weight: 600;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.3s ease;
+          margin-top: 24px;
+        }
+
+        .btn-discover:hover {
+          background: white;
+          color: #0f1729;
+        }
+
+        /* Map Container */
+        .map-container {
+          position: relative;
+          width: 100%;
+          height: 600px;
+          margin-top: 48px;
+          border-radius: 32px;
+          overflow: hidden;
+          pointer-events: auto;
+        }
+
+        .map-background {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          background-position: center;
+          background-size: contain;
+          background-repeat: no-repeat;
+          border-radius: 16px;
+        }
+
+        .globe-effect {
+          display: none;
+        }
+
+        /* Map Pins */
+        .map-pin {
+          position: absolute;
+          width: 40px;
+          height: 40px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          animation: pulse 2s infinite;
+        }
+
+        .map-pin:hover {
+          transform: scale(1.2);
+        }
+
+        .map-pin.active {
+          animation: none;
+          transform: scale(1.3);
+        }
+
+        .pin-icon {
+          width: 100%;
+          height: 100%;
+          color: #2563eb;
+          filter: drop-shadow(0 4px 8px rgba(37, 99, 235, 0.4));
+        }
+
+        /* Pin Positions - Adjust sesuai map Lab */
+        .kamojang-pin {
+          top: 76%;
+          left: 79%;
+        }
+
+        .ulubelu-pin {
+          top: 29%;
+          left: 24%;
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+          }
+        }
+
+        /* Monitoring Popup */
+        .monitoring-popup {
+          position: absolute;
+          z-index: 100;
+          animation: popupFadeIn 0.3s ease;
+          pointer-events: auto;
+        }
+
+        @keyframes popupFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .monitoring-card-compact {
+          background: rgba(26, 38, 66, 0.95);
+          backdrop-filter: blur(10px);
+          border-radius: 16px;
+          padding: 24px;
+          width: 420px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .popup-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: start;
+          margin-bottom: 20px;
+        }
+
+        .monitoring-title {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: white;
+          margin: 0;
+        }
+
+        .monitoring-location {
+          font-size: 0.875rem;
+          color: rgba(255, 255, 255, 0.7);
+          margin: 0;
+        }
+
+        .section-title-light {
+          color: white;
+          font-size: 2.5rem;
+
+        }
+
+        .section-intro-light {
+          color: rgba(255, 255, 255, 0.8);
+        }
+
+        .btn-unit-dropdown {
+          background: #2563eb;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .metrics-grid-compact {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .metric-box-compact {
+          background: rgba(15, 23, 41, 0.8);
+          padding: 16px;
+          border-radius: 8px;
+          text-align: center;
+        }
+
+        .metric-label-compact {
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.6);
+          margin-bottom: 8px;
+        }
+
+        .metric-label-compact span {
+          font-size: 0.65rem;
+        }
+
+        .metric-value-compact {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: white;
+        }
+
+        .metrics-row-compact {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 16px;
+          gap: 12px;
+        }
+
+        .metric-item-compact {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .btn-dashboard-compact {
+          background: #2563eb;
+          color: white;
+          border: none;
+          padding: 12px;
+          border-radius: 8px;
+          font-weight: 700;
+          cursor: pointer;
+          width: 100%;
+          transition: all 0.3s ease;
+        }
+
+        .btn-dashboard-compact:hover {
+          background: #1e40af;
+        }
+
+        /* Quality Section */
+        .quality-section {
+          padding: 80px 0;
+          background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+        }
+
+        .quality-intro-grid {
+          display: grid;
+          grid-template-columns: 1fr 2fr;
+          gap: 48px;
+          margin-bottom: 48px;
+          align-items: start;
+          border-bottom: 1px solid #e9ecef;
+          padding-bottom: 32px;
+          padding-top: 0;
+        }
+
+        .quality-intro-grid .section-title {
+          margin-top: 0;
+          padding-top: 0;
+          font-size: 2.5rem;
+          line-height: 1.2;
+        }
+
+        .quality-intro-grid .section-intro {
+          font-size: 1rem;
+          margin-top: 0;
+          padding-top: 0;
         }
 
         .quality-cards {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-          gap: 40px;
-          margin-top: 60px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 32px;
+          margin-top: 64px;
         }
 
         .quality-card {
           background: white;
-          padding: 40px;
-          border-radius: 20px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+          transition: all 0.3s ease;
+          display: flex;
+          flex-direction: column;
         }
 
         .quality-card:hover {
           transform: translateY(-8px);
-          box-shadow: 0 15px 50px rgba(0, 0, 0, 0.12);
+          box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+        }
+
+        .quality-image-container {
+          height: 320px;
+          overflow: hidden;
         }
 
         .quality-image {
           width: 100%;
-          border-radius: 12px;
-          margin-bottom: 24px;
-          box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .quality-card h3 {
-          font-size: 1.75rem;
-          font-weight: 700;
-          color: #667eea;
-          margin-bottom: 16px;
-        }
-
-        .quality-desc {
-          font-size: 1rem;
-          color: #495057;
-          margin-bottom: 20px;
-          font-weight: 500;
-        }
-
-        .quality-card p {
-          font-size: 0.95rem;
-          color: #6c757d;
-          margin-bottom: 16px;
-          line-height: 1.6;
-        }
-
-        .quality-card ul {
-          list-style: none;
-          padding-left: 0;
-        }
-
-        .quality-card ul li {
-          padding: 12px 0;
-          padding-left: 30px;
-          position: relative;
-          font-size: 0.95rem;
-          color: #495057;
-          line-height: 1.6;
-        }
-
-        .quality-card ul li::before {
-          content: '✓';
-          position: absolute;
-          left: 0;
-          color: #667eea;
-          font-weight: bold;
-          font-size: 1.2rem;
-        }
-
-        .comparison-section {
-          padding: 80px 0;
-          background: #f8f9fa;
-        }
-
-        .comparison-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-          gap: 40px;
-          margin-top: 40px;
-        }
-
-        .comparison-card {
-          padding: 40px;
-          border-radius: 20px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+          height: 100%;
+          object-fit: cover;
           transition: transform 0.3s ease;
         }
 
-        .comparison-card:hover {
-          transform: translateY(-5px);
+        .quality-card:hover .quality-image {
+          transform: scale(1.1);
         }
 
-        .comparison-card.existing {
-          background: linear-gradient(135deg, #e9ecef 0%, #e9ecef 100%);
-          border: 2px solid #495057;
+        .quality-content {
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          flex: 1;
         }
 
-        .comparison-card.development {
-          background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-          border: 2px solid #7dd3fc;
-        }
-
-        .comparison-card h2 {
-          font-size: 2rem;
+        .quality-title {
+          font-size: 1.5rem;
           font-weight: 700;
-          margin-bottom: 30px;
+          color: #1a1a1a;
+          margin-bottom: 12px;
         }
 
-        .comparison-card.existing h2 {
-          color:rgb(0, 0, 0);
+        .quality-description {
+          font-size: 0.9375rem;
+          color: #495057;
+          line-height: 1.6;
+          margin-bottom: 16px;
+          flex: 1;
         }
 
-        .comparison-card.development h2 {
-          color: #0ea5e9;
+        .btn-quality-read-more {
+          background: white;
+          color: #2563eb;
+          border: 2px solid #2563eb;
+          padding: 12px 24px;
+          border-radius: 50px;
+          font-weight: 600;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: all 0.3s ease;
+          margin-top: auto;
+          align-self: flex-start;
         }
 
-        .comparison-image {
+        .btn-quality-read-more:hover {
+          background: #2563eb;
+          color: white;
+        }
+
+        .btn-quality-read-more svg {
+          transition: transform 0.3s ease;
+        }
+
+        .btn-quality-read-more:hover svg {
+          transform: translateX(4px);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+          .services-intro-grid {
+            grid-template-columns: 1fr;
+            gap: 24px;
+          }
+          .quality-intro-grid {
+            grid-template-columns: 1fr;
+            gap: 24px;
+          }
+
+          .quality-cards {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        .quality-header {
+          text-align: center;
+          margin-bottom: 16px;
+        }
+
+        .quality-badge {
+          background: #2563eb;
+          color: white;
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-size: 0.875rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .quality-cards {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 32px;
+          margin-top: 64px;
+        }
+
+        .quality-card {
+          background: white;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+          transition: all 0.3s ease;
+        }
+
+        .quality-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+        }
+
+        .quality-image-container {
+          height: 256px;
+          overflow: hidden;
+        }
+
+        .quality-image {
           width: 100%;
-          border-radius: 12px;
-          margin-bottom: 30px;
-          box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.3s ease;
         }
 
-        .comparison-list {
+        .quality-card:hover .quality-image {
+          transform: scale(1.1);
+        }
+
+        .quality-content {
+          padding: 24px;
+        }
+
+        .quality-title {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1a1a1a;
+          margin-bottom: 12px;
+        }
+
+        .quality-description {
+          font-size: 0.9375rem;
+          color: #495057;
+          line-height: 1.6;
+          margin-bottom: 16px;
+        }
+
+        .quality-link {
+          color: #2563eb;
+          font-weight: 600;
+          background: none;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          transition: gap 0.3s ease;
+        }
+
+        .quality-card:hover .quality-link {
+          gap: 12px;
+        }
+
+        /* Footer */
+        .footer {
+          background: #0f1729;
+          color: white;
+          padding: 48px 0;
+        }
+
+        .footer-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 32px;
+          margin-bottom: 32px;
+        }
+
+        .footer-col {
+        }
+
+        .footer-logos {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .footer-logo {
+          height: 32px;
+          width: auto;
+        }
+
+        .footer-text {
+          font-size: 0.875rem;
+          color: rgba(255, 255, 255, 0.7);
+          line-height: 1.6;
+        }
+
+        .footer-heading {
+          font-weight: 700;
+          margin-bottom: 16px;
+        }
+
+        .footer-links {
           list-style: none;
           padding: 0;
         }
 
-        .comparison-list li {
-          margin-bottom: 24px;
-          padding: 20px;
-          background: rgba(255, 255, 255, 0.6);
-          border-radius: 12px;
-          transition: transform 0.2s ease;
-        }
-
-        .comparison-list li:hover {
-          transform: translateX(5px);
-        }
-
-        .comparison-list h4 {
-          font-size: 1.125rem;
-          font-weight: 700;
+        .footer-links li {
           margin-bottom: 8px;
-          color: #1a1a1a;
         }
 
-        .comparison-list p {
-          font-size: 0.95rem;
-          color: #495057;
-          line-height: 1.6;
+        .footer-links a {
+          color: rgba(255, 255, 255, 0.7);
+          text-decoration: none;
+          font-size: 0.875rem;
+          transition: color 0.3s ease;
         }
 
-        .footer {
-          background: #1a1a1a;
+        .footer-links a:hover {
           color: white;
-          padding: 40px 0;
+        }
+
+        .footer-bottom {
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          padding-top: 32px;
           text-align: center;
         }
 
-        .footer p {
-          font-size: 0.95rem;
-          opacity: 0.8;
+        .footer-bottom p {
+          font-size: 0.875rem;
+          color: rgba(255, 255, 255, 0.6);
         }
 
-        @media (max-width: 768px) {
-          .hero-content {
-            flex-direction: column;
-            gap: 20px;
-          }
-
-          .logo-left img,
-          .logo-right img {
-            width: 70px;
-          }
-
-          .hero-title {
-            font-size: 1.35rem;
-          }
-
-          .hero-subtitle {
-            font-size: 0.9rem;
-          }
-
-          .section-title {
-            font-size: 1.75rem;
-          }
-
-          .section-subtitle {
-            font-size: 1.25rem;
-          }
-
-          .dashboard-grid {
+        /* Responsive */
+        @media (max-width: 1024px) {
+          .hero-content-wrapper {
+            padding-left: 0;
+            max-width: 100%;
             grid-template-columns: 1fr;
+          }
+
+          .mission-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .mission-cards {
+            grid-template-columns: 1fr;
+          }
+
+          .services-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .service-card {
+            width: 100%;
+            max-width: 100%;
           }
 
           .quality-cards {
             grid-template-columns: 1fr;
           }
 
-          .comparison-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .dashboard-card,
-          .quality-card,
-          .comparison-card {
-            padding: 24px;
+          .footer-grid {
+            grid-template-columns: repeat(2, 1fr);
           }
         }
 
-        @media (max-width: 480px) {
-          .hero {
-            padding: 30px 0;
-            margin: 10px 12px;
+        @media (max-width: 768px) {
+          .header-container {
+            flex-direction: column;
+            gap: 16px;
+          }
+
+          .nav {
+            flex-wrap: wrap;
+            gap: 16px;
           }
 
           .hero-title {
-            font-size: 1.1rem;
+            font-size: 2rem;
           }
 
-          .hero-subtitle {
-            font-size: 0.8rem;
+          .section-title {
+            font-size: 1.75rem;
           }
 
-          .logo-left img,
-          .logo-right img {
-            width: 50px;
+          .services-grid {
+            grid-template-columns: 1fr;
           }
 
-          .dashboard-section,
-          .info-section,
-          .quality-section,
-          .comparison-section {
-            padding: 40px 0;
+          .service-card {
+            width: 100%;
+            max-width: 100%;
           }
 
-          .card-title {
-            font-size: 1.25rem;
+          .metrics-grid {
+            grid-template-columns: 1fr;
           }
 
-          .metrics-row {
-            flex-direction: column;
-            gap: 12px;
-          }
-
-          .metric-item {
-            flex-direction: row;
-            justify-content: space-between;
+          .footer-grid {
+            grid-template-columns: 1fr;
           }
         }
       `}</style>
@@ -877,4 +1539,4 @@ const SteamMonitoring = () => {
   );
 };
 
-export default SteamMonitoring;
+export default Home;
