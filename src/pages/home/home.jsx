@@ -427,7 +427,13 @@ const Home = () => {
                       </div>
                     </div>
 
-                    <button className="btn-dashboard-compact">Dashboard</button>
+                    <a
+                      href={activeUnit === 'kamojang' ? '/login' : ''} //href to corespond pages
+                      className="btn-dashboard-compact"
+                      style={{ textDecoration: 'none', display: 'block' }}
+                    >
+                      Dashboard
+                    </a>
                   </div>
                 </div>
               )}
