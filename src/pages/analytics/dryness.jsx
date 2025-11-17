@@ -96,7 +96,7 @@ const Dryness = () => {
             </Typography>
             <Grid container spacing={3}>
                 <Grid item xs={12} md={3}>
-                    <MainCard sx={{ height: '80%' }}>
+                    <MainCard sx={{ height: '85%' }}>
                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography variant="subtitle1" color="textSecondary">Dryness Fraction</Typography>
                         {/* dynamic percent-change badge */}
@@ -123,6 +123,7 @@ const Dryness = () => {
                             warningHigh={15}
                             abnormalHigh={20}
                             changePct={changePct}
+                            withCard={false}
                         />
                     </MainCard>
                 </Grid>
@@ -151,7 +152,7 @@ const Dryness = () => {
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                                     <Box>
-                                        <Typography variant="h2" component="span">{card.value}</Typography>
+                                        <Typography variant="h4" component="span">{card.value}</Typography>
                                         {card.unit && 
                                             <Typography variant="body1" component="span" color="textSecondary" sx={{ ml: 0.5 }}>{card.unit}</Typography>
                                         }

@@ -20,6 +20,7 @@ const GaugeChart = ({
   warningHigh,
   idealLow,      // NEW
   idealHigh,     // NEW
+  withCard = true
 }) => {
 
   const gaugeRef = useRef(null);
@@ -286,8 +287,8 @@ const GaugeChart = ({
 
   const titleStyles = { ...defaultTitleStyles, ...titleConfig };
 
-  return (
-    <MainCard sx={{ width: '100%', height: '100%' }} contentSX={{ p: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
+  const chartContent = (
+    <>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: titleStyles.justifyContent, mb: 0.5, flexShrink: 0 }}>
           <Link href={linkTo} target="_blank" rel="noopener noreferrer" underline={linkTo ? 'hover' : 'none'} color="inherit">
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -325,8 +326,18 @@ const GaugeChart = ({
                 </div>
             </div>
         </Box>
-    </MainCard>
+    </>
   );
+
+  if (withCard) {
+      return (
+        <MainCard sx={{ width: '100%', height: '100%' }} contentSX={{ p: 1, height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {chartContent}
+        </MainCard>
+      )
+  }
+
+  return chartContent
 };
 
 GaugeChart.propTypes = {
@@ -342,11 +353,13 @@ GaugeChart.propTypes = {
   warningLow: PropTypes.number,
   warningHigh: PropTypes.number,
   idealLow: PropTypes.number,
-  idealHigh: PropTypes.number
+  idealHigh: PropTypes.number,
+  withCard: PropTypes.bool
 };
 
 GaugeChart.defaultProps = {
-    unit: ''
+    unit: '',
+    withCard: true
 }
 
 export default GaugeChart;
