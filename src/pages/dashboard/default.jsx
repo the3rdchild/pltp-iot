@@ -286,8 +286,12 @@ export default function DashboardDefault() {
               min={0}
               max={10}
               unit="ppm"
-              warningLow={2}
+              abnormalLow={0}
+              warningLow={0}
+              idealLow={0}
+              idealHigh={1}
               warningHigh={8}
+              abnormalHigh={10}
               linkTo="/tds-analytics"
               titleConfig={TITLE_CONFIG}
             />
@@ -299,11 +303,15 @@ export default function DashboardDefault() {
             <GaugeChart
               label="Dryness Fractions"
               value={dryness}
-              min={94}
-              max={100.5}
+              min={95}
+              max={99.9}
               unit="%"
-              warningLow={97}
-              warningHigh={99.9}
+              abnormalLow={95}
+              warningLow={98}
+              idealLow={100}
+              idealHigh={100}
+              warningHigh={100}
+              abnormalHigh={100}
               titleConfig={TITLE_CONFIG}
             />
           </Box>
@@ -317,8 +325,12 @@ export default function DashboardDefault() {
               min={0}
               max={10}
               unit="wt%"
-              warningLow={2}
+              abnormalLow={0}
+              warningLow={0}
+              idealLow={0}
+              idealHigh={7}
               warningHigh={8}
+              abnormalHigh={10}
               titleConfig={TITLE_CONFIG}
             />
           </Box>
@@ -329,11 +341,15 @@ export default function DashboardDefault() {
             <GaugeChart
               label="Pressure"
               value={pressure}
-              min={222}
-              max={1778}
+              min={322}
+              max={1678}
               unit="kPa"
+              abnormalLow={333}
               warningLow={444}
-              warningHigh={1556}
+              idealLow={1000}
+              idealHigh={1400}
+              warningHigh={1600}
+              abnormalHigh={1667}
               titleConfig={TITLE_CONFIG}
             />
           </Box>
@@ -344,11 +360,15 @@ export default function DashboardDefault() {
             <GaugeChart
               label="Temperature"
               value={temperature}
-              min={120}
+              min={100}
               max={200}
               unit="°C"
-              warningLow={135}
-              warningHigh={150}
+              abnormalLow={105}
+              warningLow={120}
+              idealLow={135}
+              idealHigh={165}
+              warningHigh={180}
+              abnormalHigh={195}
               titleConfig={TITLE_CONFIG}
             />
           </Box>
@@ -382,8 +402,12 @@ export default function DashboardDefault() {
               min={200}
               max={300}
               unit="t/h"
+              abnormalLow={210}
               warningLow={220}
+              idealLow={225}
+              idealHigh={265}
               warningHigh={270}
+              abnormalHigh={285}
               titleConfig={TITLE_CONFIG}
             />
           </Box>

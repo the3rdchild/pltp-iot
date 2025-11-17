@@ -9,18 +9,103 @@ import LaunchIcon from '@mui/icons-material/Launch';
 const GaugeChart = ({
   label,
   value,
-  min, 
+  min,
   max,
   unit,
   linkTo,
   titleConfig,
+  abnormalLow,
+  abnormalHigh,
   warningLow,
   warningHigh,
+  idealLow,      // NEW
+  idealHigh,     // NEW
 }) => {
+
   const gaugeRef = useRef(null);
   const chartId = useRef(`gauge-${Math.random().toString(36).substr(2, 9)}`).current;
 
+  // push(abnormalLow, '#ff4d4d');
+  // push(warningLow, '#ffc14d');
+  // push(warningHigh, '#ffc14d');
+  // push(abnormalHigh, '#ff4d4d');
+
   useEffect(() => {
+    const getGradientStops = () => {
+      // helper: clamp numeric offset 0..100
+      const clamp = (n) => Math.max(0, Math.min(100, n));
+    
+      // collect raw stops (numeric offsets)
+      const raw = [];
+      const pushRaw = (val, color) => {
+        if (val === undefined || val === null || isNaN(val)) return;
+        const denom = (max - min) || 1;
+        const offsetNum = ((val - min) / denom) * 100;
+        raw.push({ offset: clamp(Number(offsetNum)), color });
+      };
+    
+      // Follow the requested sequence:
+      // abnormalLow (red) -> warningLow (amber) -> idealLow (green start) ->
+      // idealHigh (green end) -> warningHigh (amber) -> abnormalHigh (red)
+      pushRaw(abnormalLow, '#ff4d4d');    // abnormal low (red)
+      pushRaw(warningLow, '#ffc14d');     // warning low (amber)
+    
+      // ideal boundaries (distinct values)
+      pushRaw(idealLow, '#2CB34A');       // ideal start (green)
+      pushRaw(idealHigh, '#2CB34A');      // ideal end   (green)
+    
+      pushRaw(warningHigh, '#ffc14d');    // warning high (amber)
+      pushRaw(abnormalHigh, '#ff4d4d');   // abnormal high (red)
+    
+      // default gradient when no thresholds provided
+      if (raw.length === 0) {
+        return [
+          { offset: '0%', color: '#ff4d4d' },
+          { offset: '45%', color: '#ffc14d' },
+          { offset: '100%', color: '#2CB34A' },
+        ];
+      }
+    
+      // priority resolver: green > amber > red
+      const priority = (color) => {
+        const c = String(color).toLowerCase();
+        if (c.includes('2cb34a') || c.includes('green')) return 3;
+        if (c.includes('ffc14d') || c.includes('ffb') || c.includes('amber')) return 2;
+        if (c.includes('ff4d4d') || c.includes('#ff4d') || c.includes('red')) return 1;
+        return 2; // neutral default
+      };
+    
+      // dedupe by offset: keep highest-priority color for duplicated offsets
+      const map = new Map();
+      raw.forEach(({ offset, color }) => {
+        const key = Number(offset.toFixed(6)); // normalized numeric key
+        const existing = map.get(key);
+        if (!existing) map.set(key, color);
+        else {
+          if (priority(color) > priority(existing)) map.set(key, color);
+        }
+      });
+    
+      // build sorted stops array (numeric), then ensure 0% and 100% are present
+      const entries = Array.from(map.entries())
+        .map(([off, color]) => ({ offset: Number(off), color }))
+        .sort((a, b) => a.offset - b.offset);
+    
+      // if first stop isn't at 0%, add a start using the first color
+      if (entries.length > 0 && entries[0].offset > 0) {
+        entries.unshift({ offset: 0, color: entries[0].color });
+      }
+      // if last stop isn't at 100%, add an end using the last color
+      if (entries.length > 0 && entries[entries.length - 1].offset < 100) {
+        entries.push({ offset: 100, color: entries[entries.length - 1].color });
+      }
+    
+      // finally convert to percent-string stops
+      const stops = entries.map((s) => ({ offset: `${s.offset}%`, color: s.color }));
+    
+      return stops;
+    };                
+
     const config = {
       value,
       min,
@@ -31,11 +116,7 @@ const GaugeChart = ({
         strokeWidth: 60,
         segments: 21,
         gapRatio: 0.80,
-        gradientStops: [
-          { offset: '0%', color: '#ff4d4d' },
-          { offset: '45%', color: '#ffc14d' },
-          { offset: '100%', color: '#2CB34A' },
-        ],
+        gradientStops: getGradientStops(),
       },
       inner: {
         strokeWidth: 30,
@@ -155,11 +236,15 @@ const GaugeChart = ({
       pinEl.style.left = `${px - gaugeRect.left}px`;
       pinEl.style.top = `${py - gaugeRect.top}px`;
 
-      const lastColor =
-        (cfg.outer.gradientStops && cfg.outer.gradientStops.slice(-1)[0])
-          ? cfg.outer.gradientStops.slice(-1)[0].color
-          : '#2CB34A';
-      pinEl.querySelector('.dot').style.background = lastColor;
+      const getCurrentColor = (value) => {
+        if (abnormalLow !== undefined && value < abnormalLow) return '#ff4d4d';
+        if (warningLow !== undefined && value < warningLow) return '#ffc14d';
+        if (warningHigh !== undefined && value <= warningHigh) return '#2CB34A';
+        if (abnormalHigh !== undefined && value > abnormalHigh) return '#ff4d4d';
+        return '#2CB34A';
+      };
+
+      pinEl.querySelector('.dot').style.background = getCurrentColor(v);
 
       valueText.textContent = (Math.round(cfg.value * 10) / 10).toFixed(1);
       unitText.textContent = unit;
@@ -190,7 +275,7 @@ const GaugeChart = ({
     return () => {
       window.removeEventListener('resize', onResize);
     };
-  }, [value, min, max, unit, warningLow, warningHigh]);
+  }, [value, min, max, unit, abnormalLow, abnormalHigh, warningLow, warningHigh, idealLow, idealHigh]);
 
   const defaultTitleStyles = {
     fontSize: '0.875rem',
@@ -252,8 +337,12 @@ GaugeChart.propTypes = {
   unit: PropTypes.string,
   linkTo: PropTypes.string,
   titleConfig: PropTypes.object,
+  abnormalLow: PropTypes.number,
+  abnormalHigh: PropTypes.number,
   warningLow: PropTypes.number,
-  warningHigh: PropTypes.number
+  warningHigh: PropTypes.number,
+  idealLow: PropTypes.number,
+  idealHigh: PropTypes.number
 };
 
 GaugeChart.defaultProps = {

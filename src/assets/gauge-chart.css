@@ -22,17 +22,18 @@
 
 /* other existing styles remain the same */
 
-:root{
-      --size: 720px;             /* overall gauge size (change here to scale) */
-      --bg: #ffffff;             /* background */
-      --text: #0b0b0b;           /* central text color */
-      --subtle: #e9f7ef;         /* pill background */
-      --pill-text: #28a745;      /* pill text color */
+/* :root{
+      --size: 720px;
+      --bg: #ffffff;
+      --text: #0b0b0b;   
+      --subtle: #e9f7ef;  
+      --pill-text: #28a745; 
       --shadow: 0 8px 20px rgba(0,0,0,0.12);
     }
 
     html,body{height:100%;margin:0;background:var(--bg);font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
-    
+     */
+     
     /* center info */
     .center {
       position: absolute;
