@@ -112,7 +112,7 @@ export default function DashboardDefault() {
   const pressure = analyticData?.pressure ?? 1437;
   const temperature = analyticData?.temperature ?? 131;
   const flow = analyticData?.flow ?? 298;
-  const tds = analyticData?.tds ?? 6.8;
+  const tds = analyticData?.tds ?? 2.8;
   const dryness = analyticData?.dryness ?? 99.0;
   const ncg = analyticData?.ncg ?? 8.3;
   const activePower = analyticData?.activePower ?? 25.46;

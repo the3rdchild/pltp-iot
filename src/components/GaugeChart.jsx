@@ -119,7 +119,7 @@ const GaugeChart = ({
         gradientStops: getGradientStops(),
       },
       inner: {
-        strokeWidth: 30,
+        strokeWidth: 20,
         segments: 21,
         gapRatio: 0.85,
         color: '#141515',
