@@ -60,7 +60,8 @@ const Dryness = () => {
     const cardData = [
         {
             title: 'Anomali Status',
-            value: `${anomalyCount} Anomali`,
+            value: anomalyCount,
+            unit: 'Anomali',
             icon: <PriorityHighIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#9271FF',
             iconColor: '#fff'
@@ -128,12 +129,12 @@ const Dryness = () => {
 
                 {cardData.map((card, index) => (
                     <Grid item xs={12} sm={6} md={2} key={index}>
-                        <MainCard sx={{ height: '70%' }}>
+                        <MainCard sx={{ height: '52%' }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Typography variant="subtitle1" color="textSecondary">{card.title}</Typography>
                                 <LaunchIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
                             </Box>
-                            <Box sx={{ textAlign: 'center', py: 2 }}>
+                            <Box sx={{ py: 2 }}>
                                 <Box sx={{
                                     width: 72,
                                     height: 72,
@@ -143,12 +144,20 @@ const Dryness = () => {
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    mb: 2.5
+                                    mb: 2.5,
+                                    textAlign: 'center'
                                 }}>
                                     {card.icon}
                                 </Box>
-                                <Typography variant="h4" sx={{ mb: 1 }}>{card.value}</Typography>
-                                <Typography variant="caption" color="textSecondary">1 Jam terakhir</Typography>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                                    <Box>
+                                        <Typography variant="h2" component="span">{card.value}</Typography>
+                                        {card.unit && 
+                                            <Typography variant="body1" component="span" color="textSecondary" sx={{ ml: 0.5 }}>{card.unit}</Typography>
+                                        }
+                                    </Box>
+                                    <Typography variant="caption" color="textSecondary">1 Jam terakhir</Typography>
+                                </Box>
                             </Box>
                         </MainCard>
                     </Grid>
