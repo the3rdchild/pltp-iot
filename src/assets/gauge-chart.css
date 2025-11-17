@@ -1,0 +1,118 @@
+/* existing styles */
+
+.gauge {
+    width: 110%; /* Fill container */
+    top: -15px;
+    left: -10px;
+    max-width: none; /* Override max-width */
+    aspect-ratio: 1/0.62;
+    position: relative;
+    display: block;
+}
+
+.wrap {
+    width: 100%;
+    height: 100%; /* Ensure wrap takes full height of parent */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0; /* Remove padding */
+    box-sizing: border-box;
+}
+
+/* other existing styles remain the same */
+
+:root{
+      --size: 720px;             /* overall gauge size (change here to scale) */
+      --bg: #ffffff;             /* background */
+      --text: #0b0b0b;           /* central text color */
+      --subtle: #e9f7ef;         /* pill background */
+      --pill-text: #28a745;      /* pill text color */
+      --shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+
+    html,body{height:100%;margin:0;background:var(--bg);font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+    
+    /* center info */
+    .center {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%,-12%);
+      text-align:center;
+      pointer-events:none;
+      width: 60%;
+    }
+    .value {
+    /* now scales with the real gauge width (set by JS as --gauge-w) */
+    font-size: calc(var(--gauge-w, 720px) * 0.10);
+    color: var(--text);
+    font-weight: 700;
+    line-height: 1;
+    }
+
+    .unit {
+    /* keep unit relative to .value using em so it scales together */
+    font-size: 0.56em;
+    color: #9aa0a6;
+    margin-left: 0.5ch;
+    font-weight:600;
+    }
+
+    .status-pill {
+    display: inline-block;
+    margin-top: calc(var(--gauge-w, 200px) * 0.05); /* scales with gauge */
+    background: var(--subtle);
+    color: var(--pill-text);
+    padding: calc(var(--gauge-w, 200px) * 0.01) calc(var(--gauge-w, 200px) * 0.05); /* responsive padding */
+    border-radius: 999px;
+    font-weight: 700;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.063);
+    font-size: calc(var(--gauge-w, 200px) * 0.05);
+    }
+
+    /* The small circle pin that follows the arc */
+    .pin {
+    position: absolute;
+    width: calc(100% * 0.065);   /* ~4% of .gauge width */
+    height: calc(100% * 0.1);
+    border-radius: 50%;
+    transform: translate(-50%,-50%);
+    pointer-events:none;
+    box-shadow: 0 0 0 0.1px rgba(0, 0, 0, 0.51);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: rgb(255, 255, 255);
+    }
+
+    .pin .dot {
+    position: absolute;       /* force exact centering relative to .pin */
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 60%;
+    height: 60%;
+    border-radius: 50%;
+    background: #2CB34A;
+    box-shadow: 0 6px 14px rgba(44,179,74,0.25) inset;
+    display: block;
+    }
+
+    /* Make SVG take full area */
+    svg { width:100%; height:100%; display:block; overflow:visible; }
+
+    /* subtle style for inner dashed arc */
+    .inner-arc { stroke: #e9e9e9; opacity: 0.9; stroke-linecap: butt; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.06)); }
+
+    /* Outer arc style uses gradient (set in defs) */
+    .outer-arc { stroke-linecap: butt; filter: drop-shadow(0 6px 18px rgba(0,0,0,0.10)); }
+
+    /* optional ticks for major labels (we don't render numbers by default) */
+    .tick { stroke: rgba(0,0,0,0.06); stroke-width: 2; stroke-linecap:round; }
+
+    /* responsive tweaks */
+    @media (max-width:520px){
+      .value{font-size: calc(var(--size) * 0.06);}
+      .status-pill{padding:8px 20px;font-size:12px}
+    }
