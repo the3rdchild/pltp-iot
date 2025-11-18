@@ -185,7 +185,7 @@ const Dryness = () => {
       
             {/* small cards */}
             {cardData.map((card, index) => (
-              <Grid item xs={12} sm={6} md={2.2} key={index} sx={{ display: 'flex' }}>
+              <Grid item xs={12} sm={6} md={2.25} key={index} sx={{ display: 'flex' }}>
                 <StatCard
                   title={card.title}
                   value={card.value}

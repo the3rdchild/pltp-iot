@@ -1,11 +1,6 @@
 export function generateAnalyticData() {
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
-  const pressureSeparator = clamp(Math.random() * 111 + 1000, 1000, 1300);
-  const pressureSteam = clamp(Math.random() * 20 + 910, 900, 1133); // 210–230
-  const boilerTemp = clamp(Math.random() * 10 + 180, 180, 190);      // 85–95
-  const tankLevel = clamp(Math.random() * 20 + 46, 0, 100);        // 46–66
-
   // Steam Purity: TDS & Deposit Index
   const tdsOverall = clamp(Math.random() * 5 + 5, 5, 10); // 5–10 ppm
   const co2 = clamp(Math.random() * 2 + 4, 1, 5);
@@ -21,13 +16,6 @@ export function generateAnalyticData() {
   const riskPrediction = riskLevels[riskIndex];
 
   return {
-    pressureSeparator: pressureSeparator.toFixed(0),
-    pressureSteam: pressureSteam.toFixed(0),
-    boilerTemp: boilerTemp.toFixed(0),
-    tankLevel: tankLevel.toFixed(0),
-    avgTankLevel: '56%',
-    avgPressure: '220',
-
     // Steam Purity
     tdsOverall: tdsOverall.toFixed(1),
     co2: co2.toFixed(1),

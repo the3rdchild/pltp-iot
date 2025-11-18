@@ -70,9 +70,9 @@ const GaugeChart = ({
       // priority resolver: green > amber > red
       const priority = (color) => {
         const c = String(color).toLowerCase();
-        if (c.includes('2cb34a') || c.includes('green')) return 3;
-        if (c.includes('ffc14d') || c.includes('ffb') || c.includes('amber')) return 2;
-        if (c.includes('ff4d4d') || c.includes('#ff4d') || c.includes('red')) return 1;
+        if (c.includes('22C55E') || c.includes('green')) return 3;
+        if (c.includes('FFC300') || c.includes('ffb') || c.includes('amber')) return 2;
+        if (c.includes('EF4444') || c.includes('#ff4d') || c.includes('red')) return 1;
         return 2; // neutral default
       };
     
@@ -120,7 +120,7 @@ const GaugeChart = ({
         gradientStops: getGradientStops(),
       },
       inner: {
-        strokeWidth: 20,
+        strokeWidth: 15,
         segments: 21,
         gapRatio: 0.85,
         color: '#141515',
@@ -239,10 +239,20 @@ const GaugeChart = ({
 
       const getCurrentColor = (value) => {
         if (abnormalLow !== undefined && value < abnormalLow) return '#ff4d4d';
-        if (warningLow !== undefined && value < warningLow) return '#ffc14d';
-        if (warningHigh !== undefined && value <= warningHigh) return '#2CB34A';
+        if (warningLow !== undefined && value < warningLow) return '#ffc14d'; //yellow
+        if (warningHigh !== undefined && value <= warningHigh) return '#1FED4D'; //strangly here green
         if (abnormalHigh !== undefined && value > abnormalHigh) return '#ff4d4d';
-        return '#2CB34A';
+
+        // pushRaw(abnormalLow, '#ff4d4d');    // abnormal low (red)
+        // pushRaw(warningLow, '#ffc14d');     // warning low (amber)
+      
+        // // ideal boundaries (distinct values)
+        // pushRaw(idealLow, '#2CB34A');       // ideal start (green)
+        // pushRaw(idealHigh, '#2CB34A');      // ideal end   (green)
+      
+        // pushRaw(warningHigh, '#ffc14d');    // warning high (amber)
+        // pushRaw(abnormalHigh, '#ff4d4d');   // abnormal high (red)
+        return '#ffc14d';
       };
 
       pinEl.querySelector('.dot').style.background = getCurrentColor(v);
@@ -256,8 +266,8 @@ const GaugeChart = ({
         statusPill.style.color = '#e24c4c';
       } else if (value <= warningHigh) {
         statusPill.textContent = 'Normal';
-        statusPill.style.background = '#eaf9ef';
-        statusPill.style.color = '#2CB34A';
+        statusPill.style.background = '#D2FFE2';
+        statusPill.style.color = '#22C55E';
       } else {
         statusPill.textContent = 'High';
         statusPill.style.background = '#fff5e6';

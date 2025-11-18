@@ -311,160 +311,63 @@ const PTF = () => {
           <AnalyticsHeader title="Pressure, Temperature and Flow" subtitle="Analytic" />
 
           <Grid container spacing={3} alignItems="stretch">
-            {/* Three Gauge Charts Row */}
-            <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-            <MainCard
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                width: '100%',
-                height: { xs: 'auto', lg: '84%' },
-                minHeight: { md: '230px' },
-                mb: { lg: 3 },
-              }}
-            >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="subtitle1" color="textSecondary">Pressure</Typography>
-                  <Box
+            
+            {/* --- PRESSURE ROW --- */}
+            {/* 1. Pressure Gauge MainCard (Takes up 4 columns) */}
+            <Grid item xs={12} lg={2.5} sx={{ display: 'flex' }}>
+                <MainCard
                     sx={{
-                      borderRadius: '6px',
-                      padding: '4px 8px',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                      color: (pressureChangePct > 0 ? 'success.dark' : pressureChangePct < 0 ? 'error.dark' : 'text.secondary'),
-                      backgroundColor: (pressureChangePct > 0 ? 'success.light' : pressureChangePct < 0 ? 'error.light' : 'grey.100'),
+                    display: 'flex',
+                    flexDirection: 'column',
+                    width: '100%',
+                    height: '100%', // Ensure it stretches
+                    // height: { xs: 'auto', lg: '95%' },
+                    // minHeight: { md: '230px' },
+                    // mb: { lg: 0 },
                     }}
-                  >
-                    {pressureChangePct === null ? '–' : (pressureChangePct > 0 ? `+${pressureChangePct}%` : `${pressureChangePct}%`)}
-                  </Box>
-                </Box>
+                >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="subtitle1" color="textSecondary">Pressure</Typography>
+                        <Box
+                        sx={{
+                            borderRadius: '6px',
+                            padding: '4px 8px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            color: (pressureChangePct > 0 ? 'success.dark' : pressureChangePct < 0 ? 'error.dark' : 'text.secondary'),
+                            backgroundColor: (pressureChangePct > 0 ? 'success.light' : pressureChangePct < 0 ? 'error.light' : 'grey.100'),
+                        }}
+                        >
+                        {pressureChangePct === null ? '–' : (pressureChangePct > 0 ? `+${pressureChangePct}%` : `${pressureChangePct}%`)}
+                        </Box>
+                    </Box>
 
-                <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
-                  <GaugeChart
-                    value={pressure}
-                    min={1353}
-                    max={1556}
-                    unit="kPa"
-                    abnormalLow={1353}
-                    warningLow={1380}
-                    idealLow={1400}
-                    idealHigh={1500}
-                    warningHigh={1530}
-                    abnormalHigh={1556}
-                    changePct={pressureChangePct}
-                    withCard={false}
-                    sx={{ width: '100%', maxWidth: 360 }}
-                  />
-                </Box>
-              </MainCard>
+                    <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
+                        <GaugeChart
+                        value={pressure}
+                        min={1353}
+                        max={1556}
+                        unit="kPa"
+                        abnormalLow={1353}
+                        warningLow={1380}
+                        idealLow={1400}
+                        idealHigh={1500}
+                        warningHigh={1530}
+                        abnormalHigh={1556}
+                        changePct={pressureChangePct}
+                        withCard={false}
+                        sx={{ width: '100%', maxWidth: 360 }}
+                        />
+                    </Box>
+                </MainCard>
             </Grid>
 
-            <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-            <MainCard
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                width: '100%',
-                height: { xs: 'auto', lg: '84%' },
-                minHeight: { md: '230px' },
-                mb: { lg: 3 },
-              }}
-            >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="subtitle1" color="textSecondary">Temperature</Typography>
-                  <Box
-                    sx={{
-                      borderRadius: '6px',
-                      padding: '4px 8px',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                      color: (temperatureChangePct > 0 ? 'success.dark' : temperatureChangePct < 0 ? 'error.dark' : 'text.secondary'),
-                      backgroundColor: (temperatureChangePct > 0 ? 'success.light' : temperatureChangePct < 0 ? 'error.light' : 'grey.100'),
-                    }}
-                  >
-                    {temperatureChangePct === null ? '–' : (temperatureChangePct > 0 ? `+${temperatureChangePct}%` : `${temperatureChangePct}%`)}
-                  </Box>
-                </Box>
-
-                <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
-                  <GaugeChart
-                    value={temperature}
-                    min={131}
-                    max={155}
-                    unit="°C"
-                    abnormalLow={131}
-                    warningLow={135}
-                    idealLow={138}
-                    idealHigh={145}
-                    warningHigh={150}
-                    abnormalHigh={155}
-                    changePct={temperatureChangePct}
-                    withCard={false}
-                    sx={{ width: '100%', maxWidth: 360 }}
-                  />
-                </Box>
-              </MainCard>
-            </Grid>
-
-            <Grid item xs={12} md={4} sx={{ display: 'flex' }}>
-            <MainCard
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                width: '100%',
-                height: { xs: 'auto', lg: '84%' },
-                minHeight: { md: '230px' },
-                mb: { lg: 3 },
-              }}
-            >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="subtitle1" color="textSecondary">Flow</Typography>
-                  <Box
-                    sx={{
-                      borderRadius: '6px',
-                      padding: '4px 8px',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 0.5,
-                      color: (flowChangePct > 0 ? 'success.dark' : flowChangePct < 0 ? 'error.dark' : 'text.secondary'),
-                      backgroundColor: (flowChangePct > 0 ? 'success.light' : flowChangePct < 0 ? 'error.light' : 'grey.100'),
-                    }}
-                  >
-                    {flowChangePct === null ? '–' : (flowChangePct > 0 ? `+${flowChangePct}%` : `${flowChangePct}%`)}
-                  </Box>
-                </Box>
-
-                <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
-                  <GaugeChart
-                    value={flow}
-                    min={251}
-                    max={298}
-                    unit="t/h"
-                    abnormalLow={251}
-                    warningLow={260}
-                    idealLow={265}
-                    idealHigh={285}
-                    warningHigh={290}
-                    abnormalHigh={298}
-                    changePct={flowChangePct}
-                    withCard={false}
-                    sx={{ width: '100%', maxWidth: 360 }}
-                  />
-                </Box>
-              </MainCard>
-            </Grid>
-
-            {/* Pressure StatCards */}
+            {/* 2. Pressure Stats (Each takes 2 columns = 8 columns total) */}
             {pressureCardData.map((card, index) => (
-              <Grid item xs={12} sm={6} md={2.4} key={`pressure-${index}`} sx={{ display: 'flex' }}>
+              <Grid item xs={12} sm={6} lg={2.37} key={`pressure-${index}`} sx={{ display: 'flex' }}>
                 <StatCard
                   title={card.title}
                   value={card.value}
@@ -478,9 +381,60 @@ const PTF = () => {
               </Grid>
             ))}
 
-            {/* Temperature StatCards */}
+
+            {/* --- TEMPERATURE ROW --- */}
+             {/* 1. Temperature Gauge MainCard */}
+             <Grid item xs={12} lg={2.5} sx={{ display: 'flex' }}>
+                <MainCard
+                    sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    width: '100%',
+                    height: '100%',
+                    }}
+                >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="subtitle1" color="textSecondary">Temperature</Typography>
+                        <Box
+                        sx={{
+                            borderRadius: '6px',
+                            padding: '4px 8px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            color: (temperatureChangePct > 0 ? 'success.dark' : temperatureChangePct < 0 ? 'error.dark' : 'text.secondary'),
+                            backgroundColor: (temperatureChangePct > 0 ? 'success.light' : temperatureChangePct < 0 ? 'error.light' : 'grey.100'),
+                        }}
+                        >
+                        {temperatureChangePct === null ? '–' : (temperatureChangePct > 0 ? `+${temperatureChangePct}%` : `${temperatureChangePct}%`)}
+                        </Box>
+                    </Box>
+
+                    <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
+                        <GaugeChart
+                        value={temperature}
+                        min={131}
+                        max={155}
+                        unit="°C"
+                        abnormalLow={131}
+                        warningLow={135}
+                        idealLow={138}
+                        idealHigh={145}
+                        warningHigh={150}
+                        abnormalHigh={155}
+                        changePct={temperatureChangePct}
+                        withCard={false}
+                        sx={{ width: '100%', maxWidth: 360 }}
+                        />
+                    </Box>
+                </MainCard>
+            </Grid>
+
+            {/* 2. Temperature Stats */}
             {temperatureCardData.map((card, index) => (
-              <Grid item xs={12} sm={6} md={2.4} key={`temperature-${index}`} sx={{ display: 'flex' }}>
+              <Grid item xs={12} sm={6} lg={2.37} key={`temperature-${index}`} sx={{ display: 'flex' }}>
                 <StatCard
                   title={card.title}
                   value={card.value}
@@ -494,9 +448,60 @@ const PTF = () => {
               </Grid>
             ))}
 
-            {/* Flow StatCards */}
+
+            {/* --- FLOW ROW --- */}
+            {/* 1. Flow Gauge MainCard */}
+            <Grid item xs={12} lg={2.5} sx={{ display: 'flex' }}>
+                <MainCard
+                    sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    width: '100%',
+                    height: '100%',
+                    }}
+                >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="subtitle1" color="textSecondary">Flow</Typography>
+                        <Box
+                        sx={{
+                            borderRadius: '6px',
+                            padding: '4px 8px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            color: (flowChangePct > 0 ? 'success.dark' : flowChangePct < 0 ? 'error.dark' : 'text.secondary'),
+                            backgroundColor: (flowChangePct > 0 ? 'success.light' : flowChangePct < 0 ? 'error.light' : 'grey.100'),
+                        }}
+                        >
+                        {flowChangePct === null ? '–' : (flowChangePct > 0 ? `+${flowChangePct}%` : `${flowChangePct}%`)}
+                        </Box>
+                    </Box>
+
+                    <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
+                        <GaugeChart
+                        value={flow}
+                        min={251}
+                        max={298}
+                        unit="t/h"
+                        abnormalLow={251}
+                        warningLow={260}
+                        idealLow={265}
+                        idealHigh={285}
+                        warningHigh={290}
+                        abnormalHigh={298}
+                        changePct={flowChangePct}
+                        withCard={false}
+                        sx={{ width: '100%', maxWidth: 360 }}
+                        />
+                    </Box>
+                </MainCard>
+            </Grid>
+
+            {/* 2. Flow Stats */}
             {flowCardData.map((card, index) => (
-              <Grid item xs={12} sm={6} md={2.4} key={`flow-${index}`} sx={{ display: 'flex' }}>
+              <Grid item xs={12} sm={6} lg={2.37} key={`flow-${index}`} sx={{ display: 'flex' }}>
                 <StatCard
                   title={card.title}
                   value={card.value}
@@ -510,7 +515,8 @@ const PTF = () => {
               </Grid>
             ))}
 
-            <Grid item xs={12} sx={{ mt: { xs: 0, lg: -5 } }}>
+            {/* --- CHARTS & TABLES --- */}
+            <Grid item xs={12}>
               <RealTimeDataChart
                 title="Real Time Data"
                 subtitle="Pressure, Temperature, and Flow data chart"
