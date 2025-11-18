@@ -173,6 +173,7 @@ const Dryness = () => {
                   icon={card.icon}
                   iconBgColor={card.iconBgColor}
                   iconColor={card.iconColor}
+                  backgroundColor="#F5F5F5"  
                 />
               </Grid>
             ))}

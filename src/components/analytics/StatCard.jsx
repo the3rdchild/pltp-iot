@@ -10,7 +10,9 @@ const StatCard = ({
   icon,
   iconBgColor = '#9271FF',
   iconColor = '#fff',
-  timeLabel = '1 Jam terakhir'
+  timeLabel = '1 Jam terakhir',
+  backgroundColor,
+  sx = {}
 }) => {
   return (
     <MainCard
@@ -20,6 +22,8 @@ const StatCard = ({
         width: '100%',
         height: { xs: 'auto', lg: '68%' },
         minHeight: { md: '230px' },
+        ...(backgroundColor && { backgroundColor }),
+        ...sx
       }}
     >
       {/* header */}
@@ -80,7 +84,9 @@ StatCard.propTypes = {
   icon: PropTypes.node.isRequired,
   iconBgColor: PropTypes.string,
   iconColor: PropTypes.string,
-  timeLabel: PropTypes.string
+  timeLabel: PropTypes.string,
+  backgroundColor: PropTypes.string,
+  sx: PropTypes.object
 };
 
 export default StatCard;
