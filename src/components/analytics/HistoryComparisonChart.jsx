@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import ApexCharts from 'apexcharts';
 import { Box, Typography, Grid } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -33,33 +33,25 @@ const HistoryComparisonChart = ({
   onAddNew
 }) => {
   const chartRef = useRef(null);
-  const [statsData, setStatsData] = useState([
-    { title: statsLabels.field1Range, value: '98.4% - 99.9%' },
-    { title: statsLabels.field1Avg, value: '99.01%' },
-    { title: statsLabels.field2Range, value: '98.4 - 99.9%' },
-    { title: statsLabels.field2Avg, value: '99.01%' }
-  ]);
+  const chartInstanceRef = useRef(null);
 
-  useEffect(() => {
-    // Sample data for datasets
-    const data1 = dataset1.length > 0 ? dataset1 : [
+  // Sample data - use memoized values to avoid recreating on every render
+  const data1 = useMemo(() =>
+    dataset1.length > 0 ? dataset1 : [
       99.32, 99.01, 98.58, 98.63, 99.36, 99.27, 99.52, 99.38, 99.13, 98.68,
       99.41, 98.95, 99.08, 98.75, 99.55, 99.48, 98.59, 98.71, 99.02, 99.21,
       98.53, 99.44, 98.82, 99.61, 99.15, 98.92, 99.35, 99.07, 99.50, 99.26
-    ];
+    ], [dataset1]);
 
-    const data2 = dataset2.length > 0 ? dataset2 : [
+  const data2 = useMemo(() =>
+    dataset2.length > 0 ? dataset2 : [
       98.87, 99.15, 98.73, 98.56, 99.28, 99.42, 99.07, 99.51, 99.64, 99.21,
       99.38, 98.91, 99.73, 98.48, 99.56, 99.12, 98.68, 99.47, 99.03, 98.79,
       99.61, 99.24, 98.96, 98.59, 99.43, 99.18, 98.82, 99.35, 98.71, 99.57
-    ];
+    ], [dataset2]);
 
-    const allData = [...data1, ...data2];
-    const maxValue = Math.max(...allData);
-    const minValue = Math.min(...allData);
-    const categories = Array.from({length: data1.length}, (_, i) => `Point ${i + 1}`);
-
-    // Calculate statistics for both datasets
+  // Calculate statistics - memoized to prevent recalculation
+  const stats = useMemo(() => {
     const dataset1Max = Math.max(...data1);
     const dataset1Min = Math.min(...data1);
     const dataset1Avg = data1.reduce((a, b) => a + b, 0) / data1.length;
@@ -68,13 +60,30 @@ const HistoryComparisonChart = ({
     const dataset2Min = Math.min(...data2);
     const dataset2Avg = data2.reduce((a, b) => a + b, 0) / data2.length;
 
-    // Update stats
-    setStatsData([
-      { title: statsLabels.field1Range, value: `${dataset1Min.toFixed(1)}${unit} - ${dataset1Max.toFixed(1)}${unit}` },
-      { title: statsLabels.field1Avg, value: `${dataset1Avg.toFixed(2)}${unit}` },
-      { title: statsLabels.field2Range, value: `${dataset2Min.toFixed(1)}${unit} - ${dataset2Max.toFixed(1)}${unit}` },
-      { title: statsLabels.field2Avg, value: `${dataset2Avg.toFixed(2)}${unit}` }
-    ]);
+    return {
+      dataset1Max,
+      dataset1Min,
+      dataset1Avg,
+      dataset2Max,
+      dataset2Min,
+      dataset2Avg,
+      maxValue: Math.max(...data1, ...data2),
+      minValue: Math.min(...data1, ...data2)
+    };
+  }, [data1, data2]);
+
+  // Stats for display cards
+  const statsData = useMemo(() => [
+    { title: statsLabels.field1Range, value: `${stats.dataset1Min.toFixed(1)}${unit} - ${stats.dataset1Max.toFixed(1)}${unit}` },
+    { title: statsLabels.field1Avg, value: `${stats.dataset1Avg.toFixed(2)}${unit}` },
+    { title: statsLabels.field2Range, value: `${stats.dataset2Min.toFixed(1)}${unit} - ${stats.dataset2Max.toFixed(1)}${unit}` },
+    { title: statsLabels.field2Avg, value: `${stats.dataset2Avg.toFixed(2)}${unit}` }
+  ], [stats, unit, statsLabels.field1Range, statsLabels.field1Avg, statsLabels.field2Range, statsLabels.field2Avg]);
+
+  useEffect(() => {
+    if (!chartRef.current) return;
+
+    const categories = Array.from({length: data1.length}, (_, i) => `Point ${i + 1}`);
 
     const options = {
       chart: {
@@ -126,8 +135,8 @@ const HistoryComparisonChart = ({
           formatter: function(value) { return value.toFixed(2) + unit; }
         },
         title: { text: yAxisTitle, style: { color: '#86868b', fontSize: '12px', fontWeight: 400 } },
-        min: minValue - 0.2,
-        max: maxValue + 0.2
+        min: stats.minValue - 0.2,
+        max: stats.maxValue + 0.2
       },
       grid: {
         borderColor: '#f1f1f1',
@@ -138,9 +147,9 @@ const HistoryComparisonChart = ({
       },
       annotations: {
         yaxis: [
-          { y: maxValue, borderColor: '#ef4444', strokeDashArray: 20, borderWidth: 1, label: { text: '' } },
-          { y: (dataset1Avg + dataset2Avg) / 2, borderColor: '#d1d5db', strokeDashArray: 20, borderWidth: 1, label: { text: '' } },
-          { y: minValue, borderColor: '#10b981', strokeDashArray: 20, borderWidth: 1, label: { text: '' } }
+          { y: stats.maxValue, borderColor: '#ef4444', strokeDashArray: 20, borderWidth: 1, label: { text: '' } },
+          { y: (stats.dataset1Avg + stats.dataset2Avg) / 2, borderColor: '#d1d5db', strokeDashArray: 20, borderWidth: 1, label: { text: '' } },
+          { y: stats.minValue, borderColor: '#10b981', strokeDashArray: 20, borderWidth: 1, label: { text: '' } }
         ]
       },
       tooltip: {
@@ -155,14 +164,23 @@ const HistoryComparisonChart = ({
       legend: { show: false }
     };
 
+    // Destroy previous chart if it exists
+    if (chartInstanceRef.current) {
+      chartInstanceRef.current.destroy();
+    }
+
     const chart = new ApexCharts(chartRef.current, options);
     chart.render();
+    chartInstanceRef.current = chart;
 
     // Cleanup
     return () => {
-      chart.destroy();
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.destroy();
+        chartInstanceRef.current = null;
+      }
     };
-  }, [dataset1, dataset2, dataset1Label, dataset2Label, unit, yAxisTitle, xAxisTitle, statsLabels]);
+  }, [data1, data2, dataset1Label, dataset2Label, unit, yAxisTitle, xAxisTitle, stats]);
 
   return (
     <MainCard>

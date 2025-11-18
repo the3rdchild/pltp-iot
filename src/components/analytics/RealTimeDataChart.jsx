@@ -23,6 +23,8 @@ const RealTimeDataChart = ({
   const [timeRange, setTimeRange] = useState('daily');
 
   useEffect(() => {
+    if (!chartRef.current) return;
+
     // Use provided data or sample data
     const chartData = data.length > 0 ? data : [
       97.92, 98.44, 98.97, 99.12, 98.65, 99.31, 98.88, 99.04, 99.55, 98.77,
