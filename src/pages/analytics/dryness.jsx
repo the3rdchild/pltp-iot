@@ -176,8 +176,8 @@ const Dryness = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     width: '100%',
-                    height: { xs: 'auto', lg: '70%' }, // your original 70% applied only on lg+
-                    minHeight: { md: '220px' }, // optional fallback for mid sizes
+                    height: { xs: 'auto', lg: '68%' }, // your original 70% applied only on lg+
+                    minHeight: { md: '230px' }, // optional fallback for mid sizes
                   }}
                 >
                   {/* header */}
@@ -222,7 +222,7 @@ const Dryness = () => {
                           </Typography>
                         )}
                       </Box>
-                      <Typography variant="caption" color="textSecondary">1 Jam terakhir</Typography>
+                      <Typography variant="caption" color="textSecondary" sx={{ ml: 3}} >1 Jam terakhir</Typography>
                     </Box>
                   </Box>
                 </MainCard>
