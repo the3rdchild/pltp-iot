@@ -1,5 +1,6 @@
+// StatCardOverlayFull.jsx
 import { Box, Typography } from '@mui/material';
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
 import MainCard from '../MainCard';
 import PropTypes from 'prop-types';
@@ -14,34 +15,24 @@ const StatCard = ({
   timeLabel = '1 Jam terakhir',
   backgroundColor,
   sx = {},
-  additionalData = [] // Array of { value, unit, timeLabel }
+  additionalData = []
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const wrapperRef = useRef(null);
   const hasAdditionalData = additionalData.length > 0;
 
-  return (
-    <MainCard
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        width: '100%',
-        height: { xs: 'auto', lg: isHovered && hasAdditionalData ? 'auto' : '68%' },
-        minHeight: { md: '230px' },
-        transition: 'all 0.3s ease-in-out',
-        ...(backgroundColor && { backgroundColor }),
-        ...sx
-      }}
-    >
-      {/* header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+  const onEnter = useCallback(() => setIsHovered(true), []);
+  const onLeave = useCallback(() => setIsHovered(false), []);
+
+  const CardBody = (showAdditional = false) => (
+    <>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 1, pt: 0 }}>
         <Typography variant="h6" color="textSecondary">{title}</Typography>
         <Box sx={{
           width: 28,
           height: 28,
           borderRadius: '50%',
-          backgroundColor: '#F6F6F6',
+          backgroundColor: '#fff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
@@ -50,8 +41,7 @@ const StatCard = ({
         </Box>
       </Box>
 
-      {/* content */}
-      <Box sx={{ py: 2, flexGrow: 1 }}>
+      <Box sx={{ py: 2, px: 0, flexGrow: 1 }}>
         <Box sx={{
           width: 72,
           height: 72,
@@ -67,10 +57,13 @@ const StatCard = ({
           {icon}
         </Box>
 
-        {/* Main value */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: isHovered && hasAdditionalData ? 1 : 0 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <Box>
-            <Typography variant={isHovered && hasAdditionalData ? "h5" : "h2"} component="span" sx={{ transition: 'font-size 0.3s ease-in-out' }}>
+            <Typography
+              variant={showAdditional && hasAdditionalData ? "h5" : "h2"}
+              component="span"
+              sx={{ transition: 'font-size 0.18s ease-in-out' }}
+            >
               {value}
             </Typography>
             {unit && (
@@ -84,18 +77,13 @@ const StatCard = ({
           </Typography>
         </Box>
 
-        {/* Additional data shown on hover */}
-        {isHovered && hasAdditionalData && (
+        {showAdditional && hasAdditionalData && (
           <Box sx={{
             mt: 1,
             pt: 1,
             borderTop: '1px solid',
             borderColor: 'divider',
-            animation: 'fadeIn 0.3s ease-in-out',
-            '@keyframes fadeIn': {
-              from: { opacity: 0, transform: 'translateY(-10px)' },
-              to: { opacity: 1, transform: 'translateY(0)' }
-            }
+            pt: 1
           }}>
             {additionalData.map((data, index) => (
               <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: index < additionalData.length - 1 ? 1 : 0 }}>
@@ -117,7 +105,76 @@ const StatCard = ({
           </Box>
         )}
       </Box>
-    </MainCard>
+    </>
+  );
+
+  return (
+    <Box
+      ref={wrapperRef}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+      sx={{
+        position: 'relative',
+        overflow: 'visible',
+        width: '100%',
+        zIndex: (theme) => isHovered ? theme.zIndex.modal + 10 : 'auto',
+        ...sx
+      }}
+    >
+      <MainCard
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          width: '100%',
+          height: { xs: 'auto', lg: '68%' },   // DO NOT toggle to 'auto' on hover
+          minHeight: { md: '230px' },
+          transition: 'transform 180ms ease, box-shadow 180ms ease',
+          transform: isHovered ? 'translateY(-6px) scale(1.005)' : 'none',
+          boxShadow: isHovered ? '0 12px 30px rgba(0, 0, 0, 0)' : undefined,
+          backgroundColor: backgroundColor || undefined,
+          pointerEvents: 'auto'  // keep base card interactive (but overlay will intercept when visible)
+        }}
+        aria-hidden={isHovered}
+      >
+        {CardBody(false)}
+      </MainCard>
+
+      {hasAdditionalData && (
+        <Box
+          onMouseEnter={onEnter}
+          onMouseLeave={onLeave}
+          sx={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: '100%',
+            zIndex: (theme) => theme.zIndex.modal + 12,
+            pointerEvents: isHovered ? 'auto' : 'none',
+            transition: 'opacity 180ms ease, transform 180ms ease',
+            opacity: isHovered ? 1 : 0,
+            transform: isHovered ? 'translateY(-6px) scale(1.008)' : 'translateY(0) scale(0.997)',
+            borderRadius: 1,
+            backgroundColor: 'transparent', // inner MainCard has background
+            overflow: 'visible',
+            display: 'block',
+          }}
+        >
+          <MainCard
+            sx={{
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              height: 'auto',
+              minHeight: { md: '230px' },
+              backgroundColor: backgroundColor || undefined,
+              boxShadow: '0 18px 48px rgba(0, 0, 0, 0.18)'
+            }}
+          >
+            {CardBody(true)}
+          </MainCard>
+        </Box>
+      )}
+    </Box>
   );
 };
 
