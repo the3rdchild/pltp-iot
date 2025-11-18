@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -16,6 +16,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import MainCard from '../MainCard';
 import PropTypes from 'prop-types';
+import { generateDrynessTableData } from '../../data/chartData';
 
 const StatisticsTable = ({
   title = 'Tabel Data Statistik',
@@ -29,6 +30,7 @@ const StatisticsTable = ({
     { id: 'stdDeviation', label: 'Standard Deviation' }
   ],
   data = [],
+  dataGenerator = generateDrynessTableData,
   onDownloadCSV,
   onPickDate,
   onAddNew
@@ -36,28 +38,10 @@ const StatisticsTable = ({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  // Generate random data if no data provided
-  const generateRandomData = () => {
-    const generatedData = [];
-    for (let i = 1; i <= 58; i++) {
-      const minValue = (98 + Math.random() * 2).toFixed(15);
-      const maxValue = (99 + Math.random() * 1).toFixed(15);
-      const average = ((parseFloat(minValue) + parseFloat(maxValue)) / 2).toFixed(15);
-      const stdDev = (Math.random() * 0.5).toFixed(15);
+  // Use memoized data generator to avoid regenerating on every render
+  const generatedData = useMemo(() => dataGenerator(), [dataGenerator]);
 
-      generatedData.push({
-        no: i,
-        date: `${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}/${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/2024`,
-        minValue: minValue,
-        maxValue: maxValue,
-        average: average,
-        stdDeviation: stdDev
-      });
-    }
-    return generatedData;
-  };
-
-  const tableData = data.length > 0 ? data : generateRandomData();
+  const tableData = data.length > 0 ? data : generatedData;
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -221,6 +205,7 @@ StatisticsTable.propTypes = {
     label: PropTypes.string.isRequired
   })),
   data: PropTypes.arrayOf(PropTypes.object),
+  dataGenerator: PropTypes.func,
   onDownloadCSV: PropTypes.func,
   onPickDate: PropTypes.func,
   onAddNew: PropTypes.func

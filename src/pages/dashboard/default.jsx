@@ -332,7 +332,7 @@ export default function DashboardDefault() {
               idealHigh={7}
               warningHigh={8}
               abnormalHigh={10}
-              linkTo='/dryness'
+              linkTo='/ncg'
               titleConfig={TITLE_CONFIG}
             />
           </Box>

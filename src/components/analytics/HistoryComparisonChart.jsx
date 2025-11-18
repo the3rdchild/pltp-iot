@@ -5,6 +5,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AddIcon from '@mui/icons-material/Add';
 import MainCard from '../MainCard';
 import PropTypes from 'prop-types';
+import { drynessHistoryDataset1, drynessHistoryDataset2 } from '../../data/chartData';
 
 const HistoryComparisonChart = ({
   title = 'History Data & Perbandingan',
@@ -37,18 +38,10 @@ const HistoryComparisonChart = ({
 
   // Sample data - use memoized values to avoid recreating on every render
   const data1 = useMemo(() =>
-    dataset1.length > 0 ? dataset1 : [
-      99.32, 99.01, 98.58, 98.63, 99.36, 99.27, 99.52, 99.38, 99.13, 98.68,
-      99.41, 98.95, 99.08, 98.75, 99.55, 99.48, 98.59, 98.71, 99.02, 99.21,
-      98.53, 99.44, 98.82, 99.61, 99.15, 98.92, 99.35, 99.07, 99.50, 99.26
-    ], [dataset1]);
+    dataset1.length > 0 ? dataset1 : drynessHistoryDataset1, [dataset1]);
 
   const data2 = useMemo(() =>
-    dataset2.length > 0 ? dataset2 : [
-      98.87, 99.15, 98.73, 98.56, 99.28, 99.42, 99.07, 99.51, 99.64, 99.21,
-      99.38, 98.91, 99.73, 98.48, 99.56, 99.12, 98.68, 99.47, 99.03, 98.79,
-      99.61, 99.24, 98.96, 98.59, 99.43, 99.18, 98.82, 99.35, 98.71, 99.57
-    ], [dataset2]);
+    dataset2.length > 0 ? dataset2 : drynessHistoryDataset2, [dataset2]);
 
   // Calculate statistics - memoized to prevent recalculation
   const stats = useMemo(() => {

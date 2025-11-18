@@ -3,6 +3,7 @@ import ApexCharts from 'apexcharts';
 import { Box, Typography, Select, MenuItem, FormControl } from '@mui/material';
 import MainCard from '../MainCard';
 import PropTypes from 'prop-types';
+import { drynessRealTimeData } from '../../data/chartData';
 
 const RealTimeDataChart = ({
   title = 'Real Time Data',
@@ -28,14 +29,7 @@ const RealTimeDataChart = ({
     if (!chartRef.current) return;
 
     // Use provided data or sample data
-    const chartData = data.length > 0 ? data : [
-      97.92, 98.44, 98.97, 99.12, 98.65, 99.31, 98.88, 99.04, 99.55, 98.77,
-      99.22, 98.91, 99.08, 98.53, 99.47, 98.81, 99.00, 98.69, 99.35, 99.10,
-      98.62, 99.28, 98.84, 99.02, 99.61, 98.73, 99.18, 98.95, 99.07, 98.59,
-      99.41, 98.86, 99.14, 98.67, 99.33, 99.06, 98.71, 99.26, 98.89, 99.03,
-      99.58, 98.75, 99.20, 98.93, 99.09, 98.57, 99.39, 98.83, 99.11, 98.63,
-      99.36, 98.96, 99.05, 98.72, 99.24, 98.90, 99.16, 98.61
-    ];
+    const chartData = data.length > 0 ? data : drynessRealTimeData;
 
     const maxValue = Math.max(...chartData);
     const minValue = Math.min(...chartData);
@@ -127,14 +121,7 @@ const RealTimeDataChart = ({
   useEffect(() => {
     if (!chartInstanceRef.current) return;
 
-    const chartData = data.length > 0 ? data : [
-      97.92, 98.44, 98.97, 99.12, 98.65, 99.31, 98.88, 99.04, 99.55, 98.77,
-      99.22, 98.91, 99.08, 98.53, 99.47, 98.81, 99.00, 98.69, 99.35, 99.10,
-      98.62, 99.28, 98.84, 99.02, 99.61, 98.73, 99.18, 98.95, 99.07, 98.59,
-      99.41, 98.86, 99.14, 98.67, 99.33, 99.06, 98.71, 99.26, 98.89, 99.03,
-      99.58, 98.75, 99.20, 98.93, 99.09, 98.57, 99.39, 98.83, 99.11, 98.63,
-      99.36, 98.96, 99.05, 98.72, 99.24, 98.90, 99.16, 98.61
-    ];
+    const chartData = data.length > 0 ? data : drynessRealTimeData;
 
     const maxValue = Math.max(...chartData);
     const minValue = Math.min(...chartData);
