@@ -130,3 +130,95 @@ export const generateTDSTableData = () => {
   }
   return generatedData;
 };
+
+// ========== PTF DATA ==========
+// PTF data (Pressure, Temperature, Flow)
+// Pressure data (kPa) - range around 1353-1556 kPa
+export const ptfPressureRealTimeData = [
+  1420, 1445, 1398, 1462, 1435, 1408, 1478, 1425, 1452, 1418,
+  1465, 1432, 1448, 1415, 1488, 1442, 1428, 1458, 1438, 1425,
+  1468, 1445, 1418, 1475, 1438, 1422, 1455, 1432, 1465, 1428,
+  1448, 1435, 1458, 1425, 1472, 1442, 1428, 1462, 1438, 1425,
+  1468, 1445, 1432, 1458, 1435, 1422, 1465, 1438, 1448, 1425,
+  1472, 1445, 1428, 1458, 1435, 1422, 1468, 1442
+];
+
+// Temperature data (°C) - range around 131-155°C
+export const ptfTemperatureRealTimeData = [
+  138, 142, 135, 145, 140, 136, 148, 141, 144, 137,
+  146, 140, 143, 136, 149, 142, 139, 145, 141, 138,
+  147, 142, 137, 148, 141, 139, 144, 140, 146, 139,
+  143, 141, 145, 138, 148, 142, 139, 145, 141, 138,
+  147, 142, 140, 145, 141, 139, 146, 141, 143, 138,
+  148, 142, 139, 145, 141, 138, 147, 142
+];
+
+// Flow data (t/h) - range around 251-298 t/h
+export const ptfFlowRealTimeData = [
+  268, 275, 262, 280, 272, 265, 285, 270, 278, 264,
+  282, 271, 276, 263, 288, 274, 268, 280, 272, 265,
+  283, 275, 262, 286, 272, 267, 278, 270, 282, 267,
+  276, 272, 280, 265, 287, 274, 268, 280, 272, 265,
+  283, 275, 270, 280, 272, 267, 282, 272, 276, 265,
+  287, 275, 268, 280, 272, 265, 283, 274
+];
+
+// History datasets for Pressure
+export const ptfPressureHistoryDataset1 = [
+  1435, 1442, 1428, 1448, 1438, 1432, 1452, 1440, 1445, 1430,
+  1448, 1435, 1442, 1428, 1450, 1438, 1432, 1445, 1438, 1432,
+  1448, 1442, 1428, 1450, 1438, 1432, 1445, 1440, 1448, 1435
+];
+
+export const ptfPressureHistoryDataset2 = [
+  1440, 1435, 1445, 1430, 1448, 1435, 1428, 1445, 1438, 1448,
+  1432, 1442, 1448, 1432, 1445, 1452, 1435, 1445, 1438, 1448,
+  1432, 1442, 1450, 1432, 1445, 1452, 1438, 1445, 1435, 1445
+];
+
+// History datasets for Temperature
+export const ptfTemperatureHistoryDataset1 = [
+  140, 142, 138, 144, 141, 139, 145, 141, 143, 138,
+  144, 140, 142, 138, 145, 142, 139, 144, 141, 139,
+  144, 142, 138, 145, 141, 139, 144, 141, 144, 140
+];
+
+export const ptfTemperatureHistoryDataset2 = [
+  141, 140, 143, 138, 144, 140, 138, 143, 141, 144,
+  139, 142, 144, 139, 143, 145, 140, 143, 141, 144,
+  139, 142, 145, 139, 143, 145, 141, 143, 140, 143
+];
+
+// History datasets for Flow
+export const ptfFlowHistoryDataset1 = [
+  272, 275, 268, 278, 273, 270, 280, 273, 276, 268,
+  278, 272, 275, 268, 280, 274, 270, 278, 273, 270,
+  278, 275, 268, 280, 273, 270, 278, 273, 278, 272
+];
+
+export const ptfFlowHistoryDataset2 = [
+  273, 272, 276, 268, 278, 272, 268, 276, 273, 278,
+  270, 275, 278, 270, 276, 280, 272, 276, 273, 278,
+  270, 275, 280, 270, 276, 280, 273, 276, 272, 276
+];
+
+// PTF table data generator
+export const generatePTFTableData = () => {
+  const generatedData = [];
+  for (let i = 1; i <= 58; i++) {
+    const minPressure = (1353 + Math.random() * 50).toFixed(2);
+    const maxPressure = (1500 + Math.random() * 56).toFixed(2);
+    const avgPressure = ((parseFloat(minPressure) + parseFloat(maxPressure)) / 2).toFixed(2);
+    const stdDev = (Math.random() * 20).toFixed(2);
+
+    generatedData.push({
+      no: i,
+      date: `${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}/${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/2024`,
+      minValue: `P:${minPressure}kPa T:${(131 + Math.random() * 10).toFixed(1)}°C F:${(251 + Math.random() * 20).toFixed(1)}t/h`,
+      maxValue: `P:${maxPressure}kPa T:${(145 + Math.random() * 10).toFixed(1)}°C F:${(280 + Math.random() * 18).toFixed(1)}t/h`,
+      average: `P:${avgPressure}kPa T:${(135 + Math.random() * 10).toFixed(1)}°C F:${(260 + Math.random() * 20).toFixed(1)}t/h`,
+      stdDeviation: `P:${stdDev}kPa T:${(Math.random() * 5).toFixed(2)}°C F:${(Math.random() * 8).toFixed(2)}t/h`
+    });
+  }
+  return generatedData;
+};

@@ -39,6 +39,11 @@ export function generateAnalyticData() {
     // Steam Quality
     drynessFraction: drynessFraction.toFixed(2),
     anomalyScore: anomalyScore.toFixed(2),
-    riskPrediction: riskPrediction
+    riskPrediction: riskPrediction,
+
+    // PTF Data (Pressure, Temperature, Flow)
+    pressure: clamp(Math.random() * 203 + 1353, 1353, 1556).toFixed(0),
+    temperature: clamp(Math.random() * 24 + 131, 131, 155).toFixed(0),
+    flow: clamp(Math.random() * 47 + 251, 251, 298).toFixed(0)
   };
 }
