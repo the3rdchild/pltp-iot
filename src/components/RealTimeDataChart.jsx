@@ -116,47 +116,45 @@ const RealTimeDataChart = () => {
 
     return (
         <MainCard>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2.5 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: -4 }}>
                 <Box>
                     <Typography variant="h5">Real Time Data</Typography>
                     <Typography variant="body2" color="textSecondary">Dryness level data chart</Typography>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                        {legendItems.map(item => (
-                            <Box key={item.name} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                <Box sx={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: item.color }} />
-                                <Typography variant="caption" color="textSecondary">{item.name}</Typography>
-                            </Box>
-                        ))}
+                <FormControl>
+                    <Select
+                        value={timeRange}
+                        onChange={handleTimeRangeChange}
+                        sx={{
+                            borderRadius: '20px',
+                            fontSize: '0.875rem',
+                            '.MuiSelect-select': {
+                                padding: '8px 24px 8px 12px'
+                            },
+                            '.MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#d2d2d7',
+                            },
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#86868b',
+                            },
+                            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                borderColor: '#3b82f6',
+                            },
+                        }}
+                    >
+                        <MenuItem value="daily">Daily</MenuItem>
+                        <MenuItem value="weekly">Weekly</MenuItem>
+                        <MenuItem value="monthly">Monthly</MenuItem>
+                    </Select>
+                </FormControl>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 1 }}>
+                {legendItems.map(item => (
+                    <Box key={item.name} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                        <Box sx={{ width: 15, height: 15, borderRadius: '10%', backgroundColor: item.color }} />
+                        <Typography variant="caption" color="textSecondary">{item.name}</Typography>
                     </Box>
-                    <FormControl>
-                        <Select
-                            value={timeRange}
-                            onChange={handleTimeRangeChange}
-                            sx={{
-                                borderRadius: '20px',
-                                fontSize: '0.875rem',
-                                '.MuiSelect-select': {
-                                    padding: '8px 24px 8px 12px'
-                                },
-                                '.MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#d2d2d7',
-                                },
-                                '&:hover .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#86868b',
-                                },
-                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                                    borderColor: '#3b82f6',
-                                },
-                            }}
-                        >
-                            <MenuItem value="daily">Daily</MenuItem>
-                            <MenuItem value="weekly">Weekly</MenuItem>
-                            <MenuItem value="monthly">Monthly</MenuItem>
-                        </Select>
-                    </FormControl>
-                </Box>
+                ))}
             </Box>
             <div id="chart" ref={chartRef}></div>
         </MainCard>

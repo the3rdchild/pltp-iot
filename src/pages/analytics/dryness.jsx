@@ -152,14 +152,14 @@ const Dryness = () => {
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    mb: 2.5,
+                                    mb: 3,
                                     textAlign: 'center'
                                 }}>
                                     {card.icon}
                                 </Box>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                                     <Box>
-                                        <Typography variant="h4" component="span">{card.value}</Typography>
+                                        <Typography variant="h2" component="span">{card.value}</Typography>
                                         {card.unit && 
                                             <Typography variant="body1" component="span" color="textSecondary" sx={{ ml: 0.5 }}>{card.unit}</Typography>
                                         }
