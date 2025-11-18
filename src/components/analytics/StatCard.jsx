@@ -1,5 +1,5 @@
-// StatCardOverlayFull.jsx
-import { Box, Typography } from '@mui/material';
+// StatCardShadowFix.jsx
+import { Box, Typography, Paper } from '@mui/material';
 import { useState, useRef, useCallback } from 'react';
 import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
 import MainCard from '../MainCard';
@@ -117,22 +117,25 @@ const StatCard = ({
         position: 'relative',
         overflow: 'visible',
         width: '100%',
-        zIndex: (theme) => isHovered ? theme.zIndex.modal + 10 : 'auto',
+        // ensure overlay renders above everything in this area
+        zIndex: (theme) => isHovered ? theme.zIndex.modal + 20 : 'auto',
         ...sx
       }}
     >
+      {/* Base card (remains in flow) */}
       <MainCard
         sx={{
           display: 'flex',
           flexDirection: 'column',
           width: '100%',
-          height: { xs: 'auto', lg: '68%' },   // DO NOT toggle to 'auto' on hover
+          height: { xs: 'auto', lg: '68%' },
           minHeight: { md: '230px' },
           transition: 'transform 180ms ease, box-shadow 180ms ease',
           transform: isHovered ? 'translateY(-6px) scale(1.005)' : 'none',
-          boxShadow: isHovered ? '0 12px 30px rgba(0, 0, 0, 0)' : undefined,
+          // base shadow only when no additionalData (collapsed state)
+          boxShadow: isHovered && !hasAdditionalData ? '0 12px 30px rgba(0, 0, 0, 0.15)' : 'none',
           backgroundColor: backgroundColor || undefined,
-          pointerEvents: 'auto'  // keep base card interactive (but overlay will intercept when visible)
+          pointerEvents: 'auto'
         }}
         aria-hidden={isHovered}
       >
@@ -140,25 +143,36 @@ const StatCard = ({
       </MainCard>
 
       {hasAdditionalData && (
-        <Box
+        /* Paper wrapper ensures the shadow/elevation is painted correctly and not overridden */
+        <Paper
           onMouseEnter={onEnter}
           onMouseLeave={onLeave}
+          elevation={16} // use MUI elevation to ensure shadow is present
+          square={false}
           sx={{
             position: 'absolute',
             left: 0,
             top: 0,
             width: '100%',
-            zIndex: (theme) => theme.zIndex.modal + 12,
+            zIndex: (theme) => theme.zIndex.modal + 30,
             pointerEvents: isHovered ? 'auto' : 'none',
-            transition: 'opacity 180ms ease, transform 180ms ease',
+            transition: 'opacity 180ms ease, transform 180ms ease, box-shadow 180ms ease',
             opacity: isHovered ? 1 : 0,
             transform: isHovered ? 'translateY(-6px) scale(1.008)' : 'translateY(0) scale(0.997)',
-            borderRadius: 1,
-            backgroundColor: 'transparent', // inner MainCard has background
+            borderRadius: 5,
+            // prefer boxShadow + filter for robust appearance
+            boxShadow: isHovered ? '0 18px 48px rgba(0, 0, 0, 0.07)' : 'none',
+            // GPU hint
+            willChange: 'transform, opacity, box-shadow',
+            // backface to avoid weird blur in some browsers
+            WebkitBackfaceVisibility: 'hidden',
+            backfaceVisibility: 'hidden',
+            // debug border: uncomment to visually verify overlay bounds
+            // border: '1px solid rgba(255,0,0,0.25)',
             overflow: 'visible',
-            display: 'block',
           }}
         >
+          {/* inside Paper put full MainCard to match visuals */}
           <MainCard
             sx={{
               width: '100%',
@@ -167,12 +181,13 @@ const StatCard = ({
               height: 'auto',
               minHeight: { md: '230px' },
               backgroundColor: backgroundColor || undefined,
-              boxShadow: '0 18px 48px rgba(0, 0, 0, 0.18)'
+              // make sure MainCard doesn't override Paper's boxShadow visually
+              boxShadow: 'none'
             }}
           >
             {CardBody(true)}
           </MainCard>
-        </Box>
+        </Paper>
       )}
     </Box>
   );
