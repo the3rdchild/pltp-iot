@@ -86,3 +86,47 @@ export const generateNCGTableData = () => {
   }
   return generatedData;
 };
+
+// ========== TDS DATA ==========
+// TDS data (Total Dissolved Solids)
+export const tdsRealTimeData = [
+  5.2, 5.6, 5.9, 5.4, 5.8, 6.1, 5.5, 5.7, 6.3, 5.6,
+  5.9, 6.2, 5.7, 5.4, 6.0, 5.8, 5.5, 6.1, 5.9, 5.6,
+  5.8, 6.0, 5.6, 5.9, 6.4, 5.7, 6.2, 5.9, 5.6, 5.8,
+  6.1, 5.6, 5.9, 6.3, 5.8, 5.5, 6.0, 5.7, 5.9, 5.6,
+  5.8, 6.1, 5.8, 5.6, 6.0, 5.9, 5.7, 6.2, 5.9, 5.7,
+  5.9, 5.6, 6.1, 5.8, 5.6, 6.3, 5.9, 5.7
+];
+
+export const tdsHistoryDataset1 = [
+  5.7, 5.8, 5.9, 5.7, 5.9, 5.8, 5.8, 5.9, 5.8, 6.0,
+  5.7, 5.8, 5.9, 5.8, 5.9, 6.0, 5.8, 5.9, 5.8, 5.9,
+  5.7, 5.9, 6.0, 5.8, 5.9, 6.1, 5.8, 5.9, 5.8, 5.9
+];
+
+export const tdsHistoryDataset2 = [
+  5.9, 5.7, 5.9, 5.7, 6.0, 5.8, 5.7, 5.9, 5.8, 6.0,
+  5.7, 5.9, 6.0, 5.7, 5.9, 6.1, 5.8, 5.9, 5.8, 6.0,
+  5.7, 5.9, 6.0, 5.7, 5.9, 6.1, 5.8, 5.9, 5.8, 5.9
+];
+
+// TDS table data generator
+export const generateTDSTableData = () => {
+  const generatedData = [];
+  for (let i = 1; i <= 58; i++) {
+    const minValue = (4.35 + Math.random() * 1.5).toFixed(15);
+    const maxValue = (6.5 + Math.random() * 1.2).toFixed(15);
+    const average = ((parseFloat(minValue) + parseFloat(maxValue)) / 2).toFixed(15);
+    const stdDev = (Math.random() * 0.4).toFixed(15);
+
+    generatedData.push({
+      no: i,
+      date: `${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}/${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/2024`,
+      minValue: minValue + 'ppm',
+      maxValue: maxValue + 'ppm',
+      average: average + 'ppm',
+      stdDeviation: stdDev + 'ppm'
+    });
+  }
+  return generatedData;
+};
