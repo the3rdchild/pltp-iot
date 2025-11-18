@@ -160,11 +160,8 @@ const TDS = () => {
                     min={0}
                     max={10}
                     unit="ppm"
-                    abnormalLow={0}
-                    warningLow={3}
-                    idealLow={4}
-                    idealHigh={7}
-                    warningHigh={8}
+                    idealHigh={0}
+                    warningHigh={6}
                     abnormalHigh={10}
                     withCard={false}
                     sx={{ width: '100%', maxWidth: 200 }}
@@ -191,11 +188,8 @@ const TDS = () => {
                     min={0}
                     max={5}
                     unit="ppm"
-                    abnormalLow={0}
-                    warningLow={0.5}
-                    idealLow={1}
-                    idealHigh={3}
-                    warningHigh={4}
+                    idealHigh={0}
+                    warningHigh={1}
                     abnormalHigh={5}
                     withCard={false}
                     sx={{ width: '100%', maxWidth: 200 }}
@@ -222,10 +216,7 @@ const TDS = () => {
                     min={0}
                     max={2}
                     unit="ppm"
-                    abnormalLow={0}
-                    warningLow={0.1}
-                    idealLow={0.2}
-                    idealHigh={0.8}
+                    idealHigh={0}
                     warningHigh={1.2}
                     abnormalHigh={2}
                     withCard={false}
@@ -251,14 +242,11 @@ const TDS = () => {
                   <GaugeChart
                     value={tdsMethane}
                     min={0}
-                    max={3}
+                    max={1.5}
                     unit="ppm"
-                    abnormalLow={0}
-                    warningLow={0.3}
-                    idealLow={0.5}
-                    idealHigh={1.5}
-                    warningHigh={2}
-                    abnormalHigh={3}
+                    idealHigh={0}
+                    warningHigh={0.5}
+                    abnormalHigh={1}
                     withCard={false}
                     sx={{ width: '100%', maxWidth: 200 }}
                   />
@@ -284,10 +272,7 @@ const TDS = () => {
                     min={0}
                     max={1}
                     unit="ppm"
-                    abnormalLow={0}
-                    warningLow={0.05}
-                    idealLow={0.1}
-                    idealHigh={0.4}
+                    idealHigh={0}
                     warningHigh={0.6}
                     abnormalHigh={1}
                     withCard={false}

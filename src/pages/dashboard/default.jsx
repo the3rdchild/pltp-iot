@@ -286,11 +286,8 @@ export default function DashboardDefault() {
               min={0}
               max={10}
               unit="ppm"
-              abnormalLow={0}
-              warningLow={0}
-              idealLow={0}
-              idealHigh={1}
-              warningHigh={8}
+              idealHigh={0}
+              warningHigh={6}
               abnormalHigh={10}
               linkTo="/tds"
               titleConfig={TITLE_CONFIG}
@@ -326,11 +323,8 @@ export default function DashboardDefault() {
               min={0}
               max={10}
               unit="wt%"
-              abnormalLow={0}
-              warningLow={0}
-              idealLow={0}
-              idealHigh={7}
-              warningHigh={8}
+              idealHigh={0}
+              warningHigh={5}
               abnormalHigh={10}
               linkTo='/ncg'
               titleConfig={TITLE_CONFIG}

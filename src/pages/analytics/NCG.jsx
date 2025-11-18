@@ -162,11 +162,8 @@ const NCG = () => {
                     min={0}
                     max={10}
                     unit="wt%"
-                    abnormalLow={0}
-                    warningLow={0}
-                    idealLow={0}
-                    idealHigh={7}
-                    warningHigh={8}
+                    idealHigh={0}
+                    warningHigh={5}
                     abnormalHigh={10}
                     changePct={changePct}
                     withCard={false}
