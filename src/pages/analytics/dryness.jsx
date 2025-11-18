@@ -1,15 +1,17 @@
-
 import { Grid, Box, Typography, useTheme } from '@mui/material';
-import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
 
 import { useState, useEffect } from 'react';
 import { generateAnalyticData } from 'data/simulasi';
 
 import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
-import RealTimeDataChart from '../../components/RealTimeDataChart';
-import HistoryComparisonChart from '../../components/HistoryComparisonChart';
-import StatisticsTable from '../../components/StatisticsTable';
+import {
+  AnalyticsHeader,
+  StatCard,
+  RealTimeDataChart,
+  HistoryComparisonChart,
+  StatisticsTable
+} from '../../components/analytics';
 
 // icons
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
@@ -94,14 +96,7 @@ const Dryness = () => {
 
     return (
         <Box>
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="h4" component="span">
-              Dryness /
-            </Typography>
-            <Typography variant="h6" component="span" color="text.secondary" sx={{ ml: 0.5 }}>
-              Analytic
-            </Typography>
-          </Box>
+          <AnalyticsHeader title="Dryness" subtitle="Analytic" />
       
           {/* Give the whole grid a definite height on large screens so % heights work */}
           <Grid
@@ -171,74 +166,40 @@ const Dryness = () => {
             {/* small cards */}
             {cardData.map((card, index) => (
               <Grid item xs={12} sm={6} md={2.2} key={index} sx={{ display: 'flex' }}>
-                <MainCard
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    width: '100%',
-                    height: { xs: 'auto', lg: '68%' }, // your original 70% applied only on lg+
-                    minHeight: { md: '230px' }, // optional fallback for mid sizes
-                  }}
-                >
-                  {/* header */}
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography variant="h6" color="textSecondary">{card.title}</Typography>
-                    <Box sx={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: '50%',
-                      backgroundColor: '#F6F6F6',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <ArrowOutwardIcon sx={{ fontSize: '1rem', color: 'text.dark' }} />
-                    </Box>
-                  </Box>
-      
-                  {/* content */}
-                  <Box sx={{ py: 2, flexGrow: 1 }}>
-                    <Box sx={{
-                      width: 72,
-                      height: 72,
-                      borderRadius: '50%',
-                      backgroundColor: card.iconBgColor,
-                      color: card.iconColor,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      mb: 3,
-                      textAlign: 'center'
-                    }}>
-                      {card.icon}
-                    </Box>
-      
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <Box>
-                        <Typography variant="h2" component="span">{card.value}</Typography>
-                        {card.unit && (
-                          <Typography variant="body1" component="span" color="textSecondary" sx={{ ml: 0.5 }}>
-                            {card.unit}
-                          </Typography>
-                        )}
-                      </Box>
-                      <Typography variant="caption" color="textSecondary" sx={{ ml: 3}} >1 Jam terakhir</Typography>
-                    </Box>
-                  </Box>
-                </MainCard>
+                <StatCard
+                  title={card.title}
+                  value={card.value}
+                  unit={card.unit}
+                  icon={card.icon}
+                  iconBgColor={card.iconBgColor}
+                  iconColor={card.iconColor}
+                />
               </Grid>
             ))}
       
             <Grid item xs={12} sx={{ mt: { xs: 0, lg: -5 } }}>
-                <RealTimeDataChart />
+              <RealTimeDataChart
+                title="Real Time Data"
+                subtitle="Dryness level data chart"
+                yAxisTitle="Dryness (%)"
+                unit="%"
+              />
             </Grid>
-      
+
             <Grid item xs={12}>
-              <HistoryComparisonChart />
+              <HistoryComparisonChart
+                title="History Data & Perbandingan"
+                subtitle="Grafik dryness history data dan perbandingan"
+                yAxisTitle="Dryness (%)"
+                unit="%"
+              />
             </Grid>
-      
+
             <Grid item xs={12}>
-              <StatisticsTable />
+              <StatisticsTable
+                title="Tabel Data Statistik"
+                subtitle="Tabel data statistik yang telah diperoleh"
+              />
             </Grid>
           </Grid>
         </Box>
