@@ -130,8 +130,27 @@ const RealTimeDataChart = () => {
                             </Box>
                         ))}
                     </Box>
-                    <FormControl size="small">
-                        <Select value={timeRange} onChange={handleTimeRangeChange} sx={{ fontSize: '0.875rem' }}>
+                    <FormControl>
+                        <Select
+                            value={timeRange}
+                            onChange={handleTimeRangeChange}
+                            sx={{
+                                borderRadius: '20px',
+                                fontSize: '0.875rem',
+                                '.MuiSelect-select': {
+                                    padding: '8px 24px 8px 12px'
+                                },
+                                '.MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#d2d2d7',
+                                },
+                                '&:hover .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#86868b',
+                                },
+                                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                                    borderColor: '#3b82f6',
+                                },
+                            }}
+                        >
                             <MenuItem value="daily">Daily</MenuItem>
                             <MenuItem value="weekly">Weekly</MenuItem>
                             <MenuItem value="monthly">Monthly</MenuItem>
