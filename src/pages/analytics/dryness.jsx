@@ -9,6 +9,7 @@ import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
 import RealTimeDataChart from '../../components/RealTimeDataChart';
 import HistoryComparisonChart from '../../components/HistoryComparisonChart';
+import StatisticsTable from '../../components/StatisticsTable';
 
 // icons
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
@@ -191,6 +192,9 @@ const Dryness = () => {
                 </Grid>
                 <Grid item xs={12} sx={{ mt: 0 }}>
                     <HistoryComparisonChart />
+                </Grid>
+                <Grid item xs={12} sx={{ mt: 0 }}>
+                    <StatisticsTable />
                 </Grid>
             </Grid>
         </Box>
