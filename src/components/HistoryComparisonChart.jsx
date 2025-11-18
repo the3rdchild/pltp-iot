@@ -99,9 +99,9 @@ const HistoryComparisonChart = () => {
             },
             annotations: {
                 yaxis: [
-                    { y: maxValue, borderColor: '#ef4444', strokeDashArray: 5, borderWidth: 1, label: { text: '' } },
-                    { y: (dataset1Avg + dataset2Avg) / 2, borderColor: '#d1d5db', strokeDashArray: 5, borderWidth: 1, label: { text: '' } },
-                    { y: minValue, borderColor: '#10b981', strokeDashArray: 5, borderWidth: 1, label: { text: '' } }
+                    { y: maxValue, borderColor: '#ef4444', strokeDashArray: 20, borderWidth: 1, label: { text: '' } },
+                    { y: (dataset1Avg + dataset2Avg) / 2, borderColor: '#d1d5db', strokeDashArray: 20, borderWidth: 1, label: { text: '' } },
+                    { y: minValue, borderColor: '#10b981', strokeDashArray: 20, borderWidth: 1, label: { text: '' } }
                 ]
             },
             tooltip: {
@@ -132,7 +132,8 @@ const HistoryComparisonChart = () => {
     }, []);
 
     const legendItems = [
-        { name: 'Trend', color: '#8b5cf6' },
+        { name: 'Real-Data', color: '#53A1FF' },
+        { name: 'Ai-Data', color: '#8b5cf6' },
         { name: 'Max', color: '#ef4444' },
         { name: 'Average', color: '#d1d5db' },
         { name: 'Min', color: '#10b981' }
