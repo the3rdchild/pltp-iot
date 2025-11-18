@@ -8,6 +8,7 @@ import { generateAnalyticData } from 'data/simulasi';
 import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
 import RealTimeDataChart from '../../components/RealTimeDataChart';
+import HistoryComparisonChart from '../../components/HistoryComparisonChart';
 
 // icons
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
@@ -187,6 +188,9 @@ const Dryness = () => {
                 ))}
                  <Grid item xs={12} sx={{ mt: -5.5 }}>
                     <RealTimeDataChart />
+                </Grid>
+                <Grid item xs={12} sx={{ mt: 0 }}>
+                    <HistoryComparisonChart />
                 </Grid>
             </Grid>
         </Box>
