@@ -16,6 +16,7 @@ import Dryness from 'pages/analytics/dryness';
 import NCG from 'pages/analytics/NCG';
 import TDS from 'pages/analytics/TDS';
 import PTF from 'pages/analytics/ptf'
+import Prediction from 'pages/analytics/prediction'
 //settings pages
 import DataInput from 'pages/settings/dataInput'
 import Calibration from 'pages/settings/calibration';
@@ -116,6 +117,16 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <PTF />
+      }
+    ]
+  },
+  {
+    path: '/prediction',
+    element: <DashboardLayout />,
+    children: [
+      {
+        index: true,
+        element: <Prediction />
       }
     ]
   },

@@ -82,8 +82,7 @@ const StatCard = ({
             mt: 1,
             pt: 1,
             borderTop: '1px solid',
-            borderColor: 'divider',
-            pt: 1
+            borderColor: 'divider'
           }}>
             {additionalData.map((data, index) => (
               <Box key={index} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', mb: index < additionalData.length - 1 ? 1 : 0 }}>

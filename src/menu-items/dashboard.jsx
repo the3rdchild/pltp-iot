@@ -11,6 +11,7 @@ import {
   FundViewOutlined,
   LogoutOutlined
 } from '@ant-design/icons';
+import TimelineIcon from '@mui/icons-material/Timeline';
 
 // icons
 const icons = {
@@ -23,7 +24,8 @@ const icons = {
   EditOutlined,
   SlidersOutlined,
   FundViewOutlined,
-  LogoutOutlined
+  LogoutOutlined,
+  TimelineIcon
 };
 
 // ==============================|| MENU ITEMS - DASHBOARD ||============================== //
@@ -74,6 +76,13 @@ const dashboard = {
           type: 'item',
           url: '/ptf',
           icon: icons.DashboardOutlined,
+        },
+        {
+          id: 'prediction',
+          title: 'Prediction',
+          type: 'item',
+          url: '/prediction',
+          icon: icons.TimelineIcon,
         }
       ]
     },
