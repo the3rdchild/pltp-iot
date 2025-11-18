@@ -80,6 +80,7 @@ const HistoryComparisonChart = ({
     { title: statsLabels.field2Avg, value: `${stats.dataset2Avg.toFixed(2)}${unit}` }
   ], [stats, unit, statsLabels.field1Range, statsLabels.field1Avg, statsLabels.field2Range, statsLabels.field2Avg]);
 
+  // Initialize chart only once
   useEffect(() => {
     if (!chartRef.current) return;
 
@@ -91,7 +92,7 @@ const HistoryComparisonChart = ({
         height: 400,
         toolbar: { show: false },
         zoom: { enabled: false },
-        animations: { enabled: true, easing: 'easeinout', speed: 800 }
+        animations: { enabled: false }
       },
       series: [
         { name: dataset1Label, data: data1 },
@@ -164,11 +165,6 @@ const HistoryComparisonChart = ({
       legend: { show: false }
     };
 
-    // Destroy previous chart if it exists
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
-    }
-
     const chart = new ApexCharts(chartRef.current, options);
     chart.render();
     chartInstanceRef.current = chart;
@@ -180,7 +176,35 @@ const HistoryComparisonChart = ({
         chartInstanceRef.current = null;
       }
     };
-  }, [data1, data2, dataset1Label, dataset2Label, unit, yAxisTitle, xAxisTitle, stats]);
+  }, []); // Empty dependency array - only initialize once
+
+  // Update chart data when props change
+  useEffect(() => {
+    if (!chartInstanceRef.current) return;
+
+    chartInstanceRef.current.updateOptions({
+      series: [
+        { name: dataset1Label, data: data1 },
+        { name: dataset2Label, data: data2 }
+      ],
+      yaxis: {
+        labels: {
+          style: { colors: '#86868b', fontSize: '11px' },
+          formatter: function(value) { return value.toFixed(2) + unit; }
+        },
+        title: { text: yAxisTitle, style: { color: '#86868b', fontSize: '12px', fontWeight: 400 } },
+        min: stats.minValue - 0.2,
+        max: stats.maxValue + 0.2
+      },
+      annotations: {
+        yaxis: [
+          { y: stats.maxValue, borderColor: '#ef4444', strokeDashArray: 20, borderWidth: 1, label: { text: '' } },
+          { y: (stats.dataset1Avg + stats.dataset2Avg) / 2, borderColor: '#d1d5db', strokeDashArray: 20, borderWidth: 1, label: { text: '' } },
+          { y: stats.minValue, borderColor: '#10b981', strokeDashArray: 20, borderWidth: 1, label: { text: '' } }
+        ]
+      }
+    }, false, false); // No redraw, no animation
+  }, [data1, data2, dataset1Label, dataset2Label, unit, yAxisTitle, stats]);
 
   return (
     <MainCard>

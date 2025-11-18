@@ -20,8 +20,10 @@ const RealTimeDataChart = ({
   onTimeRangeChange
 }) => {
   const chartRef = useRef(null);
+  const chartInstanceRef = useRef(null);
   const [timeRange, setTimeRange] = useState('daily');
 
+  // Initialize chart only once
   useEffect(() => {
     if (!chartRef.current) return;
 
@@ -46,7 +48,7 @@ const RealTimeDataChart = ({
         height: 400,
         toolbar: { show: false },
         zoom: { enabled: false },
-        animations: { enabled: true, easing: 'easeinout', speed: 800 }
+        animations: { enabled: false }
       },
       series: [{ name: yAxisTitle, data: chartData }],
       stroke: { curve: 'smooth', width: 2, colors: ['#53A1FF'] },
@@ -110,12 +112,54 @@ const RealTimeDataChart = ({
 
     const chart = new ApexCharts(chartRef.current, options);
     chart.render();
+    chartInstanceRef.current = chart;
 
     // Cleanup
     return () => {
-      chart.destroy();
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.destroy();
+        chartInstanceRef.current = null;
+      }
     };
-  }, [data, unit, yAxisTitle, xAxisTitle]);
+  }, []); // Empty dependency array - only initialize once
+
+  // Update chart data when props change
+  useEffect(() => {
+    if (!chartInstanceRef.current) return;
+
+    const chartData = data.length > 0 ? data : [
+      97.92, 98.44, 98.97, 99.12, 98.65, 99.31, 98.88, 99.04, 99.55, 98.77,
+      99.22, 98.91, 99.08, 98.53, 99.47, 98.81, 99.00, 98.69, 99.35, 99.10,
+      98.62, 99.28, 98.84, 99.02, 99.61, 98.73, 99.18, 98.95, 99.07, 98.59,
+      99.41, 98.86, 99.14, 98.67, 99.33, 99.06, 98.71, 99.26, 98.89, 99.03,
+      99.58, 98.75, 99.20, 98.93, 99.09, 98.57, 99.39, 98.83, 99.11, 98.63,
+      99.36, 98.96, 99.05, 98.72, 99.24, 98.90, 99.16, 98.61
+    ];
+
+    const maxValue = Math.max(...chartData);
+    const minValue = Math.min(...chartData);
+    const avgValue = chartData.reduce((a, b) => a + b, 0) / chartData.length;
+
+    chartInstanceRef.current.updateOptions({
+      series: [{ name: yAxisTitle, data: chartData }],
+      yaxis: {
+        labels: {
+          style: { colors: '#86868b', fontSize: '11px' },
+          formatter: function(value) { return value.toFixed(1) + unit; }
+        },
+        title: { text: yAxisTitle, style: { color: '#86868b', fontSize: '12px', fontWeight: 400 } },
+        min: Math.floor(minValue - 1),
+        max: Math.ceil(maxValue + 1)
+      },
+      annotations: {
+        yaxis: [
+          { y: maxValue, borderColor: '#EF4444', strokeDashArray: 20, borderWidth: 1, label: { text: '' } },
+          { y: avgValue, borderColor: '#d1d5db', strokeDashArray: 20, borderWidth: 1, label: { text: '' } },
+          { y: minValue, borderColor: '#58E58C', strokeDashArray: 20, borderWidth: 1, label: { text: '' } }
+        ]
+      }
+    }, false, false); // No redraw, no animation
+  }, [data, unit, yAxisTitle]);
 
   const handleTimeRangeChange = (event) => {
     setTimeRange(event.target.value);
