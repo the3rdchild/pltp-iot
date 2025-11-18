@@ -92,12 +92,17 @@ const Dryness = () => {
 
     return (
         <Box>
-            <Typography variant="h4" sx={{ mb: 2 }}>
-                Dryness / Analytic
-            </Typography>
-            <Grid container spacing={3}>
+            <Box sx={{ mb: 2 }}>
+                <Typography variant="h4" component="span">
+                    Dryness /
+                </Typography>
+                <Typography variant="h6" component="span" color="text.secondary" sx={{ ml: 0.5 }}>
+                    Analytic
+                </Typography>
+            </Box>
+                        <Grid container spacing={3} > {/*<Grid container spacing={3} alignItems="flex-start"></Grid>*/}
                 <Grid item xs={12} md={3}>
-                    <MainCard sx={{ height: '86%' }}>
+                    <MainCard sx={{ height: '90%' }}> {/*<MainCard sx={{ height: 'auto', minHeight: { xs: 'auto', md: '280px' } }}> */}
                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography variant="subtitle1" color="textSecondary">Dryness Fraction</Typography>
                         {/* dynamic percent-change badge */}
@@ -125,13 +130,14 @@ const Dryness = () => {
                             abnormalHigh={20}
                             changePct={changePct}
                             withCard={false}
+                            sx={{ mb: 2 }}
                         />
                     </MainCard>
                 </Grid>
 
                 {cardData.map((card, index) => (
                     <Grid item xs={12} sm={6} md={2.2} key={index}>
-                        <MainCard sx={{ height: '68%' }}>
+                        <MainCard sx={{ height: 'auto', minHeight: { xs: 'auto', md: '220px' } }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Typography variant="subtitle1" color="textSecondary">{card.title}</Typography>
                                 <LaunchIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
@@ -164,7 +170,7 @@ const Dryness = () => {
                         </MainCard>
                     </Grid>
                 ))}
-                 <Grid item xs={12}>
+                 <Grid item xs={12} sx={{ mt: -3 }}>
                     <RealTimeDataChart />
                 </Grid>
             </Grid>

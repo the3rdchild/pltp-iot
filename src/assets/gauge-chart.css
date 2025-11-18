@@ -46,7 +46,7 @@
     }
     .value {
     /* now scales with the real gauge width (set by JS as --gauge-w) */
-    font-size: calc(var(--gauge-w, 720px) * 0.10);
+    font-size: calc(var(--gauge-w, 720px) * 0.09);
     color: var(--text);
     font-weight: 700;
     line-height: 1;
