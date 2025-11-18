@@ -1,6 +1,6 @@
 
 import { Grid, Box, Typography, useTheme } from '@mui/material';
-import LaunchIcon from '@mui/icons-material/Launch';
+import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
 
 import { useState, useEffect } from 'react';
 import { generateAnalyticData } from 'data/simulasi';
@@ -144,8 +144,18 @@ const Dryness = () => {
                         <MainCard sx={{ height: '70%' }}> 
                         {/* <MainCard sx={{ height: 'auto', minHeight: { xs: 'auto', md: '220px' } }}> */}
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography variant="subtitle1" color="textSecondary">{card.title}</Typography>
-                                <LaunchIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
+                                <Typography variant="h6" color="textSecondary">{card.title}</Typography>
+                                <Box sx={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: '50%',
+                                    backgroundColor: '#F6F6F6',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}>
+                                    <ArrowOutwardIcon sx={{ fontSize: '1rem', color: 'text.dark' }} />
+                                </Box>
                             </Box>
                             <Box sx={{ py: 2 }}>
                                 <Box sx={{
