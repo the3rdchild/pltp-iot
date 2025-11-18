@@ -100,12 +100,13 @@ const Dryness = () => {
                     Analytic
                 </Typography>
             </Box>
-                        <Grid container spacing={3} > {/*<Grid container spacing={3} alignItems="flex-start"></Grid>*/}
+                <Grid container spacing={3} > 
+                {/*<Grid container spacing={3} alignItems="flex-start"></Grid>*/}
                 <Grid item xs={12} md={3}>
-                    <MainCard sx={{ height: '90%' }}> {/*<MainCard sx={{ height: 'auto', minHeight: { xs: 'auto', md: '280px' } }}> */}
+                    <MainCard sx={{ height: '84%' }}> 
+                    {/*<MainCard sx={{ height: 'auto', minHeight: { xs: 'auto', md: '280px' } }}> */}
                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Typography variant="subtitle1" color="textSecondary">Dryness Fraction</Typography>
-                        {/* dynamic percent-change badge */}
                         <Box sx={{
                           borderRadius: '6px',
                           padding: '4px 8px',
@@ -137,7 +138,8 @@ const Dryness = () => {
 
                 {cardData.map((card, index) => (
                     <Grid item xs={12} sm={6} md={2.2} key={index}>
-                        <MainCard sx={{ height: 'auto', minHeight: { xs: 'auto', md: '220px' } }}>
+                        <MainCard sx={{ height: '70%' }}> 
+                        {/* <MainCard sx={{ height: 'auto', minHeight: { xs: 'auto', md: '220px' } }}> */}
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <Typography variant="subtitle1" color="textSecondary">{card.title}</Typography>
                                 <LaunchIcon sx={{ fontSize: '1rem', color: 'text.secondary' }} />
@@ -170,7 +172,7 @@ const Dryness = () => {
                         </MainCard>
                     </Grid>
                 ))}
-                 <Grid item xs={12} sx={{ mt: -3 }}>
+                 <Grid item xs={12} sx={{ mt: -5.5 }}>
                     <RealTimeDataChart />
                 </Grid>
             </Grid>
