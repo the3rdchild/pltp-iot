@@ -52,11 +52,11 @@ const Dryness = () => {
       return () => clearInterval(interval);
     }, []);
 
-    const dryness = analyticData?.dryness ?? 6.8;
+    const dryness = analyticData?.dryness ?? 99.3;
     const anomalyCount = '03';
-    const minDryness = '89.77%';
-    const avgDryness = '99.51%';
-    const maxDryness = '89.77%';
+    const minDryness = '97.77%';
+    const avgDryness = '99.01%';
+    const maxDryness = '99.89%';
 
     const cardData = [
         {
@@ -123,12 +123,15 @@ const Dryness = () => {
                         </Box>
                         <GaugeChart
                             value={dryness}
-                            min={0}
-                            max={20}
-                            unit="ppm"
-                            idealHigh={8}
-                            warningHigh={15}
-                            abnormalHigh={20}
+                            min={95}
+                            max={99.9}
+                            unit="%"
+                            abnormalLow={95}
+                            warningLow={98}
+                            idealLow={100}
+                            idealHigh={100}
+                            warningHigh={100}
+                            abnormalHigh={100}
                             changePct={changePct}
                             withCard={false}
                             sx={{ mb: 2 }}
