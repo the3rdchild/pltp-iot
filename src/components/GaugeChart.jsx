@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import '../assets/gauge-chart.css';
 import MainCard from './MainCard';
 import { Typography, Box, Link } from '@mui/material';
-import LaunchIcon from '@mui/icons-material/Launch';
+import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
 
 const GaugeChart = ({
   label,
@@ -290,10 +290,10 @@ const GaugeChart = ({
   const chartContent = (
     <>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: titleStyles.justifyContent, mb: 0.5, flexShrink: 0 }}>
-          <Link href={linkTo} target="_blank" rel="noopener noreferrer" underline={linkTo ? 'hover' : 'none'} color="inherit">
+          <Link href={linkTo} underline={linkTo ? 'hover' : 'none'} color="inherit">
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <Typography sx={titleStyles}>{label}</Typography>
-              {linkTo && <LaunchIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />}
+              {linkTo && <ArrowOutwardIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />}
             </Box>
           </Link>
         </Box>

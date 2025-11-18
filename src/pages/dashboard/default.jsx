@@ -1,7 +1,7 @@
 
 // material-ui
 import { Typography, Box, Link } from '@mui/material';
-import LaunchIcon from '@mui/icons-material/Launch';
+import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
 
 //simulasi
 import { useState, useEffect } from 'react';
@@ -292,7 +292,7 @@ export default function DashboardDefault() {
               idealHigh={1}
               warningHigh={8}
               abnormalHigh={10}
-              linkTo="/tds-analytics"
+              linkTo="/tds"
               titleConfig={TITLE_CONFIG}
             />
           </Box>
@@ -312,6 +312,7 @@ export default function DashboardDefault() {
               idealHigh={100}
               warningHigh={100}
               abnormalHigh={100}
+              linkTo="/dryness"
               titleConfig={TITLE_CONFIG}
             />
           </Box>
@@ -331,6 +332,7 @@ export default function DashboardDefault() {
               idealHigh={7}
               warningHigh={8}
               abnormalHigh={10}
+              linkTo='/dryness'
               titleConfig={TITLE_CONFIG}
             />
           </Box>
@@ -378,10 +380,10 @@ export default function DashboardDefault() {
           <Box sx={{ width: `${CARD_CONFIG.ai.width}px`, height: `${CARD_CONFIG.ai.height}px` }}>
             <MainCard sx={{ width: '100%', height: '100%' }} contentSX={{ p: 1.5 }}>
               <Box>
-                <Link href="#" target="_blank" rel="noopener noreferrer" underline="hover" color="inherit">
+                <Link href="" target="" rel="noopener noreferrer" underline="hover" color="inherit">
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Typography sx={TITLE_CONFIG}>Prediksi Resiko Turbin</Typography>
-                    <LaunchIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />
+                    <ArrowOutwardIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />
                   </Box>
                 </Link>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60px' }}>
