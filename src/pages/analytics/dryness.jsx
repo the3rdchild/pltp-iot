@@ -65,32 +65,52 @@ const Dryness = () => {
     const cardData = [
         {
             title: 'Anomali Status',
-            value: anomalyCount,
+            value: '03',
             unit: 'Anomali',
             icon: <PriorityHighIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#9271FF',
-            iconColor: '#fff'
+            iconColor: '#fff',
+            additionalData: [
+                { value: '10', unit: 'Anomali', timeLabel: '12 Jam terakhir' },
+                { value: '22', unit: 'Anomali', timeLabel: '1 hari terakhir' },
+                { value: '48', unit: 'Anomali', timeLabel: '1 minggu terakhir' }
+            ]
         },
         {
             title: 'Minimum',
             value: minDryness,
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
-            iconColor: '#fff'
+            iconColor: '#fff',
+            additionalData: [
+                { value: '97.50%', timeLabel: '12 Jam terakhir' },
+                { value: '97.20%', timeLabel: '1 hari terakhir' },
+                { value: '96.80%', timeLabel: '1 minggu terakhir' }
+            ]
         },
         {
             title: 'Average',
             value: avgDryness,
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
-            iconColor: '#fff'
+            iconColor: '#fff',
+            additionalData: [
+              { value: '99.50%', timeLabel: '12 Jam terakhir' },
+              { value: '99.80%', timeLabel: '1 hari terakhir' },
+              { value: '99.80%', timeLabel: '1 minggu terakhir' }
+            ]
         },
         {
             title: 'Maximum',
             value: maxDryness,
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
-            iconColor: '#fff'
+            iconColor: '#fff',
+            additionalData: [
+              { value: '99.89%', timeLabel: '12 Jam terakhir' },
+              { value: '99.89%', timeLabel: '1 hari terakhir' },
+              { value: '99.89%', timeLabel: '1 minggu terakhir' }
+            ]
         }
     ];
 
@@ -173,7 +193,8 @@ const Dryness = () => {
                   icon={card.icon}
                   iconBgColor={card.iconBgColor}
                   iconColor={card.iconColor}
-                  backgroundColor="#F5F5F5"  
+                  backgroundColor="#F5F5F5"
+                  additionalData={card.additionalData}  
                 />
               </Grid>
             ))}
