@@ -353,6 +353,7 @@ export default function DashboardDefault() {
               idealHigh={1400}
               warningHigh={1600}
               abnormalHigh={1667}
+              linkTo='/ptf'
               titleConfig={TITLE_CONFIG}
             />
           </Box>
@@ -372,6 +373,7 @@ export default function DashboardDefault() {
               idealHigh={165}
               warningHigh={180}
               abnormalHigh={195}
+              linkTo='/ptf'
               titleConfig={TITLE_CONFIG}
             />
           </Box>
@@ -381,7 +383,7 @@ export default function DashboardDefault() {
           <Box sx={{ width: `${CARD_CONFIG.ai.width}px`, height: `${CARD_CONFIG.ai.height}px` }}>
             <MainCard sx={{ width: '100%', height: '100%' }} contentSX={{ p: 1.5 }}>
               <Box>
-                <Link href="" target="" rel="noopener noreferrer" underline="hover" color="inherit">
+                <Link href="/prediction" target="" rel="noopener noreferrer" underline="hover" color="inherit">
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Typography sx={TITLE_CONFIG}>Prediksi Resiko Turbin</Typography>
                     <ArrowOutwardIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />
@@ -411,6 +413,7 @@ export default function DashboardDefault() {
               idealHigh={265}
               warningHigh={270}
               abnormalHigh={285}
+              linkTo='/ptf'
               titleConfig={TITLE_CONFIG}
             />
           </Box>
