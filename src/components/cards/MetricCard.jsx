@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { Box, Typography, Link } from '@mui/material';
-import LaunchIcon from '@mui/icons-material/Launch';
+import BoltIcon from '@mui/icons-material/Bolt';
 import MainCard from 'components/MainCard';
 
 const getStatusColor = (status) => {
@@ -17,7 +17,7 @@ const getStatusColor = (status) => {
   }
 };
 
-export default function MetricCard({ label, value, unit, status, linkTo, titleConfig = {} }) {
+export default function MetricCard({ label, value, unit, status, linkTo, titleConfig = {}, icon: Icon, iconConfig = {} }) {
   const statusColor = getStatusColor(status);
 
   const defaultTitleStyles = {
@@ -30,60 +30,113 @@ export default function MetricCard({ label, value, unit, status, linkTo, titleCo
 
   const titleStyles = { ...defaultTitleStyles, ...titleConfig };
 
+  // Default icon configuration
+  const defaultIconConfig = {
+    size: 32,
+    color: '#ef4444',
+    circleSize: 60,
+    circleBgColor: '#FBFBFB',
+    circleBorderColor: 'divider',
+    circleBorderWidth: '1px'
+  };
+
+  const iconStyles = { ...defaultIconConfig, ...iconConfig };
+
   return (
     <MainCard sx={{ width: '100%', height: '100%' }} contentSX={{ p: 1.5 }}>
       <Box>
         {/* Label - Top */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: titleStyles.justifyContent, mb: 1.5 }}>
-          <Link href={linkTo} target="_blank" rel="noopener noreferrer" underline={linkTo ? 'hover' : 'none'} color="inherit">
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Typography sx={titleStyles}>{label}</Typography>
-              {linkTo && <LaunchIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />}
-            </Box>
-          </Link>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: titleStyles.justifyContent, mb: 1 }}>
+          <Typography sx={titleStyles}>{label}</Typography>
         </Box>
 
-        {/* Value + Unit + Status - Horizontal layout */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
-          {/* Value + Unit */}
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-            <Typography
-              variant="h3"
+        {/* Value + Icon Layout */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          {/* Left side: Value + Unit + Status */}
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, mb: 0.5 }}>
+              <Typography
+                variant="h3"
+                sx={{
+                  fontWeight: 600,
+                  color: 'text.primary',
+                  lineHeight: 1,
+                  fontSize: '1.75rem'
+                }}
+              >
+                {value}
+              </Typography>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{
+                  fontSize: '0.75rem',
+                  fontWeight: 400
+                }}
+              >
+                {unit}
+              </Typography>
+            </Box>
+
+            {/* Status Badge */}
+            <Box
               sx={{
-                fontWeight: 700,
+                px: 1.5,
+                py: 0.4,
+                borderRadius: 2,
+                bgcolor: statusColor + '15',
                 color: statusColor,
-                lineHeight: 1,
-                fontSize: '2rem'
+                fontSize: '0.65rem',
+                fontWeight: 500,
+                display: 'inline-block'
               }}
             >
-              {value}
-            </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                fontSize: '0.875rem',
-                fontWeight: 500
-              }}
-            >
-              {unit}
-            </Typography>
+              {status}
+            </Box>
           </Box>
 
-          {/* Status Badge - Right side */}
+          {/* Right side: Icon Circle */}
           <Box
             sx={{
-              px: 2,
-              py: 0.5,
-              borderRadius: 2,
-              bgcolor: statusColor + '20',
-              color: statusColor,
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              whiteSpace: 'nowrap'
+              width: iconStyles.circleSize,
+              height: iconStyles.circleSize,
+              borderRadius: '50%',
+              border: iconStyles.circleBorderWidth + ' solid',
+              borderColor: iconStyles.circleBorderColor,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: iconStyles.circleBgColor,
+              flexShrink: 0
             }}
           >
-            {status}
+            {Icon ? (
+              <Box
+                component={Icon}
+                sx={{
+                  fontSize: `${iconStyles.size}px !important`,
+                  color: iconStyles.color,
+                  width: `${iconStyles.size}px`,
+                  height: `${iconStyles.size}px`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                style={{
+                  fontSize: `${iconStyles.size}px`,
+                  color: iconStyles.color,
+                  width: `${iconStyles.size}px`,
+                  height: `${iconStyles.size}px`
+                }}
+              />
+            ) : (
+              <BoltIcon
+                sx={{
+                  fontSize: `${iconStyles.size}px`,
+                  color: iconStyles.color
+                }}
+              />
+            )}
           </Box>
         </Box>
       </Box>
@@ -97,5 +150,14 @@ MetricCard.propTypes = {
   unit: PropTypes.string,
   status: PropTypes.string,
   linkTo: PropTypes.string,
-  titleConfig: PropTypes.object
+  titleConfig: PropTypes.object,
+  icon: PropTypes.elementType,
+  iconConfig: PropTypes.shape({
+    size: PropTypes.number,
+    color: PropTypes.string,
+    circleSize: PropTypes.number,
+    circleBgColor: PropTypes.string,
+    circleBorderColor: PropTypes.string,
+    circleBorderWidth: PropTypes.string
+  })
 };

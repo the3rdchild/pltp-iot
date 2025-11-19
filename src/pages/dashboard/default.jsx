@@ -2,6 +2,13 @@
 // material-ui
 import { Typography, Box, Link } from '@mui/material';
 import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
+import BoltIcon from '@mui/icons-material/Bolt';
+import OfflineBoltIcon from '@mui/icons-material/OfflineBolt';
+
+// react-icons
+import { FaBolt } from "react-icons/fa6";
+import { RiSpeedUpFill } from "react-icons/ri";
+import { TbCircuitResistor } from "react-icons/tb";
 
 //simulasi
 import { useState, useEffect } from 'react';
@@ -144,7 +151,7 @@ export default function DashboardDefault() {
 
   const CARD_CONFIG = {
     sensor: { width: 247, height: 190 },
-    power: { width: 250, height: 100 },
+    power: { width: 250, height: 120 },
     ai: { width: 250, height: 110 }
   };
 
@@ -411,31 +418,76 @@ export default function DashboardDefault() {
 
         <Positioned pos={POSITIONS.activePower}>
           <Box sx={{ width: `${CARD_CONFIG.power.width}px`, height: `${CARD_CONFIG.power.height}px` }}>
-            <MetricCard label="Active Power" value={activePower} unit="MW" status={getPowerStatus(activePower, 30, 50)} linkTo="#" titleConfig={TITLE_CONFIG} />
+            <MetricCard
+              label="Active Power"
+              value={activePower}
+              unit="MW"
+              status={getPowerStatus(activePower, 30, 50)}
+              linkTo="#"
+              titleConfig={TITLE_CONFIG}
+              icon={BoltIcon}
+              iconConfig={{ size: 39, color: '#ef4444' }}
+            />
           </Box>
         </Positioned>
 
         <Positioned pos={POSITIONS.voltage}>
           <Box sx={{ width: `${CARD_CONFIG.power.width}px`, height: `${CARD_CONFIG.power.height}px` }}>
-            <MetricCard label="Voltage" value={voltage} unit="kV" status="Normal" linkTo="#" titleConfig={TITLE_CONFIG} />
+            <MetricCard
+              label="Voltage"
+              value={voltage}
+              unit="kV"
+              status="Normal"
+              linkTo="#"
+              titleConfig={TITLE_CONFIG}
+              icon={OfflineBoltIcon}
+              iconConfig={{ size: 32, color: '#f59e0b' }}
+            />
           </Box>
         </Positioned>
 
         <Positioned pos={POSITIONS.current}>
           <Box sx={{ width: `${CARD_CONFIG.power.width}px`, height: `${CARD_CONFIG.power.height}px` }}>
-            <MetricCard label="Current" value={current} unit="A" status={getPowerStatus(current, 1000, 1500)} linkTo="#" titleConfig={TITLE_CONFIG} />
+            <MetricCard
+              label="Current"
+              value={current}
+              unit="A"
+              status={getPowerStatus(current, 1000, 1500)}
+              linkTo="#"
+              titleConfig={TITLE_CONFIG}
+              icon={TbCircuitResistor}
+              iconConfig={{ size: 32, color: '#3b82f6' }}
+            />
           </Box>
         </Positioned>
 
         <Positioned pos={POSITIONS.reactivePower}>
           <Box sx={{ width: `${CARD_CONFIG.power.width}px`, height: `${CARD_CONFIG.power.height}px` }}>
-            <MetricCard label="Reactive Power" value={reactivePower} unit="MVAR" status={getPowerStatus(reactivePower, 2000, 4000)} linkTo="#" titleConfig={TITLE_CONFIG} />
+            <MetricCard
+              label="Reactive Power"
+              value={reactivePower}
+              unit="MVAR"
+              status={getPowerStatus(reactivePower, 2000, 4000)}
+              linkTo="#"
+              titleConfig={TITLE_CONFIG}
+              icon={FaBolt}
+              iconConfig={{ size: 25, color: '#8b5cf6' }}
+            />
           </Box>
         </Positioned>
 
         <Positioned pos={POSITIONS.stSpeed}>
           <Box sx={{ width: `${CARD_CONFIG.power.width}px`, height: `${CARD_CONFIG.power.height}px` }}>
-            <MetricCard label="S.T Speed" value={stSpeed} unit="rpm" status={getPowerStatus(stSpeed, 3000, 3500)} linkTo="#" titleConfig={TITLE_CONFIG} />
+            <MetricCard
+              label="S.T Speed"
+              value={stSpeed}
+              unit="rpm"
+              status={getPowerStatus(stSpeed, 3000, 3500)}
+              linkTo="#"
+              titleConfig={TITLE_CONFIG}
+              icon={RiSpeedUpFill}
+              iconConfig={{ size: 32, color: '#22c55e' }}
+            />
           </Box>
         </Positioned>
         </Box>

@@ -19,7 +19,6 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
 import AddIcon from '@mui/icons-material/Add';
 
-
 const Dryness = () => {
     const theme = useTheme();
     const [analyticData, setAnalyticData] = useState(null);
@@ -124,8 +123,7 @@ const Dryness = () => {
             spacing={3}
             alignItems="stretch"
             sx={{
-              // tune this minHeight to match your header/sidebar so 84%/70% feel identical to previous design
-              minHeight: { lg: '640px' }, // 640px is an example — 84% of 640 ≈ 538px; adjust to taste
+            minHeight: { lg: '640px' }, // 640px is an example — 84% of 640 ≈ 538px; adjust to taste
             }}
           >
             {/* Left big gauge card */}
@@ -202,7 +200,7 @@ const Dryness = () => {
             <Grid item xs={12} sx={{ mt: { xs: 0, lg: -5 } }}>
               <RealTimeDataChart
                 title="Real Time Data"
-                subtitle="Dryness level data chart"
+                subtitle="Dryness level data chart monthy"
                 yAxisTitle="Dryness (%)"
                 unit="%"
               />

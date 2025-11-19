@@ -1,19 +1,75 @@
-// material-ui
-import { Typography, Box } from '@mui/material';
+import { Grid, Box, Typography, useTheme } from '@mui/material';
 
-// ==============================|| BLANK PAGE ||============================== //
+import { useState, useEffect } from 'react';
+import { generateAnalyticData } from 'data/simulasi';
+
+import {
+  AnalyticsHeader,
+  HistoryComparisonChart,
+  StatisticsTable
+} from '../../components/analytics';
 
 const Dryness = () => {
-  return (
-    <Box>
-      <Typography variant="h4" sx={{ mb: 2 }}>
-        Settings - Manual Data Input
-      </Typography>
-      <Typography>
-      This is a blank canvas. This page is under construction.
-      </Typography>
-    </Box>
-  );
+    const theme = useTheme();
+    const [analyticData, setAnalyticData] = useState(null);
+    const [changePct, setChangePct] = useState(null);
+
+
+    useEffect(() => {
+      const prevDryRef = { current: null };
+    
+      const updateData = () => {
+        const data = generateAnalyticData();
+        setAnalyticData((prev) => {
+          const prevVal = prev?.dryness ?? prevDryRef.current;
+          if (prevVal === undefined || prevVal === null) {
+            setChangePct(0);
+          } else {
+            const cur = data.dryness;
+            const pct = prevVal === 0 ? 0 : ((cur - prevVal) / Math.abs(prevVal)) * 100;
+            setChangePct(Math.round(pct));
+          }
+          prevDryRef.current = data.dryness;
+          return data;
+        });
+      };
+    
+      updateData();
+    
+      const interval = setInterval(updateData, 3000);
+    
+      return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <Box>
+          <AnalyticsHeader title="Manual Data Input" subtitle="Settings" />
+          <Grid
+            container
+            spacing={3}
+            alignItems="stretch"
+            sx={{
+            minHeight: { lg: '640px' },
+            }}
+          >
+            <Grid item xs={12}>
+              <HistoryComparisonChart
+                title="Perbandingan Dryness & Prediksi AI"
+                subtitle="Grafik perbandingan dryness & prediksi AI"
+                yAxisTitle="Dryness (%)"
+                unit="%"
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <StatisticsTable
+                title="Tabel Hasil Input"
+                subtitle="Input hasil data yang diperoleh"
+              />
+            </Grid>
+          </Grid>
+        </Box>
+      );
 };
 
 export default Dryness;

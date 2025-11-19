@@ -163,10 +163,14 @@ const Home = () => {
             Misi Kami Berakar pada Inovasi
           </h2>
           <p className="section-intro">
-            Kami hadir untuk mengembangkan inovasi dalam di industri energi panas bumi melalui 
-            teknologi monitoring yang canggih dan berkelanjutan. Dengan berkolaborasi bersama 
-            institusi pendidikan terkemuka, kami menciptakan solusi yang tidak hanya efisien 
-            tetapi juga ramah lingkungan untuk masa depan energi Indonesia.
+            Kami hadir untuk mengembangkan inovasi dalam industri energi panas bumi melalui 
+            teknologi monitoring yang canggih dan berkelanjutan. Dengan sistem SMART (System 
+            Monitoring Analysis Real Time) yang didukung kecerdasan buatan (AI), kami mampu 
+            memprediksi potensi anomali dan mengoptimalkan kinerja sistem secara proaktif. 
+            Berkolaborasi dengan institusi pendidikan terkemuka, kami menciptakan solusi yang 
+            dapat dipantau kapan saja dan dari mana saja, memberikan kendali penuh kepada 
+            operator untuk memastikan efisiensi maksimal dan keberlanjutan lingkungan untuk 
+            masa depan energi Indonesia.
           </p>
 
           <div className="mission-grid">
@@ -269,11 +273,13 @@ const Home = () => {
                 </svg>
               </div>
               <h3 className="service-title">
-                Analisis Data Berbasis IoT
+                Analisis Data Berbasis AI
               </h3>
               <p className="service-text">
-                Platform IoT yang mengintegrasikan sensor dan cloud computing untuk 
-                analisis data mendalam dan pengambilan keputusan yang lebih cepat.
+                Platform AI yang mengintegrasikan sensor IoT dan 
+                machine learning untuk analisis prediktif, deteksi 
+                anomali otomatis, dan pengambilan keputusan yang 
+                lebih cerdas dan akurat.
               </p>
             </div>
 
@@ -302,8 +308,10 @@ const Home = () => {
                 Solusi Digital Berkelanjutan
               </h3>
               <p className="service-text">
-                Teknologi ramah lingkungan yang mendukung operasional PLTP yang 
-                efisien dan berkelanjutan untuk masa depan energi terbarukan.
+                Transformasi digital PLTP melalui ekosistem IoT 
+                yang menghadirkan industri 5.0, di mana teknologi 
+                pintar, big data, dan human-centered innovation 
+                bersinergi untuk operasional yang lebih efisien.
               </p>
             </div>
 
@@ -343,7 +351,14 @@ const Home = () => {
             </div>
             <div>
               <p className="section-intro-light">
-                Unit pemantauan kami dirancang untuk mengawasi kualitas dan kemurnian uap secara real-time di setiap titik lapangan geotermal. Melalui integrasi sensor cerdas dan sistem berbasis IoT, kami memastikan setiap data yang dikumpulkan akurat, responsif, dan mudah diakses melalui dashboard interaktif. Dengan pendekatan ini, efisiensi operasional dan keandalan sistem energi panas bumi dapat terus terjaga.
+                Unit pemantauan kami dirancang untuk mengawasi kualitas dan kemurnian uap 
+                secara real-time di setiap titik lapangan geotermal. Melalui sistem SMART 
+                (System Monitoring Analysis Real Time) yang didukung AI, kami tidak hanya 
+                mengumpulkan data tetapi juga memprediksi potensi anomali sebelum terjadi. 
+                Dengan integrasi sensor cerdas berbasis IoT, setiap informasi dapat diakses 
+                kapan saja dan dari mana saja melalui dashboard interaktif yang responsif. 
+                Pendekatan proaktif ini memastikan efisiensi operasional dan keandalan sistem 
+                energi panas bumi terjaga secara optimal.
               </p>
             </div>
           </div>
