@@ -361,26 +361,26 @@ const RealTimeDataChart = ({
       annotations.push({
         y: maxValue,
         borderColor: '#ef4444',
-        strokeDashArray: 5,
-        borderWidth: 2,
+        strokeDashArray: 20,
+        borderWidth: 1,
         label: { text: '' }
       });
     }
     if (thresholds.showAverage && avgValue) {
       annotations.push({
         y: avgValue,
-        borderColor: '#9ca3af',
-        strokeDashArray: 5,
-        borderWidth: 2,
+        borderColor: '#d1d5db',
+        strokeDashArray: 20,
+        borderWidth: 1,
         label: { text: '' }
       });
     }
     if (thresholds.showMin && minValue) {
       annotations.push({
         y: minValue,
-        borderColor: '#22c55e',
-        strokeDashArray: 5,
-        borderWidth: 2,
+        borderColor: '#10b981',
+        strokeDashArray: 20,
+        borderWidth: 1,
         label: { text: '' }
       });
     }
@@ -428,7 +428,7 @@ const RealTimeDataChart = ({
   return (
     <MainCard>
       {/* Header with Title and Date Picker */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: -4 }}>
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
             {title}
@@ -499,11 +499,40 @@ const RealTimeDataChart = ({
         </Popover>
       </Box>
 
+      {/* Legend Box - centered, similar to HistoryComparisonChart */}
+      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 1 }}>
+        {showComparisonData ? (
+          <>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Box sx={{ width: 15, height: 15, borderRadius: '10%', backgroundColor: '#53A1FF' }} />
+              <Typography variant="caption" color="textSecondary">
+                Field Data
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Box sx={{ width: 15, height: 15, borderRadius: '10%', backgroundColor: '#8b5cf6' }} />
+              <Typography variant="caption" color="textSecondary">
+                AI Data
+              </Typography>
+            </Box>
+          </>
+        ) : (
+          legendItems.map((item) => (
+            <Box key={item.name} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Box sx={{ width: 15, height: 15, borderRadius: '10%', backgroundColor: item.color }} />
+              <Typography variant="caption" color="textSecondary">
+                {item.name}
+              </Typography>
+            </Box>
+          ))
+        )}
+      </Box>
+
       {/* Stats Cards - Only show when comparison is active */}
       {showComparisonData && statsData.length > 0 && (
         <Grid container spacing={2} sx={{ mb: 2 }}>
           {statsData.map((stat, index) => (
-            <Grid item xs={6} sm={3} key={index}>
+            <Grid item mt={2} xs={6} sm={3} key={index}>
               <Box
                 sx={{
                   p: 1.5,
@@ -524,40 +553,11 @@ const RealTimeDataChart = ({
         </Grid>
       )}
 
-      {/* Legend */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 3, mb: 2 }}>
-        {showComparisonData ? (
-          <>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 16, height: 16, borderRadius: '3px', backgroundColor: '#53A1FF' }} />
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                Field Data
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 16, height: 16, borderRadius: '3px', backgroundColor: '#8b5cf6' }} />
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                AI Data
-              </Typography>
-            </Box>
-          </>
-        ) : (
-          legendItems.map((item) => (
-            <Box key={item.name} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box sx={{ width: 16, height: 16, borderRadius: '3px', backgroundColor: item.color }} />
-              <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                {item.name}
-              </Typography>
-            </Box>
-          ))
-        )}
-      </Box>
-
       {/* Chart */}
       <div ref={chartRef}></div>
 
       {/* Time Range Buttons */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'right', mt: -2 }}>
         <ButtonGroup variant="outlined" size="small">
           {timeRanges.map((range) => (
             <Button

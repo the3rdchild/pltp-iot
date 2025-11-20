@@ -193,6 +193,7 @@ const NCG = () => {
               <RealTimeDataChart
                 title="Real Time Data"
                 subtitle="NCG level data chart"
+                dataType="ncg"
                 data={ncgRealTimeData}
                 yAxisTitle="NCG (wt%)"
                 unit="wt%"

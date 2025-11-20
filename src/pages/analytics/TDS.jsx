@@ -302,7 +302,7 @@ const TDS = () => {
               <RealTimeDataChart
                 title="Real Time Data"
                 subtitle="TDS Overall level data chart"
-                data={tdsRealTimeData}
+                dataType='tds'
                 yAxisTitle="TDS (ppm)"
                 unit="ppm"
               />
