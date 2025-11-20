@@ -6,9 +6,9 @@ export function generateRealTimeChartData(dataType = 'dryness', timeRange = 'now
     dryness: { min: 98.0, max: 100.0, variance: 0.5 },
     ncg: { min: 0.5, max: 2.5, variance: 0.3 },
     tds: { min: 4.0, max: 8.0, variance: 0.4 },
-    pressure: { min: 1300, max: 1600, variance: 30 },
-    temperature: { min: 120, max: 160, variance: 5 },
-    flow: { min: 240, max: 300, variance: 10 }
+    pressure: { min: 1335, max: 1345, variance: 2 },
+    temperature: { min: 164, max: 166, variance: 0.3 },
+    flow: { min: 245, max: 247, variance: 0.3 }
   };
 
   const range = ranges[dataType] || ranges.dryness;
@@ -53,7 +53,7 @@ let previousValues = {
   tds: 6.0,
   pressure: 1400,
   temperature: 140,
-  flow: 270,
+  flow: 246,
   activePower: 32.5,
   reactivePower: 6.2,
   voltage: 13.5,
@@ -74,9 +74,9 @@ export function generateAnalyticData() {
   previousValues.dryness = smoothUpdate(previousValues.dryness, 98.0, 100.0, 0.3);
   previousValues.ncg = smoothUpdate(previousValues.ncg, 0.5, 2.5, 0.2);
   previousValues.tds = smoothUpdate(previousValues.tds, 5.0, 10.0, 0.3);
-  previousValues.pressure = smoothUpdate(previousValues.pressure, 1353, 1556, 20);
-  previousValues.temperature = smoothUpdate(previousValues.temperature, 131, 155, 3);
-  previousValues.flow = smoothUpdate(previousValues.flow, 251, 298, 5);
+  previousValues.pressure = smoothUpdate(previousValues.pressure, 1335, 1345, 2);
+  previousValues.temperature = smoothUpdate(previousValues.temperature, 164, 166, 0.3);
+  previousValues.flow = smoothUpdate(previousValues.flow, 245, 247, 0.3);
   previousValues.activePower = smoothUpdate(previousValues.activePower, 32.0, 33.0, 0.05);
   previousValues.reactivePower = smoothUpdate(previousValues.reactivePower, 6.0, 6.5, 0.03);
   previousValues.voltage = smoothUpdate(previousValues.voltage, 13.0, 14.0, 0.05);

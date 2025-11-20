@@ -18,6 +18,10 @@ const PTFChart = ({
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
   const updateIntervalRef = useRef(null);
+  const visibleCountRef = useRef(60); // number of visible points
+  const pressureRef = useRef([]);
+  const tempRef = useRef([]);
+  const flowRef = useRef([]);
 
   const [timeRange, setTimeRange] = useState('now');
   const [pressureData, setPressureData] = useState([]);
@@ -39,7 +43,7 @@ const PTFChart = ({
     { value: '10y', label: '10y' }
   ];
 
-  // Initialize chart data
+  // Generate data based on time range
   useEffect(() => {
     const isYearlyRange = ['1y', '10y'].includes(timeRange) || isCustomRange;
 
@@ -55,8 +59,8 @@ const PTFChart = ({
       setPressureData(pData.map(d => d.value));
       setTemperatureData(tData.map(d => d.value));
       setFlowData(fData.map(d => d.value));
-    } else {
-      // Use real-time data for shorter ranges
+    } else if (timeRange !== 'now') {
+      // Use real-time data for shorter ranges (1h, 1d, 7d, 1m)
       const pData = generateRealTimeChartData('pressure', timeRange);
       const tData = generateRealTimeChartData('temperature', timeRange);
       const fData = generateRealTimeChartData('flow', timeRange);
@@ -67,35 +71,105 @@ const PTFChart = ({
     }
   }, [timeRange, isCustomRange, startDate, endDate]);
 
-  // Real-time updates for 'Now' mode only
+  // Initialize chart data
   useEffect(() => {
+    // Clear any existing interval first
+    if (updateIntervalRef.current) {
+      clearInterval(updateIntervalRef.current);
+      updateIntervalRef.current = null;
+    }
+
     if (timeRange === 'now') {
+      // ensure chart exists
       updateIntervalRef.current = setInterval(() => {
-        setPressureData(prevData => generateRealTimeChartData('pressure', 'now', prevData));
-        setTemperatureData(prevData => generateRealTimeChartData('temperature', 'now', prevData));
-        setFlowData(prevData => generateRealTimeChartData('flow', 'now', prevData));
-      }, 1000); // Update every 1 second
+        if (!chartInstanceRef.current) return;
+
+        // generate new data (generateRealTimeChartData may return new array or a single value)
+        const newP = generateRealTimeChartData('pressure', 'now', pressureRef.current);
+        const newT = generateRealTimeChartData('temperature', 'now', tempRef.current);
+        const newF = generateRealTimeChartData('flow', 'now', flowRef.current);
+
+        const keep = visibleCountRef.current || 60;
+
+        // normalize returned values - support functions that return entire arrays or single new value
+        const nextP = Array.isArray(newP) ? newP.slice(-keep) : [...pressureRef.current.slice(-keep + 1), newP];
+        const nextT = Array.isArray(newT) ? newT.slice(-keep) : [...tempRef.current.slice(-keep + 1), newT];
+        const nextF = Array.isArray(newF) ? newF.slice(-keep) : [...flowRef.current.slice(-keep + 1), newF];
+
+        // update refs
+        pressureRef.current = nextP;
+        tempRef.current = nextT;
+        flowRef.current = nextF;
+
+        // Calculate dynamic Y-axis ranges based on current data
+        const pressureMin = Math.min(...pressureRef.current);
+        const pressureMax = Math.max(...pressureRef.current);
+        const tempMin = Math.min(...tempRef.current);
+        const tempMax = Math.max(...tempRef.current);
+        const flowMin = Math.min(...flowRef.current);
+        const flowMax = Math.max(...flowRef.current);
+
+        // update chart series (fast, animated)
+        chartInstanceRef.current.updateSeries([
+          { name: 'Pressure (kPa)', data: pressureRef.current },
+          { name: 'Temperature (°C)', data: tempRef.current },
+          { name: 'Flow (t/h)', data: flowRef.current }
+        ], true);
+
+        // update Y-axis ranges dynamically
+        chartInstanceRef.current.updateOptions({
+          yaxis: [
+            {
+              seriesName: 'Pressure (kPa)',
+              min: Math.floor(pressureMin * 0.95),
+              max: Math.ceil(pressureMax * 1.05)
+            },
+            {
+              seriesName: 'Temperature (°C)',
+              min: Math.floor(tempMin * 0.95),
+              max: Math.ceil(tempMax * 1.05)
+            },
+            {
+              seriesName: 'Flow (t/h)',
+              opposite: true,
+              min: Math.floor(flowMin * 0.95),
+              max: Math.ceil(flowMax * 1.05)
+            }
+          ]
+        }, false, false);
+
+        // keep React state in sync for other UI consumers (optional)
+        setPressureData(pressureRef.current);
+        setTemperatureData(tempRef.current);
+        setFlowData(flowRef.current);
+      }, 1000);
+
     } else {
-      if (updateIntervalRef.current) {
-        clearInterval(updateIntervalRef.current);
-        updateIntervalRef.current = null;
-      }
+      // not 'now' - leave refs alone (they'll be set by the init effect)
     }
 
     return () => {
       if (updateIntervalRef.current) {
         clearInterval(updateIntervalRef.current);
+        updateIntervalRef.current = null;
       }
     };
   }, [timeRange]);
 
+
   // Initialize ApexCharts with dual Y-axes (only once or when config changes)
-  useEffect(() => {
+    useEffect(() => {
     if (!chartRef.current) return;
 
     const initialPressure = pressureData.length > 0 ? pressureData : Array(60).fill(1400);
     const initialTemp = temperatureData.length > 0 ? temperatureData : Array(60).fill(140);
     const initialFlow = flowData.length > 0 ? flowData : Array(60).fill(270);
+
+    // number of visible points (keep for sliding behavior)
+    visibleCountRef.current = initialPressure.length;
+    pressureRef.current = initialPressure.slice();
+    tempRef.current = initialTemp.slice();
+    flowRef.current = initialFlow.slice();
 
     const categories = Array.from({ length: initialPressure.length }, (_, i) => `${i + 1}`);
 
@@ -124,15 +198,15 @@ const PTFChart = ({
       series: [
         {
           name: 'Pressure (kPa)',
-          data: pressureData
+          data: initialPressure
         },
         {
           name: 'Temperature (°C)',
-          data: temperatureData
+          data: initialTemp
         },
         {
           name: 'Flow (t/h)',
-          data: flowData
+          data: initialFlow
         }
       ],
       stroke: {
@@ -204,7 +278,7 @@ const PTFChart = ({
           }
         },
         {
-        seriesName: 'Temperature (°C)',
+          seriesName: 'Temperature (°C)',
           min: Math.floor(tempMin * 0.95),
           max: Math.ceil(tempMax * 1.05),
           labels: {
@@ -255,7 +329,7 @@ const PTFChart = ({
           left: 10
         }
       },
-      
+
       tooltip: {
         enabled: true,
         theme: 'light',
@@ -283,18 +357,27 @@ const PTFChart = ({
     chart.render();
     chartInstanceRef.current = chart;
 
+
     return () => {
-      if (chartInstanceRef.current) {
-        chartInstanceRef.current.destroy();
-        chartInstanceRef.current = null;
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+        updateIntervalRef.current = null;
       }
     };
   }, [timeRange]);
 
+
   // Update chart data without re-rendering (for smooth updates)
   useEffect(() => {
     if (!chartInstanceRef.current) return;
+    if (timeRange === 'now') return; // real-time tick updates handled by interval above
     if (pressureData.length === 0 || temperatureData.length === 0 || flowData.length === 0) return;
+
+    // Update refs so later switching to 'now' has freshest buffer
+    pressureRef.current = pressureData.slice();
+    tempRef.current = temperatureData.slice();
+    flowRef.current = flowData.slice();
+    visibleCountRef.current = pressureRef.current.length;
 
     const pressureMin = Math.min(...pressureData);
     const pressureMax = Math.max(...pressureData);
@@ -303,12 +386,11 @@ const PTFChart = ({
     const flowMin = Math.min(...flowData);
     const flowMax = Math.max(...flowData);
 
+    const categories = Array.from({ length: pressureData.length }, (_, i) => `${i + 1}`);
+
+    // lighter update for non-now modes
     chartInstanceRef.current.updateOptions({
-      series: [
-        { name: 'Pressure (kPa)', data: pressureData },
-        { name: 'Temperature (°C)', data: temperatureData },
-        { name: 'Flow (t/h)', data: flowData }
-      ],
+      xaxis: { categories },
       yaxis: [
         {
           seriesName: 'Pressure (kPa)',
@@ -327,8 +409,15 @@ const PTFChart = ({
           max: Math.ceil(flowMax * 1.05)
         }
       ]
-    }, false, timeRange === 'now');
+    }, false, true);
+
+    chartInstanceRef.current.updateSeries([
+      { name: 'Pressure (kPa)', data: pressureRef.current },
+      { name: 'Temperature (°C)', data: tempRef.current },
+      { name: 'Flow (t/h)', data: flowRef.current }
+    ], true);
   }, [pressureData, temperatureData, flowData, timeRange]);
+
 
   const handleTimeRangeChange = (newRange) => {
     setTimeRange(newRange);
