@@ -23,17 +23,27 @@ const receiveExternalData = async (req, res) => {
       temperature,
       pressure,
       flow_rate,
-      humidity,
-      voltage,
-      current,
+      gen_voltage_V_W,
+      gen_voltage_W_U,
+      gen_reactive_power,
+      gen_output,
+      gen_power_factor,
+      gen_frequency,
+      speed_detection,
+      MCV_L,
+      MCV_R,
+      TDS,
       status = 'received'
     } = data;
 
     // Insert ke database
     const result = await query(
       `INSERT INTO sensor_data 
-       (device_id, timestamp, temperature, pressure, flow_rate, humidity, voltage, current, status, raw_data) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+       (device_id, timestamp, temperature, pressure, flow_rate, 
+        gen_voltage_v_w, gen_voltage_w_u, gen_reactive_power, gen_output, 
+        gen_power_factor, gen_frequency, speed_detection, mcv_l, mcv_r, tds, 
+        status, raw_data) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) 
        RETURNING *`,
       [
         device_id,
@@ -41,9 +51,16 @@ const receiveExternalData = async (req, res) => {
         temperature,
         pressure,
         flow_rate,
-        humidity,
-        voltage,
-        current,
+        gen_voltage_V_W,
+        gen_voltage_W_U,
+        gen_reactive_power,
+        gen_output,
+        gen_power_factor,
+        gen_frequency,
+        speed_detection,
+        MCV_L,
+        MCV_R,
+        TDS,
         status,
         JSON.stringify(data)
       ]
@@ -165,16 +182,26 @@ const receiveBatchData = async (req, res) => {
         temperature,
         pressure,
         flow_rate,
-        humidity,
-        voltage,
-        current,
+        gen_voltage_V_W,
+        gen_voltage_W_U,
+        gen_reactive_power,
+        gen_output,
+        gen_power_factor,
+        gen_frequency,
+        speed_detection,
+        MCV_L,
+        MCV_R,
+        TDS,
         status = 'received'
       } = record;
 
       const result = await query(
         `INSERT INTO sensor_data 
-         (device_id, timestamp, temperature, pressure, flow_rate, humidity, voltage, current, status, raw_data) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+         (device_id, timestamp, temperature, pressure, flow_rate, 
+          gen_voltage_v_w, gen_voltage_w_u, gen_reactive_power, gen_output, 
+          gen_power_factor, gen_frequency, speed_detection, mcv_l, mcv_r, tds, 
+          status, raw_data) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) 
          RETURNING id`,
         [
           device_id,
@@ -182,9 +209,16 @@ const receiveBatchData = async (req, res) => {
           temperature,
           pressure,
           flow_rate,
-          humidity,
-          voltage,
-          current,
+          gen_voltage_V_W,
+          gen_voltage_W_U,
+          gen_reactive_power,
+          gen_output,
+          gen_power_factor,
+          gen_frequency,
+          speed_detection,
+          MCV_L,
+          MCV_R,
+          TDS,
           status,
           JSON.stringify(record)
         ]
