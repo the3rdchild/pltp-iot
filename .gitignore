@@ -116,3 +116,4 @@ dist
 .vscode
 .firebaserc
 firebase.json
+backend/MIGRATION_GUIDE.md

@@ -267,11 +267,153 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
+// Export sensor data with advanced filters
+const exportSensorData = async (req, res) => {
+  try {
+    const {
+      start_date,
+      end_date,
+      device_id,
+      status,
+      format = 'json',
+      limit = 1000,
+      offset = 0
+    } = req.query;
+
+    // Build dynamic query
+    let sql = 'SELECT * FROM sensor_data WHERE 1=1';
+    const params = [];
+
+    // Filter by date range
+    if (start_date && end_date) {
+      params.push(start_date, end_date);
+      sql += ` AND timestamp BETWEEN $${params.length - 1} AND $${params.length}`;
+    } else if (start_date) {
+      params.push(start_date);
+      sql += ` AND timestamp >= $${params.length}`;
+    } else if (end_date) {
+      params.push(end_date);
+      sql += ` AND timestamp <= $${params.length}`;
+    }
+
+    // Filter by device_id
+    if (device_id) {
+      params.push(device_id);
+      sql += ` AND device_id = $${params.length}`;
+    }
+
+    // Filter by status
+    if (status) {
+      params.push(status);
+      sql += ` AND status = $${params.length}`;
+    }
+
+    // Order and pagination
+    sql += ` ORDER BY timestamp DESC`;
+    params.push(parseInt(limit), parseInt(offset));
+    sql += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
+
+    const result = await query(sql, params);
+
+    // Get total count
+    let countSql = 'SELECT COUNT(*) as total FROM sensor_data WHERE 1=1';
+    const countParams = [];
+
+    if (start_date && end_date) {
+      countParams.push(start_date, end_date);
+      countSql += ` AND timestamp BETWEEN $${countParams.length - 1} AND $${countParams.length}`;
+    } else if (start_date) {
+      countParams.push(start_date);
+      countSql += ` AND timestamp >= $${countParams.length}`;
+    } else if (end_date) {
+      countParams.push(end_date);
+      countSql += ` AND timestamp <= $${countParams.length}`;
+    }
+
+    if (device_id) {
+      countParams.push(device_id);
+      countSql += ` AND device_id = $${countParams.length}`;
+    }
+
+    if (status) {
+      countParams.push(status);
+      countSql += ` AND status = $${countParams.length}`;
+    }
+
+    const countResult = await query(countSql, countParams);
+    const totalRecords = parseInt(countResult.rows[0].total);
+
+    // Format response based on requested format
+    if (format === 'csv') {
+      // Generate CSV
+      const fields = [
+        'id', 'device_id', 'timestamp', 'temperature', 'pressure', 'flow_rate',
+        'gen_voltage_v_w', 'gen_voltage_w_u', 'gen_reactive_power', 'gen_output',
+        'gen_power_factor', 'gen_frequency', 'speed_detection', 'mcv_l', 'mcv_r',
+        'tds', 'status', 'created_at'
+      ];
+
+      let csv = fields.join(',') + '\n';
+
+      result.rows.forEach(row => {
+        const values = fields.map(field => {
+          const value = row[field];
+          if (value === null || value === undefined) return '';
+          if (typeof value === 'string' && value.includes(',')) {
+            return `"${value}"`;
+          }
+          return value;
+        });
+        csv += values.join(',') + '\n';
+      });
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=sensor_data_export_${new Date().toISOString()}.csv`);
+      return res.send(csv);
+
+    } else if (format === 'json') {
+      // Return JSON
+      res.json({
+        success: true,
+        data: result.rows,
+        pagination: {
+          total: totalRecords,
+          limit: parseInt(limit),
+          offset: parseInt(offset),
+          current_page: Math.floor(parseInt(offset) / parseInt(limit)) + 1,
+          total_pages: Math.ceil(totalRecords / parseInt(limit))
+        },
+        filters: {
+          start_date,
+          end_date,
+          device_id,
+          status
+        }
+      });
+
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid format. Supported formats: json, csv'
+      });
+    }
+
+  } catch (error) {
+    console.error('Error exporting sensor data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to export sensor data',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getLatestSensorData,
   getSensorDataByDateRange,
   getLatestMLPredictions,
   getFieldData,
   createFieldData,
-  getDashboardStats
+  getDashboardStats,
+  exportSensorData
 };

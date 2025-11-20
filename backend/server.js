@@ -83,11 +83,15 @@ app.get('/', (req, res) => {
       external: {
         sensorData: 'POST /api/external/sensor-data',
         mlPrediction: 'POST /api/external/ml-prediction',
-        batch: 'POST /api/external/batch'
+        batch: 'POST /api/external/batch',
+        test: 'POST /api/external/test',
+        testDummy: 'POST /api/external/test/dummy',
+        testValidate: 'GET /api/external/test/validate'
       },
       data: {
         latestSensor: 'GET /api/data/sensor/latest',
         sensorRange: 'GET /api/data/sensor/range',
+        sensorExport: 'GET /api/data/sensor/export',
         latestML: 'GET /api/data/ml/latest',
         fieldData: 'GET /api/data/field',
         createField: 'POST /api/data/field',

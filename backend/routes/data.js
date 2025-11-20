@@ -6,7 +6,8 @@ const {
   getLatestMLPredictions,
   getFieldData,
   createFieldData,
-  getDashboardStats
+  getDashboardStats,
+  exportSensorData
 } = require('../controllers/dataController');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
 
@@ -15,6 +16,9 @@ router.get('/sensor/latest', optionalAuth, getLatestSensorData);
 
 // GET /api/data/sensor/range - Get sensor data by date range
 router.get('/sensor/range', optionalAuth, getSensorDataByDateRange);
+
+// GET /api/data/sensor/export - Export sensor data with filters (JSON or CSV)
+router.get('/sensor/export', optionalAuth, exportSensorData);
 
 // GET /api/data/ml/latest - Get latest ML predictions
 router.get('/ml/latest', optionalAuth, getLatestMLPredictions);
