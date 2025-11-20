@@ -196,6 +196,7 @@ const NCG = () => {
                 data={ncgRealTimeData}
                 yAxisTitle="NCG (wt%)"
                 unit="wt%"
+                showComparison={true}
               />
             </Grid>
 
