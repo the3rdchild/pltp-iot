@@ -1,5 +1,90 @@
 // Sample data for analytics charts
 
+// ========== STATIC AI/FIELD DATA GENERATORS ==========
+// Generate AI data for yearly view (up to 60 points, 24 per year)
+export const generateAIData = (startDate, endDate, dataType = 'dryness') => {
+  const data = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  // Calculate months between dates
+  const monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1;
+  const pointsPerMonth = 2; // 2 data points per month (24 per year)
+  const totalPoints = Math.min(monthsDiff * pointsPerMonth, 60);
+
+  const ranges = {
+    dryness: { min: 98.0, max: 100.0 },
+    ncg: { min: 0.5, max: 2.5 },
+    tds: { min: 4.0, max: 8.0 },
+    pressure: { min: 1300, max: 1600 },
+    temperature: { min: 120, max: 160 },
+    flow: { min: 240, max: 300 }
+  };
+
+  const range = ranges[dataType] || ranges.dryness;
+
+  for (let i = 0; i < totalPoints; i++) {
+    const monthOffset = Math.floor((i / totalPoints) * monthsDiff);
+    const dayInMonth = (i % pointsPerMonth) === 0 ? 10 : 25; // Two samples per month
+
+    const timestamp = new Date(
+      start.getFullYear(),
+      start.getMonth() + monthOffset,
+      dayInMonth
+    );
+
+    const value = range.min + Math.random() * (range.max - range.min);
+    data.push({
+      timestamp: timestamp.getTime(),
+      value: parseFloat(value.toFixed(2))
+    });
+  }
+
+  return data.sort((a, b) => a.timestamp - b.timestamp);
+};
+
+// Generate Field data for yearly view (up to 60 points, 24 per year)
+export const generateFieldData = (startDate, endDate, dataType = 'dryness') => {
+  const data = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  // Calculate months between dates
+  const monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth()) + 1;
+  const pointsPerMonth = 2; // 2 data points per month (24 per year)
+  const totalPoints = Math.min(monthsDiff * pointsPerMonth, 60);
+
+  const ranges = {
+    dryness: { min: 98.2, max: 99.8 }, // Slightly different range for realism
+    ncg: { min: 0.6, max: 2.3 },
+    tds: { min: 4.5, max: 7.5 },
+    pressure: { min: 1320, max: 1580 },
+    temperature: { min: 125, max: 155 },
+    flow: { min: 250, max: 290 }
+  };
+
+  const range = ranges[dataType] || ranges.dryness;
+
+  for (let i = 0; i < totalPoints; i++) {
+    const monthOffset = Math.floor((i / totalPoints) * monthsDiff);
+    const dayInMonth = (i % pointsPerMonth) === 0 ? 12 : 27; // Different days than AI
+
+    const timestamp = new Date(
+      start.getFullYear(),
+      start.getMonth() + monthOffset,
+      dayInMonth
+    );
+
+    const value = range.min + Math.random() * (range.max - range.min);
+    data.push({
+      timestamp: timestamp.getTime(),
+      value: parseFloat(value.toFixed(2))
+    });
+  }
+
+  return data.sort((a, b) => a.timestamp - b.timestamp);
+};
+
 // ========== DRYNESS DATA ==========
 export const drynessRealTimeData = [
   97.92, 98.44, 98.97, 99.12, 98.65, 99.31, 98.88, 99.04, 99.55, 98.77,

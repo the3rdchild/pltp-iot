@@ -200,20 +200,22 @@ const Dryness = () => {
             <Grid item xs={12} sx={{ mt: { xs: 0, lg: -5 } }}>
               <RealTimeDataChart
                 title="Real Time Data"
-                subtitle="Dryness level data chart monthy"
+                subtitle="Dryness level data chart monthly"
+                dataType="dryness"
                 yAxisTitle="Dryness (%)"
                 unit="%"
+                showComparison={true}
               />
             </Grid>
 
-            <Grid item xs={12}>
+            {/* <Grid item xs={12}>
               <HistoryComparisonChart
                 title="History Data & Perbandingan"
                 subtitle="Grafik dryness history data dan perbandingan"
                 yAxisTitle="Dryness (%)"
                 unit="%"
               />
-            </Grid>
+            </Grid> */}
 
             <Grid item xs={12}>
               <StatisticsTable

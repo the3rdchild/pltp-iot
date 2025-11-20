@@ -199,7 +199,7 @@ const NCG = () => {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            {/* <Grid item xs={12}>
               <HistoryComparisonChart
                 title="History Data & Perbandingan"
                 subtitle="Grafik NCG history data dan perbandingan"
@@ -208,7 +208,7 @@ const NCG = () => {
                 yAxisTitle="NCG (wt%)"
                 unit="wt%"
               />
-            </Grid>
+            </Grid> */}
 
             <Grid item xs={12}>
               <StatisticsTable

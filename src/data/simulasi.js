@@ -1,3 +1,51 @@
+// Generate real-time chart data for time-based ranges (now, 1h, 1d, 7d, 1m)
+export function generateRealTimeChartData(dataType = 'dryness', timeRange = 'now', previousData = []) {
+  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+  const ranges = {
+    dryness: { min: 98.0, max: 100.0, variance: 0.5 },
+    ncg: { min: 0.5, max: 2.5, variance: 0.3 },
+    tds: { min: 4.0, max: 8.0, variance: 0.4 },
+    pressure: { min: 1300, max: 1600, variance: 30 },
+    temperature: { min: 120, max: 160, variance: 5 },
+    flow: { min: 240, max: 300, variance: 10 }
+  };
+
+  const range = ranges[dataType] || ranges.dryness;
+  const maxPoints = 60;
+
+  // For 'now' mode - update with one new point
+  if (timeRange === 'now' && previousData.length > 0) {
+    const lastValue = previousData[previousData.length - 1];
+    const newValue = clamp(
+      lastValue + (Math.random() - 0.5) * range.variance,
+      range.min,
+      range.max
+    );
+    const newData = [...previousData.slice(-(maxPoints - 1)), newValue];
+    return newData.map(v => parseFloat(v.toFixed(2)));
+  }
+
+  // Generate initial data or static historical data
+  const pointsMap = {
+    'now': maxPoints,
+    '1h': maxPoints,
+    '1d': maxPoints,
+    '7d': maxPoints,
+    '1m': maxPoints
+  };
+
+  const points = pointsMap[timeRange] || maxPoints;
+  const data = [];
+
+  for (let i = 0; i < points; i++) {
+    const value = range.min + Math.random() * (range.max - range.min);
+    data.push(parseFloat(value.toFixed(2)));
+  }
+
+  return data;
+}
+
 export function generateAnalyticData() {
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 

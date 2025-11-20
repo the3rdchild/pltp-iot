@@ -2,6 +2,7 @@ import { Grid, Box, Typography, useTheme } from '@mui/material';
 
 import { useState, useEffect } from 'react';
 import { generateAnalyticData } from 'data/simulasi';
+import { PTFChart } from '../../components/analytics';
 
 import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
@@ -517,15 +518,13 @@ const PTF = () => {
 
             {/* --- CHARTS & TABLES --- */}
             <Grid item xs={12}>
-              <RealTimeDataChart
-                title="Real Time Data"
-                subtitle="Pressure, Temperature, and Flow data chart"
-                data={combinedRealTimeData}
-                multiAxis={true}
+              <PTFChart
+                title="PTF Real Time Data"
+                subtitle="Pressure, Temperature, Flow data chart"
               />
             </Grid>
 
-            <Grid item xs={12}>
+            {/* <Grid item xs={12}>
               <HistoryComparisonChart
                 title="History Data & Perbandingan"
                 subtitle="Grafik history data dan perbandingan"
@@ -538,7 +537,7 @@ const PTF = () => {
                 selectedMetric={selectedMetric}
                 onMetricChange={setSelectedMetric}
               />
-            </Grid>
+            </Grid> */}
 
             <Grid item xs={12}>
               <StatisticsTable
