@@ -161,19 +161,19 @@ const RealTimeDataChart = ({
     ];
   }, [stats, unit, showComparisonData]);
 
-  // Initialize ApexCharts
+  // Initialize ApexCharts (only once or when major config changes)
   useEffect(() => {
     if (!chartRef.current) return;
-    if (showComparisonData && (aiData.length === 0 || fieldData.length === 0)) return;
-    if (!showComparisonData && chartData.length === 0) return;
 
-    const maxValue = stats.maxValue;
-    const minValue = stats.minValue;
-    const avgValue = stats.avgValue;
+    const maxValue = stats.maxValue || 100;
+    const minValue = stats.minValue || 0;
+    const avgValue = stats.avgValue || 50;
 
-    const categories = showComparisonData
-      ? Array.from({ length: Math.max(aiData.length, fieldData.length) }, (_, i) => `${i + 1}`)
-      : Array.from({ length: chartData.length }, (_, i) => `${i + 1}`);
+    const initialData = showComparisonData
+      ? (fieldData.length > 0 ? fieldData : Array(60).fill(0))
+      : (chartData.length > 0 ? chartData : Array(60).fill(0));
+
+    const categories = Array.from({ length: initialData.length }, (_, i) => `${i + 1}`);
 
     const annotations = [];
     if (thresholds.showMax && maxValue) {
@@ -206,10 +206,10 @@ const RealTimeDataChart = ({
 
     const series = showComparisonData
       ? [
-          { name: 'Field Data', data: fieldData },
-          { name: 'AI Data', data: aiData }
+          { name: 'Field Data', data: fieldData.length > 0 ? fieldData : Array(60).fill(0) },
+          { name: 'AI Data', data: aiData.length > 0 ? aiData : Array(60).fill(0) }
         ]
-      : [{ name: yAxisTitle, data: chartData }];
+      : [{ name: yAxisTitle, data: chartData.length > 0 ? chartData : Array(60).fill(0) }];
 
     const colors = showComparisonData ? ['#53A1FF', '#8b5cf6'] : ['#3b82f6'];
 
@@ -344,7 +344,65 @@ const RealTimeDataChart = ({
         chartInstanceRef.current = null;
       }
     };
-  }, [chartData, aiData, fieldData, unit, yAxisTitle, xAxisTitle, thresholds, timeRange, showComparisonData, stats]);
+  }, [timeRange, showComparisonData, unit, yAxisTitle, xAxisTitle, thresholds]);
+
+  // Update chart data without re-rendering (for smooth updates)
+  useEffect(() => {
+    if (!chartInstanceRef.current) return;
+    if (showComparisonData && (aiData.length === 0 || fieldData.length === 0)) return;
+    if (!showComparisonData && chartData.length === 0) return;
+
+    const maxValue = stats.maxValue;
+    const minValue = stats.minValue;
+    const avgValue = stats.avgValue;
+
+    const annotations = [];
+    if (thresholds.showMax && maxValue) {
+      annotations.push({
+        y: maxValue,
+        borderColor: '#ef4444',
+        strokeDashArray: 5,
+        borderWidth: 2,
+        label: { text: '' }
+      });
+    }
+    if (thresholds.showAverage && avgValue) {
+      annotations.push({
+        y: avgValue,
+        borderColor: '#9ca3af',
+        strokeDashArray: 5,
+        borderWidth: 2,
+        label: { text: '' }
+      });
+    }
+    if (thresholds.showMin && minValue) {
+      annotations.push({
+        y: minValue,
+        borderColor: '#22c55e',
+        strokeDashArray: 5,
+        borderWidth: 2,
+        label: { text: '' }
+      });
+    }
+
+    const series = showComparisonData
+      ? [
+          { name: 'Field Data', data: fieldData },
+          { name: 'AI Data', data: aiData }
+        ]
+      : [{ name: yAxisTitle, data: chartData }];
+
+    chartInstanceRef.current.updateOptions({
+      series: series,
+      yaxis: {
+        min: minValue ? Math.floor(minValue * 0.99) : undefined,
+        max: maxValue ? Math.ceil(maxValue * 1.01) : undefined
+      },
+      annotations: {
+        yaxis: annotations
+      }
+    }, false, timeRange === 'now' && !showComparisonData);
+  }, [chartData, aiData, fieldData, stats, showComparisonData, timeRange, yAxisTitle, thresholds]);
 
   const handleTimeRangeChange = (newRange) => {
     setTimeRange(newRange);

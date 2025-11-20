@@ -46,26 +46,63 @@ export function generateRealTimeChartData(dataType = 'dryness', timeRange = 'now
   return data;
 }
 
+// Store previous values for smooth transitions
+let previousValues = {
+  dryness: 99.0,
+  ncg: 1.5,
+  tds: 6.0,
+  pressure: 1400,
+  temperature: 140,
+  flow: 270,
+  activePower: 32.5,
+  reactivePower: 6.2,
+  voltage: 13.5,
+  current: 1350,
+  stSpeed: 3000
+};
+
 export function generateAnalyticData() {
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
+  // Generate smooth transitions for gauges
+  const smoothUpdate = (prevValue, min, max, variance) => {
+    const newValue = prevValue + (Math.random() - 0.5) * variance;
+    return clamp(newValue, min, max);
+  };
+
+  // Update previous values with smooth transitions
+  previousValues.dryness = smoothUpdate(previousValues.dryness, 98.0, 100.0, 0.3);
+  previousValues.ncg = smoothUpdate(previousValues.ncg, 0.5, 2.5, 0.2);
+  previousValues.tds = smoothUpdate(previousValues.tds, 5.0, 10.0, 0.3);
+  previousValues.pressure = smoothUpdate(previousValues.pressure, 1353, 1556, 20);
+  previousValues.temperature = smoothUpdate(previousValues.temperature, 131, 155, 3);
+  previousValues.flow = smoothUpdate(previousValues.flow, 251, 298, 5);
+  previousValues.activePower = smoothUpdate(previousValues.activePower, 32.0, 33.0, 0.05);
+  previousValues.reactivePower = smoothUpdate(previousValues.reactivePower, 6.0, 6.5, 0.03);
+  previousValues.voltage = smoothUpdate(previousValues.voltage, 13.0, 14.0, 0.05);
+  previousValues.current = smoothUpdate(previousValues.current, 1300, 1400, 5);
+  previousValues.stSpeed = smoothUpdate(previousValues.stSpeed, 2900, 3100, 10);
+
   // Steam Purity: TDS & Deposit Index
-  const tdsOverall = clamp(Math.random() * 5 + 5, 5, 10); // 5–10 ppm
   const co2 = clamp(Math.random() * 2 + 4, 1, 5);
   const argon = clamp(Math.random() * 5 + 2, 1, 8);
   const methane = clamp(Math.random() * 3 + 1, 1, 5);
-  const ma3 = clamp(Math.random() * 2 + 1, 1, 3);          
-  const scalingDeposit = clamp(Math.random() * 1.5 + 0.5, 0.5, 2); // 
-  // Steam Quality: Dryness & AI
-  const drynessFraction = clamp(Math.random() * 0.1 + 0.94, 0.85, 1); // 0.85–0.95
-  const anomalyScore = clamp(Math.random() * 0.1 + 0.05, 0, 1);       // 0.05–0.15
+  const ma3 = clamp(Math.random() * 2 + 1, 1, 3);
+  const scalingDeposit = clamp(Math.random() * 1.5 + 0.5, 0.5, 2);
+
+  // Steam Quality: AI
+  const anomalyScore = clamp(Math.random() * 0.1 + 0.05, 0, 1);
   const riskLevels = ['Low', 'Medium', 'High'];
-  const riskIndex = drynessFraction < 0.9 || anomalyScore > 0.3 ? 2 : (anomalyScore > 0.15 ? 1 : 0);
+  const riskIndex = previousValues.dryness < 98.5 || anomalyScore > 0.3 ? 2 : (anomalyScore > 0.15 ? 1 : 0);
   const riskPrediction = riskLevels[riskIndex];
 
   return {
-    // Steam Purity
-    tdsOverall: tdsOverall.toFixed(1),
+    // Steam Purity (gauges - live update)
+    tdsOverall: previousValues.tds.toFixed(1),
+    dryness: previousValues.dryness.toFixed(2),
+    ncg: previousValues.ncg.toFixed(2),
+
+    // Other TDS components
     co2: co2.toFixed(1),
     argon: argon.toFixed(1),
     methane: methane.toFixed(1),
@@ -73,13 +110,20 @@ export function generateAnalyticData() {
     scalingDeposit: scalingDeposit.toFixed(2),
 
     // Steam Quality
-    drynessFraction: drynessFraction.toFixed(2),
+    drynessFraction: (previousValues.dryness / 100).toFixed(2),
     anomalyScore: anomalyScore.toFixed(2),
     riskPrediction: riskPrediction,
 
-    // PTF Data (Pressure, Temperature, Flow)
-    pressure: clamp(Math.random() * 203 + 1353, 1353, 1556).toFixed(0),
-    temperature: clamp(Math.random() * 24 + 131, 131, 155).toFixed(0),
-    flow: clamp(Math.random() * 47 + 251, 251, 298).toFixed(0)
+    // PTF Data (gauges - live update)
+    pressure: previousValues.pressure.toFixed(0),
+    temperature: previousValues.temperature.toFixed(0),
+    flow: previousValues.flow.toFixed(0),
+
+    // Power Data (live update)
+    activePower: previousValues.activePower.toFixed(2),
+    reactivePower: previousValues.reactivePower.toFixed(2),
+    voltage: previousValues.voltage.toFixed(2),
+    current: previousValues.current.toFixed(2),
+    stSpeed: previousValues.stSpeed.toFixed(0)
   };
 }

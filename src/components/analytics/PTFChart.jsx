@@ -89,21 +89,22 @@ const PTFChart = ({
     };
   }, [timeRange]);
 
-  // Initialize ApexCharts with dual Y-axes
+  // Initialize ApexCharts with dual Y-axes (only once or when config changes)
   useEffect(() => {
     if (!chartRef.current) return;
-    if (pressureData.length === 0 || temperatureData.length === 0 || flowData.length === 0) return;
 
-    const categories = Array.from({ length: pressureData.length }, (_, i) => `${i + 1}`);
+    const initialPressure = pressureData.length > 0 ? pressureData : Array(60).fill(1400);
+    const initialTemp = temperatureData.length > 0 ? temperatureData : Array(60).fill(140);
+    const initialFlow = flowData.length > 0 ? flowData : Array(60).fill(270);
 
-    // Normalize data for better visualization
-    // Pressure: 1300-1600 kPa, Temperature: 120-160°C, Flow: 240-300 t/h
-    const pressureMin = Math.min(...pressureData);
-    const pressureMax = Math.max(...pressureData);
-    const tempMin = Math.min(...temperatureData);
-    const tempMax = Math.max(...temperatureData);
-    const flowMin = Math.min(...flowData);
-    const flowMax = Math.max(...flowData);
+    const categories = Array.from({ length: initialPressure.length }, (_, i) => `${i + 1}`);
+
+    const pressureMin = Math.min(...initialPressure);
+    const pressureMax = Math.max(...initialPressure);
+    const tempMin = Math.min(...initialTemp);
+    const tempMax = Math.max(...initialTemp);
+    const flowMin = Math.min(...initialFlow);
+    const flowMax = Math.max(...initialFlow);
 
     const options = {
       chart: {
@@ -288,6 +289,45 @@ const PTFChart = ({
         chartInstanceRef.current = null;
       }
     };
+  }, [timeRange]);
+
+  // Update chart data without re-rendering (for smooth updates)
+  useEffect(() => {
+    if (!chartInstanceRef.current) return;
+    if (pressureData.length === 0 || temperatureData.length === 0 || flowData.length === 0) return;
+
+    const pressureMin = Math.min(...pressureData);
+    const pressureMax = Math.max(...pressureData);
+    const tempMin = Math.min(...temperatureData);
+    const tempMax = Math.max(...temperatureData);
+    const flowMin = Math.min(...flowData);
+    const flowMax = Math.max(...flowData);
+
+    chartInstanceRef.current.updateOptions({
+      series: [
+        { name: 'Pressure (kPa)', data: pressureData },
+        { name: 'Temperature (°C)', data: temperatureData },
+        { name: 'Flow (t/h)', data: flowData }
+      ],
+      yaxis: [
+        {
+          seriesName: 'Pressure (kPa)',
+          min: Math.floor(pressureMin * 0.95),
+          max: Math.ceil(pressureMax * 1.05)
+        },
+        {
+          seriesName: 'Temperature (°C)',
+          min: Math.floor(tempMin * 0.95),
+          max: Math.ceil(tempMax * 1.05)
+        },
+        {
+          seriesName: 'Flow (t/h)',
+          opposite: true,
+          min: Math.floor(flowMin * 0.95),
+          max: Math.ceil(flowMax * 1.05)
+        }
+      ]
+    }, false, timeRange === 'now');
   }, [pressureData, temperatureData, flowData, timeRange]);
 
   const handleTimeRangeChange = (newRange) => {

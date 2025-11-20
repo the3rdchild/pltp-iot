@@ -119,14 +119,14 @@ export default function DashboardDefault() {
   const pressure = analyticData?.pressure ?? 1437;
   const temperature = analyticData?.temperature ?? 131;
   const flow = analyticData?.flow ?? 298;
-  const tds = analyticData?.tds ?? 2.8;
+  const tds = analyticData?.tdsOverall ?? 6.0;
   const dryness = analyticData?.dryness ?? 99.0;
-  const ncg = analyticData?.ncg ?? 8.3;
-  const activePower = analyticData?.activePower ?? 25.46;
-  const reactivePower = analyticData?.reactivePower ?? 4421;
-  const voltage = analyticData?.voltage ?? 13.86;
-  const stSpeed = analyticData?.stSpeed ?? 3598;
-  const current = analyticData?.current ?? 901.3;
+  const ncg = analyticData?.ncg ?? 1.5;
+  const activePower = analyticData?.activePower ?? 32.5;
+  const reactivePower = analyticData?.reactivePower ?? 6.2;
+  const voltage = analyticData?.voltage ?? 13.5;
+  const stSpeed = analyticData?.stSpeed ?? 3000;
+  const current = analyticData?.current ?? 1350;
 
   const getPowerStatus = (val, low, high) => {
     if (val < low) return 'Low';
@@ -425,7 +425,7 @@ export default function DashboardDefault() {
               label="Active Power"
               value={activePower}
               unit="MW"
-              status={getPowerStatus(activePower, 30, 50)}
+              status={getPowerStatus(activePower, 32, 33)}
               linkTo="#"
               titleConfig={TITLE_CONFIG}
               icon={BoltIcon}
@@ -440,7 +440,7 @@ export default function DashboardDefault() {
               label="Voltage"
               value={voltage}
               unit="kV"
-              status="Normal"
+              status={getPowerStatus(voltage, 13, 14)}
               linkTo="#"
               titleConfig={TITLE_CONFIG}
               icon={OfflineBoltIcon}
@@ -455,7 +455,7 @@ export default function DashboardDefault() {
               label="Current"
               value={current}
               unit="A"
-              status={getPowerStatus(current, 1000, 1500)}
+              status={getPowerStatus(current, 1300, 1400)}
               linkTo="#"
               titleConfig={TITLE_CONFIG}
               icon={TbCircuitResistor}
@@ -470,7 +470,7 @@ export default function DashboardDefault() {
               label="Reactive Power"
               value={reactivePower}
               unit="MVAR"
-              status={getPowerStatus(reactivePower, 2000, 4000)}
+              status={getPowerStatus(reactivePower, 6.0, 6.5)}
               linkTo="#"
               titleConfig={TITLE_CONFIG}
               icon={FaBolt}
@@ -485,7 +485,7 @@ export default function DashboardDefault() {
               label="S.T Speed"
               value={stSpeed}
               unit="rpm"
-              status={getPowerStatus(stSpeed, 3000, 3500)}
+              status={getPowerStatus(stSpeed, 2900, 3100)}
               linkTo="#"
               titleConfig={TITLE_CONFIG}
               icon={RiSpeedUpFill}
