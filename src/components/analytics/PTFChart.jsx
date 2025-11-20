@@ -45,7 +45,7 @@ const PTFChart = ({
 
     if (isYearlyRange) {
       // Use AI/Field data for yearly ranges
-      const start = isCustomRange ? startDate.toDate() : dayjs().subtract(timeRange === '10y' ? 10 : 1, 'year').toDate();
+      const start = isCustomRange ? startDate.toDate() : dayjs().subtract(timeRange === '10y' ? 10 : 2.5, 'year').toDate();
       const end = isCustomRange ? endDate.toDate() : dayjs().toDate();
 
       const pData = generateAIData(start, end, 'pressure');
@@ -123,24 +123,21 @@ const PTFChart = ({
       series: [
         {
           name: 'Pressure (kPa)',
-          type: 'line',
           data: pressureData
         },
         {
           name: 'Temperature (°C)',
-          type: 'line',
           data: temperatureData
         },
         {
           name: 'Flow (t/h)',
-          type: 'line',
           data: flowData
         }
       ],
       stroke: {
         curve: 'smooth',
         width: 2,
-        colors: ['#53A1FF', '#8b5cf6']
+        colors: ['#3b82f6', '#ef4444', '#22c55e']
       },
       fill: {
         type: 'gradient',
@@ -150,7 +147,7 @@ const PTFChart = ({
           opacityTo: 0.05,
           stops: [0, 90, 100]
         },
-        colors: ['#53A1FF', '#8b5cf6']
+        colors: ['#3b82f6', '#ef4444', '#22c55e']
       },
       dataLabels: { enabled: false },
       markers: {
@@ -191,11 +188,7 @@ const PTFChart = ({
           min: Math.floor(pressureMin * 0.95),
           max: Math.ceil(pressureMax * 1.05),
           labels: {
-            style: {
-              colors: '#3b82f6',
-              fontSize: '11px',
-              fontWeight: 600
-            },
+            style: { colors: '#86868b', fontSize: '11px' },
             formatter: function (value) {
               return value ? value.toFixed(0) + ' kPa' : '';
             }
@@ -214,11 +207,7 @@ const PTFChart = ({
           min: Math.floor(tempMin * 0.95),
           max: Math.ceil(tempMax * 1.05),
           labels: {
-            style: {
-              colors: '#86868b',
-              fontSize: '11px',
-              fontWeight: 600
-            },
+            style: { colors: '#86868b', fontSize: '11px' },
             formatter: function (value) {
               return value ? value.toFixed(0) + ' °C' : '';
             }
@@ -226,7 +215,7 @@ const PTFChart = ({
           title: {
             text: 'Temperature (°C)',
             style: {
-              color: '#86868b',
+              color: '#ef4444',
               fontSize: '12px',
               fontWeight: 400
             }
@@ -238,11 +227,7 @@ const PTFChart = ({
           min: Math.floor(flowMin * 0.95),
           max: Math.ceil(flowMax * 1.05),
           labels: {
-            style: {
-              colors: '#22c55e',
-              fontSize: '11px',
-              fontWeight: 600
-            },
+            style: { colors: '#86868b', fontSize: '11px' },
             formatter: function (value) {
               return value ? value.toFixed(0) + ' t/h' : '';
             }
@@ -250,7 +235,7 @@ const PTFChart = ({
           title: {
             text: 'Flow (t/h)',
             style: {
-              color: '#86868b',
+              color: '#22c55e',
               fontSize: '12px',
               fontWeight: 400
             }
