@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import pertaminaLogo from '../../assets/images/pertamina1x1.svg';
 import unpadLogo from '../../assets/images/Logo-Unpad.svg';
+import pertasmartLogo from '../../assets/images/Pertasmart4x1.svg';
 import heroImage from '../../assets/images/landing_page_image.jpg';
 import engineerImage from '../../assets/images/landing_page_image_2.png';
 import tdsImage from '../../assets/images/tds.png';
@@ -12,6 +13,7 @@ import indonesiaMap from '../../assets/images/indonesia-map.png';
 const Home = () => {
   const [activeUnit, setActiveUnit] = useState(null);
   const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0, side: 'right' });
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const popupRef = useRef(null);
   const mapRef = useRef(null);
 
@@ -104,21 +106,54 @@ const Home = () => {
   };
 
   return (
-    <div className="home">
+    <div className={`home ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+      {/* Hamburger Menu */}
+      <div 
+        className="hamburger-menu"
+        onMouseEnter={() => setIsSidebarOpen(true)}
+      >
+        <div className="hamburger-line"></div>
+        <div className="hamburger-line"></div>
+        <div className="hamburger-line"></div>
+      </div>
+
+      {/* Sidebar Navigation */}
+      <div 
+        className={`sidebar ${isSidebarOpen ? 'open' : ''}`}
+        onMouseLeave={() => setIsSidebarOpen(false)}
+      >
+        <div className="sidebar-content">
+          <a href="#home" className="sidebar-link">Home</a>
+          <a href="#about" className="sidebar-link">Misi Kami</a>
+          <a href="#services" className="sidebar-link">Layanan Kami</a>
+          <a href="#monitoring" className="sidebar-link">Unit Pemantauan</a>
+          <a href="#quality" className="sidebar-link">Kualitas Uap</a>
+        </div>
+      </div>
+
       {/* Header Navigation */}
       <header className="header">
         <div className="header-container">
           <div className="header-logos">
-            <img src={pertaminaLogo} alt="Pertamina" className="header-logo" />
-            <div className="logo-divider"></div>
-            <img src={unpadLogo} alt="UNPAD" className="header-logo" />
+            <img src={pertasmartLogo} alt="Pertasmart" className="header-logo" />
           </div>
           <nav className="nav">
-            <a href="#home" className="nav-link">HOME</a>
-            <a href="#about" className="nav-link">About Us</a>
-            <a href="#services" className="nav-link">SERVICES</a>
-            <a href="#faq" className="nav-link">FAQ</a>
-            <a href="#monitoring" className="nav-link">STEAM MONITORING</a>
+            <a href="#home" className="nav-link">Home</a>
+            
+            <div className="nav-dropdown">
+              <button className="nav-link dropdown-btn">
+                Lokasi
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <div className="dropdown-content">
+                <a href="/kamojang">Kamojang Unit 5</a>
+                <a href="/ulubelu">Ulubelu Unit 3</a>
+              </div>
+            </div>
+            
+            <a href="#monitoring" className="nav-link">Steam Monitoring</a>
           </nav>
         </div>
       </header>
@@ -459,7 +494,7 @@ const Home = () => {
 
 
       {/* Steam Quality Section */}
-      <section className="quality-section">
+      <section id="quality" className="quality-section">
         <div className="container">
           <div className="quality-intro-grid">
             <div>
@@ -642,6 +677,143 @@ const Home = () => {
         .header-logo {
           height: 48px;
           width: auto;
+          filter: brightness(0) invert(1);
+        }
+
+        /* Hamburger Menu */
+        .hamburger-menu {
+          position: fixed;
+          top: 24px;
+          left: 24px;
+          width: 40px;
+          height: 40px;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 6px;
+          cursor: pointer;
+          z-index: 1001;
+          padding: 8px;
+          border-radius: 8px;
+          background: rgba(26, 38, 66, 0.8);
+          backdrop-filter: blur(10px);
+          transition: all 0.3s ease;
+        }
+
+        .hamburger-menu:hover {
+          background: rgba(37, 99, 235, 0.9);
+        }
+
+    
+        .hamburger-menu:hover {
+          background: rgba(37, 99, 235, 0.9);
+        }
+
+        .hamburger-line {
+          width: 24px;
+          height: 3px;
+          background: white;
+          border-radius: 2px;
+          transition: all 0.3s ease;
+        }
+
+        /* Sidebar */
+        .sidebar {
+          position: fixed;
+          top: 0;
+          left: -280px;
+          width: 280px;
+          height: 100vh;
+          background: rgba(26, 38, 66, 0.98);
+          backdrop-filter: blur(20px);
+          z-index: 1000;
+          transition: left 0.3s ease;
+          box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar.open {
+          left: 0;
+        }
+
+        .sidebar-content {
+          padding: 80px 24px 24px 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .sidebar-link {
+          color: white;
+          text-decoration: none;
+          padding: 16px 20px;
+          border-radius: 8px;
+          font-weight: 500;
+          font-size: 0.95rem;
+          transition: all 0.3s ease;
+          display: block;
+        }
+
+        .sidebar-link:hover {
+          background: rgba(37, 99, 235, 0.2);
+          color: #2563eb;
+          transform: translateX(8px);
+        }
+
+        /* Dropdown Lokasi */
+        .nav-dropdown {
+          position: relative;
+        }
+
+        .dropdown-btn {
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-weight: 400;
+          font-size: 1rem;
+          font-family: inherit;
+          color: white;
+        }
+
+        .dropdown-content {
+          display: none;
+          position: absolute;
+          top: 100%;
+          left: 0;
+          background: #1a2642;
+          min-width: 180px;
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+          border-radius: 8px;
+          margin-top: 0;
+          padding-top: 8px;
+          z-index: 1;
+        }
+
+        .nav-dropdown:hover .dropdown-content {
+          display: block;
+        }
+
+        .dropdown-content a {
+          color: white;
+          padding: 12px 16px;
+          text-decoration: none;
+          display: block;
+          transition: all 0.3s ease;
+        }
+
+        .dropdown-content a:hover {
+          background: #2563eb;
+          color: white;
+        }
+
+        .dropdown-content a:first-child {
+          border-radius: 8px 8px 0 0;
+        }
+
+        .dropdown-content a:last-child {
+          border-radius: 0 0 8px 8px;
         }
 
         .logo-divider {
@@ -653,14 +825,17 @@ const Home = () => {
         .nav {
           display: flex;
           align-items: center;
-          gap: 32px;
+          gap: 48px;
         }
 
         .nav-link {
           color: white;
           text-decoration: none;
-          font-weight: 500;
+          font-weight: 400;
+          font-size: 1rem;
           transition: color 0.3s ease;
+          display: flex;
+          align-items: center;
         }
 
         .nav-link:hover {
