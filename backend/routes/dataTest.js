@@ -11,7 +11,7 @@ const { skipIfWhitelisted } = require('../middleware/ipWhitelist');
 // Rate limit untuk data-test - whitelisted IPs bypass limit
 const dataTestLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 menit
-  max: 100, // 100 requests per menit untuk non-whitelisted
+  max: 1000, // 100 requests per menit untuk non-whitelisted
   skip: skipIfWhitelisted, // Whitelisted IPs = unlimited
   message: {
     success: false,
