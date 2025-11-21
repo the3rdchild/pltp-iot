@@ -9,6 +9,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const externalRoutes = require('./routes/external');
 const dataRoutes = require('./routes/data');
+const dataTestRoutes = require('./routes/dataTest');
 
 // Initialize express
 const app = express();
@@ -67,6 +68,7 @@ app.get('/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/external', externalRoutes);
 app.use('/api/data', dataRoutes);
+app.use('/api/data-test', dataTestRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -96,6 +98,10 @@ app.get('/', (req, res) => {
         fieldData: 'GET /api/data/field',
         createField: 'POST /api/data/field',
         dashboardStats: 'GET /api/data/dashboard/stats'
+      },
+      dataTest: {
+        exportTestData: 'GET /api/data-test/sensor/export',
+        insertTestData: 'POST /api/data-test/sensor/export'
       }
     }
   });
