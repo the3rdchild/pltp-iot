@@ -239,7 +239,7 @@ This project is proprietary to PertaSmart UNPAD.
 
 ---
 
-**Version**: 1.0.0  
+**Version**: 2.70.0  
 **Last Updated**: November 2025
 
 Made with ❤️ for PertaSmart UNPAD
