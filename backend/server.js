@@ -48,9 +48,8 @@ const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
   max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
   skip: (req) => {
-    // Skip rate limit untuk /api/data-test (punya rate limiter sendiri)
     if (req.path.startsWith('/data-test')) return true;
-    // Skip rate limit untuk whitelisted IPs
+    if (req.path.startsWith('/external')) return true;
     return skipIfWhitelisted(req);
   },
   message: {
