@@ -22,6 +22,13 @@ import DataInput from 'pages/settings/dataInput'
 import Calibration from 'pages/settings/calibration';
 import Limit from 'pages/settings/limit';
 
+//article
+import CaraKerjaPLTP from 'pages/extra-pages/articles/CaraKerjaPLTP';
+import TDSArticle from 'pages/extra-pages/articles/TDSArticle';
+import DrynessFractionArticle from 'pages/extra-pages/articles/DrynessFractionArticle';
+import NCGArticle from 'pages/extra-pages/articles/NCGArticle';
+import MisiKami from 'pages/extra-pages/articles/MisiKami';
+
 // dashboard pages
 
 // auth pages
@@ -160,6 +167,28 @@ const router = createBrowserRouter([
         element: <Limit />
       }
     ]
+  },
+
+  //articles
+  {
+    path:'/cara-kerja-pltp',
+    element: <CaraKerjaPLTP />
+  },
+  {
+    path:'/artikel-tds',
+    element: <TDSArticle />
+  },
+  {
+    path:'/artikel-dryness',
+    element: <DrynessFractionArticle />
+  },
+  {
+    path:'/artikel-ncg',
+    element: <NCGArticle />
+  },
+  {
+    path:'/misi-kami',
+    element: <MisiKami />
   }
   
 ]);

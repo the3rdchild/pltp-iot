@@ -9,6 +9,16 @@ import tdsImage from '../../assets/images/tds.png';
 import drynessImage from '../../assets/images/dryness.png';
 import ncgImage from '../../assets/images/ncg.png';
 import indonesiaMap from '../../assets/images/indonesia-map.png';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
 
 const Home = () => {
   const [activeUnit, setActiveUnit] = useState(null);
@@ -60,6 +70,32 @@ const Home = () => {
       pressure: '28.67 MPa',
       temp: '178°C',
       power: '110 MW'
+    }
+  };
+
+  // Custom pin icon
+  const customIcon = new L.Icon({
+    iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#2563eb" width="40" height="40">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+      </svg>
+    `),
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40]
+  });
+
+  // Koordinat lokasi
+  const locations = {
+    kamojang: {
+      position: [-7.1485, 107.7947], // Kamojang, Jawa Barat
+      name: 'Kamojang Unit 5',
+      location: 'Jawa Barat'
+    },
+    ulubelu: {
+      position: [-5.0833, 104.5833], // Ulubelu, Lampung  
+      name: 'Ulubelu Unit 3',
+      location: 'Lampung'
     }
   };
 
@@ -148,8 +184,8 @@ const Home = () => {
                 </svg>
               </button>
               <div className="dropdown-content">
-                <a href="/kamojang">Kamojang Unit 5</a>
-                <a href="/ulubelu">Ulubelu Unit 3</a>
+                <a href="/login">Kamojang Unit 5</a>
+                <a href="#">Ulubelu Unit 3</a>
               </div>
             </div>
             
@@ -257,12 +293,12 @@ const Home = () => {
             </div>
             <div className="mission-button-container">
 
-            <button className="btn-read-more">
+            <a href="/misi-kami" className="btn-read-more">
               READ MORE
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="m9 18 6-6-6-6"/>
               </svg>
-            </button>
+            </a>
           </div>
           </div>
         </div>
@@ -399,95 +435,111 @@ const Home = () => {
           </div>
 
           <div className="map-container" ref={mapRef}>
-            {/* Background Map */}
-            <div className="map-background" style={{ backgroundImage: `url(${indonesiaMap})` }}>
-              <div className="globe-effect"></div>
+            <MapContainer
+              center={[-2.5, 118]}
+              zoom={5}
+              style={{ width: '100%', height: '100%', borderRadius: '16px' }}
+              zoomControl={true}
+              key="map-indonesia"
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              />
               
-              {/* Pin Kamojang */}
-              <div 
-                className={`map-pin kamojang-pin ${activeUnit === 'kamojang' ? 'active' : ''}`}
-                onClick={(e) => handlePinClick('kamojang', e)}
+              {/* Marker Kamojang */}
+              <Marker 
+                position={locations.kamojang.position} 
+                icon={customIcon}
+                eventHandlers={{
+                  click: () => setActiveUnit('kamojang')
+                }}
               >
-                <svg className="pin-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                </svg>
-              </div>
+                <Popup>
+                  <strong>{locations.kamojang.name}</strong><br />
+                  {locations.kamojang.location}
+                </Popup>
+              </Marker>
 
-              {/* Pin Ulubelu */}
-              <div 
-                className={`map-pin ulubelu-pin ${activeUnit === 'ulubelu' ? 'active' : ''}`}
-                onClick={(e) => handlePinClick('ulubelu', e)}
+              {/* Marker Ulubelu */}
+              <Marker 
+                position={locations.ulubelu.position} 
+                icon={customIcon}
+                eventHandlers={{
+                  click: () => setActiveUnit('ulubelu')
+                }}
               >
-                <svg className="pin-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                </svg>
-              </div>
+                <Popup>
+                  <strong>{locations.ulubelu.name}</strong><br />
+                  {locations.ulubelu.location}
+                </Popup>
+              </Marker>
+            </MapContainer>
 
-              {/* Monitoring Card - Pop up saat pin di-click */}
-              {activeUnit && (
+            {/* Monitoring Card - Pop up saat pin di-click */}
+            {activeUnit && (
+              <div 
+                ref={popupRef}
+                className="monitoring-popup-overlay"
+                onClick={() => setActiveUnit(null)}
+              >
                 <div 
-                  ref={popupRef}
-                  className="monitoring-popup" 
-                  style={{
-                    top: `${popupPosition.top}px`,
-                    left: `${popupPosition.left}px`
-                  }}
+                  className="monitoring-card-compact"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="monitoring-card-compact">
-                    <div className="popup-header">
-                      <div>
-                        <h3 className="monitoring-title">{units[activeUnit].name}</h3>
-                        <p className="monitoring-location">{units[activeUnit].location}</p>
-                      </div>
-                      <button className="btn-unit-dropdown">
-                        Unit 5
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                      </button>
+                  <div className="popup-header">
+                    <div>
+                      <h3 className="monitoring-title">{units[activeUnit].name}</h3>
+                      <p className="monitoring-location">{units[activeUnit].location}</p>
                     </div>
-
-                    <div className="metrics-grid-compact">
-                      <div className="metric-box-compact">
-                        <p className="metric-label-compact">Dryness Fraction</p>
-                        <p className="metric-value-compact">{units[activeUnit].dryness}</p>
-                      </div>
-                      <div className="metric-box-compact">
-                        <p className="metric-label-compact">TDS<br/><span>(Total Dissolve Solid)</span></p>
-                        <p className="metric-value-compact">{units[activeUnit].tds}</p>
-                      </div>
-                      <div className="metric-box-compact">
-                        <p className="metric-label-compact">NCG<br/><span>(Non Condensed Gas)</span></p>
-                        <p className="metric-value-compact">{units[activeUnit].ncg}</p>
-                      </div>
-                    </div>
-
-                    <div className="metrics-row-compact">
-                      <div className="metric-item-compact">
-                        <span className="metric-label-compact">Power</span>
-                        <span className="metric-value-compact">{units[activeUnit].power}</span>
-                      </div>
-                      <div className="metric-item-compact">
-                        <span className="metric-label-compact">Temp</span>
-                        <span className="metric-value-compact">{units[activeUnit].temp}</span>
-                      </div>
-                      <div className="metric-item-compact">
-                        <span className="metric-label-compact">Pressure</span>
-                        <span className="metric-value-compact">{units[activeUnit].pressure}</span>
-                      </div>
-                    </div>
-
-                    <a
-                      href={activeUnit === 'kamojang' ? '/login' : ''} //href to corespond pages
-                      className="btn-dashboard-compact"
-                      style={{ textDecoration: 'none', display: 'block' }}
-                    >
-                      Dashboard
-                    </a>
+                    <button className="btn-unit-dropdown">
+                      Unit 5
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </button>
                   </div>
+
+                  <div className="metrics-grid-compact">
+                    <div className="metric-box-compact">
+                      <p className="metric-label-compact">Dryness Fraction</p>
+                      <p className="metric-value-compact">{units[activeUnit].dryness}</p>
+                    </div>
+                    <div className="metric-box-compact">
+                      <p className="metric-label-compact">TDS<br/><span>(Total Dissolve Solid)</span></p>
+                      <p className="metric-value-compact">{units[activeUnit].tds}</p>
+                    </div>
+                    <div className="metric-box-compact">
+                      <p className="metric-label-compact">NCG<br/><span>(Non Condensed Gas)</span></p>
+                      <p className="metric-value-compact">{units[activeUnit].ncg}</p>
+                    </div>
+                  </div>
+
+                  <div className="metrics-row-compact">
+                    <div className="metric-item-compact">
+                      <span className="metric-label-compact">Power</span>
+                      <span className="metric-value-compact">{units[activeUnit].power}</span>
+                    </div>
+                    <div className="metric-item-compact">
+                      <span className="metric-label-compact">Temp</span>
+                      <span className="metric-value-compact">{units[activeUnit].temp}</span>
+                    </div>
+                    <div className="metric-item-compact">
+                      <span className="metric-label-compact">Pressure</span>
+                      <span className="metric-value-compact">{units[activeUnit].pressure}</span>
+                    </div>
+                  </div>
+
+                  <a
+                    href={activeUnit === 'kamojang' ? '/login' : '#'}
+                    className="btn-dashboard-compact"
+                    style={{ textDecoration: 'none', display: 'block' }}
+                  >
+                    Dashboard
+                  </a>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -506,6 +558,12 @@ const Home = () => {
               <p className="section-intro">
                 Kualitas dan kemurnian uap yang masuk ke turbin memiliki peran penting dalam menjaga efisiensi serta umur peralatan pembangkit. Uap yang mengandung kotoran atau kadar air berlebih dapat menurunkan performa turbin, menyebabkan korosi, dan meningkatkan biaya perawatan. Melalui sistem pemantauan kualitas uap secara real-time, potensi gangguan tersebut dapat diminimalkan, sehingga kinerja pembangkit tetap optimal dan berkelanjutan.
               </p>
+              <a href="/cara-kerja-pltp" className="btn-pltp-guide">
+                CARA KERJA PLTP
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </a>
             </div>
           </div>
 
@@ -525,20 +583,20 @@ const Home = () => {
                 <p className="quality-description">
                   TDS adalah perbandingan banyaknya zat padat dalam larutan/uap/cairan yang dinyatakan dalam persentase. TDS tinggi bisa menyebabkan carryover (terikutnya zat padat atau cairan dalam uap).
                 </p>
-                <button className="btn-quality-read-more">
+                <a href="/artikel-tds" className="btn-quality-read-more">
                   READ MORE
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
-                </button>
+                </a>
               </div>
             </div>
 
             <div className="quality-card">
               <div className="quality-image-container">
-                <img 
-                  src={drynessImage} 
-                  alt="Dryness Fraction" 
+                <img
+                  src={drynessImage}
+                  alt="Dryness Fraction"
                   className="quality-image"
                 />
               </div>
@@ -549,20 +607,20 @@ const Home = () => {
                 <p className="quality-description">
                   Dryness fraction adalah tingkat kadar air dalam uap yang dinyatakan dalam persentase. Banyaknya air dalam uap dapat menyebabkan korosi pada turbin
                 </p>
-                <button className="btn-quality-read-more">
+                <a href="/artikel-dryness" className="btn-quality-read-more">
                   READ MORE
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
-                </button>
+                </a>
               </div>
             </div>
 
             <div className="quality-card">
               <div className="quality-image-container">
-                <img 
-                  src={ncgImage} 
-                  alt="NCG - Non Condensed Gas" 
+                <img
+                  src={ncgImage}
+                  alt="NCG - Non Condensed Gas"
                   className="quality-image"
                 />
               </div>
@@ -573,12 +631,12 @@ const Home = () => {
                 <p className="quality-description">
                   NCG adalah gas yang tidak dapat dikondensasikan yang dinyatakan dalam persen. Contoh: CO₂, H₂S, dan gas lainnya.
                 </p>
-                <button className="btn-quality-read-more">
+                <a href="/artikel-ncg" className="btn-quality-read-more">
                   READ MORE
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -591,8 +649,8 @@ const Home = () => {
           <div className="footer-grid">
             <div className="footer-col">
               <div className="footer-logos">
-                <img src={pertaminaLogo} alt="Pertamina" className="footer-logo" />
-                <img src={unpadLogo} alt="UNPAD" className="footer-logo" />
+                <img src={pertasmartLogo} alt="Pertasmart" className="header-logo" />
+                {/* <img src={unpadLogo} alt="UNPAD" className="footer-logo" /> */}
               </div>
               <p className="footer-text">
                 Kolaborasi PT. Pertamina dan Universitas Padjadjaran dalam 
@@ -987,22 +1045,26 @@ const Home = () => {
         }
 
         .mission-button-container {
-          margin-top: 32px;
-          text-align: left;
+          display: flex;
+          align-items: flex-end;
+          justify-content: flex-start;
         }
 
         .btn-read-more {
           background: white;
           color: #2563eb;
           border: 2px solid #2563eb;
-          padding: 12px 32px;
+          padding: 6px 16px;
           border-radius: 50px;
           font-weight: 600;
+          font-size: 0.75rem;
           cursor: pointer;
           display: inline-flex;
           align-items: center;
-          gap: 8px;
+          justify-content: center;
+          gap: 4px;
           transition: all 0.3s ease;
+          white-space: nowrap;
         }
 
         .btn-read-more:hover {
@@ -1234,32 +1296,50 @@ const Home = () => {
           }
         }
 
-        /* Monitoring Popup */
-        .monitoring-popup {
-          position: absolute;
-          z-index: 100;
-          animation: popupFadeIn 0.3s ease;
-          pointer-events: auto;
+
+        /* Monitoring Popup Overlay */
+        .monitoring-popup-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1100;
+          animation: fadeIn 0.3s ease;
         }
 
-        @keyframes popupFadeIn {
+        @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        .monitoring-card-compact {
+          background: rgba(26, 38, 66, 0.98);
+          backdrop-filter: blur(20px);
+          border-radius: 16px;
+          padding: 24px;
+          width: 420px;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+          animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
           }
           to {
             opacity: 1;
             transform: translateY(0);
           }
-        }
-
-        .monitoring-card-compact {
-          background: rgba(26, 38, 66, 0.95);
-          backdrop-filter: blur(10px);
-          border-radius: 16px;
-          padding: 24px;
-          width: 420px;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
 
         .popup-header {
@@ -1456,22 +1536,55 @@ const Home = () => {
           margin-bottom: 16px;
           flex: 1;
         }
+          
+        .btn-pltp-guide {
+          background: white;
+          color: #2563eb;
+          border: 2px solid #2563eb;
+          padding: 10px 24px;
+          border-radius: 50px;
+          font-weight: 600;
+          font-size: 0.875rem;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.3s ease;
+          margin-top: 0px;
+          text-decoration: none;
+          white-space: nowrap;
+        }
+
+        .btn-pltp-guide:hover {
+          background: #2563eb;
+          color: white;
+        }
+
+        .btn-pltp-guide svg {
+          transition: transform 0.3s ease;
+        }
+
+        .btn-pltp-guide:hover svg {
+          transform: translateX(4px);
+        }
 
         .btn-quality-read-more {
           background: white;
           color: #2563eb;
           border: 2px solid #2563eb;
-          padding: 12px 24px;
+          padding: 6px 16px;
           border-radius: 50px;
           font-weight: 600;
+          font-size: 0.75rem;
           cursor: pointer;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
+          gap: 4px;
           transition: all 0.3s ease;
           margin-top: auto;
           align-self: flex-start;
+          white-space: nowrap;
         }
 
         .btn-quality-read-more:hover {
