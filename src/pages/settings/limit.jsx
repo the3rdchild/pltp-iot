@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardContent } from "/home/user/pltp/src/components/ui/card.jsx";
+import { Card, CardContent } from "../../src/components/ui/card.jsx";
 import {
   RadialBarChart,
   RadialBar,
