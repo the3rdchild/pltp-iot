@@ -2,7 +2,7 @@
 import { Typography, Box } from '@mui/material';
 
 // Import komponen Calibration yang sudah kamu taruh di components
-import Calibration from '/home/user/pltp/src/components/settings/Calibration.jsx';
+import Calibration from '../../components/settings/Calibration.jsx';
 
 // ==============================|| CALIBRATION PAGE ||============================== //
 
