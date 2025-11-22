@@ -539,7 +539,7 @@ const PTF = () => {
               />
             </Grid> */}
 
-            <Grid size={12}>
+            <Grid size={18}>
               <StatisticsTable
                 title="Tabel Data Statistik"
                 subtitle="Tabel data statistik yang telah diperoleh"
