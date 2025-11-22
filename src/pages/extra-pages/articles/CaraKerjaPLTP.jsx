@@ -1,16 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import reservoirImg from '/src/assets/images/articles/geothermal-reservoir.jpg';
+import productionWellImg from '/src/assets/images/articles/production-well.jpg';
+import turbineImg from '/src/assets/images/articles/turbine-generator.jpg';
+import coolingTowerImg from '/src/assets/images/articles/cooling-tower.jpg';
+import powerGridImg from '/src/assets/images/articles/power-grid.jpg';
 
 const CaraKerjaPLTP = () => {
   const navigate = useNavigate();
-  const [hoveredStep, setHoveredStep] = useState(null);
+  const [activeStep, setActiveStep] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const stepRefs = useRef([]);
 
   const steps = [
     {
       number: 1,
       title: "Sumber Panas Bumi (Reservoir)",
       description: "Di bawah permukaan bumi terdapat kantong uap panas alami dari aktivitas magma.",
-      image: "/src/assets/images/articles/geothermal-reservoir.jpg",
+      image: reservoirImg,
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 2v20M17 7l-5 5-5-5M7 13l5 5 5-5"/>
@@ -21,7 +28,7 @@ const CaraKerjaPLTP = () => {
       number: 2,
       title: "Produksi Uap",
       description: "Air tanah yang meresap ke dalam bumi dipanaskan oleh magma hingga berubah menjadi uap bertekanan tinggi. Uap ini kemudian dikeluarkan melalui sumur produksi (production well) menuju permukaan.",
-      image: "/src/assets/images/articles/production-well.jpg",
+      image: productionWellImg,
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 2L2 7l10 5 10-5-10-5z"/>
@@ -33,7 +40,7 @@ const CaraKerjaPLTP = () => {
       number: 3,
       title: "Pemanfaatan Uap di Pembangkit",
       description: "Uap panas tersebut dialirkan melalui pipa menuju turbin uap. Tekanan uap memutar turbin → turbin memutar generator → menghasilkan listrik.",
-      image: "/src/assets/images/articles/turbine-generator.jpg",
+      image: turbineImg,
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="12" cy="12" r="10"/>
@@ -46,7 +53,7 @@ const CaraKerjaPLTP = () => {
       number: 4,
       title: "Kondensasi & Injeksi Ulang",
       description: "Setelah melewati turbin, uap dikondensasikan menjadi air di kondensor. Air hasil kondensasi kemudian diinjeksikan kembali ke dalam bumi melalui sumur injeksi (injection well) agar siklus panas bumi berkelanjutan.",
-      image: "/src/assets/images/articles/cooling-tower.jpg",
+      image: coolingTowerImg,
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
@@ -57,7 +64,7 @@ const CaraKerjaPLTP = () => {
       number: 5,
       title: "Distribusi Listrik",
       description: "Listrik dari generator dinaikkan tegangannya oleh transformator, lalu disalurkan ke jaringan listrik PLN.",
-      image: "/src/assets/images/articles/power-grid.jpg",
+      image: powerGridImg,
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
@@ -65,6 +72,53 @@ const CaraKerjaPLTP = () => {
       )
     }
   ];
+
+  // Intersection Observer untuk detect active step
+  useEffect(() => {
+    const observers = stepRefs.current.map((ref, index) => {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              setActiveStep(index);
+            }
+          });
+        },
+        {
+          threshold: 0.6,
+          rootMargin: '-10% 0px -40% 0px'
+        }
+      );
+
+      if (ref) observer.observe(ref);
+      return observer;
+    });
+
+    return () => {
+      observers.forEach((observer) => observer.disconnect());
+    };
+  }, []);
+
+  // Calculate scroll progress
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = (scrollTop / docHeight) * 100;
+      setScrollProgress(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Scroll to specific step
+  const scrollToStep = (index) => {
+    stepRefs.current[index]?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+  };
 
   return (
     <div className="cara-kerja-page">
@@ -75,6 +129,29 @@ const CaraKerjaPLTP = () => {
         </svg>
         Kembali
       </button>
+
+      {/* Fixed Timeline Navigation */}
+      <div className="timeline-nav">
+        
+        
+
+        <div className="timeline-line-bg"></div>
+        <div 
+          className="timeline-line-progress" 
+          style={{ height: `${Math.min(scrollProgress, 80)}%` }}
+        ></div>
+        
+        {steps.map((step, index) => (
+          <div
+            key={step.number}
+            className={`timeline-dot ${activeStep === index ? 'active' : ''} ${activeStep > index ? 'completed' : ''}`}
+            onClick={() => scrollToStep(index)}
+            style={{ top: `${(index / (steps.length - 1)) * 80 + 10}%` }}
+          >
+            <span>{step.number}</span>
+          </div>
+        ))}
+      </div>
 
       {/* Hero Section */}
       <section className="hero">
@@ -103,46 +180,38 @@ const CaraKerjaPLTP = () => {
         <div className="container">
           <h2 className="section-title">Tahapan Proses PLTP</h2>
           
-          <div className="steps-timeline">
+          <div className="steps-content">
             {steps.map((step, index) => (
-              <div key={step.number}>
-                <div 
-                  className={`step-card ${index % 2 === 0 ? 'left' : 'right'} ${hoveredStep === index ? 'hovered' : ''}`}
-                  onMouseEnter={() => setHoveredStep(index)}
-                  onMouseLeave={() => setHoveredStep(null)}
-                >
+              <div 
+                key={step.number}
+                ref={(el) => (stepRefs.current[index] = el)}
+                className="step-item"
+              >
+                {/* Step Header */}
+                <div className="step-header">
                   <div className="step-number-badge">
                     <span>{step.number}</span>
                   </div>
-                  
-                  <div className="step-content">
-                    <div className="step-icon-container">
-                      {step.icon}
-                    </div>
-                    
-                    <div className="step-text">
-                      <h3 className="step-title">{step.title}</h3>
-                      <p className="step-description">{step.description}</p>
-                    </div>
-                    
-                    <div className="step-image-container">
-                      <img 
-                        src={step.image} 
-                        alt={step.title}
-                        className="step-image"
-                      />
-                    </div>
+                  <div className="step-icon-badge">
+                    {step.icon}
                   </div>
                 </div>
 
-                {/* Arrow between steps */}
-                {index < steps.length - 1 && (
-                  <div className="step-arrow">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 5v14M19 12l-7 7-7-7"/>
-                    </svg>
+                {/* Step Content */}
+                <div className="step-content-card">
+                  <div className="step-image-container">
+                    <img 
+                      src={step.image} 
+                      alt={step.title}
+                      className="step-image"
+                    />
                   </div>
-                )}
+                  
+                  <div className="step-text-content">
+                    <h3 className="step-title">{step.title}</h3>
+                    <p className="step-description">{step.description}</p>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -185,6 +254,7 @@ const CaraKerjaPLTP = () => {
           min-height: 100vh;
           background: #f8f9fa;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+          position: relative;
         }
 
         .back-button {
@@ -213,9 +283,81 @@ const CaraKerjaPLTP = () => {
           transform: translateX(-4px);
         }
 
+        /* Fixed Timeline Navigation */
+        .timeline-nav {
+          position: fixed;
+          left: 60px;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 999;
+          height: 80vh;
+          max-height: 600px;
+        }
+
+        .timeline-line-bg {
+          position: absolute;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 3px;
+          height: 80%;
+          background: #e0e0e0;
+          border-radius: 2px;
+          top: 10%;
+        }
+
+        .timeline-line-progress {
+          position: absolute;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 3px;
+          background: linear-gradient(180deg, #2563eb 0%, #f7941d 100%);
+          border-radius: 2px;
+          transition: height 0.1s ease-out;
+          top: 10%;
+        }
+
+        .timeline-dot {
+          position: absolute;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 40px;
+          height: 40px;
+          background: white;
+          border: 3px solid #e0e0e0;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-weight: 700;
+          color: #9ca3af;
+          font-size: 0.875rem;
+        }
+
+        .timeline-dot:hover {
+          transform: translate(-50%, -50%) scale(1.15);
+          border-color: #2563eb;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        .timeline-dot.completed {
+          background: #2563eb;
+          border-color: #2563eb;
+          color: white;
+        }
+
+        .timeline-dot.active {
+          background: #f7941d;
+          border-color: #f7941d;
+          color: white;
+          transform: translate(-50%, -50%) scale(1.2);
+          box-shadow: 0 4px 16px rgba(247, 148, 29, 0.4);
+        }
+
         .hero {
           position: relative;
-          height: 500px;
+          height: 300px;
           background: linear-gradient(135deg, #1a2642 0%, #2563eb 100%);
           display: flex;
           align-items: center;
@@ -266,7 +408,7 @@ const CaraKerjaPLTP = () => {
         }
 
         .intro-section {
-          padding: 80px 0 40px;
+          padding: 40px 0 0px;
           background: white;
         }
 
@@ -286,7 +428,7 @@ const CaraKerjaPLTP = () => {
         }
 
         .steps-section {
-          padding: 60px 0 80px;
+          padding: 0px 0 80px;
           background: #f8f9fa;
         }
 
@@ -298,112 +440,73 @@ const CaraKerjaPLTP = () => {
           margin-bottom: 60px;
         }
 
-        .steps-timeline {
-          max-width: 900px;
+        .steps-content {
+          max-width: 1000px;
           margin: 0 auto;
+          padding-left: 100px;
         }
 
-        .step-card {
-          position: relative;
-          margin-bottom: 40px;
-          opacity: 0;
-          animation: fadeInUp 0.6s ease forwards;
+        .step-item {
+          margin-bottom: 80px;
+          scroll-margin-top: 100px;
         }
 
-        .step-card.left {
-          animation-delay: 0.1s;
-        }
-
-        .step-card.right {
-          animation-delay: 0.2s;
-        }
-
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        .step-header {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          margin-bottom: 24px;
         }
 
         .step-number-badge {
-          position: absolute;
-          top: -20px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 60px;
-          height: 60px;
+          width: 56px;
+          height: 56px;
           background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 10;
-          box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+          box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
         }
 
         .step-number-badge span {
-          font-size: 1.75rem;
+          font-size: 1.5rem;
           font-weight: 700;
           color: white;
         }
 
-        .step-content {
-          background: white;
-          border-radius: 20px;
-          padding: 60px 40px 40px;
-          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-          transition: all 0.4s ease;
-          border: 3px solid transparent;
-        }
-
-        .step-card.hovered .step-content {
-          transform: translateY(-8px);
-          box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15);
-          border-color: #2563eb;
-        }
-
-        .step-icon-container {
-          width: 80px;
-          height: 80px;
+        .step-icon-badge {
+          width: 56px;
+          height: 56px;
           background: linear-gradient(135deg, #f7941d 0%, #f97316 100%);
-          border-radius: 16px;
+          border-radius: 12px;
           display: flex;
           align-items: center;
           justify-content: center;
-          margin: 0 auto 24px;
-          transition: transform 0.3s ease;
+          box-shadow: 0 8px 24px rgba(247, 148, 29, 0.3);
         }
 
-        .step-icon-container svg {
-          width: 40px;
-          height: 40px;
+        .step-icon-badge svg {
+          width: 28px;
+          height: 28px;
           color: white;
         }
 
-        .step-card.hovered .step-icon-container {
-          transform: scale(1.1) rotate(5deg);
+        .step-content-card {
+          background: white;
+          border-radius: 20px;
+          padding: 32px;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+          display: grid;
+          grid-template-columns: 550px 1fr;
+          gap: 32px;
+          align-items: center;
+          transition: all 0.3s ease;
         }
 
-        .step-text {
-          text-align: center;
-          margin-bottom: 32px;
-        }
-
-        .step-title {
-          font-size: 1.75rem;
-          font-weight: 700;
-          color: #1a2642;
-          margin-bottom: 16px;
-        }
-
-        .step-description {
-          font-size: 1rem;
-          color: #495057;
-          line-height: 1.8;
+        .step-content-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 20px 60px rgba(37, 99, 235, 0.12);
         }
 
         .step-image-container {
@@ -419,28 +522,25 @@ const CaraKerjaPLTP = () => {
           transition: transform 0.6s ease;
         }
 
-        .step-card.hovered .step-image {
+        .step-content-card:hover .step-image {
           transform: scale(1.05);
         }
 
-        .step-arrow {
-          display: flex;
-          justify-content: center;
-          margin: 20px 0;
+        .step-text-content {
+          padding: 8px;
         }
 
-        .step-arrow svg {
-          color: #2563eb;
-          animation: bounce 2s infinite;
+        .step-title {
+          font-size: 1.75rem;
+          font-weight: 700;
+          color: #1a2642;
+          margin-bottom: 16px;
         }
 
-        @keyframes bounce {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(10px);
-          }
+        .step-description {
+          font-size: 1rem;
+          color: #495057;
+          line-height: 1.8;
         }
 
         .summary-section {
@@ -507,7 +607,29 @@ const CaraKerjaPLTP = () => {
           transition: color 0.3s ease;
         }
 
+        @media (max-width: 1024px) {
+          .timeline-nav {
+            left: 30px;
+          }
+
+          .steps-content {
+            padding-left: 60px;
+          }
+
+          .step-content-card {
+            grid-template-columns: 1fr;
+          }
+        }
+
         @media (max-width: 768px) {
+          .timeline-nav {
+            display: none;
+          }
+
+          .steps-content {
+            padding-left: 0;
+          }
+
           .hero-title {
             font-size: 2rem;
           }
@@ -520,8 +642,12 @@ const CaraKerjaPLTP = () => {
             font-size: 1.75rem;
           }
 
-          .step-content {
-            padding: 50px 24px 24px;
+          .step-header {
+            justify-content: center;
+          }
+
+          .step-content-card {
+            padding: 24px;
           }
 
           .step-title {

@@ -1,0 +1,23 @@
+{
+    "steamQuality": {
+      "min": 85,
+      "max": 100,
+      "anomaly_step": 2
+    },
+    "tds": {
+      "min": 0,
+      "max": 50,
+      "anomaly_step": 5
+    },
+    "ncg": {
+      "min": 0.1,
+      "max": 3.5,
+      "anomaly_step": 0.3
+    },
+    "dryness": {
+      "min": 0.8,
+      "max": 1,
+      "anomaly_step": 0.05
+    }
+  }
+  
