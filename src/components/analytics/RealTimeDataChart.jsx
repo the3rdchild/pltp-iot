@@ -532,7 +532,7 @@ const RealTimeDataChart = ({
       {showComparisonData && statsData.length > 0 && (
         <Grid container spacing={2} sx={{ mb: 2 }}>
           {statsData.map((stat, index) => (
-            <Grid item mt={2} xs={6} sm={3} key={index}>
+            <Grid size={{ mt: 2, xs: 6, sm:3 }} key={index}>
               <Box
                 sx={{
                   p: 1.5,

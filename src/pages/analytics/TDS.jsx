@@ -127,7 +127,7 @@ const TDS = () => {
             }}
           >
             {/* Top row: 5 gauge cards */}
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
               <MainCard
                 sx={{
                   display: 'flex',
@@ -170,7 +170,7 @@ const TDS = () => {
               </MainCard>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
               <MainCard
                 sx={{
                   display: 'flex',
@@ -198,7 +198,7 @@ const TDS = () => {
               </MainCard>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
               <MainCard
                 sx={{
                   display: 'flex',
@@ -226,7 +226,7 @@ const TDS = () => {
               </MainCard>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
               <MainCard
                 sx={{
                   display: 'flex',
@@ -254,7 +254,7 @@ const TDS = () => {
               </MainCard>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
               <MainCard
                 sx={{
                   display: 'flex',
@@ -284,7 +284,7 @@ const TDS = () => {
 
             {/* small cards */}
             {cardData.map((card, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index} sx={{ display: 'flex' }}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index} sx={{ display: 'flex' }}>
                 <StatCard
                   title={card.title}
                   value={card.value}
@@ -298,7 +298,7 @@ const TDS = () => {
               </Grid>
             ))}
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <RealTimeDataChart
                 title="Real Time Data"
                 subtitle="TDS Overall level data chart"
@@ -308,7 +308,7 @@ const TDS = () => {
               />
             </Grid>
 
-            {/* <Grid item xs={12}>
+            {/* <Grid size={12}>
               <HistoryComparisonChart
                 title="History Data & Perbandingan"
                 subtitle="Grafik TDS history data dan perbandingan"
@@ -319,7 +319,7 @@ const TDS = () => {
               />
             </Grid> */}
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <StatisticsTable
                 title="Tabel Data Statistik"
                 subtitle="Tabel data statistik yang telah diperoleh"

@@ -127,7 +127,7 @@ const Dryness = () => {
             }}
           >
             {/* Left big gauge card */}
-            <Grid item xs={12} md={3} sx={{ display: 'flex' }}>
+            <Grid size={{ xs: 12, md: 3 }} sx={{ display: 'flex' }}>
             <MainCard
               sx={{
                 display: 'flex',
@@ -183,7 +183,7 @@ const Dryness = () => {
       
             {/* small cards */}
             {cardData.map((card, index) => (
-              <Grid item xs={12} sm={6} md={2.25} key={index} sx={{ display: 'flex' }}>
+              <Grid size={{ xs: 12, sm: 6, md: 2.25 }} key={index} sx={{ display: 'flex' }}>
                 <StatCard
                   title={card.title}
                   value={card.value}
@@ -197,7 +197,7 @@ const Dryness = () => {
               </Grid>
             ))}
       
-            <Grid item xs={12} sx={{ mt: { xs: 0, lg: -5 } }}>
+            <Grid size={12} sx={{ mt: { xs: 0, lg: -5 } }}>
               <RealTimeDataChart
                 title="Real Time Data"
                 subtitle="Dryness level data chart monthly"
@@ -208,7 +208,7 @@ const Dryness = () => {
               />
             </Grid>
 
-            {/* <Grid item xs={12}>
+            {/* <Grid size={12}>
               <HistoryComparisonChart
                 title="History Data & Perbandingan"
                 subtitle="Grafik dryness history data dan perbandingan"
@@ -217,7 +217,7 @@ const Dryness = () => {
               />
             </Grid> */}
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <StatisticsTable
                 title="Tabel Data Statistik"
                 subtitle="Tabel data statistik yang telah diperoleh"

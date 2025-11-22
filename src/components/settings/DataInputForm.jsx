@@ -140,29 +140,29 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
         </Box>
 
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={2}>
+          <Grid size={{ xs: 12, md: 2}}>
             <TextField fullWidth size="small" variant="outlined" label="Pressure (Barg)" name="pressure" value={form.pressure} onChange={handleNumberChange} />
           </Grid>
 
-          <Grid item xs={12} md={2}>
+          <Grid size={{ xs: 12, md: 2}}>
             <TextField fullWidth size="small" variant="outlined" label="Temperature (°C)" name="temperature" value={form.temperature} onChange={handleNumberChange} />
           </Grid>
 
-          <Grid item xs={12} md={2}>
+          <Grid size={{ xs: 12, md: 2}}>
             <TextField fullWidth size="small" variant="outlined" label="Flow (t/h)" name="flow" value={form.flow} onChange={handleNumberChange} />
           </Grid>
 
-          <Grid item xs={12} md={2}>
+          <Grid size={{ xs: 12, md: 2}}>
             <TextField fullWidth size="small" variant="outlined" label="TDS (ppm)" name="tds" value={form.tds} onChange={handleNumberChange} />
           </Grid>
 
-          <Grid item xs={12} md={2}>
+          <Grid size={{ xs: 12, md: 2}}>
             <TextField fullWidth size="small" variant="outlined" label="NCG" name="ncg" value={form.ncg} onChange={handleNumberChange} />
           </Grid>
 
-          <Grid item xs={12} md={12} />
+          <Grid size={{ xs:12, md: 12}} />
 
-          <Grid item xs={12} md={8}>
+          <Grid size={{ xs:12, md:8 }}>
             <Typography variant="subtitle2" gutterBottom>Dryness (%)</Typography>
             <Stack direction="row" spacing={1} flexWrap="wrap">
               {/* Pill-like editable inputs */}
@@ -173,7 +173,7 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
             </Stack>
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          <Grid size={{ xs:12, md:4 }}>
             
             <Box display="flex" justifyContent={{ xs: 'flex-start', md: 'flex-end' }} alignItems="center" gap={2}>
               

@@ -263,7 +263,7 @@ const HistoryComparisonChart = ({
       {/* Bottom Stats Cards */}
       <Grid container spacing={2} sx={{ mt: 2 }}>
         {statsData.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={3} key={index}>
+          <Grid size={{ xs:12, sm:6, md:3 }} key={index}>
             <Box
               sx={{
                 p: 2,

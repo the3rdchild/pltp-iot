@@ -57,7 +57,7 @@ const Dryness = () => {
           minHeight: { lg: '640px' },
         }}
       >
-        <Grid item xs={12}>
+        <Grid size={{ xs:12 }}>
           <DataInputForm
             title="Grafik perbandingan dryness & prediksi AI"
             subtitle="Grafik perbandingan dryness & prediksi AI"
@@ -66,14 +66,14 @@ const Dryness = () => {
           />
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={{ xs:12 }}>
           <HistoryComparisonChart
             title="Tabel Hasil Input"
             subtitle="Input hasil data yang diperoleh"
           />
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={{ xs:12 }}>
           <StatisticsTable
             title="Tabel Hasil Input"
             subtitle="Input hasil data yang diperoleh"

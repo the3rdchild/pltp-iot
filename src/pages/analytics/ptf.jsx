@@ -315,7 +315,7 @@ const PTF = () => {
             
             {/* --- PRESSURE ROW --- */}
             {/* 1. Pressure Gauge MainCard (Takes up 4 columns) */}
-            <Grid item xs={12} lg={2.5} sx={{ display: 'flex' }}>
+            <Grid size={{ xs: 12, lg: 2.5 }} sx={{ display: 'flex' }}>
                 <MainCard
                     sx={{
                     display: 'flex',
@@ -368,7 +368,7 @@ const PTF = () => {
 
             {/* 2. Pressure Stats (Each takes 2 columns = 8 columns total) */}
             {pressureCardData.map((card, index) => (
-              <Grid item xs={12} sm={6} lg={2.37} key={`pressure-${index}`} sx={{ display: 'flex' }}>
+              <Grid size={{ xs: 12, sm: 6, lg: 2.37 }} key={`pressure-${index}`} sx={{ display: 'flex' }}>
                 <StatCard
                   title={card.title}
                   value={card.value}
@@ -385,7 +385,7 @@ const PTF = () => {
 
             {/* --- TEMPERATURE ROW --- */}
              {/* 1. Temperature Gauge MainCard */}
-             <Grid item xs={12} lg={2.5} sx={{ display: 'flex' }}>
+             <Grid size={{ xs: 12, lg: 2.5 }} sx={{ display: 'flex' }}>
                 <MainCard
                     sx={{
                     display: 'flex',
@@ -435,7 +435,7 @@ const PTF = () => {
 
             {/* 2. Temperature Stats */}
             {temperatureCardData.map((card, index) => (
-              <Grid item xs={12} sm={6} lg={2.37} key={`temperature-${index}`} sx={{ display: 'flex' }}>
+              <Grid size={{ xs: 12, sm: 6, lg: 2.37 }} key={`temperature-${index}`} sx={{ display: 'flex' }}>
                 <StatCard
                   title={card.title}
                   value={card.value}
@@ -452,7 +452,7 @@ const PTF = () => {
 
             {/* --- FLOW ROW --- */}
             {/* 1. Flow Gauge MainCard */}
-            <Grid item xs={12} lg={2.5} sx={{ display: 'flex' }}>
+            <Grid size={{ xs: 12, lg: 2.5 }} sx={{ display: 'flex' }}>
                 <MainCard
                     sx={{
                     display: 'flex',
@@ -502,7 +502,7 @@ const PTF = () => {
 
             {/* 2. Flow Stats */}
             {flowCardData.map((card, index) => (
-              <Grid item xs={12} sm={6} lg={2.37} key={`flow-${index}`} sx={{ display: 'flex' }}>
+              <Grid size={{ xs: 12, sm: 6, lg: 2.37 }} key={`flow-${index}`} sx={{ display: 'flex' }}>
                 <StatCard
                   title={card.title}
                   value={card.value}
@@ -517,14 +517,14 @@ const PTF = () => {
             ))}
 
             {/* --- CHARTS & TABLES --- */}
-            <Grid item xs={12}>
+            <Grid size={12}>
               <PTFChart
                 title="PTF Real Time Data"
                 subtitle="Pressure, Temperature, Flow data chart"
               />
             </Grid>
 
-            {/* <Grid item xs={12}>
+            {/* <Grid size={12}>
               <HistoryComparisonChart
                 title="History Data & Perbandingan"
                 subtitle="Grafik history data dan perbandingan"
@@ -539,7 +539,7 @@ const PTF = () => {
               />
             </Grid> */}
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <StatisticsTable
                 title="Tabel Data Statistik"
                 subtitle="Tabel data statistik yang telah diperoleh"
