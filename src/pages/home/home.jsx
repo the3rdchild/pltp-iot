@@ -436,15 +436,15 @@ const Home = () => {
 
           <div className="map-container" ref={mapRef}>
             <MapContainer
-              center={[-2.5, 118]}
-              zoom={5}
+              center={[-6.108576, 105.761136]}
+              zoom={8}
               style={{ width: '100%', height: '100%', borderRadius: '16px' }}
               zoomControl={true}
               key="map-indonesia"
             >
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                // attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               />
               
               {/* Marker Kamojang */}
