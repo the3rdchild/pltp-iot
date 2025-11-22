@@ -174,8 +174,19 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
           </Grid>
 
           <Grid item xs={12} md={4}>
+            
             <Box display="flex" justifyContent={{ xs: 'flex-start', md: 'flex-end' }} alignItems="center" gap={2}>
-              <TextField size="small" type="datetime-local" name="datetimeLocal" value={toDatetimeLocalValue(form.dateObj)} onChange={handleDateTimeLocalChange} InputLabelProps={{ shrink: true }} sx={{ minWidth: 260 }} inputProps={{ step: 1 }} helperText="YYYY-MM-DDTHH:MM:SS" />
+              
+              <TextField 
+              size="small" 
+              type="datetime-local" 
+              name="datetimeLocal" 
+              value={toDatetimeLocalValue(form.dateObj)} 
+              onChange={handleDateTimeLocalChange} 
+              InputLabelProps={{ shrink: true }} 
+              sx={{ minWidth: 260 }} 
+              inputProps={{ step: 1 }} 
+              helperText="YYYY-MM-DD HH:MM:SS" />
 
               <TextField 
               size="small" 
@@ -189,6 +200,7 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
               <Button variant="contained" size="medium" onClick={handleSave} sx={{ minWidth: 120 }}>Save</Button>
             </Box>
           </Grid>
+
         </Grid>
       </CardContent>
     </Card>
