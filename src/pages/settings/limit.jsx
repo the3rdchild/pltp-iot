@@ -4,7 +4,7 @@ import SettingsHeader from '../../components/settings/SettingsHeader.jsx';
 import LimitRender from '../../components/settings/LimitRender.jsx';
 
 // Import the initial limit data
-import initialLimitData from '../../components/settings/Limit.json';
+import initialLimitData from '../../data/Limit.json';
 
 // ==============================|| LIMIT SETTINGS PAGE ||============================== //
 

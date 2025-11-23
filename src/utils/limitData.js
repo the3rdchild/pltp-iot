@@ -1,5 +1,5 @@
 // Utility to get limit data from localStorage or fall back to defaults
-import defaultLimitData from '../components/settings/Limit.json';
+import defaultLimitData from '../data/Limit.json';
 
 export const getLimitData = () => {
   try {
