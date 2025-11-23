@@ -194,7 +194,7 @@ const OutputCalibrationCard = ({ paramKey, config, onChange }) => {
       <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
         Zero/Span Adjustment
       </Typography>
-      <Grid container spacing={2}>
+      <Grid container spacing={5}>
         <Grid size={6}>
           <Typography variant="body2" color="textSecondary" gutterBottom>
             Zero Offset: {(config.zeroOffset * 100).toFixed(1)}%
