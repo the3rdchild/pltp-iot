@@ -70,7 +70,7 @@ const ParameterCard = ({ paramKey, data, onChange }) => {
 
       <Grid container spacing={2}>
         {/* Unit field */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <TextField
             fullWidth
             size="small"
@@ -81,7 +81,7 @@ const ParameterCard = ({ paramKey, data, onChange }) => {
         </Grid>
 
         {/* Min/Max Row */}
-        <Grid item xs={6}>
+        <Grid size={6}>
           <TextField
             fullWidth
             size="small"
@@ -94,7 +94,7 @@ const ParameterCard = ({ paramKey, data, onChange }) => {
             }}
           />
         </Grid>
-        <Grid item xs={6}>
+        <Grid size={6}>
           <TextField
             fullWidth
             size="small"
@@ -110,7 +110,7 @@ const ParameterCard = ({ paramKey, data, onChange }) => {
 
         {/* Threshold fields */}
         {data.abnormalLow !== undefined && (
-          <Grid item xs={6}>
+          <Grid size={6}>
             <TextField
               fullWidth
               size="small"
@@ -132,7 +132,7 @@ const ParameterCard = ({ paramKey, data, onChange }) => {
         )}
 
         {data.warningLow !== undefined && (
-          <Grid item xs={6}>
+          <Grid size={6}>
             <TextField
               fullWidth
               size="small"
@@ -154,7 +154,7 @@ const ParameterCard = ({ paramKey, data, onChange }) => {
         )}
 
         {data.idealLow !== undefined && (
-          <Grid item xs={6}>
+          <Grid size={6}>
             <TextField
               fullWidth
               size="small"
@@ -176,7 +176,7 @@ const ParameterCard = ({ paramKey, data, onChange }) => {
         )}
 
         {data.idealHigh !== undefined && (
-          <Grid item xs={6}>
+          <Grid size={6}>
             <TextField
               fullWidth
               size="small"
@@ -198,7 +198,7 @@ const ParameterCard = ({ paramKey, data, onChange }) => {
         )}
 
         {data.warningHigh !== undefined && (
-          <Grid item xs={6}>
+          <Grid size={6}>
             <TextField
               fullWidth
               size="small"
@@ -220,7 +220,7 @@ const ParameterCard = ({ paramKey, data, onChange }) => {
         )}
 
         {data.abnormalHigh !== undefined && (
-          <Grid item xs={6}>
+          <Grid size={6}>
             <TextField
               fullWidth
               size="small"
@@ -323,25 +323,25 @@ const LimitSettings = () => {
           Threshold Legend
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box sx={{ width: 16, height: 16, bgcolor: '#ef4444', borderRadius: 1 }} />
               <Typography variant="body2">Abnormal (Red Zone)</Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box sx={{ width: 16, height: 16, bgcolor: '#f59e0b', borderRadius: 1 }} />
               <Typography variant="body2">Warning (Yellow Zone)</Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box sx={{ width: 16, height: 16, bgcolor: '#22c55e', borderRadius: 1 }} />
               <Typography variant="body2">Ideal (Green Zone)</Typography>
             </Box>
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Box sx={{ width: 16, height: 16, bgcolor: '#94a3b8', borderRadius: 1 }} />
               <Typography variant="body2">Min/Max (Range)</Typography>
@@ -388,7 +388,7 @@ const LimitSettings = () => {
           {/* Parameter Cards - max 3 per row */}
           <Grid container spacing={3}>
             {section.parameters.map((paramKey) => (
-              <Grid item xs={12} sm={6} md={4} key={paramKey}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={paramKey}>
                 <ParameterCard
                   paramKey={paramKey}
                   data={limitData[paramKey]}
