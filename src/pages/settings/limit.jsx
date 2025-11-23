@@ -12,6 +12,7 @@ import {
 import MainCard from 'components/MainCard';
 import SaveIcon from '@mui/icons-material/Save';
 import RestoreIcon from '@mui/icons-material/Restore';
+import SettingsHeader from '../../components/settings/SettingsHeader.jsx'
 
 // Import the initial limit data
 import initialLimitData from '../../components/settings/Limit.json';
@@ -309,9 +310,7 @@ const LimitSettings = () => {
     <Box>
       {/* Header */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: 600, color: 'text.primary' }}>
-          Limit Settings
-        </Typography>
+        <SettingsHeader title="Limit" subtitle="Settings" />
         <Typography variant="body1" color="textSecondary" sx={{ mt: 1 }}>
           Configure threshold limits for all sensor parameters. Changes will affect gauge displays across all pages.
         </Typography>

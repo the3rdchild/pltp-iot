@@ -2,9 +2,9 @@
 import { Grid, Box, Typography, useTheme } from '@mui/material';
 import { useState, useEffect } from 'react';
 import { generateAnalyticData } from 'data/simulasi';
+import SettingsHeader from '../../components/settings/SettingsHeader'
 
 import {
-  AnalyticsHeader,
   HistoryComparisonChart,
   StatisticsTable
 } from '../../components/analytics';
@@ -48,7 +48,7 @@ const Dryness = () => {
 
   return (
     <Box>
-      <AnalyticsHeader title="Manual Data Input" subtitle="Settings" />
+      <SettingsHeader title="Manual Data Input" subtitle="Settings" />
       <Grid
         container
         spacing={3}
