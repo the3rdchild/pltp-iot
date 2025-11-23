@@ -31,7 +31,7 @@ const SECTIONS = [
     parameters: ['dryness', 'ncg']
   },
   {
-    title: 'Process Parameters',
+    title: 'Pipe Parameters',
     description: 'Configure limits for pressure, temperature, and flow',
     parameters: ['pressure', 'temperature', 'flow']
   }
