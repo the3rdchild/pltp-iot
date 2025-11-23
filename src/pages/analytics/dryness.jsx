@@ -5,6 +5,8 @@ import { generateAnalyticData } from 'data/simulasi';
 
 import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
+import limitData from "../../components/settings/Limit.json";
+
 import {
   AnalyticsHeader,
   StatCard,
@@ -164,8 +166,8 @@ const Dryness = () => {
                 <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
                   <GaugeChart
                     value={dryness}
-                    min={95}
-                    max={99.9}
+                    min={limitData.dryness.min}
+                    max={limitData.dryness.max}
                     unit="%"
                     abnormalLow={95}
                     warningLow={98}

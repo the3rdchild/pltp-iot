@@ -1,22 +1,17 @@
-// material-ui
 import { Typography, Box } from '@mui/material';
+// ==============================|| BLANK PAGE ||============================== //
 
-// Import komponen Calibration yang sudah kamu taruh di components
-import Calibration from '../../components/settings/Calibration.jsx';
-
-// ==============================|| CALIBRATION PAGE ||============================== //
-
-const CalibrationPage = () => {
+const Dryness = () => {
   return (
     <Box>
       <Typography variant="h4" sx={{ mb: 2 }}>
-        Settings - Calibration
+        Calibration page
       </Typography>
-
-      {/* Render komponen Calibration */}
-      <Calibration />
+      <Typography>
+        This is a blank canvas. This page is under construction.
+      </Typography>
     </Box>
   );
 };
 
-export default CalibrationPage;
+export default Dryness;
