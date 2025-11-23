@@ -6,6 +6,7 @@ import { PTFChart } from '../../components/analytics';
 
 import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
+import { getLimitData } from '../../utils/limitData';
 import {
   AnalyticsHeader,
   StatCard,
@@ -41,6 +42,7 @@ const PTF = () => {
     const [temperatureChangePct, setTemperatureChangePct] = useState(null);
     const [flowChangePct, setFlowChangePct] = useState(null);
     const [selectedMetric, setSelectedMetric] = useState('pressure'); // 'pressure', 'temperature', 'flow'
+    const limitData = getLimitData();
 
     useEffect(() => {
       const prevPressureRef = { current: null };
@@ -349,15 +351,15 @@ const PTF = () => {
                     <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
                         <GaugeChart
                         value={pressure}
-                        min={322}
-                        max={1678}
-                        unit="kPa"
-                        abnormalLow={333}
-                        warningLow={444}
-                        idealLow={1000}
-                        idealHigh={1400}
-                        warningHigh={1600}
-                        abnormalHigh={1667}
+                        min={limitData.pressure.min}
+                        max={limitData.pressure.max}
+                        unit={limitData.pressure.unit}
+                        abnormalLow={limitData.pressure.abnormalLow}
+                        warningLow={limitData.pressure.warningLow}
+                        idealLow={limitData.pressure.idealLow}
+                        idealHigh={limitData.pressure.idealHigh}
+                        warningHigh={limitData.pressure.warningHigh}
+                        abnormalHigh={limitData.pressure.abnormalHigh}
                         changePct={pressureChangePct}
                         withCard={false}
                         sx={{ width: '100%', maxWidth: 360 }}
@@ -416,15 +418,15 @@ const PTF = () => {
                     <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
                         <GaugeChart
                         value={temperature}
-                        min={100}
-                        max={200}
-                        unit="°C"
-                        abnormalLow={105}
-                        warningLow={120}
-                        idealLow={135}
-                        idealHigh={165}
-                        warningHigh={180}
-                        abnormalHigh={195}
+                        min={limitData.temperature.min}
+                        max={limitData.temperature.max}
+                        unit={limitData.temperature.unit}
+                        abnormalLow={limitData.temperature.abnormalLow}
+                        warningLow={limitData.temperature.warningLow}
+                        idealLow={limitData.temperature.idealLow}
+                        idealHigh={limitData.temperature.idealHigh}
+                        warningHigh={limitData.temperature.warningHigh}
+                        abnormalHigh={limitData.temperature.abnormalHigh}
                         changePct={temperatureChangePct}
                         withCard={false}
                         sx={{ width: '100%', maxWidth: 360 }}
@@ -483,15 +485,15 @@ const PTF = () => {
                     <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
                         <GaugeChart
                         value={flow}
-                        min={200}
-                        max={300}
-                        unit="t/h"
-                        abnormalLow={210}
-                        warningLow={220}
-                        idealLow={225}
-                        idealHigh={265}
-                        warningHigh={270}
-                        abnormalHigh={285}
+                        min={limitData.flow.min}
+                        max={limitData.flow.max}
+                        unit={limitData.flow.unit}
+                        abnormalLow={limitData.flow.abnormalLow}
+                        warningLow={limitData.flow.warningLow}
+                        idealLow={limitData.flow.idealLow}
+                        idealHigh={limitData.flow.idealHigh}
+                        warningHigh={limitData.flow.warningHigh}
+                        abnormalHigh={limitData.flow.abnormalHigh}
                         changePct={flowChangePct}
                         withCard={false}
                         sx={{ width: '100%', maxWidth: 360 }}

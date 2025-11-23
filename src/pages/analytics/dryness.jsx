@@ -5,7 +5,7 @@ import { generateAnalyticData } from 'data/simulasi';
 
 import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
-import limitData from "../../components/settings/Limit.json";
+import { getLimitData } from '../../utils/limitData';
 
 import {
   AnalyticsHeader,
@@ -25,6 +25,7 @@ const Dryness = () => {
     const theme = useTheme();
     const [analyticData, setAnalyticData] = useState(null);
     const [changePct, setChangePct] = useState(null);
+    const limitData = getLimitData();
 
 
     useEffect(() => {
@@ -168,13 +169,13 @@ const Dryness = () => {
                     value={dryness}
                     min={limitData.dryness.min}
                     max={limitData.dryness.max}
-                    unit="%"
-                    abnormalLow={95}
-                    warningLow={98}
-                    idealLow={100}
-                    idealHigh={100}
-                    warningHigh={100}
-                    abnormalHigh={100}
+                    unit={limitData.dryness.unit}
+                    abnormalLow={limitData.dryness.abnormalLow}
+                    warningLow={limitData.dryness.warningLow}
+                    idealLow={limitData.dryness.idealLow}
+                    idealHigh={limitData.dryness.idealHigh}
+                    warningHigh={limitData.dryness.warningHigh}
+                    abnormalHigh={limitData.dryness.abnormalHigh}
                     changePct={changePct}
                     withCard={false}
                     sx={{ width: '100%', maxWidth: 360 }}

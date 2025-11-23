@@ -1,23 +1,105 @@
 {
-    "steamQuality": {
-      "min": 85,
-      "max": 100,
-      "anomaly_step": 2
-    },
-    "tds": {
+    "TDS: Overall": {
+      "value": "tds",
       "min": 0,
-      "max": 50,
-      "anomaly_step": 5
+      "max": 10,
+      "unit": "ppm",
+      "idealHigh": 0,
+      "warningHigh": 6,
+      "abnormalHigh": 10
     },
-    "ncg": {
-      "min": 0.1,
-      "max": 3.5,
-      "anomaly_step": 0.3
+    "tdsCO2": {
+      "value": "tdsCO2",
+      "min": 0,
+      "max": 5,
+      "unit": "ppm",
+      "idealHigh": 0,
+      "warningHigh": 1,
+      "abnormalHigh": 5
+    },
+    "tdsArgon": {
+      "value": "tdsArgon",
+      "min": 0,
+      "max": 2,
+      "unit": "ppm",
+      "idealHigh": 0,
+      "warningHigh": 1.2,
+      "abnormalHigh": 2
+    },
+    "tdsMethane": {
+      "value": "tdsMethane",
+      "min": 0,
+      "max": 1.5,
+      "unit": "ppm",
+      "idealHigh": 0,
+      "warningHigh": 0.5,
+      "abnormalHigh": 1
+    },
+    "tdsMA3": {
+      "value": "tdsMA3",
+      "min": 0,
+      "max": 1,
+      "unit": "ppm",
+      "idealHigh": 0,
+      "warningHigh": 0.6,
+      "abnormalHigh": 1
     },
     "dryness": {
-      "min": 0.8,
-      "max": 1,
-      "anomaly_step": 0.05
+      "value": "dryness",
+      "min": 95,
+      "max": 99.9,
+      "unit": "%",
+      "abnormalLow": 95,
+      "warningLow": 98,
+      "idealLow": 100,
+      "idealHigh": 100,
+      "warningHigh": 100,
+      "abnormalHigh": 100
+    },
+    "ncg": {
+      "value": "ncg",
+      "min": 0,
+      "max": 10,
+      "unit": "wt%",
+      "idealHigh": 0,
+      "warningHigh": 5,
+      "abnormalHigh": 10
+    },
+    "pressure": {
+      "value": "pressure",
+      "min": 322,
+      "max": 1678,
+      "unit": "kPa",
+      "abnormalLow": 333,
+      "warningLow": 444,
+      "idealLow": 1000,
+      "idealHigh": 1400,
+      "warningHigh": 1600,
+      "abnormalHigh": 1667
+    },
+    "temperature": {
+      "value": "temperature",
+      "min": 100,
+      "max": 200,
+      "unit": "°C",
+      "abnormalLow": 105,
+      "warningLow": 120,
+      "idealLow": 135,
+      "idealHigh": 165,
+      "warningHigh": 180,
+      "abnormalHigh": 195
+    },
+    "flow": {
+      "value": "flow",
+      "min": 200,
+      "max": 300,
+      "unit": "t/h",
+      "abnormalLow": 210,
+      "warningLow": 220,
+      "idealLow": 225,
+      "idealHigh": 265,
+      "warningHigh": 270,
+      "abnormalHigh": 285
     }
   }
   

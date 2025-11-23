@@ -19,6 +19,7 @@ import { getRiskPrediction } from 'data/riskprediction';
 import GaugeChart from '../../components/GaugeChart';
 import MetricCard from 'components/cards/MetricCard';
 import MainCard from 'components/MainCard';
+import { getLimitData } from '../../utils/limitData';
 
 // Image import
 import mainImage from './image/main.png';
@@ -58,6 +59,7 @@ export default function DashboardDefault() {
   const [analyticData, setAnalyticData] = useState(null);
   const [riskPrediction, setRiskPrediction] = useState('Ideal');
   const [scale, setScale] = useState(1);
+  const limitData = getLimitData();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -290,12 +292,12 @@ export default function DashboardDefault() {
             <GaugeChart
               label="TDS: Overall"
               value={tds}
-              min={0}
-              max={10}
-              unit="ppm"
-              idealHigh={0}
-              warningHigh={6}
-              abnormalHigh={10}
+              min={limitData["TDS: Overall"].min}
+              max={limitData["TDS: Overall"].max}
+              unit={limitData["TDS: Overall"].unit}
+              idealHigh={limitData["TDS: Overall"].idealHigh}
+              warningHigh={limitData["TDS: Overall"].warningHigh}
+              abnormalHigh={limitData["TDS: Overall"].abnormalHigh}
               linkTo="/tds"
               titleConfig={TITLE_CONFIG}
             />
@@ -307,15 +309,15 @@ export default function DashboardDefault() {
             <GaugeChart
               label="Dryness Fractions"
               value={dryness}
-              min={95}
-              max={99.9}
-              unit="%"
-              abnormalLow={95}
-              warningLow={98}
-              idealLow={100}
-              idealHigh={100}
-              warningHigh={100}
-              abnormalHigh={100}
+              min={limitData.dryness.min}
+              max={limitData.dryness.max}
+              unit={limitData.dryness.unit}
+              abnormalLow={limitData.dryness.abnormalLow}
+              warningLow={limitData.dryness.warningLow}
+              idealLow={limitData.dryness.idealLow}
+              idealHigh={limitData.dryness.idealHigh}
+              warningHigh={limitData.dryness.warningHigh}
+              abnormalHigh={limitData.dryness.abnormalHigh}
               linkTo="/dryness"
               titleConfig={TITLE_CONFIG}
             />
@@ -327,12 +329,12 @@ export default function DashboardDefault() {
             <GaugeChart
               label="NCG"
               value={ncg}
-              min={0}
-              max={10}
-              unit="wt%"
-              idealHigh={0}
-              warningHigh={5}
-              abnormalHigh={10}
+              min={limitData.ncg.min}
+              max={limitData.ncg.max}
+              unit={limitData.ncg.unit}
+              idealHigh={limitData.ncg.idealHigh}
+              warningHigh={limitData.ncg.warningHigh}
+              abnormalHigh={limitData.ncg.abnormalHigh}
               linkTo='/ncg'
               titleConfig={TITLE_CONFIG}
             />
@@ -344,15 +346,15 @@ export default function DashboardDefault() {
             <GaugeChart
               label="Pressure"
               value={pressure}
-              min={322}
-              max={1678}
-              unit="kPa"
-              abnormalLow={333}
-              warningLow={444}
-              idealLow={1000}
-              idealHigh={1400}
-              warningHigh={1600}
-              abnormalHigh={1667}
+              min={limitData.pressure.min}
+              max={limitData.pressure.max}
+              unit={limitData.pressure.unit}
+              abnormalLow={limitData.pressure.abnormalLow}
+              warningLow={limitData.pressure.warningLow}
+              idealLow={limitData.pressure.idealLow}
+              idealHigh={limitData.pressure.idealHigh}
+              warningHigh={limitData.pressure.warningHigh}
+              abnormalHigh={limitData.pressure.abnormalHigh}
               linkTo='/ptf'
               titleConfig={TITLE_CONFIG}
             />
@@ -364,15 +366,15 @@ export default function DashboardDefault() {
             <GaugeChart
               label="Temperature"
               value={temperature}
-              min={100}
-              max={200}
-              unit="°C"
-              abnormalLow={105}
-              warningLow={120}
-              idealLow={135}
-              idealHigh={165}
-              warningHigh={180}
-              abnormalHigh={195}
+              min={limitData.temperature.min}
+              max={limitData.temperature.max}
+              unit={limitData.temperature.unit}
+              abnormalLow={limitData.temperature.abnormalLow}
+              warningLow={limitData.temperature.warningLow}
+              idealLow={limitData.temperature.idealLow}
+              idealHigh={limitData.temperature.idealHigh}
+              warningHigh={limitData.temperature.warningHigh}
+              abnormalHigh={limitData.temperature.abnormalHigh}
               linkTo='/ptf'
               titleConfig={TITLE_CONFIG}
             />
@@ -404,15 +406,15 @@ export default function DashboardDefault() {
             <GaugeChart
               label="Flow"
               value={flow}
-              min={200}
-              max={300}
-              unit="t/h"
-              abnormalLow={210}
-              warningLow={220}
-              idealLow={225}
-              idealHigh={265}
-              warningHigh={270}
-              abnormalHigh={285}
+              min={limitData.flow.min}
+              max={limitData.flow.max}
+              unit={limitData.flow.unit}
+              abnormalLow={limitData.flow.abnormalLow}
+              warningLow={limitData.flow.warningLow}
+              idealLow={limitData.flow.idealLow}
+              idealHigh={limitData.flow.idealHigh}
+              warningHigh={limitData.flow.warningHigh}
+              abnormalHigh={limitData.flow.abnormalHigh}
               linkTo='/ptf'
               titleConfig={TITLE_CONFIG}
             />

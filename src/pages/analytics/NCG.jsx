@@ -5,6 +5,7 @@ import { generateAnalyticData } from 'data/simulasi';
 
 import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
+import { getLimitData } from '../../utils/limitData';
 import {
   AnalyticsHeader,
   StatCard,
@@ -25,6 +26,7 @@ const NCG = () => {
     const theme = useTheme();
     const [analyticData, setAnalyticData] = useState(null);
     const [changePct, setChangePct] = useState(null);
+    const limitData = getLimitData();
 
 
     useEffect(() => {
@@ -159,12 +161,12 @@ const NCG = () => {
                 <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
                   <GaugeChart
                     value={ncg}
-                    min={0}
-                    max={10}
-                    unit="wt%"
-                    idealHigh={0}
-                    warningHigh={5}
-                    abnormalHigh={10}
+                    min={limitData.ncg.min}
+                    max={limitData.ncg.max}
+                    unit={limitData.ncg.unit}
+                    idealHigh={limitData.ncg.idealHigh}
+                    warningHigh={limitData.ncg.warningHigh}
+                    abnormalHigh={limitData.ncg.abnormalHigh}
                     changePct={changePct}
                     withCard={false}
                     sx={{ width: '100%', maxWidth: 360 }}

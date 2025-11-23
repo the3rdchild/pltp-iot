@@ -565,7 +565,7 @@ export default function NCGArticle() {
                   <br/>• 25% → Penurunan efisiensi hingga <strong>22%</strong>
                   <br/><br/>
                   Untuk PLTP 110 MW, penurunan 22% berarti kehilangan 24 MW output — kerugian 
-                  revenue >$2 juta/tahun (asumsi $0.08/kWh, capacity factor 85%)!<Ref num={2} />
+                  revenue lebih dari $2 juta/tahun (asumsi $0.08/kWh, capacity factor 85%)!<Ref num={2} />
                 </p>
               </div>
             </div>
