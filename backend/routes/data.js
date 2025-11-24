@@ -9,6 +9,12 @@ const {
   getDashboardStats,
   exportSensorData
 } = require('../controllers/dataController');
+const {
+  getLiveData,
+  getLiveMetric,
+  getChartData,
+  getStatsData
+} = require('../controllers/liveDataController');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
 
 // GET /api/data/sensor/latest - Get latest sensor data
@@ -31,5 +37,19 @@ router.post('/field', authenticateToken, createFieldData);
 
 // GET /api/data/dashboard/stats - Get dashboard statistics
 router.get('/dashboard/stats', optionalAuth, getDashboardStats);
+
+// ==================== LIVE DATA ROUTES ====================
+
+// GET /api/data/live - Get all live metrics for dashboard
+router.get('/live', optionalAuth, getLiveData);
+
+// GET /api/data/live/:metric - Get single live metric (tds, pressure, temperature, etc.)
+router.get('/live/:metric', optionalAuth, getLiveMetric);
+
+// GET /api/data/chart/:metric - Get chart data with time range (1h, 1d, 7d, 1m, 10y)
+router.get('/chart/:metric', optionalAuth, getChartData);
+
+// GET /api/data/stats/:metric - Get statistics table data
+router.get('/stats/:metric', optionalAuth, getStatsData);
 
 module.exports = router;

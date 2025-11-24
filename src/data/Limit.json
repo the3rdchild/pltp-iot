@@ -100,6 +100,60 @@
       "idealHigh": 265,
       "warningHigh": 270,
       "abnormalHigh": 285
+    },
+    "gen_output": {
+      "value": "gen_output",
+      "min": 0,
+      "max": 50000,
+      "unit": "W",
+      "abnormalLow": 100,
+      "warningLow": 500,
+      "idealLow": 1000,
+      "idealHigh": 40000,
+      "warningHigh": 45000,
+      "abnormalHigh": 50000
+    },
+    "voltage": {
+      "value": "voltage",
+      "min": 0,
+      "max": 500,
+      "unit": "V",
+      "abnormalLow": 180,
+      "warningLow": 200,
+      "idealLow": 380,
+      "idealHigh": 420,
+      "warningHigh": 440,
+      "abnormalHigh": 460
+    },
+    "reactive_power": {
+      "value": "reactive_power",
+      "min": 0,
+      "max": 20000,
+      "unit": "VAR",
+      "idealHigh": 5000,
+      "warningHigh": 10000,
+      "abnormalHigh": 15000
+    },
+    "speed_detection": {
+      "value": "speed_detection",
+      "min": 0,
+      "max": 5000,
+      "unit": "RPM",
+      "abnormalLow": 500,
+      "warningLow": 1000,
+      "idealLow": 2500,
+      "idealHigh": 3500,
+      "warningHigh": 4000,
+      "abnormalHigh": 4500
+    },
+    "current": {
+      "value": "current",
+      "min": 0,
+      "max": 200,
+      "unit": "A",
+      "idealHigh": 50,
+      "warningHigh": 100,
+      "abnormalHigh": 150
     }
   }
   
