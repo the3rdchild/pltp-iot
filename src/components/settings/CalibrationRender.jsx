@@ -56,7 +56,7 @@ const LivePreview = ({ paramKey, config, currentValue }) => {
   const percentage = ((maOutput - 4) / 16) * 100;
 
   return (
-    <MainCard sx={{ mb: 2, bgcolor: 'background.default' }}>
+    <MainCard sx={{ mb: 2, bgcolor: '#F5F5F5' }}>
       <Typography variant="subtitle2" color="textSecondary" gutterBottom>
         Live Preview - {label}
       </Typography>
