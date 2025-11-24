@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import MainCard from 'components/MainCard';
 import { AnalyticsHeader } from '../../components/analytics';
 
@@ -14,7 +14,69 @@ const AIAnalytics = () => {
   const [ai1Data, setAi1Data] = useState([]);
   const [ai2Data, setAi2Data] = useState([]);
   const [tableData, setTableData] = useState([]);
-  const [timeRange, setTimeRange] = useState('1h'); // 'Now', '1h', '1d', '7d', '1m', '1y', '10y'
+  
+  // Separate time range states for each chart
+  const [timeRangeAI1, setTimeRangeAI1] = useState('1d');
+  const [timeRangeAI2Dryness, setTimeRangeAI2Dryness] = useState('1d');
+  const [timeRangeAI2NCG, setTimeRangeAI2NCG] = useState('1d');
+  
+  const [chartWidthAI1, setChartWidthAI1] = useState(1200);
+  const [chartWidthDryness, setChartWidthDryness] = useState(600);
+  const [chartWidthNCG, setChartWidthNCG] = useState(600);
+  
+  const chartRefAI1 = useRef(null);
+  const chartRefDryness = useRef(null);
+  const chartRefNCG = useRef(null);
+  const leftTableRef = useRef(null);
+  const rightTableRef = useRef(null);
+
+  // Handle window resize for dynamic chart width
+  useEffect(() => {
+    const updateWidth = () => {
+      if (chartRefAI1.current) {
+        setChartWidthAI1(chartRefAI1.current.offsetWidth);
+      }
+      if (chartRefDryness.current) {
+        setChartWidthDryness(chartRefDryness.current.offsetWidth);
+      }
+      if (chartRefNCG.current) {
+        setChartWidthNCG(chartRefNCG.current.offsetWidth);
+      }
+    };
+    
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    
+    // Delay untuk ensure DOM ready
+    setTimeout(updateWidth, 100);
+    
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
+
+  // Sync table scroll
+  useEffect(() => {
+    const leftTable = leftTableRef.current;
+    const rightTable = rightTableRef.current;
+
+    if (!leftTable || !rightTable) return;
+
+    const syncScroll = (source, target) => {
+      return () => {
+        target.scrollTop = source.scrollTop;
+      };
+    };
+
+    const leftScrollHandler = syncScroll(leftTable, rightTable);
+    const rightScrollHandler = syncScroll(rightTable, leftTable);
+
+    leftTable.addEventListener('scroll', leftScrollHandler);
+    rightTable.addEventListener('scroll', rightScrollHandler);
+
+    return () => {
+      leftTable.removeEventListener('scroll', leftScrollHandler);
+      rightTable.removeEventListener('scroll', rightScrollHandler);
+    };
+  }, []);
 
   // Simulate real-time data generation
   useEffect(() => {
@@ -71,8 +133,8 @@ const AIAnalytics = () => {
   }, []);
 
   // Get X-axis labels based on time range
-  const getXAxisLabels = () => {
-    switch(timeRange) {
+  const getXAxisLabels = (range) => {
+    switch(range) {
       case 'Now':
         return Array.from({length: 60}, (_, i) => (i + 1).toString());
       case '1h':
@@ -92,7 +154,30 @@ const AIAnalytics = () => {
     }
   };
 
-  const xAxisLabels = getXAxisLabels();
+  // Get time label for X-axis
+  const getTimeLabel = (range) => {
+    switch(range) {
+      case 'Now':
+      case '1h':
+        return 'Minute';
+      case '1d':
+        return 'Hour';
+      case '7d':
+        return 'Day';
+      case '1m':
+        return 'Date';
+      case '1y':
+        return 'Month';
+      case '10y':
+        return 'Year';
+      default:
+        return 'Time';
+    }
+  };
+
+  const xAxisLabelsAI1 = getXAxisLabels(timeRangeAI1);
+  const xAxisLabelsDryness = getXAxisLabels(timeRangeAI2Dryness);
+  const xAxisLabelsNCG = getXAxisLabels(timeRangeAI2NCG);
 
   // Stats cards data
   const statsData = [
@@ -137,98 +222,103 @@ const AIAnalytics = () => {
       <AnalyticsHeader title="AI Analytics" subtitle="Real-time AI Predictions Monitoring" />
 
       <Grid container spacing={3}>
-        {/* AI1 Section Header */}
-        <Grid size={12}>
+        {/* AI1 Section - Left */}
+        <Grid size={{ xs: 12, md: 5.9 }}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#1976d2' }}>
             AI #1 - Risk & Anomaly Detection
           </Typography>
+          <Grid container spacing={2}>
+            {statsData.slice(0, 2).map((stat, index) => (
+              <Grid size={{ xs: 12}} key={index}>
+                <MainCard sx={{ height: '100%', backgroundColor: '#F5F5F5' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box
+                      sx={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: '12px',
+                        backgroundColor: stat.bgColor,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: stat.iconColor,
+                        flexShrink: 0
+                      }}
+                    >
+                      {stat.icon}
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
+                        {stat.title}
+                      </Typography>
+                      <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                        {stat.value}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        {stat.subtitle}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </MainCard>
+              </Grid>
+            ))}
+          </Grid>
         </Grid>
 
-        {/* AI1 Stats Cards - Left Side */}
-        {statsData.slice(0, 2).map((stat, index) => (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
-            <MainCard sx={{ height: '100%', backgroundColor: '#F5F5F5' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Box
-                  sx={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: '12px',
-                    backgroundColor: stat.bgColor,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: stat.iconColor,
-                    flexShrink: 0
-                  }}
-                >
-                  {stat.icon}
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
-                    {stat.title}
-                  </Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                    {stat.value}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    {stat.subtitle}
-                  </Typography>
-                </Box>
-              </Box>
-            </MainCard>
-          </Grid>
-        ))}
+        {/* Vertical Barrier */}
+        <Grid size={{ xs:12, md:0.1 }} sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'center', alignItems: 'center' }}>
+          <Box sx={{ 
+            width: 2, 
+            height: '100%',
+            background: 'linear-gradient(180deg, transparent 0%, #2e7d32 50%, transparent 100%)'
+          }} />
+        </Grid>
 
-        {/* Spacer for alignment */}
-        <Grid size={{ xs: 12, md: 6 }} sx={{ display: { xs: 'none', md: 'block' } }} />
-
-        {/* AI2 Section Header */}
-        <Grid size={12}>
+        {/* AI2 Section - Right */}
+        <Grid size= {{ xs: 12, md: 5.9}}>
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#2e7d32' }}>
             AI #2 - Virtual Sensor Prediction
           </Typography>
+          <Grid container spacing={2}>
+            {statsData.slice(2, 4).map((stat, index) => (
+              <Grid size={{ xs: 12}} key={index + 2}>
+                <MainCard sx={{ height: '100%', backgroundColor: '#F5F5F5' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box
+                      sx={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: '12px',
+                        backgroundColor: stat.bgColor,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: stat.iconColor,
+                        flexShrink: 0
+                      }}
+                    >
+                      {stat.icon}
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
+                        {stat.title}
+                      </Typography>
+                      <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                        {stat.value}
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        {stat.subtitle}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </MainCard>
+              </Grid>
+            ))}
+          </Grid>
         </Grid>
 
-        {/* AI2 Stats Cards - Right Side */}
-        <Grid size={{ xs: 12, md: 6 }} sx={{ display: { xs: 'none', md: 'block' } }} />
-        {statsData.slice(2, 4).map((stat, index) => (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index + 2}>
-            <MainCard sx={{ height: '100%', backgroundColor: '#F5F5F5' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Box
-                  sx={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: '12px',
-                    backgroundColor: stat.bgColor,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: stat.iconColor,
-                    flexShrink: 0
-                  }}
-                >
-                  {stat.icon}
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
-                    {stat.title}
-                  </Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                    {stat.value}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    {stat.subtitle}
-                  </Typography>
-                </Box>
-              </Box>
-            </MainCard>
-          </Grid>
-        ))}
-
         {/* AI1 Chart - Risk Prediction */}
-        <Grid size={12}>
+        <Grid size={{ xs: 12}}>
           <MainCard>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
               <Box>
@@ -243,18 +333,18 @@ const AIAnalytics = () => {
                 {['Now', '1h', '1d', '7d', '1m', '1y', '10y'].map((range) => (
                   <Box
                     key={range}
-                    onClick={() => setTimeRange(range)}
+                    onClick={() => setTimeRangeAI1(range)}
                     sx={{
                       px: 2,
                       py: 0.5,
                       borderRadius: 1,
                       cursor: 'pointer',
-                      backgroundColor: timeRange === range ? '#1976d2' : '#f5f5f5',
-                      color: timeRange === range ? '#fff' : '#666',
+                      backgroundColor: timeRangeAI1 === range ? '#1976d2' : '#f5f5f5',
+                      color: timeRangeAI1 === range ? '#fff' : '#666',
                       fontSize: '0.875rem',
                       fontWeight: 600,
                       '&:hover': {
-                        backgroundColor: timeRange === range ? '#1565c0' : '#e0e0e0'
+                        backgroundColor: timeRangeAI1 === range ? '#1565c0' : '#e0e0e0'
                       }
                     }}
                   >
@@ -263,7 +353,7 @@ const AIAnalytics = () => {
                 ))}
               </Box>
             </Box>
-            <Box sx={{ height: 420, position: 'relative', pt: 2 }}>
+            <Box ref={chartRefAI1} sx={{ height: 420, position: 'relative', pt: 2, width: '100%' }}>
               <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
                 {/* Y-axis label */}
                 <text
@@ -284,7 +374,7 @@ const AIAnalytics = () => {
                     <line
                       x1="60"
                       y1={320 - (val * 2.8)}
-                      x2="95%"
+                      x2={chartWidthAI1 - 40}
                       y2={320 - (val * 2.8)}
                       stroke="#e0e0e0"
                       strokeWidth="1"
@@ -302,17 +392,17 @@ const AIAnalytics = () => {
                 ))}
 
                 {/* Risk threshold lines */}
-                <line x1="60" y1="135" x2="95%" y2="135" stroke="#ed6c02" strokeWidth="1" strokeDasharray="3,3" />
-                <text x="70" y="131" fontSize="10" fill="#ed6c02">High Risk (66%)</text>
+                <line x1="60" y1={320 - (66 * 2.8)} x2={chartWidthAI1 - 40} y2={320 - (66 * 2.8)} stroke="#ed6c02" strokeWidth="1" strokeDasharray="3,3" />
+                <text x="70" y={320 - (66 * 2.8) - 4} fontSize="10" fill="#ed6c02">High Risk (66%)</text>
                 
-                <line x1="60" y1="228" x2="95%" y2="228" stroke="#ffa726" strokeWidth="1" strokeDasharray="3,3" />
-                <text x="70" y="224" fontSize="10" fill="#ffa726">Medium Risk (33%)</text>
+                <line x1="60" y1={320 - (33 * 2.8)} x2={chartWidthAI1 - 40} y2={320 - (33 * 2.8)} stroke="#ffa726" strokeWidth="1" strokeDasharray="3,3" />
+                <text x="70" y={320 - (33 * 2.8) - 4} fontSize="10" fill="#ffa726">Medium Risk (33%)</text>
 
                 {/* Risk line */}
                 {ai1Data.length > 1 && (
                   <polyline
-                    points={ai1Data.slice(-xAxisLabels.length).map((d, i) => {
-                      const x = 60 + (i * (window.innerWidth * 0.85 - 80) / (xAxisLabels.length - 1));
+                    points={ai1Data.slice(-xAxisLabelsAI1.length).map((d, i) => {
+                      const x = 60 + (i * (chartWidthAI1 - 100) / Math.max(1, xAxisLabelsAI1.length - 1));
                       const y = 320 - (d.risk_percentage * 2.8);
                       return `${x},${y}`;
                     }).join(' ')}
@@ -323,9 +413,9 @@ const AIAnalytics = () => {
                 )}
 
                 {/* Anomaly markers */}
-                {ai1Data.slice(-xAxisLabels.length).map((d, i) => {
+                {ai1Data.slice(-xAxisLabelsAI1.length).map((d, i) => {
                   if (!d.anomaly_detected) return null;
-                  const x = 60 + (i * (window.innerWidth * 0.85 - 80) / (xAxisLabels.length - 1));
+                  const x = 60 + (i * (chartWidthAI1 - 100) / Math.max(1, xAxisLabelsAI1.length - 1));
                   const y = 320 - (d.risk_percentage * 2.8);
                   return (
                     <g key={i}>
@@ -336,18 +426,17 @@ const AIAnalytics = () => {
                 })}
 
                 {/* X-axis labels */}
-                <text x="50%" y="360" fontSize="12" fill="#666" textAnchor="middle" fontWeight="600">
-                  Time x{xAxisLabels.length}
+                <text x={chartWidthAI1 / 2} y="360" fontSize="12" fill="#666" textAnchor="middle" fontWeight="600">
+                  {getTimeLabel(timeRangeAI1)} (x{xAxisLabelsAI1.length})
                 </text>
 
                 {/* X-axis tick labels */}
-                {xAxisLabels.map((label, i) => {
-                  // Show label every N ticks based on length
-                  const showEvery = xAxisLabels.length > 30 ? Math.ceil(xAxisLabels.length / 12) : 
-                                    xAxisLabels.length > 12 ? Math.ceil(xAxisLabels.length / 8) : 1;
-                  if (i % showEvery !== 0 && i !== xAxisLabels.length - 1) return null;
+                {xAxisLabelsAI1.map((label, i) => {
+                  const showEvery = xAxisLabelsAI1.length > 30 ? Math.ceil(xAxisLabelsAI1.length / 12) : 
+                                    xAxisLabelsAI1.length > 12 ? Math.ceil(xAxisLabelsAI1.length / 8) : 1;
+                  if (i % showEvery !== 0 && i !== xAxisLabelsAI1.length - 1) return null;
                   
-                  const x = 60 + (i * (window.innerWidth * 0.85 - 80) / (xAxisLabels.length - 1));
+                  const x = 60 + (i * (chartWidthAI1 - 100) / Math.max(1, xAxisLabelsAI1.length - 1));
                   return (
                     <text key={i} x={x} y="380" fontSize="9" fill="#666" textAnchor="middle">
                       {label}
@@ -360,7 +449,7 @@ const AIAnalytics = () => {
         </Grid>
 
         {/* Barrier between AI1 and AI2 charts */}
-        <Grid size={12}>
+        <Grid size={{ xs: 12}}>
           <Box sx={{ 
             height: 2, 
             background: 'linear-gradient(90deg, transparent 0%, #2e7d32 50%, transparent 100%)',
@@ -369,17 +458,42 @@ const AIAnalytics = () => {
         </Grid>
 
         {/* AI2 Chart - Dryness Fraction */}
-        <Grid size={{ xs: 12, lg: 6 }}>
+        <Grid size={{ xs: 12, lg:6 }}>
           <MainCard>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
-                AI2 - Dryness Fraction
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Steam quality prediction
-              </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  AI2 - Dryness Fraction
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Steam quality prediction
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                {['Now', '1h', '1d', '7d', '1m', '1y', '10y'].map((range) => (
+                  <Box
+                    key={range}
+                    onClick={() => setTimeRangeAI2Dryness(range)}
+                    sx={{
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: 1,
+                      cursor: 'pointer',
+                      backgroundColor: timeRangeAI2Dryness === range ? '#2e7d32' : '#f5f5f5',
+                      color: timeRangeAI2Dryness === range ? '#fff' : '#666',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      '&:hover': {
+                        backgroundColor: timeRangeAI2Dryness === range ? '#1b5e20' : '#e0e0e0'
+                      }
+                    }}
+                  >
+                    {range}
+                  </Box>
+                ))}
+              </Box>
             </Box>
-            <Box sx={{ height: 350, position: 'relative', pt: 2 }}>
+            <Box ref={chartRefDryness} sx={{ height: 350, position: 'relative', pt: 2, width: '100%' }}>
               <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
                 {/* Y-axis label */}
                 <text
@@ -400,7 +514,7 @@ const AIAnalytics = () => {
                     <line
                       x1="60"
                       y1={290 - ((val - 95) * 50)}
-                      x2="95%"
+                      x2={chartWidthDryness - 40}
                       y2={290 - ((val - 95) * 50)}
                       stroke="#e0e0e0"
                       strokeWidth="1"
@@ -420,8 +534,8 @@ const AIAnalytics = () => {
                 {/* Dryness line */}
                 {ai2Data.length > 1 && (
                   <polyline
-                    points={ai2Data.slice(-20).map((d, i) => {
-                      const x = 60 + (i * (window.innerWidth * 0.4 - 80) / 19);
+                    points={ai2Data.slice(-xAxisLabelsDryness.length).map((d, i) => {
+                      const x = 60 + (i * (chartWidthDryness - 100) / Math.max(1, xAxisLabelsDryness.length - 1));
                       const y = 290 - ((d.dryness_fraction - 95) * 50);
                       return `${x},${y}`;
                     }).join(' ')}
@@ -432,26 +546,65 @@ const AIAnalytics = () => {
                 )}
 
                 {/* X-axis label */}
-                <text x="50%" y="330" fontSize="12" fill="#666" textAnchor="middle" fontWeight="600">
-                  Time ({timeRange})
+                <text x={chartWidthDryness / 2} y="330" fontSize="12" fill="#666" textAnchor="middle" fontWeight="600">
+                  {getTimeLabel(timeRangeAI2Dryness)} (x{xAxisLabelsDryness.length})
                 </text>
+
+                {/* X-axis tick labels */}
+                {xAxisLabelsDryness.map((label, i) => {
+                  const showEvery = xAxisLabelsDryness.length > 30 ? Math.ceil(xAxisLabelsDryness.length / 12) : 
+                                    xAxisLabelsDryness.length > 12 ? Math.ceil(xAxisLabelsDryness.length / 8) : 1;
+                  if (i % showEvery !== 0 && i !== xAxisLabelsDryness.length - 1) return null;
+                  
+                  const x = 60 + (i * (chartWidthDryness - 100) / Math.max(1, xAxisLabelsDryness.length - 1));
+                  return (
+                    <text key={i} x={x} y="350" fontSize="9" fill="#666" textAnchor="middle">
+                      {label}
+                    </text>
+                  );
+                })}
               </svg>
             </Box>
           </MainCard>
         </Grid>
 
         {/* AI2 Chart - NCG Content */}
-        <Grid size={{ xs: 12, lg: 6 }}>
+        <Grid size={{ xs: 12, lg:6  }} >
           <MainCard>
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
-                AI2 - NCG Content
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Non-condensable gas prediction
-              </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+              <Box>
+                <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  AI2 - NCG Content
+                </Typography>
+                <Typography variant="body2" color="textSecondary">
+                  Non-condensable gas prediction
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                {['Now', '1h', '1d', '7d', '1m', '1y', '10y'].map((range) => (
+                  <Box
+                    key={range}
+                    onClick={() => setTimeRangeAI2NCG(range)}
+                    sx={{
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: 1,
+                      cursor: 'pointer',
+                      backgroundColor: timeRangeAI2NCG === range ? '#2e7d32' : '#f5f5f5',
+                      color: timeRangeAI2NCG === range ? '#fff' : '#666',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      '&:hover': {
+                        backgroundColor: timeRangeAI2NCG === range ? '#1b5e20' : '#e0e0e0'
+                      }
+                    }}
+                  >
+                    {range}
+                  </Box>
+                ))}
+              </Box>
             </Box>
-            <Box sx={{ height: 350, position: 'relative', pt: 2 }}>
+            <Box ref={chartRefNCG} sx={{ height: 350, position: 'relative', pt: 2, width: '100%' }}>
               <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
                 {/* Y-axis label */}
                 <text
@@ -472,7 +625,7 @@ const AIAnalytics = () => {
                     <line
                       x1="60"
                       y1={290 - (val * 85)}
-                      x2="95%"
+                      x2={chartWidthNCG - 40}
                       y2={290 - (val * 85)}
                       stroke="#e0e0e0"
                       strokeWidth="1"
@@ -492,8 +645,8 @@ const AIAnalytics = () => {
                 {/* NCG line */}
                 {ai2Data.length > 1 && (
                   <polyline
-                    points={ai2Data.slice(-20).map((d, i) => {
-                      const x = 60 + (i * (window.innerWidth * 0.4 - 80) / 19);
+                    points={ai2Data.slice(-xAxisLabelsNCG.length).map((d, i) => {
+                      const x = 60 + (i * (chartWidthNCG - 100) / Math.max(1, xAxisLabelsNCG.length - 1));
                       const y = 290 - (d.ncg * 85);
                       return `${x},${y}`;
                     }).join(' ')}
@@ -504,16 +657,30 @@ const AIAnalytics = () => {
                 )}
 
                 {/* X-axis label */}
-                <text x="50%" y="330" fontSize="12" fill="#666" textAnchor="middle" fontWeight="600">
-                  Time ({timeRange})
+                <text x={chartWidthNCG / 2} y="330" fontSize="12" fill="#666" textAnchor="middle" fontWeight="600">
+                  {getTimeLabel(timeRangeAI2NCG)} (x{xAxisLabelsNCG.length})
                 </text>
+
+                {/* X-axis tick labels */}
+                {xAxisLabelsNCG.map((label, i) => {
+                  const showEvery = xAxisLabelsNCG.length > 30 ? Math.ceil(xAxisLabelsNCG.length / 12) : 
+                                    xAxisLabelsNCG.length > 12 ? Math.ceil(xAxisLabelsNCG.length / 8) : 1;
+                  if (i % showEvery !== 0 && i !== xAxisLabelsNCG.length - 1) return null;
+                  
+                  const x = 60 + (i * (chartWidthNCG - 100) / Math.max(1, xAxisLabelsNCG.length - 1));
+                  return (
+                    <text key={i} x={x} y="350" fontSize="9" fill="#666" textAnchor="middle">
+                      {label}
+                    </text>
+                  );
+                })}
               </svg>
             </Box>
           </MainCard>
         </Grid>
 
         {/* Data Table with Frozen Prediction Columns */}
-        <Grid size={12}>
+        <Grid size={{ xs: 12 }} >
           <MainCard>
             <Box sx={{ mb: 2 }}>
               <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
@@ -537,6 +704,7 @@ const AIAnalytics = () => {
               >
                 {/* Frozen prediction columns (left) */}
                 <Box
+                  ref={leftTableRef}
                   sx={{
                     width: 350,
                     flexShrink: 0,
@@ -610,8 +778,11 @@ const AIAnalytics = () => {
                 </Box>
 
                 {/* Scrollable input columns (right) */}
-                <Box sx={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}>
-                  <Box sx={{ minWidth: 1500 }}>
+                <Box 
+                  ref={rightTableRef}
+                  sx={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}
+                >
+                  <Box sx={{ minWidth: 'fit-content', width: 'max-content' }}>
                     {/* Header */}
                     <Box
                       sx={{
@@ -633,13 +804,14 @@ const AIAnalytics = () => {
                           <Box 
                             key={header} 
                             sx={{ 
-                              minWidth: header === 'Timestamp' ? 160 : 110, 
-                              flex: header === 'Timestamp' ? '0 0 160px' : '0 0 110px',
+                              minWidth: header === 'Timestamp' ? 160 : 120,
+                              width: header === 'Timestamp' ? 160 : 'auto',
                               display: 'flex',
-                              alignItems: 'center'
+                              alignItems: 'center',
+                              px: 1
                             }}
                           >
-                            <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem' }}>
+                            <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
                               {header}
                             </Typography>
                           </Box>
@@ -661,68 +833,68 @@ const AIAnalytics = () => {
                           '&:hover': { backgroundColor: '#e3f2fd' }
                         }}
                       >
-                        <Box sx={{ minWidth: 160, flex: '0 0 160px', display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                        <Box sx={{ minWidth: 160, width: 160, display: 'flex', alignItems: 'center', px: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {row.timestamp}
                           </Typography>
                         </Box>
-                        <Box sx={{ minWidth: 110, flex: '0 0 110px', display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {row.temperature}
                           </Typography>
                         </Box>
-                        <Box sx={{ minWidth: 110, flex: '0 0 110px', display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {row.pressure}
                           </Typography>
                         </Box>
-                        <Box sx={{ minWidth: 110, flex: '0 0 110px', display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {row.flow_rate}
                           </Typography>
                         </Box>
-                        <Box sx={{ minWidth: 110, flex: '0 0 110px', display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {row.gen_voltage}
                           </Typography>
                         </Box>
-                        <Box sx={{ minWidth: 110, flex: '0 0 110px', display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {row.gen_reactive_power}
                           </Typography>
                         </Box>
-                        <Box sx={{ minWidth: 110, flex: '0 0 110px', display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {row.gen_output}
                           </Typography>
                         </Box>
-                        <Box sx={{ minWidth: 110, flex: '0 0 110px', display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {row.gen_power_factor}
                           </Typography>
                         </Box>
-                        <Box sx={{ minWidth: 110, flex: '0 0 110px', display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {row.gen_frequency}
                           </Typography>
                         </Box>
-                        <Box sx={{ minWidth: 110, flex: '0 0 110px', display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {row.speed_detection}
                           </Typography>
                         </Box>
-                        <Box sx={{ minWidth: 110, flex: '0 0 110px', display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {row.MCV_L}
                           </Typography>
                         </Box>
-                        <Box sx={{ minWidth: 110, flex: '0 0 110px', display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {row.MCV_R}
                           </Typography>
                         </Box>
-                        <Box sx={{ minWidth: 110, flex: '0 0 110px', display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem' }}>
+                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
+                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
                             {row.TDS}
                           </Typography>
                         </Box>

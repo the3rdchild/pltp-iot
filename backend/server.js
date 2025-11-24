@@ -50,6 +50,8 @@ const limiter = rateLimit({
   skip: (req) => {
     if (req.path.startsWith('/data-test')) return true;
     if (req.path.startsWith('/external')) return true;
+    if (req.path.startsWith('/ml_prediction')) return true;
+    if (req.path.startsWith('')) return true;
     return skipIfWhitelisted(req);
   },
   message: {
