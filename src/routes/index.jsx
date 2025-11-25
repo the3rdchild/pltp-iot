@@ -20,7 +20,7 @@ import Prediction from 'pages/analytics/prediction'
 //settings pages
 import DataInput from 'pages/settings/dataInput'
 import Calibration from 'pages/settings/calibration';
-import Limit from 'pages/settings/limit';
+import Configuration from 'pages/settings/configuration';
 
 //article
 import CaraKerjaPLTP from 'pages/extra-pages/articles/CaraKerjaPLTP';
@@ -30,6 +30,9 @@ import NCGArticle from 'pages/extra-pages/articles/NCGArticle';
 import MisiKami from 'pages/extra-pages/articles/MisiKami';
 
 // dashboard pages
+
+// map monitoring pages
+import UnitPemantauan from 'pages/extra-pages/articles/UnitPemantauan';
 
 // auth pages
 const LoginPage = Loadable(lazy(() => import('pages/auth/Login')));
@@ -149,7 +152,7 @@ const router = createBrowserRouter([
     ]
   },
   {
-    path: '/settings/calibration',
+    path: '/calibration',
     element: <DashboardLayout />,
     children: [
       {
@@ -159,12 +162,12 @@ const router = createBrowserRouter([
     ]
   },
   {
-    path: '/settings/limit',
+    path: '/configuration',
     element: <DashboardLayout />,
     children: [ 
       {
         index: true,
-        element: <Limit />
+        element: <Configuration />
       }
     ]
   },
@@ -189,6 +192,10 @@ const router = createBrowserRouter([
   {
     path:'/misi-kami',
     element: <MisiKami />
+  },
+  {
+    path: '/unit-pemantauan',
+    element: <UnitPemantauan />
   }
   
 ]);

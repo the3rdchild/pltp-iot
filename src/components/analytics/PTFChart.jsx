@@ -111,7 +111,7 @@ const PTFChart = ({
 
         // update chart series (fast, animated)
         chartInstanceRef.current.updateSeries([
-          { name: 'Pressure (kPa)', data: pressureRef.current },
+          { name: 'Pressure (barg)', data: pressureRef.current },
           { name: 'Temperature (°C)', data: tempRef.current },
           { name: 'Flow (t/h)', data: flowRef.current }
         ], true);
@@ -120,7 +120,7 @@ const PTFChart = ({
         chartInstanceRef.current.updateOptions({
           yaxis: [
             {
-              seriesName: 'Pressure (kPa)',
+              seriesName: 'Pressure (barg)',
               min: Math.floor(pressureMin * 0.95),
               max: Math.ceil(pressureMax * 1.05)
             },
@@ -197,7 +197,7 @@ const PTFChart = ({
       },
       series: [
         {
-          name: 'Pressure (kPa)',
+          name: 'Pressure (barg)',
           data: initialPressure
         },
         {
@@ -259,17 +259,17 @@ const PTFChart = ({
       },
       yaxis: [
         {
-          seriesName: 'Pressure (kPa)',
+          seriesName: 'Pressure (barg)',
           min: Math.floor(pressureMin * 0.95),
           max: Math.ceil(pressureMax * 1.05),
           labels: {
             style: { colors: '#86868b', fontSize: '11px' },
             formatter: function (value) {
-              return value ? value.toFixed(0) + ' kPa' : '';
+              return value ? value.toFixed(0) + ' barg' : '';
             }
           },
           title: {
-            text: 'Pressure (kPa)',
+            text: 'Pressure (barg)',
             style: {
               color: '#3b82f6',
               fontSize: '12px',
@@ -339,7 +339,7 @@ const PTFChart = ({
         y: {
           formatter: function (value, { seriesIndex }) {
             if (!value) return '';
-            if (seriesIndex === 0) return value.toFixed(1) + ' kPa';
+            if (seriesIndex === 0) return value.toFixed(1) + ' barg';
             if (seriesIndex === 1) return value.toFixed(1) + ' °C';
             return value.toFixed(1) + ' t/h';
           }
@@ -393,7 +393,7 @@ const PTFChart = ({
       xaxis: { categories },
       yaxis: [
         {
-          seriesName: 'Pressure (kPa)',
+          seriesName: 'Pressure (barg)',
           min: Math.floor(pressureMin * 0.95),
           max: Math.ceil(pressureMax * 1.05)
         },
@@ -412,7 +412,7 @@ const PTFChart = ({
     }, false, true);
 
     chartInstanceRef.current.updateSeries([
-      { name: 'Pressure (kPa)', data: pressureRef.current },
+      { name: 'Pressure (barg)', data: pressureRef.current },
       { name: 'Temperature (°C)', data: tempRef.current },
       { name: 'Flow (t/h)', data: flowRef.current }
     ], true);

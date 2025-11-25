@@ -100,18 +100,18 @@ const dashboard = {
           icon: icons.EditOutlined,
         },
         {
+          id: 'configuration',
+          title: 'Configuration',
+          type: 'item',
+          url: '/configuration',
+          icon: icons.FundViewOutlined,
+        },
+        {
           id: 'calibration',
           title: 'Calibration',
           type: 'item',
-          url: '/settings/calibration',
+          url: '/calibration',
           icon: icons.SlidersOutlined,
-        },
-        {
-          id: 'limit',
-          title: 'Limit',
-          type: 'item',
-          url: '/settings/limit',
-          icon: icons.FundViewOutlined,
         }
       ]
     },

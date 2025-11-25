@@ -1,5 +1,18 @@
 import axios from 'axios';
-import apiConfig from '../data/apiConfig.json';
+import defaultApiConfig from '../data/apiConfig.json';
+
+// Get API config from localStorage or use default
+const getApiConfig = () => {
+  try {
+    const saved = localStorage.getItem('apiConfig');
+    return saved ? JSON.parse(saved) : defaultApiConfig;
+  } catch (error) {
+    console.error('Error loading API config from localStorage:', error);
+    return defaultApiConfig;
+  }
+};
+
+const apiConfig = getApiConfig();
 
 // Create axios instance with base configuration
 const apiClient = axios.create({

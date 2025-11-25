@@ -20,6 +20,10 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
 import AddIcon from '@mui/icons-material/Add';
 
+const tdsCO2 = 2.3;
+const tdsArgon = 0.4;
+const tdsMethane = 1.1;
+const tdsMA3 = 0.2;
 
 const TDS = () => {
     const [timeRange, setTimeRange] = useState('1d');
@@ -55,7 +59,11 @@ const TDS = () => {
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
             iconColor: '#fff',
-            // additionalData can be populated if API provides historical min/max/avg
+            additionalData: [
+                { value: formatValueWithUnit(summaryStats.min12h, 'ppm'), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(summaryStats.min24h, 'ppm'), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(summaryStats.min, 'ppm'), timeLabel: '1 minggu terakhir' }
+            ]
         },
         {
             title: 'Average',
@@ -63,6 +71,11 @@ const TDS = () => {
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
             iconColor: '#fff',
+            additionalData: [
+                { value: formatValueWithUnit(summaryStats.avg12h, 'ppm'), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(summaryStats.avg24h, 'ppm'), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(summaryStats.avg, 'ppm'), timeLabel: '1 minggu terakhir' }
+            ]
         },
         {
             title: 'Maximum',
@@ -70,6 +83,11 @@ const TDS = () => {
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
             iconColor: '#fff',
+            additionalData: [
+                { value: formatValueWithUnit(summaryStats.max12h, 'ppm'), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(summaryStats.max24h, 'ppm'), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(summaryStats.max, 'ppm'), timeLabel: '1 minggu terakhir' }
+            ]
         }
     ];
 
@@ -82,14 +100,14 @@ const TDS = () => {
             spacing={3}
             alignItems="stretch"
           >
-            {/* Top row: Main gauge and stat cards */}\
-            <Grid item xs={12} md={4}>
+            {/* Top row: Main gauge and stat cards */}
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
               <MainCard
                 sx={{
                   display: 'flex',
                   flexDirection: 'column',
                   height: '100%',
-                  minHeight: '230px',
+                  minHeight: { md: '230px' },
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -126,12 +144,122 @@ const TDS = () => {
                 </Box>
               </MainCard>
             </Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+              <MainCard
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  minHeight: { md: '230px' },
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <Typography variant="subtitle1" color="textSecondary">TDS: CO₂</Typography>
+                </Box>
+                <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
+                  <GaugeChart
+                    value={tdsCO2}
+                    min={limitData.tdsCO2.min}
+                    max={limitData.tdsCO2.max}
+                    unit={limitData.tdsCO2.unit}
+                    idealHigh={limitData.tdsCO2.idealHigh}
+                    warningHigh={limitData.tdsCO2.warningHigh}
+                    abnormalHigh={limitData.tdsCO2.abnormalHigh}
+                    withCard={false}
+                    sx={{ width: '100%', maxWidth: 200 }}
+                  />
+                </Box>
+              </MainCard>
+            </Grid>
 
-            {/* Stat cards */}\
-            <Grid item xs={12} md={8}>
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+              <MainCard
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  minHeight: { md: '230px' },
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <Typography variant="subtitle1" color="textSecondary">TDS: Argon</Typography>
+                </Box>
+                <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
+                  <GaugeChart
+                    value={tdsArgon}
+                    min={limitData.tdsArgon.min}
+                    max={limitData.tdsArgon.max}
+                    unit={limitData.tdsArgon.unit}
+                    idealHigh={limitData.tdsArgon.idealHigh}
+                    warningHigh={limitData.tdsArgon.warningHigh}
+                    abnormalHigh={limitData.tdsArgon.abnormalHigh}
+                    withCard={false}
+                    sx={{ width: '100%', maxWidth: 200 }}
+                  />
+                </Box>
+              </MainCard>
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+              <MainCard
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  minHeight: { md: '230px' },
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <Typography variant="subtitle1" color="textSecondary">TDS: Methane (CH₄)</Typography>
+                </Box>
+                <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
+                  <GaugeChart
+                    value={tdsMethane}
+                    min={limitData.tdsMethane.min}
+                    max={limitData.tdsMethane.max}
+                    unit={limitData.tdsMethane.unit}
+                    idealHigh={limitData.tdsMethane.idealHigh}
+                    warningHigh={limitData.tdsMethane.warningHigh}
+                    abnormalHigh={limitData.tdsMethane.abnormalHigh}
+                    withCard={false}
+                    sx={{ width: '100%', maxWidth: 200 }}
+                  />
+                </Box>
+              </MainCard>
+            </Grid>
+
+            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+              <MainCard
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  height: '100%',
+                  minHeight: { md: '230px' },
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <Typography variant="subtitle1" color="textSecondary">TDS: MA3</Typography>
+                </Box>
+                <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
+                  <GaugeChart
+                    value={tdsMA3}
+                    min={limitData.tdsMA3.min}
+                    max={limitData.tdsMA3.max}
+                    unit={limitData.tdsMA3.unit}
+                    idealHigh={limitData.tdsMA3.idealHigh}
+                    warningHigh={limitData.tdsMA3.warningHigh}
+                    abnormalHigh={limitData.tdsMA3.abnormalHigh}
+                    withCard={false}
+                    sx={{ width: '100%', maxWidth: 200 }}
+                  />
+                </Box>
+              </MainCard>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 12 }}>
                 <Grid container spacing={3}>
                     {cardData.map((card, index) => (
-                      <Grid item xs={12} sm={6} key={index}>
+                      <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
                         <StatCard
                           title={card.title}
                           value={loading ? '...' : card.value}
@@ -147,9 +275,8 @@ const TDS = () => {
                     ))}
                 </Grid>
             </Grid>
-
-
-            <Grid item xs={12}>
+            
+            <Grid size={{ xs: 12 }}>
               <RealTimeDataChart
                 title="Real Time Data"
                 subtitle="TDS Overall level data chart"
@@ -162,7 +289,7 @@ const TDS = () => {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <StatisticsTable
                 title="Tabel Data Statistik"
                 subtitle="Tabel data statistik yang telah diperoleh"
