@@ -14,7 +14,7 @@ import { getLiveData, getLiveMetric } from '../utils/api';
  * if (error) return <div>Error: {error.message}</div>;
  * return <div>TDS: {data.metrics.tds.value}</div>;
  */
-export const useLiveData = (refreshInterval = 3000) => {
+export const useLiveData = (refreshInterval = 1000) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
