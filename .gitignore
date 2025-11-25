@@ -121,3 +121,6 @@ backend/run-migration.js
 backend/test-db-connection.js
 FRONTEND_API_SETUP.md
 src/utils/API_USAGE_EXAMPLES.md
+DASHBOARD_INTEGRATION_SUMMARY.md
+.gitignore
+NAN_FIX_SUMMARY.md

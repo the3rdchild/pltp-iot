@@ -10,10 +10,11 @@ import { FaBolt } from "react-icons/fa6";
 import { RiSpeedUpFill } from "react-icons/ri";
 import { TbCircuitResistor } from "react-icons/tb";
 
-//simulasi
+
 import { useState, useEffect } from 'react';
-import { generateAnalyticData } from 'data/simulasi';
-import { getRiskPrediction } from 'data/riskprediction';
+
+// Real data API hook
+import { useLiveData } from '../../hooks/useLiveData';
 
 // project imports - Individual Cards
 import GaugeChart from '../../components/GaugeChart';
@@ -56,28 +57,13 @@ function Positioned({ pos, children, center = true }) {
 }
 
 export default function DashboardDefault() {
-  const [analyticData, setAnalyticData] = useState(null);
-  const [riskPrediction, setRiskPrediction] = useState('Ideal');
   const [scale, setScale] = useState(1);
   const limitData = getLimitData();
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const data = generateAnalyticData();
-      setAnalyticData(data);
-      const risk = getRiskPrediction();
-      setRiskPrediction(risk);
-    }, 3000);
+  // Real data from API (auto-refreshes every 1 second based on hook)
+  const { data: liveData, loading, error } = useLiveData();
 
-    setAnalyticData(generateAnalyticData());
-    setRiskPrediction(getRiskPrediction());
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, []);
-
-  // Calculate scale to fit viewport
+  // Calculate scale to fit viewport (MUST be before any early returns)
   useEffect(() => {
     const calculateScale = () => {
       const viewportWidth = window.innerWidth;
@@ -107,7 +93,13 @@ export default function DashboardDefault() {
       // Use the smaller scale to ensure everything fits
       const newScale = Math.min(scaleX, scaleY, 1); // Max scale is 1 (no zoom in)
 
-      setScale(newScale);
+      // Only update if scale changed (prevent unnecessary re-renders)
+      setScale((prevScale) => {
+        if (Math.abs(prevScale - newScale) > 0.001) {
+          return newScale;
+        }
+        return prevScale;
+      });
     };
 
     calculateScale();
@@ -116,19 +108,59 @@ export default function DashboardDefault() {
     return () => {
       window.removeEventListener('resize', calculateScale);
     };
-  }, []);
+  }, []); // Empty dependency array - only runs once on mount
 
-  const pressure = analyticData?.pressure ?? 1437;
-  const temperature = analyticData?.temperature ?? 131;
-  const flow = analyticData?.flow ?? 298;
-  const tds = analyticData?.tdsOverall ?? 6.0;
-  const dryness = analyticData?.dryness ?? 99.0;
-  const ncg = analyticData?.ncg ?? 1.5;
-  const activePower = analyticData?.activePower ?? 32.5;
-  const reactivePower = analyticData?.reactivePower ?? 6.2;
-  const voltage = analyticData?.voltage ?? 13.5;
-  const stSpeed = analyticData?.stSpeed ?? 3000;
-  const current = analyticData?.current ?? 1350;
+  // Show loading state
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Typography>Loading dashboard data...</Typography>
+      </Box>
+    );
+  }
+
+  // Show error state with fallback
+  if (error) {
+    console.error('Error loading live data:', error);
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
+        <Typography color="error">Error loading dashboard data</Typography>
+        <Typography variant="body2" sx={{ mt: 1 }}>Using fallback values</Typography>
+      </Box>
+    );
+  }
+
+  // Helper function to safely parse numeric values (handles strings and null)
+  const parseValue = (value, fallback) => {
+    if (value === null || value === undefined || value === 'null') return fallback;
+    const parsed = typeof value === 'string' ? parseFloat(value) : value;
+    return isNaN(parsed) ? fallback : parsed;
+  };
+
+  // Extract values from live API data (convert strings to numbers)
+  const pressure = parseValue(liveData?.metrics?.pressure?.value, 1437);
+  const temperature = parseValue(liveData?.metrics?.temperature?.value, 165);
+  const flow = parseValue(liveData?.metrics?.flow_rate?.value, 298);
+  const tds = parseValue(liveData?.metrics?.tds?.value, 6.0);
+  const dryness = 99.0; // Not in API yet, keep default
+  const ncg = 1.5; // Not in API yet, keep default
+  const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5);
+  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.2);
+  const voltage = parseValue(liveData?.metrics?.voltage?.value, 400); // Default voltage
+  const stSpeed = parseValue(liveData?.metrics?.speed?.value, 3000);
+  const current = parseValue(liveData?.metrics?.current?.value, 50); // Default current
+
+  // Get risk prediction from API status (use the worst status as overall risk)
+  const getOverallRiskPrediction = () => {
+    if (!liveData?.metrics) return 'Ideal';
+
+    const statuses = Object.values(liveData.metrics).map(m => m.status);
+    if (statuses.includes('abnormal')) return 'Abnormal';
+    if (statuses.includes('warning')) return 'Warning';
+    return 'Ideal';
+  };
+
+  const riskPrediction = getOverallRiskPrediction();
 
   const getPowerStatus = (val, low, high) => {
     if (val < low) return 'Low';

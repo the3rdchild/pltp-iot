@@ -1,4 +1,14 @@
 /**
+ * Convert database string/number to float
+ * PostgreSQL returns numeric values as strings
+ */
+const toNumber = (value) => {
+  if (value === null || value === undefined) return null;
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  return isNaN(num) ? null : num;
+};
+
+/**
  * Calculate generator current from sensor data
  * Simplified version for three-phase system
  *
@@ -6,8 +16,8 @@
  * @returns {Object} { current, apparent_power, method, error }
  */
 const calculateGeneratorCurrent = (data) => {
-  // Get active power (gen_output)
-  const P_raw = data.gen_output;
+  // Get active power (gen_output) and convert to number
+  const P_raw = toNumber(data.gen_output);
   if (P_raw === null || P_raw === undefined) {
     return { current: null, error: 'gen_output missing' };
   }
@@ -15,20 +25,20 @@ const calculateGeneratorCurrent = (data) => {
   // Auto-detect unit: if < 1000, assume kW, else W
   const P = Math.abs(P_raw) < 1000 ? P_raw * 1000 : P_raw;
 
-  // Get voltages (line-to-line)
-  const v_VW = typeof data.gen_voltage_v_w === 'number' ? data.gen_voltage_v_w : null;
-  const v_WU = typeof data.gen_voltage_w_u === 'number' ? data.gen_voltage_w_u : null;
+  // Get voltages (line-to-line) and convert to numbers
+  const v_VW = toNumber(data.gen_voltage_v_w);
+  const v_WU = toNumber(data.gen_voltage_w_u);
 
   // Calculate average voltage
-  const voltages = [v_VW, v_WU].filter(v => typeof v === 'number');
+  const voltages = [v_VW, v_WU].filter(v => v !== null);
   if (voltages.length === 0) {
     return { current: null, error: 'No voltage data available' };
   }
   const Vll = voltages.reduce((sum, v) => sum + v, 0) / voltages.length;
 
-  // Get power factor and reactive power
-  const PF = typeof data.gen_power_factor === 'number' ? data.gen_power_factor : null;
-  const Q = typeof data.gen_reactive_power === 'number' ? data.gen_reactive_power : null;
+  // Get power factor and reactive power, convert to numbers
+  const PF = toNumber(data.gen_power_factor);
+  const Q = toNumber(data.gen_reactive_power);
 
   // Calculate apparent power (S)
   let S;
@@ -69,21 +79,31 @@ const processSensorData = (data) => {
   // Calculate current
   const currentCalc = calculateGeneratorCurrent(data);
 
-  // Calculate average voltage
-  const v_VW = data.gen_voltage_v_w;
-  const v_WU = data.gen_voltage_w_u;
-  const voltages = [v_VW, v_WU].filter(v => typeof v === 'number');
+  // Calculate average voltage (convert to numbers)
+  const v_VW = toNumber(data.gen_voltage_v_w);
+  const v_WU = toNumber(data.gen_voltage_w_u);
+  const voltages = [v_VW, v_WU].filter(v => v !== null);
   const voltage_avg = voltages.length > 0
     ? parseFloat((voltages.reduce((s, v) => s + v, 0) / voltages.length).toFixed(2))
     : null;
 
   return {
     ...data,
-    // Add calculated fields
+    // Add calculated fields (all as numbers)
     current: currentCalc.current,
     voltage: voltage_avg,
-    active_power: data.gen_output,
-    speed: data.speed_detection
+    active_power: toNumber(data.gen_output),
+    speed: toNumber(data.speed_detection),
+    // Convert all numeric fields to actual numbers
+    temperature: toNumber(data.temperature),
+    pressure: toNumber(data.pressure),
+    flow_rate: toNumber(data.flow_rate),
+    tds: toNumber(data.tds),
+    gen_reactive_power: toNumber(data.gen_reactive_power),
+    gen_output: toNumber(data.gen_output),
+    gen_power_factor: toNumber(data.gen_power_factor),
+    gen_frequency: toNumber(data.gen_frequency),
+    speed_detection: toNumber(data.speed_detection)
   };
 };
 

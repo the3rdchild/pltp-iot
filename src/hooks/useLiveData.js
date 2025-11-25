@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getLiveData, getLiveMetric } from '../utils/api';
 
 /**
@@ -18,20 +18,29 @@ export const useLiveData = (refreshInterval = 1000) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      setLoading(true);
+      // Only show loading on first load, not on refresh
+      if (isFirstLoad) {
+        setLoading(true);
+      }
       const response = await getLiveData();
       setData(response.data);
       setError(null);
+      if (isFirstLoad) {
+        setIsFirstLoad(false);
+      }
     } catch (err) {
       setError(err);
       console.error('Error fetching live data:', err);
     } finally {
-      setLoading(false);
+      if (isFirstLoad) {
+        setLoading(false);
+      }
     }
-  };
+  }, [isFirstLoad]);
 
   useEffect(() => {
     fetchData();
@@ -40,7 +49,7 @@ export const useLiveData = (refreshInterval = 1000) => {
       const interval = setInterval(fetchData, refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [refreshInterval]);
+  }, [refreshInterval, fetchData]);
 
   return {
     data,

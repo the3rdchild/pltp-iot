@@ -5,7 +5,7 @@ import { lazy } from 'react';
 import DashboardLayout from 'layout/Dashboard';
 import AuthLayout from 'layout/Auth';
 import DashboardDefault from 'pages/dashboard/default';
-import SamplePage from 'pages/extra-pages/documentationpage';
+// import SamplePage from 'pages/extra-pages/documentationpage';
 import History from 'pages/component-overview/history';
 import HomePage from 'pages/home/home';
 import Loadable from 'components/Loadable';
@@ -68,14 +68,14 @@ const router = createBrowserRouter([
         index: true,
         element: <DashboardDefault />
       },
-      {
-        path: 'documentation', //documentationpage
-        element: <SamplePage />
-      },
-      {
-        path: 'History', //documentationpage
-        element: <History />
-      },
+      // {
+      //   path: 'documentation', //documentationpage
+      //   element: <SamplePage />
+      // },
+      // {
+      //   path: 'History', //documentationpage
+      //   element: <History />
+      // },
       {
         path: 'typography',
         element: <Typography />
