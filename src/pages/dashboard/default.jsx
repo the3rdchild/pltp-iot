@@ -138,17 +138,17 @@ export default function DashboardDefault() {
   };
 
   // Extract values from live API data (convert strings to numbers)
-  const pressure = parseValue(liveData?.metrics?.pressure?.value, 1437);
-  const temperature = parseValue(liveData?.metrics?.temperature?.value, 165);
-  const flow = parseValue(liveData?.metrics?.flow_rate?.value, 298);
-  const tds = parseValue(liveData?.metrics?.tds?.value, 6.0);
-  const dryness = 99.0; // Not in API yet, keep default
-  const ncg = 1.5; // Not in API yet, keep default
-  const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5);
-  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.2);
-  const voltage = parseValue(liveData?.metrics?.voltage?.value, 400); // Default voltage
-  const stSpeed = parseValue(liveData?.metrics?.speed?.value, 3000);
-  const current = parseValue(liveData?.metrics?.current?.value, 50); // Default current
+  const pressure = parseValue(liveData?.metrics?.pressure?.value, 5.87); //barg
+  const temperature = parseValue(liveData?.metrics?.temperature?.value, 165.2); //degC
+  const flow = parseValue(liveData?.metrics?.flow_rate?.value, 245.71); //t/h
+  const tds = parseValue(liveData?.metrics?.tds?.value, 1.0012); //ppm
+  const dryness = 'NaN'; // Not in API yet, keep default
+  const ncg = 'NaN'; // Not in API yet, keep default
+  const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5); //MW
+  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.22); //MVAR
+  const voltage = parseValue(liveData?.metrics?.voltage?.value, 13.86); //kV
+  const stSpeed = parseValue(liveData?.metrics?.speed?.value, 2998); //rpm
+  const current = parseValue(liveData?.metrics?.current?.value, 1377.45); //Hz
 
   // Get risk prediction from API status (use the worst status as overall risk)
   const getOverallRiskPrediction = () => {

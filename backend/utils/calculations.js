@@ -10,7 +10,7 @@ const toNumber = (value) => {
 
 /**
  * Calculate generator current from sensor data
- * Simplified version for three-phase system
+ * Three-phase system formula: I = P / (√3 × V_LL × PF)
  *
  * @param {Object} data - sensor data object
  * @returns {Object} { current, apparent_power, method, error }
@@ -29,41 +29,31 @@ const calculateGeneratorCurrent = (data) => {
   const v_VW = toNumber(data.gen_voltage_v_w);
   const v_WU = toNumber(data.gen_voltage_w_u);
 
-  // Calculate average voltage
+  // Calculate average voltage V_LL = (V-W + W-U) / 2
   const voltages = [v_VW, v_WU].filter(v => v !== null);
   if (voltages.length === 0) {
     return { current: null, error: 'No voltage data available' };
   }
   const Vll = voltages.reduce((sum, v) => sum + v, 0) / voltages.length;
 
-  // Get power factor and reactive power, convert to numbers
+  // Get power factor (PF) and convert to number
   const PF = toNumber(data.gen_power_factor);
-  const Q = toNumber(data.gen_reactive_power);
 
-  // Calculate apparent power (S)
-  let S;
-  let usedPF = PF;
+  // Use PF if available, otherwise default to 1.0
+  const usedPF = (PF !== null && PF !== 0) ? Math.abs(PF) : 1.0;
 
-  if (PF !== null && PF !== 0) {
-    S = Math.abs(P) / Math.abs(PF);
-  } else if (Q !== null) {
-    S = Math.sqrt(Math.pow(P, 2) + Math.pow(Q, 2));
-    usedPF = S !== 0 ? Math.abs(P) / S : 1;
-  } else {
-    // Assume PF = 1 (purely real power)
-    usedPF = 1;
-    S = Math.abs(P);
-  }
+  // Calculate current: I = P / (√3 × V_LL × PF)
+  const current = P / (Math.sqrt(3) * Math.abs(Vll) * usedPF);
 
-  // Calculate current: I = S / (√3 * V_LL) for three-phase
-  const current = S / (Math.sqrt(3) * Math.abs(Vll));
+  // Calculate apparent power: S = P / PF
+  const S = P / usedPF;
 
   return {
     current: parseFloat(current.toFixed(2)),
     apparent_power: parseFloat(S.toFixed(2)),
     power_factor: usedPF,
     voltage_avg: parseFloat(Vll.toFixed(2)),
-    method: 'three-phase (I = S / (√3 * V_LL))'
+    method: 'three-phase (I = P / (√3 × V_LL × PF))'
   };
 };
 
@@ -76,16 +66,40 @@ const calculateGeneratorCurrent = (data) => {
 const processSensorData = (data) => {
   if (!data) return null;
 
-  // Calculate current
-  const currentCalc = calculateGeneratorCurrent(data);
-
   // Calculate average voltage (convert to numbers)
-  const v_VW = toNumber(data.gen_voltage_v_w);
-  const v_WU = toNumber(data.gen_voltage_w_u);
+  // Try columns first, then fallback to raw_data JSONB
+  let v_VW = toNumber(data.gen_voltage_v_w);
+  let v_WU = toNumber(data.gen_voltage_w_u);
+
+  // Fallback: check raw_data JSONB if columns are null
+  if ((v_VW === null || v_WU === null) && data.raw_data) {
+    try {
+      const rawData = typeof data.raw_data === 'string'
+        ? JSON.parse(data.raw_data)
+        : data.raw_data;
+
+      // Try with dashes (gen_voltage_V-W) or underscores (gen_voltage_V_W)
+      v_VW = v_VW ?? toNumber(rawData['gen_voltage_V-W']) ?? toNumber(rawData.gen_voltage_V_W);
+      v_WU = v_WU ?? toNumber(rawData['gen_voltage_W-U']) ?? toNumber(rawData.gen_voltage_W_U);
+    } catch (err) {
+      console.error('Error parsing raw_data for voltage:', err);
+    }
+  }
+
   const voltages = [v_VW, v_WU].filter(v => v !== null);
   const voltage_avg = voltages.length > 0
     ? parseFloat((voltages.reduce((s, v) => s + v, 0) / voltages.length).toFixed(2))
     : null;
+
+  // Prepare data with voltages for current calculation
+  const dataWithVoltages = {
+    ...data,
+    gen_voltage_v_w: v_VW,
+    gen_voltage_w_u: v_WU
+  };
+
+  // Calculate current (uses voltage from above)
+  const currentCalc = calculateGeneratorCurrent(dataWithVoltages);
 
   return {
     ...data,
