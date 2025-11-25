@@ -1,0 +1,62 @@
+{
+  "baseURL": "/api",
+  "endpoints": {
+    "dashboard": {
+      "liveData": "/data/live",
+      "liveMetric": "/data/live/{metric}",
+      "stats": "/data/dashboard/stats"
+    },
+    "analytics": {
+      "chartData": "/data/chart/{metric}",
+      "statsTable": "/data/stats/{metric}"
+    },
+    "tds": {
+      "live": "/data/live/tds",
+      "chart": "/data/chart/tds",
+      "stats": "/data/stats/tds"
+    },
+    "pressure": {
+      "live": "/data/live/pressure",
+      "chart": "/data/chart/pressure",
+      "stats": "/data/stats/pressure"
+    },
+    "temperature": {
+      "live": "/data/live/temperature",
+      "chart": "/data/chart/temperature",
+      "stats": "/data/stats/temperature"
+    },
+    "flow": {
+      "live": "/data/live/flow_rate",
+      "chart": "/data/chart/flow_rate",
+      "stats": "/data/stats/flow_rate"
+    },
+    "power": {
+      "activePower": "/data/live/active_power",
+      "reactivePower": "/data/live/reactive_power",
+      "chartActive": "/data/chart/active_power",
+      "chartReactive": "/data/chart/reactive_power"
+    },
+    "generator": {
+      "voltage": "/data/live/voltage",
+      "current": "/data/live/current",
+      "speed": "/data/live/speed",
+      "chartVoltage": "/data/chart/voltage",
+      "chartCurrent": "/data/chart/current",
+      "chartSpeed": "/data/chart/speed"
+    }
+  },
+  "metrics": {
+    "dashboard": [
+      "tds",
+      "pressure",
+      "temperature",
+      "flow_rate",
+      "active_power",
+      "voltage",
+      "reactive_power",
+      "speed",
+      "current"
+    ],
+    "ranges": ["1h", "1d", "7d", "1m", "10y"]
+  }
+}

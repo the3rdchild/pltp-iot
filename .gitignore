@@ -119,3 +119,5 @@ firebase.json
 backend/MIGRATION_GUIDE.md
 backend/run-migration.js
 backend/test-db-connection.js
+FRONTEND_API_SETUP.md
+src/utils/API_USAGE_EXAMPLES.md

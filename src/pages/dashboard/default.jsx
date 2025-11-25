@@ -207,9 +207,10 @@ export default function DashboardDefault() {
   return (
     <Box sx={{
       position: 'relative',
-      width: '100%',
+      width: '106%',
       display: 'flex',
       flexGrow: 1,
+      zoom:'90%',
       flexDirection: 'column',
       overflow: 'auto',
       p: 0,
@@ -226,17 +227,19 @@ export default function DashboardDefault() {
         overflow: 'hidden',
         p: 0,
         m: 0,
+        position: 'relative',  // ← UPDATE 25
         // Container height should match the scaled content height
         height: `${DASHBOARD_CONFIG.baseHeight * scale}px`,
         transition: 'height 0.3s ease-out'
       }}>
         <Box sx={{
-          position: 'relative',
+          position: 'absolute', // UPDATE 25
+          left: `calc(50% - ${((DASHBOARD_CONFIG.baseWidth / 2) - 40) * scale}px)`,
           width: `${DASHBOARD_CONFIG.baseWidth}px`,
           height: `${DASHBOARD_CONFIG.baseHeight}px`,
           transform: `scale(${scale})`,
-          transformOrigin: 'top center',
-          transition: 'transform 0.3s ease-out'
+          transformOrigin: 'top left',
+          transition: 'transform 0.3s ease-out, left 0.3s ease-out'
         }}>
         <Box
           component="img"
