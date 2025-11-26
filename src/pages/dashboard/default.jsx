@@ -233,16 +233,16 @@ export default function DashboardDefault() {
     width: '980px',  // Fixed width - no responsive scaling
     top: '0%',
     left: '50%',
-    opacity: 0.95
+    opacity: 1
   };
 
   return (
     <Box sx={{
       position: 'relative',
-      width: '106%',
+      width: '100%',
       display: 'flex',
       flexGrow: 1,
-      zoom:'90%',
+      zoom:'100%',
       flexDirection: 'column',
       overflow: 'auto',
       p: 0,
