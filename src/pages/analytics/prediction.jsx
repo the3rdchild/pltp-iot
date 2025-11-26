@@ -1,4 +1,4 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Button } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useState, useEffect, useRef } from 'react';
 import MainCard from 'components/MainCard';
@@ -9,6 +9,7 @@ import PsychologyIcon from '@mui/icons-material/Psychology';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 
 const AIAnalytics = () => {
   const [ai1Data, setAi1Data] = useState([]);
@@ -19,6 +20,17 @@ const AIAnalytics = () => {
   const [timeRangeAI1, setTimeRangeAI1] = useState('1d');
   const [timeRangeAI2Dryness, setTimeRangeAI2Dryness] = useState('1d');
   const [timeRangeAI2NCG, setTimeRangeAI2NCG] = useState('1d');
+  
+  // Date range states
+  const [showDatePickerAI1, setShowDatePickerAI1] = useState(false);
+  const [showDatePickerDryness, setShowDatePickerDryness] = useState(false);
+  const [showDatePickerNCG, setShowDatePickerNCG] = useState(false);
+  const [dateFromAI1, setDateFromAI1] = useState('');
+  const [dateToAI1, setDateToAI1] = useState('');
+  const [dateFromDryness, setDateFromDryness] = useState('');
+  const [dateToDryness, setDateToDryness] = useState('');
+  const [dateFromNCG, setDateFromNCG] = useState('');
+  const [dateToNCG, setDateToNCG] = useState('');
   
   const [chartWidthAI1, setChartWidthAI1] = useState(1200);
   const [chartWidthDryness, setChartWidthDryness] = useState(600);
@@ -175,6 +187,30 @@ const AIAnalytics = () => {
     }
   };
 
+  // Smooth curve helper - Catmull-Rom spline
+  const getCurvePoints = (points) => {
+    if (points.length < 2) return '';
+    
+    let path = `M ${points[0].x},${points[0].y}`;
+    
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[Math.max(i - 1, 0)];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[Math.min(i + 2, points.length - 1)];
+      
+      // Catmull-Rom to Bezier conversion
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+      
+      path += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+    }
+    
+    return path;
+  };
+
   const xAxisLabelsAI1 = getXAxisLabels(timeRangeAI1);
   const xAxisLabelsDryness = getXAxisLabels(timeRangeAI2Dryness);
   const xAxisLabelsNCG = getXAxisLabels(timeRangeAI2NCG);
@@ -222,105 +258,77 @@ const AIAnalytics = () => {
       <AnalyticsHeader title="AI Analytics" subtitle="Real-time AI Predictions Monitoring" />
 
       <Grid container spacing={3}>
-        {/* AI1 Section - Left */}
-        <Grid size={{ xs: 12, md: 5.9 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#1976d2' }}>
-            AI #1 - Risk & Anomaly Detection
-          </Typography>
-          <Grid container spacing={2}>
-            {statsData.slice(0, 2).map((stat, index) => (
-              <Grid size={{ xs: 12}} key={index}>
-                <MainCard sx={{ height: '100%', backgroundColor: '#F5F5F5' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box
-                      sx={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: '12px',
-                        backgroundColor: stat.bgColor,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: stat.iconColor,
-                        flexShrink: 0
-                      }}
-                    >
-                      {stat.icon}
-                    </Box>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
-                        {stat.title}
-                      </Typography>
-                      <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                        {stat.value}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {stat.subtitle}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </MainCard>
-              </Grid>
-            ))}
-          </Grid>
+        {/* 1. AI1 Stats Cards */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <MainCard sx={{ height: '100%', backgroundColor: '#F5F5F5' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box
+                sx={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: '12px',
+                  backgroundColor: statsData[0].bgColor,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: statsData[0].iconColor,
+                  flexShrink: 0
+                }}
+              >
+                {statsData[0].icon}
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
+                  {statsData[0].title}
+                </Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  {statsData[0].value}
+                </Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {statsData[0].subtitle}
+                </Typography>
+              </Box>
+            </Box>
+          </MainCard>
         </Grid>
 
-        {/* Vertical Barrier */}
-        <Grid size={{ xs:12, md:0.1 }} sx={{ display: { xs: 'none', md: 'flex' }, justifyContent: 'center', alignItems: 'center' }}>
-          <Box sx={{ 
-            width: 2, 
-            height: '100%',
-            background: 'linear-gradient(180deg, transparent 0%, #2e7d32 50%, transparent 100%)'
-          }} />
+        <Grid size={{ xs: 12, md: 6 }}>
+          <MainCard sx={{ height: '100%', backgroundColor: '#F5F5F5' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box
+                sx={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: '12px',
+                  backgroundColor: statsData[1].bgColor,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: statsData[1].iconColor,
+                  flexShrink: 0
+                }}
+              >
+                {statsData[1].icon}
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
+                  {statsData[1].title}
+                </Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  {statsData[1].value}
+                </Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {statsData[1].subtitle}
+                </Typography>
+              </Box>
+            </Box>
+          </MainCard>
         </Grid>
 
-        {/* AI2 Section - Right */}
-        <Grid size= {{ xs: 12, md: 5.9}}>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: '#2e7d32' }}>
-            AI #2 - Virtual Sensor Prediction
-          </Typography>
-          <Grid container spacing={2}>
-            {statsData.slice(2, 4).map((stat, index) => (
-              <Grid size={{ xs: 12}} key={index + 2}>
-                <MainCard sx={{ height: '100%', backgroundColor: '#F5F5F5' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box
-                      sx={{
-                        width: 64,
-                        height: 64,
-                        borderRadius: '12px',
-                        backgroundColor: stat.bgColor,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: stat.iconColor,
-                        flexShrink: 0
-                      }}
-                    >
-                      {stat.icon}
-                    </Box>
-                    <Box sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
-                        {stat.title}
-                      </Typography>
-                      <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                        {stat.value}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary">
-                        {stat.subtitle}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </MainCard>
-              </Grid>
-            ))}
-          </Grid>
-        </Grid>
-
-        {/* AI1 Chart - Risk Prediction */}
-        <Grid size={{ xs: 12}}>
+        {/* 2. AI1 Chart - Risk Prediction */}
+        <Grid size={{ xs: 12 }}>
           <MainCard>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexWrap: 'wrap', gap: 2 }}>
               <Box>
                 <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
                   AI1 - Risk Prediction
@@ -329,30 +337,48 @@ const AIAnalytics = () => {
                   Real-time turbine risk analysis with anomaly detection
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                {['Now', '1h', '1d', '7d', '1m', '1y', '10y'].map((range) => (
-                  <Box
-                    key={range}
-                    onClick={() => setTimeRangeAI1(range)}
-                    sx={{
-                      px: 2,
-                      py: 0.5,
-                      borderRadius: 1,
-                      cursor: 'pointer',
-                      backgroundColor: timeRangeAI1 === range ? '#1976d2' : '#f5f5f5',
-                      color: timeRangeAI1 === range ? '#fff' : '#666',
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                      '&:hover': {
-                        backgroundColor: timeRangeAI1 === range ? '#1565c0' : '#e0e0e0'
-                      }
-                    }}
-                  >
-                    {range}
+              <Box>
+                <Button
+                  size="small"
+                  startIcon={<CalendarMonthIcon />}
+                  onClick={() => setShowDatePickerAI1(!showDatePickerAI1)}
+                  sx={{
+                    textTransform: 'none',
+                    color: '#666',
+                    fontSize: '0.75rem',
+                    '&:hover': { backgroundColor: '#f5f5f5' }
+                  }}
+                >
+                  Custom Date Range
+                </Button>
+                {showDatePickerAI1 && (
+                  <Box sx={{ display: 'flex', gap: 1, p: 1, backgroundColor: '#f5f5f5', borderRadius: 1, mt: 1 }}>
+                    <input
+                      type="date"
+                      value={dateFromAI1}
+                      onChange={(e) => setDateFromAI1(e.target.value)}
+                      style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    />
+                    <Typography sx={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', color: '#666' }}>to</Typography>
+                    <input
+                      type="date"
+                      value={dateToAI1}
+                      onChange={(e) => setDateToAI1(e.target.value)}
+                      style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    />
+                    <Button
+                      size="small"
+                      variant="contained"
+                      sx={{ minWidth: 'auto', px: 2, textTransform: 'none' }}
+                      onClick={() => setShowDatePickerAI1(false)}
+                    >
+                      Apply
+                    </Button>
                   </Box>
-                ))}
+                )}
               </Box>
             </Box>
+            
             <Box ref={chartRefAI1} sx={{ height: 420, position: 'relative', pt: 2, width: '100%' }}>
               <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
                 {/* Y-axis label */}
@@ -398,17 +424,17 @@ const AIAnalytics = () => {
                 <line x1="60" y1={320 - (33 * 2.8)} x2={chartWidthAI1 - 40} y2={320 - (33 * 2.8)} stroke="#ffa726" strokeWidth="1" strokeDasharray="3,3" />
                 <text x="70" y={320 - (33 * 2.8) - 4} fontSize="10" fill="#ffa726">Medium Risk (33%)</text>
 
-                {/* Risk line */}
+                {/* Smooth risk line */}
                 {ai1Data.length > 1 && (
-                  <polyline
-                    points={ai1Data.slice(-xAxisLabelsAI1.length).map((d, i) => {
-                      const x = 60 + (i * (chartWidthAI1 - 100) / Math.max(1, xAxisLabelsAI1.length - 1));
-                      const y = 320 - (d.risk_percentage * 2.8);
-                      return `${x},${y}`;
-                    }).join(' ')}
+                  <path
+                    d={getCurvePoints(ai1Data.slice(-xAxisLabelsAI1.length).map((d, i) => ({
+                      x: 60 + (i * (chartWidthAI1 - 100) / Math.max(1, xAxisLabelsAI1.length - 1)),
+                      y: 320 - (d.risk_percentage * 2.8)
+                    })))}
                     fill="none"
                     stroke="#1976d2"
                     strokeWidth="3"
+                    strokeLinecap="round"
                   />
                 )}
 
@@ -445,11 +471,37 @@ const AIAnalytics = () => {
                 })}
               </svg>
             </Box>
+
+            {/* Time range buttons - Bottom Right */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 1, flexWrap: 'wrap' }}>
+              {['Now', '1h', '1d', '7d', '1m', '1y', '10y'].map((range) => (
+                <Box
+                  key={range}
+                  onClick={() => setTimeRangeAI1(range)}
+                  sx={{
+                    px: 2,
+                    py: 0.5,
+                    borderRadius: 1,
+                    cursor: 'pointer',
+                    backgroundColor: timeRangeAI1 === range ? '#1976d2' : '#f5f5f5',
+                    color: timeRangeAI1 === range ? '#fff' : '#666',
+                    fontSize: '0.875rem',
+                    fontWeight: 600,
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      backgroundColor: timeRangeAI1 === range ? '#1565c0' : '#e0e0e0'
+                    }
+                  }}
+                >
+                  {range}
+                </Box>
+              ))}
+            </Box>
           </MainCard>
         </Grid>
 
-        {/* Barrier between AI1 and AI2 charts */}
-        <Grid size={{ xs: 12}}>
+        {/* 3. Horizontal Barrier */}
+        <Grid size={{ xs: 12 }}>
           <Box sx={{ 
             height: 2, 
             background: 'linear-gradient(90deg, transparent 0%, #2e7d32 50%, transparent 100%)',
@@ -457,8 +509,76 @@ const AIAnalytics = () => {
           }} />
         </Grid>
 
+        {/* 4. AI2 Stats Cards */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          <MainCard sx={{ height: '100%', backgroundColor: '#F5F5F5' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box
+                sx={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: '12px',
+                  backgroundColor: statsData[2].bgColor,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: statsData[2].iconColor,
+                  flexShrink: 0
+                }}
+              >
+                {statsData[2].icon}
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
+                  {statsData[2].title}
+                </Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  {statsData[2].value}
+                </Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {statsData[2].subtitle}
+                </Typography>
+              </Box>
+            </Box>
+          </MainCard>
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 6 }}>
+          <MainCard sx={{ height: '100%', backgroundColor: '#F5F5F5' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Box
+                sx={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: '12px',
+                  backgroundColor: statsData[3].bgColor,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: statsData[3].iconColor,
+                  flexShrink: 0
+                }}
+              >
+                {statsData[3].icon}
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
+                  {statsData[3].title}
+                </Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  {statsData[3].value}
+                </Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {statsData[3].subtitle}
+                </Typography>
+              </Box>
+            </Box>
+          </MainCard>
+        </Grid>
+
+        {/* 5. AI2 Charts */}
         {/* AI2 Chart - Dryness Fraction */}
-        <Grid size={{ xs: 12, lg:6 }}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <MainCard>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
               <Box>
@@ -469,30 +589,48 @@ const AIAnalytics = () => {
                   Steam quality prediction
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                {['Now', '1h', '1d', '7d', '1m', '1y', '10y'].map((range) => (
-                  <Box
-                    key={range}
-                    onClick={() => setTimeRangeAI2Dryness(range)}
-                    sx={{
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: 1,
-                      cursor: 'pointer',
-                      backgroundColor: timeRangeAI2Dryness === range ? '#2e7d32' : '#f5f5f5',
-                      color: timeRangeAI2Dryness === range ? '#fff' : '#666',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      '&:hover': {
-                        backgroundColor: timeRangeAI2Dryness === range ? '#1b5e20' : '#e0e0e0'
-                      }
-                    }}
-                  >
-                    {range}
+              <Box>
+                <Button
+                  size="small"
+                  startIcon={<CalendarMonthIcon />}
+                  onClick={() => setShowDatePickerDryness(!showDatePickerDryness)}
+                  sx={{
+                    textTransform: 'none',
+                    color: '#666',
+                    fontSize: '0.75rem',
+                    '&:hover': { backgroundColor: '#f5f5f5' }
+                  }}
+                >
+                  Custom Date Range
+                </Button>
+                {showDatePickerDryness && (
+                  <Box sx={{ display: 'flex', gap: 1, p: 1, backgroundColor: '#f5f5f5', borderRadius: 1, mt: 1 }}>
+                    <input
+                      type="date"
+                      value={dateFromDryness}
+                      onChange={(e) => setDateFromDryness(e.target.value)}
+                      style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    />
+                    <Typography sx={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', color: '#666' }}>to</Typography>
+                    <input
+                      type="date"
+                      value={dateToDryness}
+                      onChange={(e) => setDateToDryness(e.target.value)}
+                      style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    />
+                    <Button
+                      size="small"
+                      variant="contained"
+                      sx={{ minWidth: 'auto', px: 2, textTransform: 'none' }}
+                      onClick={() => setShowDatePickerDryness(false)}
+                    >
+                      Apply
+                    </Button>
                   </Box>
-                ))}
+                )}
               </Box>
             </Box>
+            
             <Box ref={chartRefDryness} sx={{ height: 350, position: 'relative', pt: 2, width: '100%' }}>
               <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
                 {/* Y-axis label */}
@@ -531,17 +669,17 @@ const AIAnalytics = () => {
                   </g>
                 ))}
 
-                {/* Dryness line */}
+                {/* Smooth dryness line */}
                 {ai2Data.length > 1 && (
-                  <polyline
-                    points={ai2Data.slice(-xAxisLabelsDryness.length).map((d, i) => {
-                      const x = 60 + (i * (chartWidthDryness - 100) / Math.max(1, xAxisLabelsDryness.length - 1));
-                      const y = 290 - ((d.dryness_fraction - 95) * 50);
-                      return `${x},${y}`;
-                    }).join(' ')}
+                  <path
+                    d={getCurvePoints(ai2Data.slice(-xAxisLabelsDryness.length).map((d, i) => ({
+                      x: 60 + (i * (chartWidthDryness - 100) / Math.max(1, xAxisLabelsDryness.length - 1)),
+                      y: 290 - ((d.dryness_fraction - 95) * 50)
+                    })))}
                     fill="none"
                     stroke="#2e7d32"
                     strokeWidth="3"
+                    strokeLinecap="round"
                   />
                 )}
 
@@ -565,11 +703,37 @@ const AIAnalytics = () => {
                 })}
               </svg>
             </Box>
+
+            {/* Time range buttons - Bottom Right */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 0.5, flexWrap: 'wrap' }}>
+              {['Now', '1h', '1d', '7d', '1m', '1y', '10y'].map((range) => (
+                <Box
+                  key={range}
+                  onClick={() => setTimeRangeAI2Dryness(range)}
+                  sx={{
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 1,
+                    cursor: 'pointer',
+                    backgroundColor: timeRangeAI2Dryness === range ? '#2e7d32' : '#f5f5f5',
+                    color: timeRangeAI2Dryness === range ? '#fff' : '#666',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      backgroundColor: timeRangeAI2Dryness === range ? '#1b5e20' : '#e0e0e0'
+                    }
+                  }}
+                >
+                  {range}
+                </Box>
+              ))}
+            </Box>
           </MainCard>
         </Grid>
 
         {/* AI2 Chart - NCG Content */}
-        <Grid size={{ xs: 12, lg:6  }} >
+        <Grid size={{ xs: 12, lg: 6 }}>
           <MainCard>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
               <Box>
@@ -580,30 +744,48 @@ const AIAnalytics = () => {
                   Non-condensable gas prediction
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                {['Now', '1h', '1d', '7d', '1m', '1y', '10y'].map((range) => (
-                  <Box
-                    key={range}
-                    onClick={() => setTimeRangeAI2NCG(range)}
-                    sx={{
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: 1,
-                      cursor: 'pointer',
-                      backgroundColor: timeRangeAI2NCG === range ? '#2e7d32' : '#f5f5f5',
-                      color: timeRangeAI2NCG === range ? '#fff' : '#666',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      '&:hover': {
-                        backgroundColor: timeRangeAI2NCG === range ? '#1b5e20' : '#e0e0e0'
-                      }
-                    }}
-                  >
-                    {range}
+              <Box>
+                <Button
+                  size="small"
+                  startIcon={<CalendarMonthIcon />}
+                  onClick={() => setShowDatePickerNCG(!showDatePickerNCG)}
+                  sx={{
+                    textTransform: 'none',
+                    color: '#666',
+                    fontSize: '0.75rem',
+                    '&:hover': { backgroundColor: '#f5f5f5' }
+                  }}
+                >
+                  Custom Date Range
+                </Button>
+                {showDatePickerNCG && (
+                  <Box sx={{ display: 'flex', gap: 1, p: 1, backgroundColor: '#f5f5f5', borderRadius: 1, mt: 1 }}>
+                    <input
+                      type="date"
+                      value={dateFromNCG}
+                      onChange={(e) => setDateFromNCG(e.target.value)}
+                      style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    />
+                    <Typography sx={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', color: '#666' }}>to</Typography>
+                    <input
+                      type="date"
+                      value={dateToNCG}
+                      onChange={(e) => setDateToNCG(e.target.value)}
+                      style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
+                    />
+                    <Button
+                      size="small"
+                      variant="contained"
+                      sx={{ minWidth: 'auto', px: 2, textTransform: 'none' }}
+                      onClick={() => setShowDatePickerNCG(false)}
+                    >
+                      Apply
+                    </Button>
                   </Box>
-                ))}
+                )}
               </Box>
             </Box>
+            
             <Box ref={chartRefNCG} sx={{ height: 350, position: 'relative', pt: 2, width: '100%' }}>
               <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
                 {/* Y-axis label */}
@@ -642,17 +824,17 @@ const AIAnalytics = () => {
                   </g>
                 ))}
 
-                {/* NCG line */}
+                {/* Smooth NCG line */}
                 {ai2Data.length > 1 && (
-                  <polyline
-                    points={ai2Data.slice(-xAxisLabelsNCG.length).map((d, i) => {
-                      const x = 60 + (i * (chartWidthNCG - 100) / Math.max(1, xAxisLabelsNCG.length - 1));
-                      const y = 290 - (d.ncg * 85);
-                      return `${x},${y}`;
-                    }).join(' ')}
+                  <path
+                    d={getCurvePoints(ai2Data.slice(-xAxisLabelsNCG.length).map((d, i) => ({
+                      x: 60 + (i * (chartWidthNCG - 100) / Math.max(1, xAxisLabelsNCG.length - 1)),
+                      y: 290 - (d.ncg * 85)
+                    })))}
                     fill="none"
                     stroke="#ed6c02"
                     strokeWidth="3"
+                    strokeLinecap="round"
                   />
                 )}
 
@@ -676,11 +858,37 @@ const AIAnalytics = () => {
                 })}
               </svg>
             </Box>
+
+            {/* Time range buttons - Bottom Right */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 0.5, flexWrap: 'wrap' }}>
+              {['Now', '1h', '1d', '7d', '1m', '1y', '10y'].map((range) => (
+                <Box
+                  key={range}
+                  onClick={() => setTimeRangeAI2NCG(range)}
+                  sx={{
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 1,
+                    cursor: 'pointer',
+                    backgroundColor: timeRangeAI2NCG === range ? '#2e7d32' : '#f5f5f5',
+                    color: timeRangeAI2NCG === range ? '#fff' : '#666',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      backgroundColor: timeRangeAI2NCG === range ? '#1b5e20' : '#e0e0e0'
+                    }
+                  }}
+                >
+                  {range}
+                </Box>
+              ))}
+            </Box>
           </MainCard>
         </Grid>
 
-        {/* Data Table with Frozen Prediction Columns */}
-        <Grid size={{ xs: 12 }} >
+        {/* 6. Data Table with Frozen Prediction Columns */}
+        <Grid size={{ xs: 12 }}>
           <MainCard>
             <Box sx={{ mb: 2 }}>
               <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>

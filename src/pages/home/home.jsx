@@ -811,7 +811,7 @@ const Home = () => {
         }
 
         .hero-image-container {
-          margin-top: 48px;
+          margin-top: 68px;
           border-radius: 16px;
           overflow: hidden;
           box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
@@ -820,7 +820,9 @@ const Home = () => {
         .hero-image {
           width: 100%;
           height: 400px;
+          top: 100px;
           object-fit: cover;
+          object-position: bottom;
         }
 
         /* Mission Section */
@@ -905,6 +907,9 @@ const Home = () => {
           width: 100%;
           height: 100%;
           object-fit: cover;
+          object-position: right;
+          object-position: 160% center; 
+          transform: scale(1.5); 
         }
 
         .mission-button-container {
