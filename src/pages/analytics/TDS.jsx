@@ -19,6 +19,7 @@ import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 import RemoveIcon from '@mui/icons-material/Remove';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
 import AddIcon from '@mui/icons-material/Add';
+import { tdsRealTimeData } from '../../data/chartData';
 
 const tdsCO2 = 0.5;
 const tdsArgon = 0.3;
@@ -280,7 +281,7 @@ const TDS = () => {
               <RealTimeDataChart
                 title="Real Time Data"
                 subtitle="TDS Overall level data chart"
-                data={chartPoints}
+                data={tdsRealTimeData}
                 yAxisTitle="TDS (ppm)"
                 unit="ppm"
                 timeRange={timeRange}
