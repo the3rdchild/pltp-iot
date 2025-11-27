@@ -20,10 +20,10 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
 import AddIcon from '@mui/icons-material/Add';
 
-const tdsCO2 = 2.3;
-const tdsArgon = 0.4;
-const tdsMethane = 1.1;
-const tdsMA3 = 0.2;
+const tdsCO2 = 0.5;
+const tdsArgon = 0.3;
+const tdsMethane = 0.2;
+const tdsMA3 = 0.1;
 
 const TDS = () => {
     const [timeRange, setTimeRange] = useState('1d');
