@@ -46,7 +46,7 @@
     }
     .value {
     /* now scales with the real gauge width (set by JS as --gauge-w) */
-    font-size: calc(var(--gauge-w, 720px) * 0.09);
+    font-size: calc(var(--gauge-w, 720px) * 0.10);
     color: var(--text);
     font-weight: 700;
     line-height: 1;
@@ -54,7 +54,7 @@
 
     .unit {
     /* keep unit relative to .value using em so it scales together */
-    font-size: 0.56em;
+    font-size: 0.9rem;
     color: #9aa0a6;
     margin-left: 0.5ch;
     font-weight:600;

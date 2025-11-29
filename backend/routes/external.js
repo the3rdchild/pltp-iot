@@ -9,18 +9,24 @@ const {
   validateSetup
 } = require('../controllers/externalController');
 
+// Import API Key authentication middleware
+const { validateApiKey } = require('../middleware/apiKeyAuth');
+
 // POST /api/external/sensor-data - Receive sensor data from Honeywell
-router.post('/sensor-data', receiveExternalData);
+// Protected with API Key authentication
+router.post('/sensor-data', validateApiKey, receiveExternalData);
 
 // POST /api/external/ml-prediction - Receive ML predictions from edge computing
-router.post('/ml-prediction', receiveMLPrediction);
+// Protected with API Key authentication
+router.post('/ml-prediction', validateApiKey, receiveMLPrediction);
 
 // POST /api/external/batch - Receive batch sensor data
-router.post('/batch', receiveBatchData);
+// Protected with API Key authentication
+router.post('/batch', validateApiKey, receiveBatchData);
 
-// Testing endpoints
-router.post('/test', testConnection); // Test connection and insert sample data
-router.post('/test/dummy', generateDummyData); // Generate multiple dummy records
-router.get('/test/validate', validateSetup); // Validate database setup
+// Testing endpoints - protected with API Key for security
+router.post('/test', validateApiKey, testConnection); // Test connection and insert sample data
+router.post('/test/dummy', validateApiKey, generateDummyData); // Generate multiple dummy records
+router.get('/test/validate', validateSetup); // Validate database setup - public for health check
 
 module.exports = router;

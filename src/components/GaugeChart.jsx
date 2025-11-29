@@ -289,7 +289,7 @@ const GaugeChart = ({
   }, [value, min, max, unit, abnormalLow, abnormalHigh, warningLow, warningHigh, idealLow, idealHigh]);
 
   const defaultTitleStyles = {
-    fontSize: '0.875rem',
+    fontSize: '1.875rem',
     fontWeight: 500,
     color: 'text.secondary',
     justifyContent: 'flex-start'
@@ -303,7 +303,7 @@ const GaugeChart = ({
           <Link href={linkTo} underline={linkTo ? 'hover' : 'none'} color="inherit">
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
               <Typography sx={titleStyles}>{label}</Typography>
-              {linkTo && <ArrowOutwardIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />}
+              {linkTo && <ArrowOutwardIcon sx={{ fontSize: '.8rem', color: 'text.secondary' }} />}
             </Box>
           </Link>
         </Box>

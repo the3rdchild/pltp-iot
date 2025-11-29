@@ -1,6 +1,5 @@
-
 // material-ui
-import { Typography, Box, Link } from '@mui/material';
+import { Typography, Box, Link, useMediaQuery, useTheme } from '@mui/material';
 import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
 import BoltIcon from '@mui/icons-material/Bolt';
 import OfflineBoltIcon from '@mui/icons-material/OfflineBolt';
@@ -9,7 +8,6 @@ import OfflineBoltIcon from '@mui/icons-material/OfflineBolt';
 import { FaBolt } from "react-icons/fa6";
 import { RiSpeedUpFill } from "react-icons/ri";
 import { TbCircuitResistor } from "react-icons/tb";
-
 
 import { useState, useEffect } from 'react';
 
@@ -25,20 +23,246 @@ import { getLimitData } from '../../utils/limitData';
 // Image import
 import mainImage from './image/main.png';
 
-// ==============================|| DASHBOARD CONFIG ||============================== //
-// Dashboard scales automatically to fit any screen size (like zoom to fit)
-const DASHBOARD_CONFIG = {
-  // Base dimensions - dashboard designed for these dimensions
-  baseWidth: 1400,          // Design width (1080p reference)
-  baseHeight: 900,          // Design height (fits viewport with header/footer)
+// ==============================|| MOBILE LAYOUT COMPONENT ||============================== //
+function MobileLayout({ 
+  limitData, 
+  liveData, 
+  parseValue, 
+  getPowerStatus, 
+  predConfig,
+  TITLE_CONFIG 
+}) {
+  // Extract values from live API data
+  const pressure = parseValue(liveData?.metrics?.pressure?.value, 5.87);
+  const temperature = parseValue(liveData?.metrics?.temperature?.value, 165.2);
+  const flow = parseValue(liveData?.metrics?.flow_rate?.value, 245.71);
+  const tds = parseValue(liveData?.metrics?.tds?.value, 1.0012);
+  const dryness = 'NaN';
+  const ncg = 'NaN';
+  const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5);
+  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.22);
+  const voltage = parseValue(liveData?.metrics?.voltage?.value, 13.86);
+  const stSpeed = parseValue(liveData?.metrics?.speed?.value, 2998);
+  const current = parseValue(liveData?.metrics?.current?.value, 1377.45);
 
-  // Footer spacing (appears below scaled dashboard)
-  footer: {
-    marginTop: 'auto',      // Pushes footer to bottom
-    paddingTop: 0           // Padding above footer (in theme spacing units: 1 = 8px)
-  }
-};
+  return (
+    <Box sx={{ 
+      width: '100%', 
+      p: 2, 
+      display: 'flex', 
+      flexDirection: 'column', 
+      gap: 2,
+      pb: 4
+    }}>
+      {/* TDS */}
+      <Box sx={{ width: '100%' }}>
+        <GaugeChart
+          label="TDS: Overall"
+          value={tds}
+          min={limitData["TDS: Overall"].min}
+          max={limitData["TDS: Overall"].max}
+          unit={limitData["TDS: Overall"].unit}
+          idealHigh={limitData["TDS: Overall"].idealHigh}
+          warningHigh={limitData["TDS: Overall"].warningHigh}
+          abnormalHigh={limitData["TDS: Overall"].abnormalHigh}
+          linkTo="/tds"
+          titleConfig={TITLE_CONFIG}
+        />
+      </Box>
 
+      {/* Dryness */}
+      <Box sx={{ width: '100%' }}>
+        <GaugeChart
+          label="Dryness Fractions"
+          value={dryness}
+          min={limitData.dryness.min}
+          max={limitData.dryness.max}
+          unit={limitData.dryness.unit}
+          abnormalLow={limitData.dryness.abnormalLow}
+          warningLow={limitData.dryness.warningLow}
+          idealLow={limitData.dryness.idealLow}
+          idealHigh={limitData.dryness.idealHigh}
+          warningHigh={limitData.dryness.warningHigh}
+          abnormalHigh={limitData.dryness.abnormalHigh}
+          linkTo="/dryness"
+          titleConfig={TITLE_CONFIG}
+        />
+      </Box>
+
+      {/* NCG */}
+      <Box sx={{ width: '100%' }}>
+        <GaugeChart
+          label="NCG"
+          value={ncg}
+          min={limitData.ncg.min}
+          max={limitData.ncg.max}
+          unit={limitData.ncg.unit}
+          idealHigh={limitData.ncg.idealHigh}
+          warningHigh={limitData.ncg.warningHigh}
+          abnormalHigh={limitData.ncg.abnormalHigh}
+          linkTo='/ncg'
+          titleConfig={TITLE_CONFIG}
+        />
+      </Box>
+
+      {/* Pressure */}
+      <Box sx={{ width: '100%' }}>
+        <GaugeChart
+          label="Pressure"
+          value={pressure}
+          min={limitData.pressure.min}
+          max={limitData.pressure.max}
+          unit={limitData.pressure.unit}
+          abnormalLow={limitData.pressure.abnormalLow}
+          warningLow={limitData.pressure.warningLow}
+          idealLow={limitData.pressure.idealLow}
+          idealHigh={limitData.pressure.idealHigh}
+          warningHigh={limitData.pressure.warningHigh}
+          abnormalHigh={limitData.pressure.abnormalHigh}
+          linkTo='/ptf'
+          titleConfig={TITLE_CONFIG}
+        />
+      </Box>
+
+      {/* Temperature */}
+      <Box sx={{ width: '100%' }}>
+        <GaugeChart
+          label="Temperature"
+          value={temperature}
+          min={limitData.temperature.min}
+          max={limitData.temperature.max}
+          unit={limitData.temperature.unit}
+          abnormalLow={limitData.temperature.abnormalLow}
+          warningLow={limitData.temperature.warningLow}
+          idealLow={limitData.temperature.idealLow}
+          idealHigh={limitData.temperature.idealHigh}
+          warningHigh={limitData.temperature.warningHigh}
+          abnormalHigh={limitData.temperature.abnormalHigh}
+          linkTo='/ptf'
+          titleConfig={TITLE_CONFIG}
+        />
+      </Box>
+
+      {/* Flow */}
+      <Box sx={{ width: '100%' }}>
+        <GaugeChart
+          label="Flow"
+          value={flow}
+          min={limitData.flow.min}
+          max={limitData.flow.max}
+          unit={limitData.flow.unit}
+          abnormalLow={limitData.flow.abnormalLow}
+          warningLow={limitData.flow.warningLow}
+          idealLow={limitData.flow.idealLow}
+          idealHigh={limitData.flow.idealHigh}
+          warningHigh={limitData.flow.warningHigh}
+          abnormalHigh={limitData.flow.abnormalHigh}
+          linkTo='/ptf'
+          titleConfig={TITLE_CONFIG}
+        />
+      </Box>
+
+      {/* AI Prediction */}
+      <Box sx={{ width: '100%' }}>
+        <MainCard sx={{ width: '100%', minHeight: '110px' }} contentSX={{ p: 1.5 }}>
+          <Box>
+            <Link href="/prediction" target="" rel="noopener noreferrer" underline="hover" color="inherit">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography sx={TITLE_CONFIG}>Prediksi Resiko Turbin</Typography>
+                <ArrowOutwardIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />
+              </Box>
+            </Link>
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60px' }}>
+              <Typography variant="h1" sx={{ fontSize: '2.5rem', fontWeight: 700, color: predConfig.color, textAlign: 'center', lineHeight: 1 }}>
+                {predConfig.label}
+              </Typography>
+            </Box>
+          </Box>
+        </MainCard>
+      </Box>
+
+      {/* Power Metrics Grid - 2 columns */}
+      <Box sx={{ 
+        display: 'grid', 
+        gridTemplateColumns: '1fr 1fr', 
+        gap: 2,
+        width: '100%'
+      }}>
+        {/* Active Power */}
+        <Box>
+          <MetricCard
+            label="Active Power"
+            value={activePower}
+            unit="MW"
+            status={getPowerStatus(activePower, 32, 33)}
+            linkTo="#"
+            titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
+            icon={BoltIcon}
+            iconConfig={{ size: 32, color: '#ef4444' }}
+          />
+        </Box>
+
+        {/* Reactive Power */}
+        <Box>
+          <MetricCard
+            label="Reactive Power"
+            value={reactivePower}
+            unit="MVAR"
+            status={getPowerStatus(reactivePower, 6.0, 6.5)}
+            linkTo="#"
+            titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
+            icon={FaBolt}
+            iconConfig={{ size: 20, color: '#8b5cf6' }}
+          />
+        </Box>
+
+        {/* Voltage */}
+        <Box>
+          <MetricCard
+            label="Voltage"
+            value={voltage}
+            unit="kV"
+            status={getPowerStatus(voltage, 13, 14)}
+            linkTo="#"
+            titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
+            icon={OfflineBoltIcon}
+            iconConfig={{ size: 28, color: '#f59e0b' }}
+          />
+        </Box>
+
+        {/* S.T Speed */}
+        <Box>
+          <MetricCard
+            label="S.T Speed"
+            value={stSpeed}
+            unit="rpm"
+            status={getPowerStatus(stSpeed, 2900, 3100)}
+            linkTo="#"
+            titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
+            icon={RiSpeedUpFill}
+            iconConfig={{ size: 28, color: '#22c55e' }}
+          />
+        </Box>
+      </Box>
+
+      {/* Current - Full Width */}
+      <Box sx={{ width: '100%' }}>
+        <MetricCard
+          label="Current"
+          value={current}
+          unit="A"
+          status={getPowerStatus(current, 1300, 1400)}
+          linkTo="#"
+          titleConfig={TITLE_CONFIG}
+          icon={TbCircuitResistor}
+          iconConfig={{ size: 32, color: '#3b82f6' }}
+        />
+      </Box>
+    </Box>
+  );
+}
+
+// ==============================|| DESKTOP LAYOUT COMPONENT ||============================== //
 function Positioned({ pos, children, center = true }) {
   return (
     <Box
@@ -56,132 +280,28 @@ function Positioned({ pos, children, center = true }) {
   );
 }
 
-export default function DashboardDefault() {
-  const [scale, setScale] = useState(1);
-  const limitData = getLimitData();
-
-  // Real data from API (auto-refreshes every 1 second based on hook)
-  const { data: liveData, loading, error } = useLiveData();
-
-  // Calculate scale to fit viewport (MUST be before any early returns)
-  useEffect(() => {
-    const calculateScale = () => {
-      const viewportWidth = window.innerWidth;
-      // More accurate header/footer spacing calculation
-      // Header (Toolbar) ~64px + Footer (py:3 + mt:4 + content) ~80px + buffer ~20px = ~164px
-      const viewportHeight = window.innerHeight - 164;
-
-      // Detect orientation
-      const isPortrait = viewportHeight > viewportWidth;
-
-      // Adjust base dimensions for mobile portrait mode
-      // In portrait, prioritize width scaling to prevent horizontal overflow
-      let effectiveBaseWidth = DASHBOARD_CONFIG.baseWidth;
-      let effectiveBaseHeight = DASHBOARD_CONFIG.baseHeight;
-
-      if (isPortrait && viewportWidth < 768) {
-        // For mobile portrait: use width-based scaling primarily
-        // This ensures no horizontal scroll and elements don't overlap horizontally
-        effectiveBaseWidth = DASHBOARD_CONFIG.baseWidth;
-        effectiveBaseHeight = DASHBOARD_CONFIG.baseHeight * 1; // Allow more vertical space
-      }
-
-      // Calculate scale factors
-      const scaleX = viewportWidth / effectiveBaseWidth;
-      const scaleY = viewportHeight / effectiveBaseHeight;
-
-      // Use the smaller scale to ensure everything fits
-      const newScale = Math.min(scaleX, scaleY, 1); // Max scale is 1 (no zoom in)
-
-      // Only update if scale changed (prevent unnecessary re-renders)
-      setScale((prevScale) => {
-        if (Math.abs(prevScale - newScale) > 0.001) {
-          return newScale;
-        }
-        return prevScale;
-      });
-    };
-
-    calculateScale();
-    window.addEventListener('resize', calculateScale);
-
-    return () => {
-      window.removeEventListener('resize', calculateScale);
-    };
-  }, []); // Empty dependency array - only runs once on mount
-
-  // Show loading state
-  if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Typography>Loading dashboard data...</Typography>
-      </Box>
-    );
-  }
-
-  // Show error state with fallback
-  if (error) {
-    console.error('Error loading live data:', error);
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-        <Typography color="error">Error loading dashboard data</Typography>
-        <Typography variant="body2" sx={{ mt: 1 }}>Using fallback values</Typography>
-      </Box>
-    );
-  }
-
-  // Helper function to safely parse numeric values (handles strings and null)
-  const parseValue = (value, fallback) => {
-    if (value === null || value === undefined || value === 'null') return fallback;
-    const parsed = typeof value === 'string' ? parseFloat(value) : value;
-    return isNaN(parsed) ? fallback : parsed;
-  };
-
-  // Extract values from live API data (convert strings to numbers)
-  const pressure = parseValue(liveData?.metrics?.pressure?.value, 5.87); //barg
-  const temperature = parseValue(liveData?.metrics?.temperature?.value, 165.2); //degC
-  const flow = parseValue(liveData?.metrics?.flow_rate?.value, 245.71); //t/h
-  const tds = parseValue(liveData?.metrics?.tds?.value, 1.0012); //ppm
-  const dryness = 'NaN'; // Not in API yet, keep default
-  const ncg = 'NaN'; // Not in API yet, keep default
-  const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5); //MW
-  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.22); //MVAR
-  const voltage = parseValue(liveData?.metrics?.voltage?.value, 13.86); //kV
-  const stSpeed = parseValue(liveData?.metrics?.speed?.value, 2998); //rpm
-  const current = parseValue(liveData?.metrics?.current?.value, 1377.45); //Hz
-
-  // Get risk prediction from API status (use the worst status as overall risk)
-  const getOverallRiskPrediction = () => {
-    if (!liveData?.metrics) return 'Ideal';
-
-    const statuses = Object.values(liveData.metrics).map(m => m.status);
-    if (statuses.includes('abnormal')) return 'Abnormal';
-    if (statuses.includes('warning')) return 'Warning';
-    return 'Ideal';
-  };
-
-  const riskPrediction = getOverallRiskPrediction();
-
-  const getPowerStatus = (val, low, high) => {
-    if (val < low) return 'Low';
-    if (val > high) return 'High';
-    return 'Normal';
-  };
-
-  const getPredictionConfig = (pred) => {
-    switch (pred?.toLowerCase()) {
-      case 'ideal':
-        return { label: 'Ideal', color: '#22c55e', bgColor: '#22c55e15' };
-      case 'warning':
-        return { label: 'Warning', color: '#f59e0b', bgColor: '#f59e0b15' };
-      case 'abnormal':
-        return { label: 'Abnormal', color: '#ef4444', bgColor: '#ef444415' };
-      default:
-        return { label: 'Ideal', color: '#22c55e', bgColor: '#22c55e15' };
-    }
-  };
-
-  const predConfig = getPredictionConfig(riskPrediction);
+function DesktopLayout({ 
+  limitData, 
+  liveData, 
+  parseValue, 
+  getPowerStatus, 
+  predConfig,
+  TITLE_CONFIG,
+  scale,
+  DASHBOARD_CONFIG 
+}) {
+  // Extract values from live API data
+  const pressure = parseValue(liveData?.metrics?.pressure?.value, 5.87);
+  const temperature = parseValue(liveData?.metrics?.temperature?.value, 165.2);
+  const flow = parseValue(liveData?.metrics?.flow_rate?.value, 245.71);
+  const tds = parseValue(liveData?.metrics?.tds?.value, 1.0012);
+  const dryness = 'NaN';
+  const ncg = 'NaN';
+  const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5);
+  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.22);
+  const voltage = parseValue(liveData?.metrics?.voltage?.value, 13.86);
+  const stSpeed = parseValue(liveData?.metrics?.speed?.value, 2998);
+  const current = parseValue(liveData?.metrics?.current?.value, 1377.45);
 
   const CARD_CONFIG = {
     sensor: { width: 247, height: 190 },
@@ -189,14 +309,7 @@ export default function DashboardDefault() {
     ai: { width: 250, height: 110 }
   };
 
-  const TITLE_CONFIG = {
-    fontSize: '1rem',
-    fontWeight: 600,
-    color: '#334155',
-    justifyContent: 'left'
-  };
-
-  const DESKTOP_POSITIONS = {
+  const POSITIONS = {
     tds: { top: '12%', left: '4%' },
     dryness: { top: '35%', left: '4%' },
     ncg: { top: '58%', left: '4%' },
@@ -211,26 +324,8 @@ export default function DashboardDefault() {
     stSpeed: { top: '64%', left: '85%' }
   };
 
-  const MOBILE_POSITIONS = {
-    tds: { top: '4%', left: '10%' },
-    dryness: { top: '18%', left: '10%' },
-    ncg: { top: '32%', left: '10%' },
-    pressure: { top: '46%', left: '10%' },
-    temperature: { top: '60%', left: '10%' },
-    flow: { top: '74%', left: '10%' },
-    ai: { top: '88%', left: '10%' },
-    activePower: { top: '102%', left: '10%' },
-    reactivePower: { top: '116%', left: '10%' },
-    voltage: { top: '130%', left: '10%' },
-    stSpeed: { top: '144%', left: '10%' },
-    current: { top: '158%', left: '10%' }
-  };
-
-  // Fixed layout - always use desktop positions regardless of screen size
-  const POSITIONS = DESKTOP_POSITIONS;
-
   const IMAGE_CONFIG = {
-    width: '980px',  // Fixed width - no responsive scaling
+    width: '980px',
     top: '0%',
     left: '50%',
     opacity: 1
@@ -238,41 +333,27 @@ export default function DashboardDefault() {
 
   return (
     <Box sx={{
-      position: 'relative',
-      width: '100%',
       display: 'flex',
       flexGrow: 1,
-      zoom:'100%',
-      flexDirection: 'column',
-      overflow: 'auto',
+      justifyContent: 'center',
+      alignItems: 'flex-start',
+      width: '100%',
+      overflow: 'hidden',
       p: 0,
-      pt: 5, // Add top padding
-      m: 0
+      m: 0,
+      position: 'relative',
+      height: `${DASHBOARD_CONFIG.baseHeight * scale}px`,
+      transition: 'height 0.3s ease-out'
     }}>
-      {/* Scaled dashboard content */}
       <Box sx={{
-        display: 'flex',
-        flexGrow: 1,
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        width: '100%',
-        overflow: 'hidden',
-        p: 0,
-        m: 0,
-        position: 'relative',  // ← UPDATE 25
-        // Container height should match the scaled content height
-        height: `${DASHBOARD_CONFIG.baseHeight * scale}px`,
-        transition: 'height 0.3s ease-out'
+        position: 'absolute',
+        left: `calc(50% - ${((DASHBOARD_CONFIG.baseWidth / 2) - 40) * scale}px)`,
+        width: `${DASHBOARD_CONFIG.baseWidth}px`,
+        height: `${DASHBOARD_CONFIG.baseHeight}px`,
+        transform: `scale(${scale})`,
+        transformOrigin: 'top left',
+        transition: 'transform 0.3s ease-out, left 0.3s ease-out'
       }}>
-        <Box sx={{
-          position: 'absolute', // UPDATE 25
-          left: `calc(50% - ${((DASHBOARD_CONFIG.baseWidth / 2) - 40) * scale}px)`,
-          width: `${DASHBOARD_CONFIG.baseWidth}px`,
-          height: `${DASHBOARD_CONFIG.baseHeight}px`,
-          transform: `scale(${scale})`,
-          transformOrigin: 'top left',
-          transition: 'transform 0.3s ease-out, left 0.3s ease-out'
-        }}>
         <Box
           component="img"
           src={mainImage}
@@ -301,25 +382,20 @@ export default function DashboardDefault() {
         >
           <line x1="15%" y1="6.8%" x2="22%" y2="6.8%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="15%" y1="6.8%" x2="15%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
-
           <line x1="15%" y1="12%" x2="5%" y2="12%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="15%" y1="35%" x2="5%" y2="35%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="15%" y1="58%" x2="5%" y2="58%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="15%" y1="78%" x2="5%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
-
           <line x1="49%" y1="7%" x2="49%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="49%" y1="31%" x2="45%" y2="31%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="49%" y1="55%" x2="45%" y2="55%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="49%" y1="78%" x2="45%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
-
           <line x1="60%" y1="31%" x2="60%" y2="38%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="60%" y1="38%" x2="74.5%" y2="38%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="74.5%" y1="38%" x2="74.5%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
-
           <line x1="70%" y1="50%" x2="78%" y2="50%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="70%" y1="64%" x2="78%" y2="64%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="74.4%" y1="78%" x2="70%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
-
         </svg>
 
         <Positioned pos={POSITIONS.tds}>
@@ -530,8 +606,157 @@ export default function DashboardDefault() {
             />
           </Box>
         </Positioned>
-        </Box>
       </Box>
+    </Box>
+  );
+}
+
+// ==============================|| MAIN DASHBOARD - RESPONSIVE ||============================== //
+const DASHBOARD_CONFIG = {
+  baseWidth: 1400,
+  baseHeight: 900,
+  footer: {
+    marginTop: 'auto',
+    paddingTop: 0
+  }
+};
+
+export default function DashboardDefault() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md')); // Detect mobile: screens < 900px
+  const [scale, setScale] = useState(1);
+  const limitData = getLimitData();
+
+  // Real data from API
+  const { data: liveData, loading, error } = useLiveData();
+
+  // Calculate scale for desktop layout only
+  useEffect(() => {
+    if (isMobile) return; // Skip scale calculation for mobile
+
+    const calculateScale = () => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight - 164;
+
+      const scaleX = viewportWidth / DASHBOARD_CONFIG.baseWidth;
+      const scaleY = viewportHeight / DASHBOARD_CONFIG.baseHeight;
+      const newScale = Math.min(scaleX, scaleY, 1);
+
+      setScale((prevScale) => {
+        if (Math.abs(prevScale - newScale) > 0.001) {
+          return newScale;
+        }
+        return prevScale;
+      });
+    };
+
+    calculateScale();
+    window.addEventListener('resize', calculateScale);
+
+    return () => {
+      window.removeEventListener('resize', calculateScale);
+    };
+  }, [isMobile]);
+
+  // Show loading state
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Typography>Loading dashboard data...</Typography>
+      </Box>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    console.error('Error loading live data:', error);
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
+        <Typography color="error">Error loading dashboard data</Typography>
+        <Typography variant="body2" sx={{ mt: 1 }}>Using fallback values</Typography>
+      </Box>
+    );
+  }
+
+  // Helper function to safely parse numeric values
+  const parseValue = (value, fallback) => {
+    if (value === null || value === undefined || value === 'null') return fallback;
+    const parsed = typeof value === 'string' ? parseFloat(value) : value;
+    return isNaN(parsed) ? fallback : parsed;
+  };
+
+  // Get risk prediction
+  const getOverallRiskPrediction = () => {
+    if (!liveData?.metrics) return 'Ideal';
+    const statuses = Object.values(liveData.metrics).map(m => m.status);
+    if (statuses.includes('abnormal')) return 'Abnormal';
+    if (statuses.includes('warning')) return 'Warning';
+    return 'Ideal';
+  };
+
+  const riskPrediction = getOverallRiskPrediction();
+
+  const getPowerStatus = (val, low, high) => {
+    if (val < low) return 'Low';
+    if (val > high) return 'High';
+    return 'Normal';
+  };
+
+  const getPredictionConfig = (pred) => {
+    switch (pred?.toLowerCase()) {
+      case 'ideal':
+        return { label: 'Ideal', color: '#22c55e', bgColor: '#22c55e15' };
+      case 'warning':
+        return { label: 'Warning', color: '#f59e0b', bgColor: '#f59e0b15' };
+      case 'abnormal':
+        return { label: 'Abnormal', color: '#ef4444', bgColor: '#ef444415' };
+      default:
+        return { label: 'Ideal', color: '#22c55e', bgColor: '#22c55e15' };
+    }
+  };
+
+  const predConfig = getPredictionConfig(riskPrediction);
+
+  const TITLE_CONFIG = {
+    fontSize: '1rem',
+    fontWeight: 600,
+    color: '#334155',
+    justifyContent: 'left'
+  };
+
+  return (
+    <Box sx={{
+      position: 'relative',
+      width: '100%',
+      display: 'flex',
+      flexGrow: 1,
+      flexDirection: 'column',
+      overflow: isMobile ? 'auto' : 'hidden',
+      p: 0,
+      pt: isMobile ? 2 : 5,
+      m: 0
+    }}>
+      {isMobile ? (
+        <MobileLayout
+          limitData={limitData}
+          liveData={liveData}
+          parseValue={parseValue}
+          getPowerStatus={getPowerStatus}
+          predConfig={predConfig}
+          TITLE_CONFIG={TITLE_CONFIG}
+        />
+      ) : (
+        <DesktopLayout
+          limitData={limitData}
+          liveData={liveData}
+          parseValue={parseValue}
+          getPowerStatus={getPowerStatus}
+          predConfig={predConfig}
+          TITLE_CONFIG={TITLE_CONFIG}
+          scale={scale}
+          DASHBOARD_CONFIG={DASHBOARD_CONFIG}
+        />
+      )}
     </Box>
   );
 }
