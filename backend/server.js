@@ -60,6 +60,10 @@ const limiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Fix for trust proxy issue
+  validate: {
+    xForwardedForHeader: false
+  }
 });
 
 // Apply rate limiting to all API routes
