@@ -8,7 +8,7 @@ An interactive IoT-based SCADA system built to monitor **steam quality**, **stea
 
 ## 🌐 Live Dashboard
 
-📍 **Live Website**: [Steam Quality & Purity Online Monitoring Dashboard](https://pertasmart.unpad.ac.id/)
+📍 **Live Website**: [PertaSmart](https://pertasmart.unpad.ac.id/)
 
 ---
 
