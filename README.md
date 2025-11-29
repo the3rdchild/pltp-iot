@@ -1,4 +1,4 @@
-# 🔥 PLTP IoT Dashboard – Steam Quality & Purity Monitoring
+# 🔥 Pertasmart - PLTP IoT Dashboard – Steam Quality & Purity Monitoring
 
 An interactive IoT-based SCADA system built to monitor **steam quality**, **steam purity**, and **water system status** in real time for **PLTP Kamojang**. This project is developed using **React + Vite**, visualized with **Material UI**, and deployed via **Firebase Hosting**.
 
@@ -8,40 +8,7 @@ An interactive IoT-based SCADA system built to monitor **steam quality**, **stea
 
 ## 🌐 Live Dashboard
 
-📍 **Live demo**: [Steam Quality & Purity Online Monitoring Dashboard](https://pertasmart.unpad.ac.id/)
-
-
----
-
-## 🧠 AI-Powered Steam Quality System
-
-The platform includes a machine learning model (Random Forest) to assist in predicting the **turbine risk level**, based on sensor inputs like **TDS (Total Dissolved Solids)** and **Dryness Fraction**.
-
-### 🔄 AI Flow Diagram
-
-![AI Flow](https://github.com/the3rdchild/pltp-iot/blob/main/documentation/ai-flow.png)
-
-### 🧪 TDS Sensor Placement Concept
-
-![TDS Sensor Layout](https://github.com/the3rdchild/pltp-iot/blob/main/documentation/tds.png)
-
----
-
-## ⚙️ Key Features
-
-### Steam & Water System Status
-- Reservoir pressure
-- Steam output pressure
-
-### Steam Purity
-- TDS (0.6–0.7 ppm ideal range)
-- Dissolved gases: CO₂, Argon, Methane, MA₃
-- Scaling Deposit Index
-
-### Steam Quality (AI)
-- Dryness Fraction
-- AI-based Anomaly Score
-- Turbine Risk Prediction (Low → Critical)
+📍 **Live Website**: [Steam Quality & Purity Online Monitoring Dashboard](https://pertasmart.unpad.ac.id/)
 
 ---
 
@@ -52,25 +19,6 @@ The platform includes a machine learning model (Random Forest) to assist in pred
 - 🔥 Firebase Hosting
 - 📁 Dummy Simulation via JS modules
 - ⚙️ AI model logic (Random Forest placeholder)
-
----
-
-## 🛠️ Local Development
-
-```bash
-# Clone this repository
-git clone https://github.com/the3rdchild/pltp-iot.git
-cd pltp-iot
-
-# Install dependencies
-npm install
-
-# Run locally (localhost:3000)
-npm run dev
-
-# Build for production
-npm run build
-```
 
 ---
 
