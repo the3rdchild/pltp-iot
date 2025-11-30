@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, ZoomControl } from 'rea
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import pertasmartLogo from '../../../assets/images/Pertasmart4x1.svg';
+import { generateLiveUnitData } from '../../../data/simulasi';
 
 // Fix Leaflet default marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -24,8 +25,8 @@ const customIcon = new L.Icon({
   popupAnchor: [0, -40]
 });
 
-// Data lokasi
-const locations = {
+// Data lokasi - will be populated with live data
+const getLocations = (liveData) => ({
   kamojang: {
     id: 'kamojang',
     name: 'Kamojang Unit 5',
@@ -33,12 +34,12 @@ const locations = {
     location: 'Jawa Barat',
     position: [-7.1485, 107.7947],
     data: {
-      dryness: '99.23%',
-      tds: '154.2°C',
-      ncg: '5.87 barg',
-      pressure: '32.45 MPa',
-      temp: '185°C',
-      power: '55 MW'
+      dryness: liveData.kamojang.dryness,
+      tds: liveData.kamojang.tds,
+      ncg: liveData.kamojang.ncg,
+      pressure: liveData.kamojang.pressure,
+      temp: liveData.kamojang.temp,
+      power: liveData.kamojang.power
     }
   },
   ulubelu: {
@@ -48,18 +49,18 @@ const locations = {
     location: 'Lampung',
     position: [-5.0833, 104.5833],
     data: {
-      dryness: '98.45%',
-      tds: '162.8°C',
-      ncg: '6.12 barg',
-      pressure: '28.67 MPa',
-      temp: '178°C',
-      power: '110 MW'
+      dryness: liveData.ulubelu.dryness,
+      tds: liveData.ulubelu.tds,
+      ncg: liveData.ulubelu.ncg,
+      pressure: liveData.ulubelu.pressure,
+      temp: liveData.ulubelu.temp,
+      power: liveData.ulubelu.power
     }
   }
-};
+});
 
 // Component untuk handle map zoom dan fly to location
-const MapController = ({ targetLocation, onLocationReached }) => {
+const MapController = ({ targetLocation, onLocationReached, locations }) => {
   const map = useMap();
 
   useEffect(() => {
@@ -75,7 +76,7 @@ const MapController = ({ targetLocation, onLocationReached }) => {
         }, 1500);
       }
     }
-  }, [targetLocation, map, onLocationReached]);
+  }, [targetLocation, map, onLocationReached, locations]);
 
   return null;
 };
@@ -87,9 +88,22 @@ const UnitPemantauan = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [targetLocation, setTargetLocation] = useState(null);
-  
+  const [liveUnitData, setLiveUnitData] = useState(generateLiveUnitData());
+
   const sidebarRef = useRef(null);
   const searchRef = useRef(null);
+
+  // Live data update every 1 second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLiveUnitData(generateLiveUnitData());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Get locations with live data
+  const locations = getLocations(liveUnitData);
 
   // Search handler
   const handleSearch = (query) => {
@@ -292,9 +306,10 @@ const UnitPemantauan = () => {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           
-          <MapController 
-            targetLocation={targetLocation} 
+          <MapController
+            targetLocation={targetLocation}
             onLocationReached={handleLocationReached}
+            locations={locations}
           />
 
           {/* Markers */}

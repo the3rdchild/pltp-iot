@@ -5,6 +5,7 @@ import productionWellImg from '/src/assets/images/articles/production-well.jpg';
 import turbineImg from '/src/assets/images/articles/turbine-generator.jpg';
 import coolingTowerImg from '/src/assets/images/articles/cooling-tower.jpg';
 import powerGridImg from '/src/assets/images/articles/power-grid.jpg';
+import pertasmartLogo from '/src/assets/images/articles/Pertasmart4x1.svg';
 
 const CaraKerjaPLTP = () => {
   const navigate = useNavigate();
@@ -121,6 +122,7 @@ const CaraKerjaPLTP = () => {
   };
 
   return (
+    <>
     <div className="cara-kerja-page">
       {/* Back Button */}
       <button className="back-button" onClick={() => navigate(-1)}>
@@ -282,7 +284,7 @@ const CaraKerjaPLTP = () => {
           color: white;
           transform: translateX(-4px);
         }
-
+ 
         /* Fixed Timeline Navigation */
         .timeline-nav {
           position: fixed;
@@ -662,8 +664,93 @@ const CaraKerjaPLTP = () => {
             grid-template-columns: 1fr;
           }
         }
+
+               /* Footer */
+        .footer {
+          background: #0f1729;
+          color: white;
+          padding: 48px 0;
+        }
+
+        .footer-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 32px;
+          margin-bottom: 32px;
+        }
+
+        .footer-logos {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .footer-logo {
+          height: 32px;
+          width: auto;
+        }
+
+        .footer-text {
+          font-size: 0.875rem;
+          color: rgba(255, 255, 255, 0.7);
+          line-height: 1.6;
+        }
+
+        .footer-heading {
+          font-weight: 700;
+          margin-bottom: 16px;
+        }
+
+        .footer-links {
+          list-style: none;
+          padding: 0;
+        }
+
+        .footer-links li {
+          margin-bottom: 8px;
+        }
+
+        .footer-links a {
+          color: rgba(255, 255, 255, 0.7);
+          text-decoration: none;
+          font-size: 0.875rem;
+          transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+          color: white;
+        }
+
+        .footer-bottom {
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          padding-top: 32px;
+          text-align: center;
+        }
+
+        .footer-bottom p {
+          font-size: 0.875rem;
+          color: rgba(255, 255, 255, 0.6);
+        }
+
+        .container {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 20px;
+        }
+
       `}</style>
     </div>
+
+    {/* Footer */}
+    <footer className="footer">
+      <div className="container">
+        <div className="footer-bottom">
+          <p>&copy; 2024 SMART System - PT. Pertamina & UNPAD. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+    </>
   );
 };
 

@@ -127,3 +127,149 @@ export function generateAnalyticData() {
     stSpeed: previousValues.stSpeed.toFixed(0)
   };
 }
+
+// Live data generator for PLTP units
+const unitRanges = {
+  kamojang: {
+    dryness: { min: 98.53, max: 99.89, unit: '%' },
+    tds: { min: 0.1, max: 1.1, unit: 'ppm' },
+    ncg: { min: 0.5, max: 1.5, unit: 'wt%' },
+    pressure: { min: 6.1, max: 6.9, unit: 'barg' },
+    temp: { min: 160, max: 168, unit: '°C' },
+    power: { min: 32.0, max: 32.6, unit: 'MW' }
+  },
+  ulubelu: {
+    dryness: { min: 98.53, max: 99.89, unit: '%' },
+    tds: { min: 0.1, max: 1.1, unit: 'ppm' },
+    ncg: { min: 0.5, max: 1.5, unit: 'wt%' },
+    pressure: { min: 6.1, max: 6.9, unit: 'barg' },
+    temp: { min: 160, max: 168, unit: '°C' },
+    power: { min: 54.9, max: 55.6, unit: 'MW' }
+  }
+};
+
+// Previous values for smooth transitions
+let previousUnitValues = {
+  kamojang: {
+    dryness: 99.2,
+    tds: 0.6,
+    ncg: 1.0,
+    pressure: 6.5,
+    temp: 164,
+    power: 32.3
+  },
+  ulubelu: {
+    dryness: 99.2,
+    tds: 0.6,
+    ncg: 1.0,
+    pressure: 6.5,
+    temp: 164,
+    power: 55.2
+  }
+};
+
+export function generateLiveUnitData() {
+  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+  const smoothUpdate = (prevValue, min, max, variance) => {
+    const newValue = prevValue + (Math.random() - 0.5) * variance;
+    return clamp(newValue, min, max);
+  };
+
+  // Update Kamojang values
+  const kamojangRanges = unitRanges.kamojang;
+  previousUnitValues.kamojang.dryness = smoothUpdate(
+    previousUnitValues.kamojang.dryness,
+    kamojangRanges.dryness.min,
+    kamojangRanges.dryness.max,
+    0.1
+  );
+  previousUnitValues.kamojang.tds = smoothUpdate(
+    previousUnitValues.kamojang.tds,
+    kamojangRanges.tds.min,
+    kamojangRanges.tds.max,
+    0.05
+  );
+  previousUnitValues.kamojang.ncg = smoothUpdate(
+    previousUnitValues.kamojang.ncg,
+    kamojangRanges.ncg.min,
+    kamojangRanges.ncg.max,
+    0.05
+  );
+  previousUnitValues.kamojang.pressure = smoothUpdate(
+    previousUnitValues.kamojang.pressure,
+    kamojangRanges.pressure.min,
+    kamojangRanges.pressure.max,
+    0.05
+  );
+  previousUnitValues.kamojang.temp = smoothUpdate(
+    previousUnitValues.kamojang.temp,
+    kamojangRanges.temp.min,
+    kamojangRanges.temp.max,
+    0.5
+  );
+  previousUnitValues.kamojang.power = smoothUpdate(
+    previousUnitValues.kamojang.power,
+    kamojangRanges.power.min,
+    kamojangRanges.power.max,
+    0.05
+  );
+
+  // Update Ulubelu values
+  const ulubeluRanges = unitRanges.ulubelu;
+  previousUnitValues.ulubelu.dryness = smoothUpdate(
+    previousUnitValues.ulubelu.dryness,
+    ulubeluRanges.dryness.min,
+    ulubeluRanges.dryness.max,
+    0.1
+  );
+  previousUnitValues.ulubelu.tds = smoothUpdate(
+    previousUnitValues.ulubelu.tds,
+    ulubeluRanges.tds.min,
+    ulubeluRanges.tds.max,
+    0.05
+  );
+  previousUnitValues.ulubelu.ncg = smoothUpdate(
+    previousUnitValues.ulubelu.ncg,
+    ulubeluRanges.ncg.min,
+    ulubeluRanges.ncg.max,
+    0.05
+  );
+  previousUnitValues.ulubelu.pressure = smoothUpdate(
+    previousUnitValues.ulubelu.pressure,
+    ulubeluRanges.pressure.min,
+    ulubeluRanges.pressure.max,
+    0.05
+  );
+  previousUnitValues.ulubelu.temp = smoothUpdate(
+    previousUnitValues.ulubelu.temp,
+    ulubeluRanges.temp.min,
+    ulubeluRanges.temp.max,
+    0.5
+  );
+  previousUnitValues.ulubelu.power = smoothUpdate(
+    previousUnitValues.ulubelu.power,
+    ulubeluRanges.power.min,
+    ulubeluRanges.power.max,
+    0.05
+  );
+
+  return {
+    kamojang: {
+      dryness: `${previousUnitValues.kamojang.dryness.toFixed(2)} ${kamojangRanges.dryness.unit}`,
+      tds: `${previousUnitValues.kamojang.tds.toFixed(2)} ${kamojangRanges.tds.unit}`,
+      ncg: `${previousUnitValues.kamojang.ncg.toFixed(2)} ${kamojangRanges.ncg.unit}`,
+      pressure: `${previousUnitValues.kamojang.pressure.toFixed(2)} ${kamojangRanges.pressure.unit}`,
+      temp: `${previousUnitValues.kamojang.temp.toFixed(1)} ${kamojangRanges.temp.unit}`,
+      power: `${previousUnitValues.kamojang.power.toFixed(2)} ${kamojangRanges.power.unit}`
+    },
+    ulubelu: {
+      dryness: `${previousUnitValues.ulubelu.dryness.toFixed(2)} ${ulubeluRanges.dryness.unit}`,
+      tds: `${previousUnitValues.ulubelu.tds.toFixed(2)} ${ulubeluRanges.tds.unit}`,
+      ncg: `${previousUnitValues.ulubelu.ncg.toFixed(2)} ${ulubeluRanges.ncg.unit}`,
+      pressure: `${previousUnitValues.ulubelu.pressure.toFixed(2)} ${ulubeluRanges.pressure.unit}`,
+      temp: `${previousUnitValues.ulubelu.temp.toFixed(1)} ${ulubeluRanges.temp.unit}`,
+      power: `${previousUnitValues.ulubelu.power.toFixed(2)} ${ulubeluRanges.power.unit}`
+    }
+  };
+}

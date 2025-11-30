@@ -12,6 +12,7 @@ import indonesiaMap from '../../assets/images/indonesia-map.png';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { generateLiveUnitData } from '../../data/simulasi';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -24,16 +25,26 @@ const Home = () => {
   const [activeUnit, setActiveUnit] = useState(null);
   const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0, side: 'right' });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [liveUnitData, setLiveUnitData] = useState(generateLiveUnitData());
   const popupRef = useRef(null);
   const mapRef = useRef(null);
+
+  // Live data update every 1 second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLiveUnitData(generateLiveUnitData());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Close popup when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       // Check if click is outside popup and not on a pin
       if (
-        activeUnit && 
-        popupRef.current && 
+        activeUnit &&
+        popupRef.current &&
         !popupRef.current.contains(event.target) &&
         !event.target.closest('.map-pin')
       ) {
@@ -54,22 +65,22 @@ const Home = () => {
     kamojang: {
       name: 'Kamojang',
       location: 'Jawa Barat',
-      dryness: '99.23%',
-      tds: '154.2°C',
-      ncg: '5.87 barg',
-      pressure: '32.45 MPa',
-      temp: '185°C',
-      power: '55 MW'
+      dryness: liveUnitData.kamojang.dryness,
+      tds: liveUnitData.kamojang.tds,
+      ncg: liveUnitData.kamojang.ncg,
+      pressure: liveUnitData.kamojang.pressure,
+      temp: liveUnitData.kamojang.temp,
+      power: liveUnitData.kamojang.power
     },
     ulubelu: {
       name: 'Ulubelu',
       location: 'Lampung',
-      dryness: '98.45%',
-      tds: '162.8°C',
-      ncg: '6.12 barg',
-      pressure: '28.67 MPa',
-      temp: '178°C',
-      power: '110 MW'
+      dryness: liveUnitData.ulubelu.dryness,
+      tds: liveUnitData.ulubelu.tds,
+      ncg: liveUnitData.ulubelu.ncg,
+      pressure: liveUnitData.ulubelu.pressure,
+      temp: liveUnitData.ulubelu.temp,
+      power: liveUnitData.ulubelu.power
     }
   };
 
