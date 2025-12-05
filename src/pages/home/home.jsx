@@ -8,6 +8,7 @@ import engineerImage from '../../assets/images/landing_page_image_2.png';
 import tdsImage from '../../assets/images/tds.png';
 import drynessImage from '../../assets/images/dryness.png';
 import ncgImage from '../../assets/images/ncg.png';
+import SC4500 from '../../assets/images/SC4500.png';
 import indonesiaMap from '../../assets/images/indonesia-map.png';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -459,7 +460,7 @@ const Home = () => {
                   TDS (Total Dissolved Solid)
                 </h3>
                 <p className="quality-description">
-                  TDS adalah perbandingan banyaknya zat padat dalam larutan/uap/cairan yang dinyatakan dalam persentase. TDS tinggi bisa menyebabkan carryover (terikutnya zat padat atau cairan dalam uap).
+                TDS adalah perbandingan banyaknya zat padat dalam larutan/uap/cairan yang dinyatakan dalam persentase. TDS tinggi bisa menyebabkan carryover (terikutnya zat padat atau cairan dalam uap).
                 </p>
                 <a href="/artikel-tds" className="btn-quality-read-more">
                   READ MORE
@@ -521,6 +522,98 @@ const Home = () => {
         </div>
       </section>
 
+      {/* AI Monitoring Section */}
+      <section id="ai-monitoring" className="ai-section">
+        <div className="container">
+          <div className="ai-intro-grid">
+            <div>
+              <h2 className="section-title">
+                Sistem Monitoring & Analisis AI
+              </h2>
+            </div>
+            <div>
+              <p className="section-intro">
+                Sistem pemantauan kami didukung oleh teknologi kecerdasan buatan yang mampu menganalisis data secara real-time dan memberikan prediksi akurat. Melalui integrasi AI, sistem dapat mendeteksi potensi anomali operasional, memprediksi kondisi turbin, serta memperkirakan parameter kualitas uap seperti dryness fraction dan NCG tanpa pengambilan sampel langsung. Teknologi ini memungkinkan tindakan preventif lebih cepat dan efisien.
+              </p>
+            </div>
+          </div>
+
+          <div className="ai-cards">
+            <div className="ai-card">
+              <div className="ai-image-container">
+                <img
+                  src={SC4500}
+                  alt="Sampling TDS"
+                  className="ai-image"
+                />
+              </div>
+              <div className="ai-content">
+                <h3 className="ai-title">
+                  Cara Pengambilan Sampel TDS
+                </h3>
+                <p className="ai-description">
+                  Proses pengambilan sampel TDS menggunakan perangkat SC4500 untuk mengukur kadar Total Dissolved Solid dalam uap secara akurat. Data sampel ini menjadi input penting untuk sistem monitoring dan validasi prediksi AI.
+                </p>
+                <a href="/artikel-CaraTDSAmbilData" className="btn-ai-read-more">
+                  READ MORE
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            <div className="ai-card">
+              <div className="ai-image-container">
+                <img
+                  src={drynessImage}
+                  alt="AI1 Anomaly Detection"
+                  className="ai-image"
+                />
+              </div>
+              <div className="ai-content">
+                <h3 className="ai-title">
+                  AI1 - Prediksi Anomali & Status Turbin
+                </h3>
+                <p className="ai-description">
+                  Sistem AI1 menganalisis 12 parameter operasional secara real-time untuk mendeteksi anomali dan memprediksi risiko kerusakan turbin. AI memberikan status kondisi (Low/Medium/High) dan peringatan dini untuk tindakan preventif.
+                </p>
+                <a href="/artikel-AI1" className="btn-ai-read-more">
+                  READ MORE
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            <div className="ai-card">
+              <div className="ai-image-container">
+                <img
+                  src={ncgImage}
+                  alt="AI2 Virtual Sensor"
+                  className="ai-image"
+                />
+              </div>
+              <div className="ai-content">
+                <h3 className="ai-title">
+                  AI2 - Virtual Sensor Dryness & NCG
+                </h3>
+                <p className="ai-description">
+                  AI2 berfungsi sebagai virtual sensor yang memprediksi nilai dryness fraction dan NCG content tanpa pengambilan sampel langsung. Teknologi ini mengurangi biaya operasional sambil tetap menjaga akurasi monitoring.
+                </p>
+                <a href="/artikel-AI2" className="btn-ai-read-more">
+                  READ MORE
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="footer">
         <div className="container">
@@ -549,8 +642,9 @@ const Home = () => {
             <div className="footer-col">
               <h4 className="footer-heading">Lokasi PLTP</h4>
               <ul className="footer-links">
-                <li>Kamojang, Jawa Barat</li>
-                <li>Ulubelu, Lampung</li>
+                <a href="/login" >Kamojang, Jawa Barat</a>
+                <li> </li>
+                <a href="#" >Ulubelu, Lampung</a>
               </ul>
             </div>
 
@@ -559,7 +653,7 @@ const Home = () => {
               <ul className="footer-links">
                 <li>PT. Pertamina Geothermal Energy</li>
                 <li>Universitas Padjadjaran</li>
-                <li>Email: info@pertasmart.com</li>
+                <li>Email: pertasmart@unpad.ac.id</li>
               </ul>
             </div>
           </div>
@@ -1316,6 +1410,127 @@ const Home = () => {
           transform: translateX(4px);
         }
 
+        /* AI Monitoring Section */
+        .ai-section {
+          padding: 80px 0;
+          background: rgba(102, 102, 102, 0.15);
+        }
+
+        .ai-intro-grid {
+          display: grid;
+          grid-template-columns: 1fr 2fr;
+          gap: 48px;
+          margin-bottom: 48px;
+          align-items: start;
+          border-bottom: 1px solid #e9ecef;
+          padding-bottom: 32px;
+        }
+
+        .ai-intro-grid .section-title {
+          margin-top: 0;
+          font-size: 2.5rem;
+          line-height: 1.2;
+        }
+
+        .ai-intro-grid .section-intro {
+          font-size: 1rem;
+          margin-top: 0;
+        }
+
+        .ai-cards {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 32px;
+          margin-top: 64px;
+        }
+
+        .ai-card {
+          background: white;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+          transition: all 0.3s ease;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .ai-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+        }
+
+        .ai-image-container {
+          height: 320px;
+          overflow: hidden;
+        }
+
+        .ai-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.3s ease;
+        }
+
+        .ai-card:hover .ai-image {
+          transform: scale(1.1);
+        }
+
+        .ai-content {
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          flex: 1;
+        }
+
+        .ai-title {
+          font-size: 1.5rem;
+          font-weight: 700;
+          color: #1a1a1a;
+          margin-bottom: 12px;
+        }
+
+        .ai-description {
+          font-size: 0.9375rem;
+          color: #495057;
+          line-height: 1.6;
+          margin-bottom: 16px;
+          flex: 1;
+        }
+
+        .btn-ai-read-more {
+          background: white;
+          color: #2563eb;
+          border: 2px solid #2563eb;
+          padding: 6px 16px;
+          border-radius: 50px;
+          font-weight: 600;
+          font-size: 0.75rem;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          transition: all 0.3s ease;
+          margin-top: auto;
+          align-self: flex-start;
+          white-space: nowrap;
+          text-decoration: none;
+        }
+
+        .btn-ai-read-more:hover {
+          background: #2563eb;
+          color: white;
+        }
+
+        .btn-ai-read-more svg {
+          transition: transform 0.3s ease;
+        }
+
+        .btn-ai-read-more:hover svg {
+          transform: translateX(4px);
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
           .services-intro-grid {
@@ -1328,6 +1543,15 @@ const Home = () => {
           }
 
           .quality-cards {
+            grid-template-columns: 1fr;
+          }
+
+          .ai-intro-grid {
+            grid-template-columns: 1fr;
+            gap: 24px;
+          }
+
+          .ai-cards {
             grid-template-columns: 1fr;
           }
         }

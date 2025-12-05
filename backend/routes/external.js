@@ -4,6 +4,8 @@ const {
   receiveExternalData,
   receiveMLPrediction,
   receiveBatchData,
+  receiveUlubeluData,
+  receiveBatchUlubeluData,
   testConnection,
   generateDummyData,
   validateSetup
@@ -23,6 +25,14 @@ router.post('/ml-prediction', validateApiKey, receiveMLPrediction);
 // POST /api/external/batch - Receive batch sensor data
 // Protected with API Key authentication
 router.post('/batch', validateApiKey, receiveBatchData);
+
+// POST /api/external/sensor-data/ulubelu - Receive sensor data from Ulubelu
+// Protected with API Key authentication
+router.post('/sensor-data/ulubelu', validateApiKey, receiveUlubeluData);
+
+// POST /api/external/batch/ulubelu - Receive batch sensor data from Ulubelu
+// Protected with API Key authentication
+router.post('/batch/ulubelu', validateApiKey, receiveBatchUlubeluData);
 
 // Testing endpoints - protected with API Key for security
 router.post('/test', validateApiKey, testConnection); // Test connection and insert sample data

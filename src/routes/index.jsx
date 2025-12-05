@@ -22,12 +22,20 @@ import DataInput from 'pages/settings/dataInput'
 import Calibration from 'pages/settings/calibration';
 import Configuration from 'pages/settings/configuration';
 
-//article
+//artikel umum
+import MisiKami from 'pages/extra-pages/articles/MisiKami';
 import CaraKerjaPLTP from 'pages/extra-pages/articles/CaraKerjaPLTP';
+
+//artikel Pentingnya Memantau Kualitas Uap yang Masuk Turbin
 import TDSArticle from 'pages/extra-pages/articles/TDSArticle';
 import DrynessFractionArticle from 'pages/extra-pages/articles/DrynessFractionArticle';
 import NCGArticle from 'pages/extra-pages/articles/NCGArticle';
-import MisiKami from 'pages/extra-pages/articles/MisiKami';
+
+//artikel Sistem Monitoring & Analisis AI
+import CaraTDSAmbilData from 'pages/extra-pages/articles/CaraTDSAmbilData';
+import AnalisisAI1 from 'pages/extra-pages/articles/AI1';
+import AnalisisAI2 from 'pages/extra-pages/articles/AI2';
+
 
 // dashboard pages
 
@@ -196,6 +204,18 @@ const router = createBrowserRouter([
   {
     path: '/unit-pemantauan',
     element: <UnitPemantauan />
+  },
+  {
+    path:'/artikel-AI1',
+    element: <AnalisisAI1 />
+  }, 
+  {
+    path:'/artikel-AI2',
+    element: <AnalisisAI2 />
+  }, 
+  {
+    path:'/artikel-CaraTDSAmbilData',
+    element: <CaraTDSAmbilData />
   }
   
 ]);

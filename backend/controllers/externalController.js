@@ -538,10 +538,207 @@ const validateSetup = async (req, res) => {
   }
 };
 
+// Receive data from Ulubelu
+const receiveUlubeluData = async (req, res) => {
+  try {
+    const data = req.body;
+
+    // Log incoming data
+    console.log('📥 Received Ulubelu data:', JSON.stringify(data, null, 2));
+
+    // Validation
+    if (!data || typeof data !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid data format'
+      });
+    }
+
+    // Extract data with defaults - mark as from Ulubelu
+    const {
+      device_id = 'ULUBELU_UNKNOWN',
+      timestamp = new Date().toISOString(),
+      temperature,
+      pressure,
+      flow_rate,
+      gen_voltage_V_W,
+      gen_voltage_W_U,
+      gen_reactive_power,
+      gen_output,
+      gen_power_factor,
+      gen_frequency,
+      speed_detection,
+      MCV_L,
+      MCV_R,
+      TDS,
+      status = 'ulubelu_received'
+    } = data;
+
+    // Insert ke database
+    const result = await query(
+      `INSERT INTO sensor_data
+       (device_id, timestamp, temperature, pressure, flow_rate,
+        gen_voltage_v_w, gen_voltage_w_u, gen_reactive_power, gen_output,
+        gen_power_factor, gen_frequency, speed_detection, mcv_l, mcv_r, tds,
+        status, raw_data)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+       RETURNING *`,
+      [
+        device_id,
+        timestamp,
+        temperature,
+        pressure,
+        flow_rate,
+        gen_voltage_V_W,
+        gen_voltage_W_U,
+        gen_reactive_power,
+        gen_output,
+        gen_power_factor,
+        gen_frequency,
+        speed_detection,
+        MCV_L,
+        MCV_R,
+        TDS,
+        status,
+        JSON.stringify(data)
+      ]
+    );
+
+    console.log('✅ Ulubelu data saved to database:', result.rows[0].id);
+
+    res.status(201).json({
+      success: true,
+      message: 'Ulubelu data received successfully',
+      source: 'ulubelu',
+      data: {
+        id: result.rows[0].id,
+        device_id: result.rows[0].device_id,
+        timestamp: result.rows[0].timestamp
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error receiving Ulubelu data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save Ulubelu data',
+      error: error.message
+    });
+  }
+};
+
+// Batch insert for Ulubelu sensor readings
+const receiveBatchUlubeluData = async (req, res) => {
+  try {
+    const { data } = req.body;
+
+    if (!Array.isArray(data) || data.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Data must be a non-empty array'
+      });
+    }
+
+    console.log(`📥 Received Ulubelu batch data: ${data.length} records`);
+
+    const insertedIds = [];
+    const errors = [];
+
+    // Insert each record
+    for (let i = 0; i < data.length; i++) {
+      const record = data[i];
+
+      try {
+        const {
+          device_id = 'ULUBELU_UNKNOWN',
+          timestamp = new Date().toISOString(),
+          temperature,
+          pressure,
+          flow_rate,
+          gen_voltage_V_W,
+          gen_voltage_W_U,
+          gen_reactive_power,
+          gen_output,
+          gen_power_factor,
+          gen_frequency,
+          speed_detection,
+          MCV_L,
+          MCV_R,
+          TDS,
+          status = 'ulubelu_batch'
+        } = record;
+
+        const result = await query(
+          `INSERT INTO sensor_data
+           (device_id, timestamp, temperature, pressure, flow_rate,
+            gen_voltage_v_w, gen_voltage_w_u, gen_reactive_power, gen_output,
+            gen_power_factor, gen_frequency, speed_detection, mcv_l, mcv_r, tds,
+            status, raw_data)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+           RETURNING id`,
+          [
+            device_id,
+            timestamp,
+            temperature,
+            pressure,
+            flow_rate,
+            gen_voltage_V_W,
+            gen_voltage_W_U,
+            gen_reactive_power,
+            gen_output,
+            gen_power_factor,
+            gen_frequency,
+            speed_detection,
+            MCV_L,
+            MCV_R,
+            TDS,
+            status,
+            JSON.stringify(record)
+          ]
+        );
+
+        insertedIds.push(result.rows[0].id);
+      } catch (error) {
+        errors.push({
+          index: i,
+          error: error.message,
+          record: record
+        });
+        console.error(`❌ Error inserting Ulubelu record ${i}:`, error.message);
+      }
+    }
+
+    console.log(`✅ Ulubelu batch data saved: ${insertedIds.length} records, ${errors.length} errors`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Ulubelu batch data processed',
+      source: 'ulubelu',
+      data: {
+        total_received: data.length,
+        successfully_inserted: insertedIds.length,
+        failed: errors.length,
+        ids: insertedIds,
+        errors: errors.length > 0 ? errors : undefined
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error receiving Ulubelu batch data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process Ulubelu batch data',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   receiveExternalData,
   receiveMLPrediction,
   receiveBatchData,
+  receiveUlubeluData,
+  receiveBatchUlubeluData,
   testConnection,
   generateDummyData,
   validateSetup

@@ -155,9 +155,11 @@ RATE_LIMIT_MAX_REQUESTS=100
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| POST | `/api/external/sensor-data` | Receive sensor data | No |
-| POST | `/api/external/ml-prediction` | Receive ML predictions | No |
-| POST | `/api/external/batch` | Receive batch data | No |
+| POST | `/api/external/sensor-data` | Receive sensor data | API Key |
+| POST | `/api/external/ml-prediction` | Receive ML predictions | API Key |
+| POST | `/api/external/batch` | Receive batch data | API Key |
+| POST | `/api/external/sensor-data/ulubelu` | Receive sensor data from Ulubelu | API Key |
+| POST | `/api/external/batch/ulubelu` | Receive batch data from Ulubelu | API Key |
 
 ### Frontend Data
 
@@ -170,6 +172,88 @@ RATE_LIMIT_MAX_REQUESTS=100
 | POST | `/api/data/field` | Create field data | Yes |
 | GET | `/api/data/dashboard/stats` | Dashboard statistics | No |
 
+## 🧪 Testing Endpoints
+
+### Test Ulubelu Single Data
+
+```bash
+curl -X POST https://pertasmart.unpad.ac.id/api/external/sensor-data/ulubelu \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
+  -d '{
+    "device_id": "ULUBELU_001",
+    "timestamp": "2025-12-01T10:00:00Z",
+    "temperature": 25.5,
+    "pressure": 101.3,
+    "flow_rate": 150.0,
+    "gen_voltage_V_W": 220.5,
+    "gen_voltage_W_U": 221.0,
+    "gen_reactive_power": 15.2,
+    "gen_output": 500.0,
+    "gen_power_factor": 0.95,
+    "gen_frequency": 50.0,
+    "speed_detection": 1500.0,
+    "MCV_L": 75.5,
+    "MCV_R": 76.0,
+    "TDS": 450.0
+  }'
+```
+
+### Test Ulubelu Batch Data
+
+```bash
+curl -X POST https://pertasmart.unpad.ac.id/api/external/batch/ulubelu \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your_api_key_here" \
+  -d '{
+    "data": [
+      {
+        "device_id": "ULUBELU_001",
+        "timestamp": "2025-12-01T10:00:00Z",
+        "temperature": 25.5,
+        "pressure": 101.3,
+        "flow_rate": 150.0
+      },
+      {
+        "device_id": "ULUBELU_002",
+        "timestamp": "2025-12-01T10:01:00Z",
+        "temperature": 26.0,
+        "pressure": 102.0,
+        "flow_rate": 155.0
+      }
+    ]
+  }'
+```
+
+### Point-to-Point Security Setup
+
+For secure communication from HQ Pertamina to VPS:
+
+1. **Configure VPS Firewall** (allow specific HQ IP):
+   ```bash
+   # Allow only HQ Pertamina IP
+   sudo ufw allow from <HQ_IP_ADDRESS> to any port 5000
+   ```
+
+2. **NGINX Configuration** (IP whitelist):
+   ```nginx
+   location /api/external/ {
+       # Allow only HQ Pertamina IP
+       allow <HQ_IP_ADDRESS>;
+       deny all;
+
+       proxy_pass http://localhost:5000;
+       proxy_set_header Host $host;
+       proxy_set_header X-Real-IP $remote_addr;
+   }
+   ```
+
+3. **Environment Variables** (.env):
+   ```env
+   # API Key for Ulubelu/HQ Pertamina
+   API_KEY_ULUBELU=your_secure_api_key_here
+   ALLOWED_IPS=<HQ_IP_ADDRESS>
+   ```
 
 ## 🔧 PM2 Commands
 
