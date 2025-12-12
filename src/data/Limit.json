@@ -157,6 +157,138 @@
       "idealHigh": 1550,
       "warningHigh": 1800,
       "abnormalHigh": 2000
+    },
+    "main_steam_pressure": {
+      "value": "main_steam_pressure",
+      "min": 0,
+      "max": 10,
+      "unit": "bar",
+      "idealHigh": 6,
+      "warningHigh": 8,
+      "abnormalHigh": 10
+    },
+    "main_steam_flow": {
+      "value": "main_steam_flow",
+      "min": 0,
+      "max": 300,
+      "unit": "t/h",
+      "idealHigh": 250,
+      "warningHigh": 280,
+      "abnormalHigh": 300
+    },
+    "main_steam_temp": {
+      "value": "main_steam_temp",
+      "min": 100,
+      "max": 200,
+      "unit": "°C",
+      "idealHigh": 170,
+      "warningHigh": 185,
+      "abnormalHigh": 200
+    },
+    "gen_reactive_power_net": {
+      "value": "gen_reactive_power_net",
+      "min": 0,
+      "max": 10,
+      "unit": "MVAR",
+      "idealHigh": 7,
+      "warningHigh": 8.5,
+      "abnormalHigh": 10
+    },
+    "gen_output_mw": {
+      "value": "gen_output_mw",
+      "min": 0,
+      "max": 40,
+      "unit": "MW",
+      "idealHigh": 35,
+      "warningHigh": 38,
+      "abnormalHigh": 40
+    },
+    "gen_freq": {
+      "value": "gen_freq",
+      "min": 48,
+      "max": 52,
+      "unit": "Hz",
+      "abnormalLow": 48.5,
+      "warningLow": 49,
+      "idealLow": 49.5,
+      "idealHigh": 50.5,
+      "warningHigh": 51,
+      "abnormalHigh": 51.5
+    },
+    "turbine_speed": {
+      "value": "turbine_speed",
+      "min": 2800,
+      "max": 3200,
+      "unit": "rpm",
+      "abnormalLow": 2850,
+      "warningLow": 2900,
+      "idealLow": 2950,
+      "idealHigh": 3050,
+      "warningHigh": 3100,
+      "abnormalHigh": 3150
+    },
+    "mcv_l_position": {
+      "value": "mcv_l_position",
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "idealHigh": 90,
+      "warningHigh": 95,
+      "abnormalHigh": 100
+    },
+    "mcv_r_position": {
+      "value": "mcv_r_position",
+      "min": 0,
+      "max": 100,
+      "unit": "%",
+      "idealHigh": 90,
+      "warningHigh": 95,
+      "abnormalHigh": 100
+    },
+    "voltage_u_v": {
+      "value": "voltage_u_v",
+      "min": 10,
+      "max": 15,
+      "unit": "kV",
+      "abnormalLow": 10.5,
+      "warningLow": 11,
+      "idealLow": 13,
+      "idealHigh": 14,
+      "warningHigh": 14.5,
+      "abnormalHigh": 15
+    },
+    "voltage_v_w": {
+      "value": "voltage_v_w",
+      "min": 10,
+      "max": 15,
+      "unit": "kV",
+      "abnormalLow": 10.5,
+      "warningLow": 11,
+      "idealLow": 13,
+      "idealHigh": 14,
+      "warningHigh": 14.5,
+      "abnormalHigh": 15
+    },
+    "voltage_u_w": {
+      "value": "voltage_u_w",
+      "min": 10,
+      "max": 15,
+      "unit": "kV",
+      "abnormalLow": 10.5,
+      "warningLow": 11,
+      "idealLow": 13,
+      "idealHigh": 14,
+      "warningHigh": 14.5,
+      "abnormalHigh": 15
+    },
+    "tds_honeywell": {
+      "value": "tds_honeywell",
+      "min": 0,
+      "max": 2,
+      "unit": "ppm",
+      "idealHigh": 1,
+      "warningHigh": 1.5,
+      "abnormalHigh": 2
     }
   }
   

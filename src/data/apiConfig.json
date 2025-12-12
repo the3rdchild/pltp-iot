@@ -10,6 +10,74 @@
       "chartData": "/data/chart/{metric}",
       "statsTable": "/data/stats/{metric}"
     },
+    "honeywell": {
+      "fetch": "/external/honeywell",
+      "main_steam_pressure": {
+        "live": "/data/live/main_steam_pressure",
+        "chart": "/data/chart/main_steam_pressure",
+        "stats": "/data/stats/main_steam_pressure"
+      },
+      "main_steam_flow": {
+        "live": "/data/live/main_steam_flow",
+        "chart": "/data/chart/main_steam_flow",
+        "stats": "/data/stats/main_steam_flow"
+      },
+      "main_steam_temp": {
+        "live": "/data/live/main_steam_temp",
+        "chart": "/data/chart/main_steam_temp",
+        "stats": "/data/stats/main_steam_temp"
+      },
+      "gen_reactive_power_net": {
+        "live": "/data/live/gen_reactive_power_net",
+        "chart": "/data/chart/gen_reactive_power_net",
+        "stats": "/data/stats/gen_reactive_power_net"
+      },
+      "gen_output_mw": {
+        "live": "/data/live/gen_output_mw",
+        "chart": "/data/chart/gen_output_mw",
+        "stats": "/data/stats/gen_output_mw"
+      },
+      "gen_freq": {
+        "live": "/data/live/gen_freq",
+        "chart": "/data/chart/gen_freq",
+        "stats": "/data/stats/gen_freq"
+      },
+      "turbine_speed": {
+        "live": "/data/live/turbine_speed",
+        "chart": "/data/chart/turbine_speed",
+        "stats": "/data/stats/turbine_speed"
+      },
+      "mcv_l_position": {
+        "live": "/data/live/mcv_l_position",
+        "chart": "/data/chart/mcv_l_position",
+        "stats": "/data/stats/mcv_l_position"
+      },
+      "mcv_r_position": {
+        "live": "/data/live/mcv_r_position",
+        "chart": "/data/chart/mcv_r_position",
+        "stats": "/data/stats/mcv_r_position"
+      },
+      "voltage_u_v": {
+        "live": "/data/live/voltage_u_v",
+        "chart": "/data/chart/voltage_u_v",
+        "stats": "/data/stats/voltage_u_v"
+      },
+      "voltage_v_w": {
+        "live": "/data/live/voltage_v_w",
+        "chart": "/data/chart/voltage_v_w",
+        "stats": "/data/stats/voltage_v_w"
+      },
+      "voltage_u_w": {
+        "live": "/data/live/voltage_u_w",
+        "chart": "/data/chart/voltage_u_w",
+        "stats": "/data/stats/voltage_u_w"
+      },
+      "tds_honeywell": {
+        "live": "/data/live/tds_honeywell",
+        "chart": "/data/chart/tds_honeywell",
+        "stats": "/data/stats/tds_honeywell"
+      }
+    },
     "tds": {
       "live": "/data/live/tds",
       "chart": "/data/chart/tds",
@@ -55,7 +123,20 @@
       "voltage",
       "reactive_power",
       "speed",
-      "current"
+      "current",
+      "main_steam_pressure",
+      "main_steam_flow",
+      "main_steam_temp",
+      "gen_reactive_power_net",
+      "gen_output_mw",
+      "gen_freq",
+      "turbine_speed",
+      "mcv_l_position",
+      "mcv_r_position",
+      "voltage_u_v",
+      "voltage_v_w",
+      "voltage_u_w",
+      "tds_honeywell"
     ],
     "ranges": ["1h", "1d", "7d", "1m", "10y"]
   }

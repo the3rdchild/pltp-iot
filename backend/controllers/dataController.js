@@ -1,5 +1,63 @@
 const { query } = require('../config/database');
 
+const getLiveData = async (req, res) => {
+  try {
+    const metrics = [
+      'main_steam_pressure',
+      'main_steam_flow',
+      'main_steam_temp',
+      'gen_reactive_power_net',
+      'gen_output_mw',
+      'gen_freq',
+      'turbine_speed',
+      'mcv_l_position',
+      'mcv_r_position',
+      'voltage_u_v',
+      'voltage_v_w',
+      'voltage_u_w',
+      'tds',
+      'pressure',
+      'temperature',
+      'flow_rate'
+    ];
+
+    const results = {};
+
+    for (const metric of metrics) {
+      const result = await query(
+        `SELECT
+           ${metric} as value,
+           timestamp
+         FROM sensor_data
+         WHERE ${metric} IS NOT NULL
+         ORDER BY timestamp DESC
+         LIMIT 1`
+      );
+
+      if (result.rows.length > 0) {
+        results[metric] = result.rows[0];
+      } else {
+        results[metric] = { value: null, timestamp: null };
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        metrics: results,
+        timestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching live data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch live data'
+    });
+  }
+};
+
 // Get latest sensor data
 const getLatestSensorData = async (req, res) => {
   try {
@@ -409,6 +467,7 @@ const exportSensorData = async (req, res) => {
 };
 
 module.exports = {
+  getLiveData,
   getLatestSensorData,
   getSensorDataByDateRange,
   getLatestMLPredictions,

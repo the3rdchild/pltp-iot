@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
+  getLiveData,
   getLatestSensorData,
   getSensorDataByDateRange,
   getLatestMLPredictions,
@@ -10,7 +11,6 @@ const {
   exportSensorData
 } = require('../controllers/dataController');
 const {
-  getLiveData,
   getLiveMetric,
   getChartData,
   getStatsData

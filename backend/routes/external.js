@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
+  fetchHoneywellData,
   receiveExternalData,
   receiveMLPrediction,
   receiveBatchData,
@@ -13,6 +14,9 @@ const {
 
 // Import API Key authentication middleware
 const { validateApiKey } = require('../middleware/apiKeyAuth');
+
+// POST /api/external/honeywell - Fetch and store data from Honeywell PIMS
+router.post('/honeywell', validateApiKey, fetchHoneywellData);
 
 // POST /api/external/sensor-data - Receive sensor data from Honeywell
 // Protected with API Key authentication

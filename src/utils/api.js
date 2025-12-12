@@ -80,9 +80,11 @@ export const getLiveData = async () => {
  */
 export const getLiveMetric = async (metric) => {
   try {
-    const url = buildURL(apiConfig.endpoints.dashboard.liveMetric, { metric });
-    const response = await apiClient.get(url);
-    return response;
+    const response = await getLiveData();
+    return {
+      success: true,
+      data: response.data.metrics[metric]
+    };
   } catch (error) {
     console.error(`Error fetching live metric ${metric}:`, error);
     throw error;

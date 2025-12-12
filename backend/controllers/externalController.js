@@ -1,4 +1,109 @@
+require('dotenv').config();
 const { query } = require('../config/database');
+const axios = require('axios');
+
+// Load and parse the tag name mapping from environment variables
+const HONEYWELL_TAGNAME_MAPPING = JSON.parse(process.env.HONEYWELL_TAGNAME_MAPPING || '{}');
+
+// Fetch data from Honeywell PIMS Gateaway and store it
+const fetchHoneywellData = async (req, res) => {
+  try {
+    const {
+      SampleInterval = process.env.HONEYWELL_API_SAMPLE_INTERVAL || 1000,
+      ResampleMethod = "Around",
+      MinimumConfidence = 100,
+      MaxRows = 10,
+      TimeFormat = 1,
+      ReductionData = "now",
+      TagName,
+      StartTime,
+      EndTime,
+      OutputTimeFormat = 1
+    } = req.body;
+
+    if (!TagName || !StartTime || !EndTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required parameters: TagName, StartTime, EndTime'
+      });
+    }
+
+    const honeywellResponse = await axios.post(
+      process.env.HONEYWELL_API_URL, {
+        SampleInterval,
+        ResampleMethod,
+        MinimumConfidence,
+        MaxRows,
+        TimeFormat,
+        ReductionData,
+        TagName,
+        StartTime,
+        EndTime,
+        OutputTimeFormat
+      }, {
+        headers: JSON.parse(process.env.HONEYWELL_API_HEADERS)
+      }
+    );
+
+    const data = honeywellResponse.data.data;
+
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No new data from Honeywell API',
+        data: []
+      });
+    }
+
+    const recordsToInsert = [];
+    for (const item of data) {
+      const columnName = HONEYWELL_TAGNAME_MAPPING[item.TagName];
+      if (columnName) {
+        for (let i = 0; i < item.TimeStamp.length; i++) {
+          const record = {
+            timestamp: item.TimeStamp[i],
+            [columnName]: item.Value[i],
+            raw_data: JSON.stringify(item)
+          };
+          recordsToInsert.push(record);
+        }
+      }
+    }
+
+    const insertedIds = [];
+    for (const record of recordsToInsert) {
+      const columns = Object.keys(record).join(', ');
+      const values = Object.values(record);
+      const valuePlaceholders = values.map((_, i) => `$${i + 1}`).join(', ');
+
+      const result = await query(
+        `INSERT INTO sensor_data (${columns})
+                VALUES (${valuePlaceholders})
+                RETURNING id`,
+        values
+      );
+      insertedIds.push(result.rows[0].id);
+    }
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully fetched and stored data for ${TagName}`,
+      data: {
+        count: insertedIds.length,
+        ids: insertedIds
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching Honeywell data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch or store Honeywell data',
+      error: error.message
+    });
+  }
+};
+
 
 // Receive data from external source (Honeywell)
 const receiveExternalData = async (req, res) => {
@@ -38,12 +143,12 @@ const receiveExternalData = async (req, res) => {
 
     // Insert ke database
     const result = await query(
-      `INSERT INTO sensor_data 
-       (device_id, timestamp, temperature, pressure, flow_rate, 
-        gen_voltage_v_w, gen_voltage_w_u, gen_reactive_power, gen_output, 
-        gen_power_factor, gen_frequency, speed_detection, mcv_l, mcv_r, tds, 
-        status, raw_data) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) 
+      `INSERT INTO sensor_data
+       (device_id, timestamp, temperature, pressure, flow_rate,
+        gen_voltage_v_w, gen_voltage_w_u, gen_reactive_power, gen_output,
+        gen_power_factor, gen_frequency, speed_detection, mcv_l, mcv_r, tds,
+        status, raw_data)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
        RETURNING *`,
       [
         device_id,
@@ -117,10 +222,10 @@ const receiveMLPrediction = async (req, res) => {
 
     // Insert ML prediction
     const result = await query(
-      `INSERT INTO ml_predictions 
-       (sensor_data_id, model_name, prediction_type, predicted_value, confidence_score, 
-        anomaly_detected, anomaly_severity, features, result_data, processed_at) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+      `INSERT INTO ml_predictions
+       (sensor_data_id, model_name, prediction_type, predicted_value, confidence_score,
+        anomaly_detected, anomaly_severity, features, result_data, processed_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
       [
         sensor_data_id,
@@ -196,12 +301,12 @@ const receiveBatchData = async (req, res) => {
       } = record;
 
       const result = await query(
-        `INSERT INTO sensor_data 
-         (device_id, timestamp, temperature, pressure, flow_rate, 
-          gen_voltage_v_w, gen_voltage_w_u, gen_reactive_power, gen_output, 
-          gen_power_factor, gen_frequency, speed_detection, mcv_l, mcv_r, tds, 
-          status, raw_data) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) 
+        `INSERT INTO sensor_data
+         (device_id, timestamp, temperature, pressure, flow_rate,
+          gen_voltage_v_w, gen_voltage_w_u, gen_reactive_power, gen_output,
+          gen_power_factor, gen_frequency, speed_detection, mcv_l, mcv_r, tds,
+          status, raw_data)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
          RETURNING id`,
         [
           device_id,
@@ -734,6 +839,7 @@ const receiveBatchUlubeluData = async (req, res) => {
 };
 
 module.exports = {
+  fetchHoneywellData,
   receiveExternalData,
   receiveMLPrediction,
   receiveBatchData,
