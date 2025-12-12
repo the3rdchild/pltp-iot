@@ -31,8 +31,12 @@ import TDSArticle from 'pages/extra-pages/articles/TDSArticle';
 import DrynessFractionArticle from 'pages/extra-pages/articles/DrynessFractionArticle';
 import NCGArticle from 'pages/extra-pages/articles/NCGArticle';
 
-//artikel Sistem Monitoring & Analisis AI
+//artikel Sampling Data
 import CaraTDSAmbilData from 'pages/extra-pages/articles/CaraTDSAmbilData';
+import SamplingDryness from 'pages/extra-pages/articles/SamplingDryness';
+import SamplingNCG from 'pages/extra-pages/articles/SamplingNCG';
+
+//artikel Sistem Monitoring & Analisis AI
 import AnalisisAI1 from 'pages/extra-pages/articles/AI1';
 import AnalisisAI2 from 'pages/extra-pages/articles/AI2';
 
@@ -216,8 +220,15 @@ const router = createBrowserRouter([
   {
     path:'/artikel-CaraTDSAmbilData',
     element: <CaraTDSAmbilData />
+  },
+  {
+    path:'/artikel-SamplingDryness',
+    element: <SamplingDryness />
+  },
+  {
+    path:'/artikel-SamplingNCG',
+    element: <SamplingNCG />
   }
-  
 ]);
 
 export default router;

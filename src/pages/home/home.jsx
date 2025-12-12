@@ -7,7 +7,7 @@ import heroImage from '../../assets/images/landing_page_image.jpg';
 import engineerImage from '../../assets/images/landing_page_image_2.png';
 import tdsImage from '../../assets/images/tds.png';
 import drynessImage from '../../assets/images/dryness.png';
-import ncgImage from '../../assets/images/ncg.png';
+import ncgImage from '../../assets/images/sampelncg.png';
 import SC4500 from '../../assets/images/SC4500.png';
 import indonesiaMap from '../../assets/images/indonesia-map.png';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -511,6 +511,104 @@ const Home = () => {
                   NCG adalah gas yang tidak dapat dikondensasikan yang dinyatakan dalam persen. Contoh: CO₂, H₂S, dan gas lainnya.
                 </p>
                 <a href="/artikel-ncg" className="btn-quality-read-more">
+                  READ MORE
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+{/* Sampling Techniques Section */}
+<section id="quality" className="quality-section">
+        <div className="container">
+          <div className="quality-intro-grid">
+            <div>
+              <h2 className="section-title">
+                Teknik Pengambilan Sampel
+              </h2>
+            </div>
+            <div>
+              <p className="section-intro">
+                Kualitas dan kemurnian uap yang masuk ke turbin memiliki peran penting dalam menjaga efisiensi serta umur peralatan pembangkit. Uap yang mengandung kotoran atau kadar air berlebih dapat menurunkan performa turbin, menyebabkan korosi, dan meningkatkan biaya perawatan. Melalui sistem pemantauan kualitas uap secara real-time, potensi gangguan tersebut dapat diminimalkan, sehingga kinerja pembangkit tetap optimal dan berkelanjutan.
+              </p>
+              <a href="/cara-kerja-pltp" className="btn-pltp-guide">
+                CARA KERJA PLTP
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+
+          <div className="quality-cards">
+            <div className="quality-card">
+              <div className="quality-image-container">
+                <img 
+                  src={SC4500} 
+                  alt="TDS - Total Dissolved Solid" 
+                  className="quality-image"
+                />
+              </div>
+              <div className="quality-content">
+                <h3 className="quality-title">
+                Cara Pengambilan Sampel TDS
+                </h3>
+                <p className="quality-description">
+                Proses pengambilan sampel TDS menggunakan perangkat SC4500 untuk mengukur kadar Total Dissolved Solid dalam uap secara akurat. Data sampel ini menjadi input penting untuk sistem monitoring dan validasi prediksi AI.
+                </p>
+                <a href="/artikel-CaraTDSAmbilData" className="btn-quality-read-more">
+                  READ MORE
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            <div className="quality-card">
+              <div className="quality-image-container">
+                <img
+                  src={drynessImage}
+                  alt="Dryness Fraction"
+                  className="quality-image"
+                />
+              </div>
+              <div className="quality-content">
+                <h3 className="quality-title">
+                  Cara SamplingDryness Fraction
+                </h3>
+                <p className="quality-description">
+                  Dryness fraction adalah tingkat kadar air dalam uap yang dinyatakan dalam persentase. Banyaknya air dalam uap dapat menyebabkan korosi pada turbin
+                </p>
+                <a href="/artikel-SamplingDryness" className="btn-quality-read-more">
+                  READ MORE
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            <div className="quality-card">
+              <div className="quality-image-container">
+                <img
+                  src={ncgImage}
+                  alt="NCG - Non Condensed Gas"
+                  className="quality-image"
+                />
+              </div>
+              <div className="quality-content">
+                <h3 className="quality-title">
+                  Cara Sampling NCG (Non Condensed Gas)
+                </h3>
+                <p className="quality-description">
+                  NCG adalah gas yang tidak dapat dikondensasikan yang dinyatakan dalam persen. Contoh: CO₂, H₂S, dan gas lainnya.
+                </p>
+                <a href="/artikel-SamplingNCG" className="btn-quality-read-more">
                   READ MORE
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="m9 18 6-6-6-6"/>
