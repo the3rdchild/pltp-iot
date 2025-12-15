@@ -598,7 +598,7 @@ export default function SamplingNCG() {
                 color: '#991b1b',
                 marginBottom: '15px'
               }}>
-                🚨 CRITICAL HAZARDS
+                 CRITICAL HAZARDS
               </h3>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

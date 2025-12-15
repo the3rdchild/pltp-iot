@@ -11,7 +11,11 @@
       "statsTable": "/data/stats/{metric}"
     },
     "honeywell": {
-      "fetch": "/external/honeywell",
+      "status": "/honeywell/status",
+      "testConnection": "/honeywell/test-connection",
+      "syncLive": "/honeywell/sync-live",
+      "receive": "/honeywell/receive",
+      "fetchCustom": "/honeywell/fetch-custom",
       "main_steam_pressure": {
         "live": "/data/live/main_steam_pressure",
         "chart": "/data/chart/main_steam_pressure",
@@ -71,11 +75,6 @@
         "live": "/data/live/voltage_u_w",
         "chart": "/data/chart/voltage_u_w",
         "stats": "/data/stats/voltage_u_w"
-      },
-      "tds_honeywell": {
-        "live": "/data/live/tds_honeywell",
-        "chart": "/data/chart/tds_honeywell",
-        "stats": "/data/stats/tds_honeywell"
       }
     },
     "tds": {

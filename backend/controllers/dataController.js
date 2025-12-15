@@ -2,42 +2,55 @@ const { query } = require('../config/database');
 
 const getLiveData = async (req, res) => {
   try {
-    const metrics = [
-      'main_steam_pressure',
-      'main_steam_flow',
-      'main_steam_temp',
-      'gen_reactive_power_net',
-      'gen_output_mw',
-      'gen_freq',
-      'turbine_speed',
-      'mcv_l_position',
-      'mcv_r_position',
-      'voltage_u_v',
-      'voltage_v_w',
-      'voltage_u_w',
-      'tds',
-      'pressure',
-      'temperature',
-      'flow_rate'
-    ];
+    // This mapping translates the desired metric names to the actual column names in your database.
+    const metricToColumnMap = {
+      'main_steam_pressure': 'pressure',
+      'main_steam_flow': 'flow_rate',
+      'main_steam_temp': 'temperature',
+      'gen_reactive_power_net': 'gen_reactive_power',
+      'gen_output_mw': 'gen_output',
+      'gen_freq': 'gen_frequency',
+      'turbine_speed': 'speed_detection',
+      'mcv_l_position': 'mcv_l',
+      'mcv_r_position': 'mcv_r',
+      'voltage_u_v': 'gen_voltage_v_w',
+      'voltage_v_w': 'gen_voltage_v_w',
+      'voltage_u_w': 'gen_voltage_w_u',
+      'tds': 'tds',
+      'pressure': 'pressure',
+      'temperature': 'temperature',
+      'flow_rate': 'flow_rate',
+      'humidity': 'humidity',
+      'voltage': 'voltage',
+      'current': 'current',
+      'gen_power_factor': 'gen_power_factor'
+    };
 
+    const metrics = Object.keys(metricToColumnMap);
     const results = {};
 
     for (const metric of metrics) {
+      const columnName = metricToColumnMap[metric];
+
       const result = await query(
         `SELECT
-           ${metric} as value,
-           timestamp
+           ${columnName} as value,
+           timestamp,
+           device_id
          FROM sensor_data
-         WHERE ${metric} IS NOT NULL
+         WHERE ${columnName} IS NOT NULL
          ORDER BY timestamp DESC
          LIMIT 1`
       );
 
       if (result.rows.length > 0) {
-        results[metric] = result.rows[0];
+        results[metric] = {
+          value: result.rows[0].value,
+          timestamp: result.rows[0].timestamp,
+          device_id: result.rows[0].device_id
+        };
       } else {
-        results[metric] = { value: null, timestamp: null };
+        results[metric] = { value: null, timestamp: null, device_id: null };
       }
     }
 
@@ -51,9 +64,11 @@ const getLiveData = async (req, res) => {
 
   } catch (error) {
     console.error('Error fetching live data:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch live data'
+      message: 'Failed to fetch live data',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

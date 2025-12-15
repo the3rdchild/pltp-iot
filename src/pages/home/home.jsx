@@ -579,7 +579,7 @@ const Home = () => {
               </div>
               <div className="quality-content">
                 <h3 className="quality-title">
-                  Cara SamplingDryness Fraction
+                  Cara Sampling Dryness Fraction
                 </h3>
                 <p className="quality-description">
                   Dryness fraction adalah tingkat kadar air dalam uap yang dinyatakan dalam persentase. Banyaknya air dalam uap dapat menyebabkan korosi pada turbin

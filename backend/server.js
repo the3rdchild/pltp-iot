@@ -10,6 +10,7 @@ const authRoutes = require('./routes/auth');
 const externalRoutes = require('./routes/external');
 const dataRoutes = require('./routes/data');
 const dataTestRoutes = require('./routes/dataTest');
+const honeywellRoutes = require('./routes/honeywell');
 
 // Initialize express
 const app = express();
@@ -50,6 +51,7 @@ const limiter = rateLimit({
   skip: (req) => {
     if (req.path.startsWith('/data-test')) return true;
     if (req.path.startsWith('/external')) return true;
+    if (req.path.startsWith('/honeywell/receive')) return true;
     if (req.path.startsWith('/ml_prediction')) return true;
     if (req.path.startsWith('')) return true;
     return skipIfWhitelisted(req);
@@ -84,6 +86,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/external', externalRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/data-test', dataTestRoutes);
+app.use('/api/honeywell', honeywellRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
