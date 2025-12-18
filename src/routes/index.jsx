@@ -32,7 +32,7 @@ import DrynessFractionArticle from 'pages/extra-pages/articles/DrynessFractionAr
 import NCGArticle from 'pages/extra-pages/articles/NCGArticle';
 
 //artikel Sampling Data
-import CaraTDSAmbilData from 'pages/extra-pages/articles/CaraTDSAmbilData';
+import SamplingTDS from 'pages/extra-pages/articles/SamplingTDS';
 import SamplingDryness from 'pages/extra-pages/articles/SamplingDryness';
 import SamplingNCG from 'pages/extra-pages/articles/SamplingNCG';
 
@@ -218,8 +218,8 @@ const router = createBrowserRouter([
     element: <AnalisisAI2 />
   }, 
   {
-    path:'/artikel-CaraTDSAmbilData',
-    element: <CaraTDSAmbilData />
+    path:'/artikel-SamplingTDS',
+    element: <SamplingTDS />
   },
   {
     path:'/artikel-SamplingDryness',

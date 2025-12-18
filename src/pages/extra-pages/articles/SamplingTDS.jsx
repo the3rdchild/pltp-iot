@@ -8,7 +8,7 @@ import monitoringSystemImg from '/src/assets/images/articles/tds/monitoring_syst
 import pertasmartLogo from '/src/assets/images/articles/Pertasmart4x1.svg';
 import sc4500Img from '/src/assets/images/SC4500.png';
 
-export default function CaraTDSAmbilData() {
+export default function SamplingTDS() {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [activeSection, setActiveSection] = React.useState('');
@@ -395,7 +395,7 @@ export default function CaraTDSAmbilData() {
                 margin: 0,
                 fontWeight: '500'
               }}>
-                <strong>💡 Apa itu TDS?</strong><br/>
+                <strong> Apa itu TDS?</strong><br/>
                 TDS (Total Dissolved Solids) adalah ukuran konsentrasi total zat padat terlarut (mineral, garam, 
                 logam) dalam air, dinyatakan dalam mg/L atau ppm. TDS tinggi mengindikasikan risiko scaling dan 
                 korosi yang dapat merusak turbin geothermal.
@@ -1201,7 +1201,7 @@ export default function CaraTDSAmbilData() {
             </p>
 
             <div style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, #667eea 0%,rgb(30, 64, 164) 100%)',
               padding: '25px',
               borderRadius: '12px',
               marginBottom: '20px'
@@ -1657,7 +1657,7 @@ export default function CaraTDSAmbilData() {
 
             {/* System Integration */}
             <div style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, #667eea 0%,#1e40af 100%)',
               padding: '30px',
               borderRadius: '15px',
               marginTop: '30px'
@@ -1669,7 +1669,7 @@ export default function CaraTDSAmbilData() {
                 marginBottom: '15px',
                 textAlign: 'center'
               }}>
-                🔄 Multi-Parameter System Integration
+                Multi-Parameter System Integration
               </h4>
               <p style={{
                 fontSize: '15px',
@@ -1744,7 +1744,7 @@ export default function CaraTDSAmbilData() {
                 marginBottom: '15px',
                 textAlign: 'center'
               }}>
-                🎯 Key Takeaways
+                Key Takeaways
               </h4>
               <ul style={{
                 fontSize: '15px',
