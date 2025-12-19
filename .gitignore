@@ -136,3 +136,4 @@ backend/docs/HONEYWELL_INTEGRATION.md
 TROUBLESHOOTING.md
 backend/scripts/fix-sensor-data-schema.sql
 DEPLOY_FIX.md
+HISTORICAL_DATA_IMPORT_GUIDE.md
