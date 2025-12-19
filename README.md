@@ -16,7 +16,7 @@ An interactive IoT-based SCADA system built to monitor **steam quality**, **stea
 
 - ⚛️ React + Vite
 - 📊 Material UI (MUI)
-- 📁 Dummy Simulation via JS modules
+- 📁 Realtime Sensor data (PLTP Kamojang & Ulubelu)
 - ⚙️ AI model logic (Random Forest placeholder)
 
 ---
