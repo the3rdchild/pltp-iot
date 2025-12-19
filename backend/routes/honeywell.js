@@ -7,7 +7,7 @@ const {
   fetchCustomData,
   getHoneywellStatus
 } = require('../controllers/honeywellController');
-const { authenticateApiKey } = require('../middleware/apiKeyAuth');
+const { validateApiKey } = require('../middleware/apiKeyAuth');
 const { optionalAuth } = require('../middleware/auth');
 
 // GET /api/honeywell/status - Get Honeywell integration status
@@ -20,7 +20,7 @@ router.get('/test-connection', optionalAuth, testHoneywellConnection);
 router.post('/sync-live', optionalAuth, syncLiveData);
 
 // POST /api/honeywell/receive - Receive data pushed from Honeywell server (requires API key)
-router.post('/receive', authenticateApiKey, receiveHoneywellData);
+router.post('/receive', validateApiKey, receiveHoneywellData);
 
 // POST /api/honeywell/fetch-custom - Fetch custom data with parameters
 router.post('/fetch-custom', optionalAuth, fetchCustomData);
