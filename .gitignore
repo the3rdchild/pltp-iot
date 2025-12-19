@@ -133,3 +133,5 @@ TDS_PTF_INTEGRATION_INSTRUCTIONS.md
 backend/API_KEY_SETUP.md
 backend/PERTASMART_API_DOCUMENTATION.md
 backend/docs/HONEYWELL_INTEGRATION.md
+TROUBLESHOOTING.md
+backend/scripts/fix-sensor-data-schema.sql

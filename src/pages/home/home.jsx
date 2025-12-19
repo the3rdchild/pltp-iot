@@ -9,7 +9,11 @@ import tdsImage from '../../assets/images/tds.png';
 import drynessImage from '../../assets/images/dryness.png';
 import ncgImage from '../../assets/images/sampelncg.png';
 import SC4500 from '../../assets/images/SC4500.png';
-import indonesiaMap from '../../assets/images/indonesia-map.png';
+import IndonesiaMAP from '../../assets/images/Indonesiaku.png';
+import PTPGE from '../../assets/images/LOGOPGE.png';
+import LogoPertamina from '../../assets/images/LOGOPertamina.png';
+import Hach from '../../assets/images/LOGOHach.png';
+import Honeywell from '../../assets/images/LOGOHW.png';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -711,6 +715,84 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+{/* Collaboration Section */}
+<section id="collaboration" className="collaboration-section">
+  <div className="container">
+    <div className="collaboration-header">
+      <span className="collaboration-badge">KOLABORASI RISET, AKADEMIK, DAN INDUSTRI</span>
+      <h2 className="section-title">KOLABORASI & KERJA SAMA</h2>
+    </div>
+
+    <div className="collaboration-content">
+      <div className="collaboration-text">
+        <p className="section-intro">
+          PertaSmart secara aktif menjalin kerja sama strategis dengan mitra industri energi dan teknologi terkemuka,
+          antara lain PT Pertamina (Persero), PT Pertamina Geothermal Energy Tbk, Hach, dan Honeywell.
+          Kolaborasi ini berfokus pada penyediaan dan implementasi Sistem Online Monitoring & Analysis untuk pemantauan Kualitas Uap, 
+          Dryness Fraction, Total Dissolved Solids (TDS), serta deteksi anomali berbasis Artificial Intelligence (AI).
+          Sistem pemantauan ini telah diterapkan pada PLTP Kamojang dan PLTP Ulubelu, mendukung peningkatan keandalan operasi, efisiensi pembangkitan, serta pengambilan keputusan berbasis data secara real-time.
+          Melalui sinergi lintas disiplin dan pemanfaatan teknologi mutakhir, PertaSmart berkomitmen menghadirkan solusi yang presisi, 
+          terukur, dan berstandar industri untuk mendukung keberlanjutan sektor pemantauan panas bumi nasional.
+        </p>
+      </div>
+
+      <div className="collaboration-map">
+        <img 
+          src={IndonesiaMAP} 
+          alt="Global Collaboration Map" 
+          className="map-image"
+        />
+      </div>
+    </div>
+
+    <div className="partners-grid">
+      <div className="partner-card">
+        <div className="partner-logo-container">
+          <img 
+            src={PTPGE}
+            alt="Pertamina Geothermal Energy" 
+            className="partner-logo"
+          />
+        </div>
+        <h3 className="partner-name">PT. Pertamina Geothermal Energy</h3>
+      </div>
+
+      <div className="partner-card">
+        <div className="partner-logo-container">
+          <img 
+            src={LogoPertamina} 
+            alt="Pertamina" 
+            className="partner-logo"
+          />
+        </div>
+        <h3 className="partner-name">PT. Pertamina</h3>
+      </div>
+
+      <div className="partner-card">
+        <div className="partner-logo-container">
+          <img 
+            src={Hach} 
+            alt="HACH" 
+            className="partner-logo"
+          />
+        </div>
+        <h3 className="partner-name">Hach</h3>
+      </div>
+
+      <div className="partner-card">
+        <div className="partner-logo-container">
+          <img 
+            src={Honeywell}
+            alt="Honeywell" 
+            className="partner-logo"
+          />
+        </div>
+        <h3 className="partner-name">Honeywell</h3>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* Footer */}
       <footer className="footer">
@@ -1881,6 +1963,188 @@ const Home = () => {
             grid-template-columns: 1fr;
           }
         }
+          /* Collaboration Section */
+.collaboration-section {
+  padding: 80px 0;
+  background: #1a2642; /* INI WARNA NAVBAR */
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.collaboration-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></svg>');
+  opacity: 0.3;
+}
+
+.collaboration-header {
+  text-align: center;
+  margin-bottom: 48px;
+  position: relative;
+  z-index: 1;
+}
+
+.collaboration-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  color: white;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+}
+
+.collaboration-header .section-title {
+  color: white;
+  font-size: 2.5rem;
+  margin-bottom: 0;
+}
+
+.collaboration-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  margin-bottom: 64px;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.collaboration-text .section-intro {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  line-height: 1.8;
+  margin: 0;
+  text-align: justify;
+}
+
+.collaboration-map {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.map-image {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
+}
+
+.partners-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.partner-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  min-height: 200px;
+}
+
+.partner-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  background: white;
+}
+
+.partner-logo-container {
+  width: 120px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.partner-logo {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.partner-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-align: center;
+  margin: 0;
+}
+
+.partner-placeholder {
+  border: 2px dashed rgba(76, 81, 191, 0.3);
+  background: rgba(255, 255, 255, 0.95)
+}
+
+.partner-placeholder .partner-logo-container {
+  color: rgba(76, 81, 191, 0.4);
+}
+
+.partner-placeholder .partner-name {
+  color: rgba(76, 81, 191, 0.6);
+  font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .collaboration-content {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .partners-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .collaboration-header .section-title {
+    font-size: 2rem;
+  }
+
+  .partners-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .partner-card {
+    padding: 24px 16px;
+    min-height: 160px;
+  }
+
+  .partner-logo-container {
+    width: 100px;
+    height: 60px;
+  }
+}
+
+@media (max-width: 480px) {
+  .partners-grid {
+    grid-template-columns: 1fr;
+  }
+}
       `}</style>
     </div>
   );
