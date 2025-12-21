@@ -1,13 +1,14 @@
 import { Grid, Box, Typography } from '@mui/material';
 import { useState } from 'react';
 
-import { useMultiMetricData } from '../../hooks/useAnalyticsData';
-import { transformPTFChartData, getSummaryStats, getAnomalyCount, formatValueWithUnit } from '../../utils/analyticsHelpers';
+import { useMultiMetricData, useStatsTable } from '../../hooks/useTestAwareAnalyticsData';
+import { transformPTFChartData, getSummaryStats, formatValueWithUnit } from '../../utils/analyticsHelpers';
+import { useAnomalyCounts } from '../../hooks/useAnomalyTracker';
+import { useMetricStats } from '../../hooks/useMetricStatistics';
 import { PTFChart, AnalyticsHeader, StatisticsTable, StatCard } from '../../components/analytics';
 import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
 import { getLimitData } from '../../utils/limitData';
-import { useStatsTable } from '../../hooks/useAnalyticsData';
 
 // icons
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
@@ -24,11 +25,6 @@ const PTF = () => {
         timeRange
     );
 
-    // Fetch stats table data for each metric to get anomaly counts and min/max/avg
-    const { data: pressureTableData } = useStatsTable('pressure', { limit: 50 });
-    const { data: temperatureTableData } = useStatsTable('temperature', { limit: 50 });
-    const { data: flowTableData } = useStatsTable('flow_rate', { limit: 50 });
-
     const pressure = metricsData.pressure?.live?.value;
     const temperature = metricsData.temperature?.live?.value;
     const flow = metricsData.flow_rate?.live?.value;
@@ -39,14 +35,15 @@ const PTF = () => {
 
     const chartData = transformPTFChartData(metricsData);
 
-    // Get summary stats and anomaly counts for each metric
-    const pressureStats = getSummaryStats(pressureTableData);
-    const temperatureStats = getSummaryStats(temperatureTableData);
-    const flowStats = getSummaryStats(flowTableData);
+    // Real-time statistics tracking (works for both test and production)
+    const pressureStats = useMetricStats('pressure', pressure);
+    const temperatureStats = useMetricStats('temperature', temperature);
+    const flowStats = useMetricStats('flow', flow);
 
-    const pressureAnomalies = getAnomalyCount(pressureTableData?.records);
-    const temperatureAnomalies = getAnomalyCount(temperatureTableData?.records);
-    const flowAnomalies = getAnomalyCount(flowTableData?.records);
+    // Real-time anomaly tracking (works for both test and production)
+    const pressureAnomalies = useAnomalyCounts('pressure', pressure);
+    const temperatureAnomalies = useAnomalyCounts('temperature', temperature);
+    const flowAnomalies = useAnomalyCounts('flow', flow);
 
     // Pressure cards data
     const pressureCardData = [
@@ -65,38 +62,38 @@ const PTF = () => {
         },
         {
             title: 'Minimum',
-            value: formatValueWithUnit(pressureStats.min, 'barg'),
+            value: formatValueWithUnit(pressureStats.min24h, 'barg'),
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
             iconColor: '#fff',
             additionalData: [
                 { value: formatValueWithUnit(pressureStats.min12h, 'barg'), timeLabel: '12 Jam terakhir' },
                 { value: formatValueWithUnit(pressureStats.min24h, 'barg'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(pressureStats.min, 'barg'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(pressureStats.min7d, 'barg'), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Average',
-            value: formatValueWithUnit(pressureStats.avg, 'barg'),
+            value: formatValueWithUnit(pressureStats.avg24h, 'barg'),
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
             iconColor: '#fff',
             additionalData: [
                 { value: formatValueWithUnit(pressureStats.avg12h, 'barg'), timeLabel: '12 Jam terakhir' },
                 { value: formatValueWithUnit(pressureStats.avg24h, 'barg'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(pressureStats.avg, 'barg'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(pressureStats.avg7d, 'barg'), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Maximum',
-            value: formatValueWithUnit(pressureStats.max, 'barg'),
+            value: formatValueWithUnit(pressureStats.max24h, 'barg'),
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
             iconColor: '#fff',
             additionalData: [
                 { value: formatValueWithUnit(pressureStats.max12h, 'barg'), timeLabel: '12 Jam terakhir' },
                 { value: formatValueWithUnit(pressureStats.max24h, 'barg'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(pressureStats.max, 'barg'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(pressureStats.max7d, 'barg'), timeLabel: '1 minggu terakhir' }
             ]
         }
     ];
@@ -118,38 +115,38 @@ const PTF = () => {
         },
         {
             title: 'Minimum',
-            value: formatValueWithUnit(temperatureStats.min, '°C'),
+            value: formatValueWithUnit(temperatureStats.min24h, '°C'),
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
             iconColor: '#fff',
             additionalData: [
                 { value: formatValueWithUnit(temperatureStats.min12h, '°C'), timeLabel: '12 Jam terakhir' },
                 { value: formatValueWithUnit(temperatureStats.min24h, '°C'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(temperatureStats.min, '°C'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(temperatureStats.min7d, '°C'), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Average',
-            value: formatValueWithUnit(temperatureStats.avg, '°C'),
+            value: formatValueWithUnit(temperatureStats.avg24h, '°C'),
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
             iconColor: '#fff',
             additionalData: [
                 { value: formatValueWithUnit(temperatureStats.avg12h, '°C'), timeLabel: '12 Jam terakhir' },
                 { value: formatValueWithUnit(temperatureStats.avg24h, '°C'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(temperatureStats.avg, '°C'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(temperatureStats.avg7d, '°C'), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Maximum',
-            value: formatValueWithUnit(temperatureStats.max, '°C'),
+            value: formatValueWithUnit(temperatureStats.max24h, '°C'),
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
             iconColor: '#fff',
             additionalData: [
                 { value: formatValueWithUnit(temperatureStats.max12h, '°C'), timeLabel: '12 Jam terakhir' },
                 { value: formatValueWithUnit(temperatureStats.max24h, '°C'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(temperatureStats.max, '°C'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(temperatureStats.max7d, '°C'), timeLabel: '1 minggu terakhir' }
             ]
         }
     ];
@@ -171,38 +168,38 @@ const PTF = () => {
         },
         {
             title: 'Minimum',
-            value: formatValueWithUnit(flowStats.min, 't/h'),
+            value: formatValueWithUnit(flowStats.min24h, 't/h'),
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
             iconColor: '#fff',
             additionalData: [
                 { value: formatValueWithUnit(flowStats.min12h, 't/h'), timeLabel: '12 Jam terakhir' },
                 { value: formatValueWithUnit(flowStats.min24h, 't/h'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(flowStats.min, 't/h'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(flowStats.min7d, 't/h'), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Average',
-            value: formatValueWithUnit(flowStats.avg, 't/h'),
+            value: formatValueWithUnit(flowStats.avg24h, 't/h'),
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
             iconColor: '#fff',
             additionalData: [
                 { value: formatValueWithUnit(flowStats.avg12h, 't/h'), timeLabel: '12 Jam terakhir' },
                 { value: formatValueWithUnit(flowStats.avg24h, 't/h'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(flowStats.avg, 't/h'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(flowStats.avg7d, 't/h'), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Maximum',
-            value: formatValueWithUnit(flowStats.max, 't/h'),
+            value: formatValueWithUnit(flowStats.max24h, 't/h'),
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
             iconColor: '#fff',
             additionalData: [
                 { value: formatValueWithUnit(flowStats.max12h, 't/h'), timeLabel: '12 Jam terakhir' },
                 { value: formatValueWithUnit(flowStats.max24h, 't/h'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(flowStats.max, 't/h'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(flowStats.max7d, 't/h'), timeLabel: '1 minggu terakhir' }
             ]
         }
     ];

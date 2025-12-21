@@ -11,8 +11,9 @@ import { TbCircuitResistor } from "react-icons/tb";
 
 import { useState, useEffect } from 'react';
 
-// Real data API hook
-import { useLiveData } from '../../hooks/useLiveData';
+// Real data API hook - test-aware (uses mock data in /test environment)
+import { useLiveData } from '../../hooks/useTestAwareLiveData';
+import { useLocation } from 'react-router-dom';
 
 // project imports - Individual Cards
 import GaugeChart from '../../components/GaugeChart';
@@ -37,8 +38,9 @@ function MobileLayout({
   const temperature = parseValue(liveData?.metrics?.temperature?.value, 165.2);
   const flow = parseValue(liveData?.metrics?.flow_rate?.value, 245.71);
   const tds = parseValue(liveData?.metrics?.tds?.value, 1.0012);
-  const dryness = 'NaN';
-  const ncg = 'NaN';
+  // Convert dryness to percentage (0.95 -> 95%)
+  const dryness = parseValue(liveData?.metrics?.dryness?.value, 95);
+  const ncg = parseValue(liveData?.metrics?.ncg?.value, 0.45);
   const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5);
   const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.22);
   const voltage = parseValue(liveData?.metrics?.voltage?.value, 13.86);
@@ -295,8 +297,9 @@ function DesktopLayout({
   const temperature = parseValue(liveData?.metrics?.temperature?.value, 165.2);
   const flow = parseValue(liveData?.metrics?.flow_rate?.value, 245.71);
   const tds = parseValue(liveData?.metrics?.tds?.value, 1.0012);
-  const dryness = 'NaN';
-  const ncg = 'NaN';
+  // Convert dryness to percentage (0.95 -> 95%)
+  const dryness = parseValue(liveData?.metrics?.dryness?.value, 95);
+  const ncg = parseValue(liveData?.metrics?.ncg?.value, 0.45);
   const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5);
   const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.22);
   const voltage = parseValue(liveData?.metrics?.voltage?.value, 13.86);
@@ -623,6 +626,8 @@ const DASHBOARD_CONFIG = {
 
 export default function DashboardDefault() {
   const theme = useTheme();
+  const location = useLocation();
+  const isTestEnvironment = location.pathname.startsWith('/test');
   const isMobile = useMediaQuery(theme.breakpoints.down('md')); // Detect mobile: screens < 900px
   const [scale, setScale] = useState(1);
   const limitData = getLimitData();
@@ -678,19 +683,65 @@ export default function DashboardDefault() {
     );
   }
 
-  // Helper function to safely parse numeric values
+  // Helper function to safely parse numeric values with max 2 decimals
   const parseValue = (value, fallback) => {
     if (value === null || value === undefined || value === 'null') return fallback;
     const parsed = typeof value === 'string' ? parseFloat(value) : value;
-    return isNaN(parsed) ? fallback : parsed;
+    if (isNaN(parsed)) return fallback;
+    // Round to max 2 decimal places
+    return Math.round(parsed * 100) / 100;
   };
 
-  // Get risk prediction
+  // Get risk prediction based on metric values (for test environment)
   const getOverallRiskPrediction = () => {
     if (!liveData?.metrics) return 'Ideal';
-    const statuses = Object.values(liveData.metrics).map(m => m.status);
-    if (statuses.includes('abnormal')) return 'Abnormal';
-    if (statuses.includes('warning')) return 'Warning';
+
+    // For production: use status from API
+    if (!isTestEnvironment) {
+      const statuses = Object.values(liveData.metrics).map(m => m.status);
+      if (statuses.includes('abnormal')) return 'Abnormal';
+      if (statuses.includes('warning')) return 'Warning';
+      return 'Ideal';
+    }
+
+    // For test environment: calculate based on metric values vs limits
+    const metrics = liveData.metrics;
+    let criticalCount = 0;
+    let warningCount = 0;
+
+    // Check TDS
+    const tdsVal = parseValue(metrics.tds?.value, 0);
+    if (tdsVal > limitData["TDS: Overall"].abnormalHigh) criticalCount++;
+    else if (tdsVal > limitData["TDS: Overall"].warningHigh) warningCount++;
+
+    // Check Dryness (already in percentage)
+    const drynessVal = parseValue(metrics.dryness?.value, 95);
+    if (drynessVal < limitData.dryness.abnormalLow || drynessVal > limitData.dryness.abnormalHigh) criticalCount++;
+    else if (drynessVal < limitData.dryness.warningLow || drynessVal > limitData.dryness.warningHigh) warningCount++;
+
+    // Check NCG
+    const ncgVal = parseValue(metrics.ncg?.value, 0);
+    if (ncgVal > limitData.ncg.abnormalHigh) criticalCount++;
+    else if (ncgVal > limitData.ncg.warningHigh) warningCount++;
+
+    // Check Pressure
+    const pressureVal = parseValue(metrics.pressure?.value, 0);
+    if (pressureVal < limitData.pressure.abnormalLow || pressureVal > limitData.pressure.abnormalHigh) criticalCount++;
+    else if (pressureVal < limitData.pressure.warningLow || pressureVal > limitData.pressure.warningHigh) warningCount++;
+
+    // Check Temperature
+    const tempVal = parseValue(metrics.temperature?.value, 0);
+    if (tempVal < limitData.temperature.abnormalLow || tempVal > limitData.temperature.abnormalHigh) criticalCount++;
+    else if (tempVal < limitData.temperature.warningLow || tempVal > limitData.temperature.warningHigh) warningCount++;
+
+    // Check Flow
+    const flowVal = parseValue(metrics.flow_rate?.value, 0);
+    if (flowVal < limitData.flow.abnormalLow || flowVal > limitData.flow.abnormalHigh) criticalCount++;
+    else if (flowVal < limitData.flow.warningLow || flowVal > limitData.flow.warningHigh) warningCount++;
+
+    // Determine overall risk: if 2+ critical or 3+ warning → Critical
+    if (criticalCount >= 2) return 'Abnormal';
+    if (criticalCount >= 1 || warningCount >= 3) return 'Warning';
     return 'Ideal';
   };
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import ApexCharts from 'apexcharts';
 import { Box, Typography, Button, ButtonGroup, Popover, Grid } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -10,6 +11,8 @@ import MainCard from '../MainCard';
 import PropTypes from 'prop-types';
 import { generateRealTimeChartData } from '../../data/simulasi';
 import { generateAIData, generateFieldData } from '../../data/chartData';
+import { useTestData } from '../../contexts/TestDataContext';
+import { useChartReferenceConfig } from '../../hooks/useChartReferenceConfig';
 
 const RealTimeDataChart = ({
   title = 'Real Time Data',
@@ -31,6 +34,13 @@ const RealTimeDataChart = ({
   },
   showComparison = false // Show AI vs Field comparison (only for dryness/ncg on 1y+ ranges)
 }) => {
+  const location = useLocation();
+  const isTestEnvironment = location.pathname.startsWith('/test');
+  const testDataContext = isTestEnvironment ? useTestData() : null;
+
+  // Chart reference configuration (manual/auto mode)
+  const { config: chartRefConfig } = useChartReferenceConfig();
+
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
   const updateIntervalRef = useRef(null);
@@ -44,6 +54,35 @@ const RealTimeDataChart = ({
   const [endDate, setEndDate] = useState(dayjs());
   const [isCustomRange, setIsCustomRange] = useState(false);
   const [showComparisonData, setShowComparisonData] = useState(false);
+
+  // Helper function to generate test chart data from TestDataContext
+  const generateTestChartData = (metric, range, previousData = []) => {
+    if (!testDataContext) return [];
+
+    const currentValue = testDataContext.mockData.metrics[metric]?.value ?? 0;
+    const variance = testDataContext.config.variance[metric] ?? 0;
+    const maxPoints = 60;
+
+    // For 'now' mode - update with one new point
+    if (range === 'now' && previousData.length > 0) {
+      const randomChange = (Math.random() - 0.5) * 2 * variance;
+      const newValue = Math.max(0, currentValue + randomChange);
+      const newData = [...previousData.slice(-(maxPoints - 1)), parseFloat(newValue.toFixed(3))];
+      return newData;
+    }
+
+    // Generate initial data with variance
+    const data = [];
+    let lastValue = currentValue;
+    for (let i = 0; i < maxPoints; i++) {
+      const randomChange = (Math.random() - 0.5) * 2 * variance;
+      const momentum = (lastValue - currentValue) * 0.1;
+      const value = Math.max(0, currentValue + randomChange + momentum);
+      data.push(parseFloat(value.toFixed(3)));
+      lastValue = value;
+    }
+    return data;
+  };
 
   // Time range buttons configuration
   const timeRanges = [
@@ -77,18 +116,29 @@ const RealTimeDataChart = ({
       setFieldData(fieldDataPoints.map(d => d.value));
       setShowComparisonData(true);
     } else {
-      // Use real-time data for shorter ranges
-      const initialData = generateRealTimeChartData(dataType, timeRange);
+      // Use test data or real-time data for shorter ranges
+      let initialData;
+      if (isTestEnvironment && testDataContext) {
+        initialData = generateTestChartData(dataType, timeRange);
+      } else {
+        initialData = generateRealTimeChartData(dataType, timeRange);
+      }
       setChartData(initialData);
       setShowComparisonData(false);
     }
-  }, [timeRange, dataType, isCustomRange, startDate, endDate, shouldShowComparison]);
+  }, [timeRange, dataType, isCustomRange, startDate, endDate, shouldShowComparison, isTestEnvironment, testDataContext]);
 
   // Real-time updates for 'Now' mode only
   useEffect(() => {
     if (timeRange === 'now' && !showComparisonData) {
       updateIntervalRef.current = setInterval(() => {
-        setChartData(prevData => generateRealTimeChartData(dataType, 'now', prevData));
+        setChartData(prevData => {
+          if (isTestEnvironment && testDataContext) {
+            return generateTestChartData(dataType, 'now', prevData);
+          } else {
+            return generateRealTimeChartData(dataType, 'now', prevData);
+          }
+        });
       }, 1000); // Update every 1 second
     } else {
       if (updateIntervalRef.current) {
@@ -102,7 +152,7 @@ const RealTimeDataChart = ({
         clearInterval(updateIntervalRef.current);
       }
     };
-  }, [timeRange, dataType, showComparisonData]);
+  }, [timeRange, dataType, showComparisonData, isTestEnvironment, testDataContext]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -144,19 +194,19 @@ const RealTimeDataChart = ({
     return [
       {
         title: 'Field Range',
-        value: `${stats.fieldMin?.toFixed(1)}${unit} - ${stats.fieldMax?.toFixed(1)}${unit}`
+        value: `${stats.fieldMin?.toFixed(3)}${unit} - ${stats.fieldMax?.toFixed(3)}${unit}`
       },
       {
         title: 'Field Average',
-        value: `${stats.fieldAvg?.toFixed(2)}${unit}`
+        value: `${stats.fieldAvg?.toFixed(3)}${unit}`
       },
       {
         title: 'AI Range',
-        value: `${stats.aiMin?.toFixed(1)}${unit} - ${stats.aiMax?.toFixed(1)}${unit}`
+        value: `${stats.aiMin?.toFixed(3)}${unit} - ${stats.aiMax?.toFixed(3)}${unit}`
       },
       {
         title: 'AI Average',
-        value: `${stats.aiAvg?.toFixed(2)}${unit}`
+        value: `${stats.aiAvg?.toFixed(3)}${unit}`
       }
     ];
   }, [stats, unit, showComparisonData]);
@@ -165,9 +215,15 @@ const RealTimeDataChart = ({
   useEffect(() => {
     if (!chartRef.current) return;
 
-    const maxValue = stats.maxValue || 100;
-    const minValue = stats.minValue || 0;
-    const avgValue = stats.avgValue || 50;
+    // Determine metric key for chart reference config
+    // Map dataType to config keys (pressure, temperature, flow_rate, ncg, dryness, tds)
+    const metricConfigKey = dataType === 'flow' ? 'flow_rate' : dataType;
+    const metricConfig = chartRefConfig[metricConfigKey] || { enabled: false };
+
+    // Use manual values if enabled, otherwise use calculated statistics
+    const maxValue = metricConfig.enabled ? metricConfig.max : (stats.maxValue || 100);
+    const minValue = metricConfig.enabled ? metricConfig.min : (stats.minValue || 0);
+    const avgValue = metricConfig.enabled ? metricConfig.avg : (stats.avgValue || 50);
 
     const initialData = showComparisonData
       ? (fieldData.length > 0 ? fieldData : Array(60).fill(0))
@@ -284,7 +340,7 @@ const RealTimeDataChart = ({
             fontSize: '11px'
           },
           formatter: function (value) {
-            return value ? value.toFixed(1) + unit : '';
+            return value ? value.toFixed(3) + unit : '';
           }
         },
         title: {
@@ -319,7 +375,7 @@ const RealTimeDataChart = ({
         x: { show: true },
         y: {
           formatter: function (value) {
-            return value ? value.toFixed(2) + unit : '';
+            return value ? value.toFixed(3) + unit : '';
           },
           title: {
             formatter: (seriesName) => seriesName
@@ -344,7 +400,7 @@ const RealTimeDataChart = ({
         chartInstanceRef.current = null;
       }
     };
-  }, [timeRange, showComparisonData, unit, yAxisTitle, xAxisTitle, thresholds]);
+  }, [timeRange, showComparisonData, unit, yAxisTitle, xAxisTitle, thresholds, chartRefConfig, dataType]);
 
   // Update chart data without re-rendering (for smooth updates)
   useEffect(() => {
@@ -352,9 +408,14 @@ const RealTimeDataChart = ({
     if (showComparisonData && (aiData.length === 0 || fieldData.length === 0)) return;
     if (!showComparisonData && chartData.length === 0) return;
 
-    const maxValue = stats.maxValue;
-    const minValue = stats.minValue;
-    const avgValue = stats.avgValue;
+    // Determine metric key for chart reference config
+    const metricConfigKey = dataType === 'flow' ? 'flow_rate' : dataType;
+    const metricConfig = chartRefConfig[metricConfigKey] || { enabled: false };
+
+    // Use manual values if enabled, otherwise use calculated statistics
+    const maxValue = metricConfig.enabled ? metricConfig.max : stats.maxValue;
+    const minValue = metricConfig.enabled ? metricConfig.min : stats.minValue;
+    const avgValue = metricConfig.enabled ? metricConfig.avg : stats.avgValue;
 
     const annotations = [];
     if (thresholds.showMax && maxValue) {
@@ -402,7 +463,7 @@ const RealTimeDataChart = ({
         yaxis: annotations
       }
     }, false, timeRange === 'now' && !showComparisonData);
-  }, [chartData, aiData, fieldData, stats, showComparisonData, timeRange, yAxisTitle, thresholds]);
+  }, [chartData, aiData, fieldData, stats, showComparisonData, timeRange, yAxisTitle, thresholds, chartRefConfig, dataType]);
 
   const handleTimeRangeChange = (newRange) => {
     setTimeRange(newRange);

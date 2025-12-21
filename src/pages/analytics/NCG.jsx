@@ -1,7 +1,11 @@
 import { Grid, Box, Typography, useTheme } from '@mui/material';
 
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { generateAnalyticData } from 'data/simulasi';
+import { useTestData } from '../../contexts/TestDataContext';
+import { useAnomalyCounts } from '../../hooks/useAnomalyTracker';
+import { useMetricStats } from '../../hooks/useMetricStatistics';
 
 import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
@@ -24,6 +28,10 @@ import AddIcon from '@mui/icons-material/Add';
 
 const NCG = () => {
     const theme = useTheme();
+    const location = useLocation();
+    const isTestEnvironment = location.pathname.startsWith('/test');
+    const testDataContext = isTestEnvironment ? useTestData() : null;
+
     const [analyticData, setAnalyticData] = useState(null);
     const [changePct, setChangePct] = useState(null);
     const limitData = getLimitData();
@@ -33,7 +41,18 @@ const NCG = () => {
       const prevNCGRef = { current: null };
 
       const updateData = () => {
-        const data = generateAnalyticData();
+        let data;
+        if (isTestEnvironment && testDataContext) {
+          // Use test data from TestDataContext
+          const ncgValue = testDataContext.mockData.metrics.ncg?.value ?? 0.45;
+          data = {
+            ncg: parseFloat(ncgValue.toFixed(3))
+          };
+        } else {
+          // Use production data
+          data = generateAnalyticData();
+        }
+
         setAnalyticData((prev) => {
           const prevVal = prev?.ncg ?? prevNCGRef.current;
           if (prevVal === undefined || prevVal === null) {
@@ -53,62 +72,64 @@ const NCG = () => {
       const interval = setInterval(updateData, 3000);
 
       return () => clearInterval(interval);
-    }, []);
+    }, [isTestEnvironment, testDataContext]);
 
-    const ncg = analyticData?.ncg ?? 1.5;
-    const anomalyCount = '03';
-    const minNCG = '0.85%';
-    const avgNCG = '1.52%';
-    const maxNCG = '2.15%';
+    const ncg = analyticData?.ncg ?? 0.45;
+
+    // Real-time statistics tracking
+    const ncgStats = useMetricStats('ncg', ncg);
+
+    // Real-time anomaly tracking
+    const anomalies = useAnomalyCounts('ncg', ncg);
 
     const cardData = [
         {
             title: 'Anomali Status',
-            value: '03',
+            value: anomalies.last24h,
             unit: 'Anomali',
             icon: <PriorityHighIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#9271FF',
             iconColor: '#fff',
             additionalData: [
-                { value: '08', unit: 'Anomali', timeLabel: '12 Jam terakhir' },
-                { value: '15', unit: 'Anomali', timeLabel: '1 hari terakhir' },
-                { value: '32', unit: 'Anomali', timeLabel: '1 minggu terakhir' }
+                { value: anomalies.last12h, unit: 'Anomali', timeLabel: '12 Jam terakhir' },
+                { value: anomalies.last24h, unit: 'Anomali', timeLabel: '1 hari terakhir' },
+                { value: anomalies.last7d, unit: 'Anomali', timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Minimum',
-            value: minNCG,
+            value: `${ncgStats.min24h}%`,
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
             iconColor: '#fff',
             additionalData: [
-                { value: '0.92%', timeLabel: '12 Jam terakhir' },
-                { value: '0.78%', timeLabel: '1 hari terakhir' },
-                { value: '0.65%', timeLabel: '1 minggu terakhir' }
+                { value: `${ncgStats.min12h}%`, timeLabel: '12 Jam terakhir' },
+                { value: `${ncgStats.min24h}%`, timeLabel: '1 hari terakhir' },
+                { value: `${ncgStats.min7d}%`, timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Average',
-            value: avgNCG,
+            value: `${ncgStats.avg24h}%`,
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
             iconColor: '#fff',
             additionalData: [
-              { value: '1.48%', timeLabel: '12 Jam terakhir' },
-              { value: '1.56%', timeLabel: '1 hari terakhir' },
-              { value: '1.61%', timeLabel: '1 minggu terakhir' }
+              { value: `${ncgStats.avg12h}%`, timeLabel: '12 Jam terakhir' },
+              { value: `${ncgStats.avg24h}%`, timeLabel: '1 hari terakhir' },
+              { value: `${ncgStats.avg7d}%`, timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Maximum',
-            value: maxNCG,
+            value: `${ncgStats.max24h}%`,
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
             iconColor: '#fff',
             additionalData: [
-              { value: '2.01%', timeLabel: '12 Jam terakhir' },
-              { value: '2.15%', timeLabel: '1 hari terakhir' },
-              { value: '2.28%', timeLabel: '1 minggu terakhir' }
+              { value: `${ncgStats.max12h}%`, timeLabel: '12 Jam terakhir' },
+              { value: `${ncgStats.max24h}%`, timeLabel: '1 hari terakhir' },
+              { value: `${ncgStats.max7d}%`, timeLabel: '1 minggu terakhir' }
             ]
         }
     ];
@@ -218,7 +239,7 @@ const NCG = () => {
               <StatisticsTable
                 title="Tabel Data Statistik"
                 subtitle="Tabel data statistik yang telah diperoleh"
-                dataGenerator={generateNCGTableData}
+                metric="ncg"
               />
             </Grid>
           </Grid>

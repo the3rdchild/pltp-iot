@@ -21,6 +21,9 @@ import Prediction from 'pages/analytics/prediction'
 import DataInput from 'pages/settings/dataInput'
 import Calibration from 'pages/settings/calibration';
 import Configuration from 'pages/settings/configuration';
+//test pages
+import SimulationPage from 'pages/test/simulation';
+import { TestDataProvider } from 'contexts/TestDataContext';
 
 //artikel umum
 import MisiKami from 'pages/extra-pages/articles/MisiKami';
@@ -228,6 +231,117 @@ const router = createBrowserRouter([
   {
     path:'/artikel-SamplingNCG',
     element: <SamplingNCG />
+  },
+
+  // ==============================|| TEST ENVIRONMENT ROUTES ||============================== //
+  // Test environment with simulated data - mirrors all production routes under /test
+  {
+    path: '/test',
+    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+    children: [
+      {
+        index: true,
+        element: <Navigate to="/test/dashboard" replace />
+      },
+      {
+        path: 'dashboard',
+        element: <DashboardDefault />
+      },
+      {
+        path: 'simulation',
+        element: <SimulationPage />
+      },
+      {
+        path: 'typography',
+        element: <Typography />
+      },
+      {
+        path: 'color',
+        element: <Color />
+      }
+    ]
+  },
+  // Test Analytics Pages
+  {
+    path: '/test/dryness',
+    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+    children: [
+      {
+        index: true,
+        element: <Dryness />
+      }
+    ]
+  },
+  {
+    path: '/test/ncg',
+    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+    children: [
+      {
+        index: true,
+        element: <NCG />
+      }
+    ]
+  },
+  {
+    path: '/test/tds',
+    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+    children: [
+      {
+        index: true,
+        element: <TDS />
+      }
+    ]
+  },
+  {
+    path: '/test/ptf',
+    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+    children: [
+      {
+        index: true,
+        element: <PTF />
+      }
+    ]
+  },
+  {
+    path: '/test/prediction',
+    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+    children: [
+      {
+        index: true,
+        element: <Prediction />
+      }
+    ]
+  },
+  // Test Settings Pages
+  {
+    path: '/test/dataInput',
+    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+    children: [
+      {
+        index: true,
+        element: <DataInput />
+      }
+    ]
+  },
+  {
+    path: '/test/calibration',
+    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+    children: [
+      {
+        index: true,
+        element: <Calibration />
+      }
+    ]
+  },
+  {
+    path: '/test/configuration',
+    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+    children: [
+      {
+        index: true,
+        element: <Configuration />
+      }
+    ]
   }
 ]);
 

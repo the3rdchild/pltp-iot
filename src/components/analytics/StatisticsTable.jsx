@@ -16,7 +16,16 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import MainCard from '../MainCard';
 import PropTypes from 'prop-types';
-import { generateDrynessTableData } from '../../data/chartData';
+import { useLocation } from 'react-router-dom';
+import {
+  generateDrynessTableData,
+  generateNCGTableData,
+  generateTDSTableData,
+  generatePressureTableData,
+  generateTemperatureTableData,
+  generateFlowRateTableData
+} from '../../data/chartData';
+import { useStatsTableData } from '../../hooks/useStatsTableData';
 
 const StatisticsTable = ({
   title = 'Tabel Data Statistik',
@@ -30,18 +39,52 @@ const StatisticsTable = ({
     { id: 'stdDeviation', label: 'Standard Deviation' }
   ],
   data = [],
-  dataGenerator = generateDrynessTableData,
+  metric,
+  dataGenerator,
   onDownloadCSV,
   onPickDate,
   onAddNew
 }) => {
+  const location = useLocation();
+  const isTestEnvironment = location.pathname.startsWith('/test');
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  // Use memoized data generator to avoid regenerating on every render
-  const generatedData = useMemo(() => dataGenerator(), [dataGenerator]);
+  // Fetch data from API for production mode
+  const { data: apiData, loading: apiLoading } = useStatsTableData(metric, {
+    limit: 100,
+    offset: 0
+  });
 
-  const tableData = data.length > 0 ? data : generatedData;
+  // Select appropriate data generator based on metric
+  const getDataGenerator = () => {
+    if (dataGenerator) return dataGenerator;
+
+    // Map metric to appropriate generator (separate per parameter)
+    const generators = {
+      'pressure': generatePressureTableData,
+      'temperature': generateTemperatureTableData,
+      'flow_rate': generateFlowRateTableData,
+      'tds': generateTDSTableData,
+      'dryness': generateDrynessTableData,
+      'ncg': generateNCGTableData
+    };
+
+    return generators[metric] || generateDrynessTableData;
+  };
+
+  // Use memoized data generator to avoid regenerating on every render
+  const generatedData = useMemo(() => {
+    const generator = getDataGenerator();
+    return generator();
+  }, [metric, dataGenerator]);
+
+  // For test environment: use generated data
+  // For production: use data from API
+  const tableData = isTestEnvironment
+    ? generatedData
+    : (data.length > 0 ? data : apiData);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -53,6 +96,34 @@ const StatisticsTable = ({
   };
 
   const paginatedData = tableData.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  // Helper function to format cell values with max 3 decimals
+  const formatCellValue = (value) => {
+    if (value === null || value === undefined) return '';
+
+    // If it's a number, format to max 3 decimals
+    if (typeof value === 'number') {
+      return parseFloat(value.toFixed(3));
+    }
+
+    // If it's a string that contains numbers with units (e.g., "1.628312584916454wt%")
+    if (typeof value === 'string') {
+      // Extract number and unit using regex
+      const match = value.match(/^([-+]?[0-9]*\.?[0-9]+)(.*)$/);
+      if (match) {
+        const number = parseFloat(match[1]);
+        const unit = match[2].trim();
+
+        // Format number to max 3 decimals and append unit
+        if (!isNaN(number)) {
+          return `${parseFloat(number.toFixed(3))}${unit}`;
+        }
+      }
+    }
+
+    // Return as-is if not a number
+    return value;
+  };
 
   return (
     <MainCard>
@@ -140,7 +211,7 @@ const StatisticsTable = ({
             {paginatedData.map((row, rowIndex) => (
               <TableRow key={rowIndex} sx={{ '&:hover': { backgroundColor: '#f9f9f9' } }}>
                 {columns.map((column) => (
-                  <TableCell key={column.id}>{row[column.id]}</TableCell>
+                  <TableCell key={column.id}>{formatCellValue(row[column.id])}</TableCell>
                 ))}
               </TableRow>
             ))}
@@ -205,6 +276,7 @@ StatisticsTable.propTypes = {
     label: PropTypes.string.isRequired
   })),
   data: PropTypes.arrayOf(PropTypes.object),
+  metric: PropTypes.string,
   dataGenerator: PropTypes.func,
   onDownloadCSV: PropTypes.func,
   onPickDate: PropTypes.func,

@@ -1,7 +1,11 @@
 import { Grid, Box, Typography, useTheme } from '@mui/material';
 
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { generateAnalyticData } from 'data/simulasi';
+import { useTestData } from '../../contexts/TestDataContext';
+import { useAnomalyCounts } from '../../hooks/useAnomalyTracker';
+import { useMetricStats } from '../../hooks/useMetricStatistics';
 
 import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
@@ -23,6 +27,10 @@ import AddIcon from '@mui/icons-material/Add';
 
 const Dryness = () => {
     const theme = useTheme();
+    const location = useLocation();
+    const isTestEnvironment = location.pathname.startsWith('/test');
+    const testDataContext = isTestEnvironment ? useTestData() : null;
+
     const [analyticData, setAnalyticData] = useState(null);
     const [changePct, setChangePct] = useState(null);
     const limitData = getLimitData();
@@ -30,9 +38,20 @@ const Dryness = () => {
 
     useEffect(() => {
       const prevDryRef = { current: null }; // simple ref-like object (no extra hook required)
-    
+
       const updateData = () => {
-        const data = generateAnalyticData();
+        let data;
+        if (isTestEnvironment && testDataContext) {
+          // Use test data from TestDataContext
+          const drynessValue = testDataContext.mockData.metrics.dryness?.value ?? 95;
+          data = {
+            dryness: parseFloat(drynessValue.toFixed(3))
+          };
+        } else {
+          // Use production data
+          data = generateAnalyticData();
+        }
+
         setAnalyticData((prev) => {
           // compute percent change relative to previous (prefer prev from state if present)
           const prevVal = prev?.dryness ?? prevDryRef.current;
@@ -49,69 +68,71 @@ const Dryness = () => {
           return data;
         });
       };
-    
+
       // first-run populate
       updateData();
-    
-      const interval = setInterval(updateData, 3000);
-    
-      return () => clearInterval(interval);
-    }, []);
 
-    const dryness = analyticData?.dryness ?? 99.3;
-    const anomalyCount = '03';
-    const minDryness = '97.77%';
-    const avgDryness = '99.01%';
-    const maxDryness = '99.89%';
+      const interval = setInterval(updateData, 3000);
+
+      return () => clearInterval(interval);
+    }, [isTestEnvironment, testDataContext]);
+
+    const dryness = analyticData?.dryness ?? 95;
+
+    // Real-time statistics tracking
+    const drynessStats = useMetricStats('dryness', dryness);
+
+    // Real-time anomaly tracking
+    const anomalies = useAnomalyCounts('dryness', dryness);
 
     const cardData = [
         {
             title: 'Anomali Status',
-            value: '03',
+            value: anomalies.last24h,
             unit: 'Anomali',
             icon: <PriorityHighIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#9271FF',
             iconColor: '#fff',
             additionalData: [
-                { value: '10', unit: 'Anomali', timeLabel: '12 Jam terakhir' },
-                { value: '22', unit: 'Anomali', timeLabel: '1 hari terakhir' },
-                { value: '48', unit: 'Anomali', timeLabel: '1 minggu terakhir' }
+                { value: anomalies.last12h, unit: 'Anomali', timeLabel: '12 Jam terakhir' },
+                { value: anomalies.last24h, unit: 'Anomali', timeLabel: '1 hari terakhir' },
+                { value: anomalies.last7d, unit: 'Anomali', timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Minimum',
-            value: minDryness,
+            value: `${drynessStats.min24h}%`,
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
             iconColor: '#fff',
             additionalData: [
-                { value: '97.50%', timeLabel: '12 Jam terakhir' },
-                { value: '97.20%', timeLabel: '1 hari terakhir' },
-                { value: '96.80%', timeLabel: '1 minggu terakhir' }
+                { value: `${drynessStats.min12h}%`, timeLabel: '12 Jam terakhir' },
+                { value: `${drynessStats.min24h}%`, timeLabel: '1 hari terakhir' },
+                { value: `${drynessStats.min7d}%`, timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Average',
-            value: avgDryness,
+            value: `${drynessStats.avg24h}%`,
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
             iconColor: '#fff',
             additionalData: [
-              { value: '99.50%', timeLabel: '12 Jam terakhir' },
-              { value: '99.80%', timeLabel: '1 hari terakhir' },
-              { value: '99.80%', timeLabel: '1 minggu terakhir' }
+              { value: `${drynessStats.avg12h}%`, timeLabel: '12 Jam terakhir' },
+              { value: `${drynessStats.avg24h}%`, timeLabel: '1 hari terakhir' },
+              { value: `${drynessStats.avg7d}%`, timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Maximum',
-            value: maxDryness,
+            value: `${drynessStats.max24h}%`,
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
             iconColor: '#fff',
             additionalData: [
-              { value: '99.89%', timeLabel: '12 Jam terakhir' },
-              { value: '99.89%', timeLabel: '1 hari terakhir' },
-              { value: '99.89%', timeLabel: '1 minggu terakhir' }
+              { value: `${drynessStats.max12h}%`, timeLabel: '12 Jam terakhir' },
+              { value: `${drynessStats.max24h}%`, timeLabel: '1 hari terakhir' },
+              { value: `${drynessStats.max7d}%`, timeLabel: '1 minggu terakhir' }
             ]
         }
     ];
@@ -224,6 +245,7 @@ const Dryness = () => {
               <StatisticsTable
                 title="Tabel Data Statistik"
                 subtitle="Tabel data statistik yang telah diperoleh"
+                metric="dryness"
               />
             </Grid>
           </Grid>

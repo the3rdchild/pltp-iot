@@ -287,7 +287,7 @@ export const ptfFlowHistoryDataset2 = [
   270, 275, 280, 270, 276, 280, 273, 276, 272, 276
 ];
 
-// PTF table data generator
+// PTF table data generator - DEPRECATED (use separate generators below)
 export const generatePTFTableData = () => {
   const generatedData = [];
   for (let i = 1; i <= 58; i++) {
@@ -303,6 +303,69 @@ export const generatePTFTableData = () => {
       maxValue: `P:${maxPressure}kPa T:${(145 + Math.random() * 10).toFixed(1)}°C F:${(280 + Math.random() * 18).toFixed(1)}t/h`,
       average: `P:${avgPressure}kPa T:${(135 + Math.random() * 10).toFixed(1)}°C F:${(260 + Math.random() * 20).toFixed(1)}t/h`,
       stdDeviation: `P:${stdDev}kPa T:${(Math.random() * 5).toFixed(2)}°C F:${(Math.random() * 8).toFixed(2)}t/h`
+    });
+  }
+  return generatedData;
+};
+
+// Pressure table data generator (separate)
+export const generatePressureTableData = () => {
+  const generatedData = [];
+  for (let i = 1; i <= 58; i++) {
+    const minValue = parseFloat((5.0 + Math.random() * 0.5).toFixed(3));
+    const maxValue = parseFloat((6.5 + Math.random() * 0.5).toFixed(3));
+    const avgValue = parseFloat(((minValue + maxValue) / 2).toFixed(3));
+    const stdDev = parseFloat((Math.random() * 0.3).toFixed(3));
+
+    generatedData.push({
+      no: i,
+      date: `${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}/${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/2024`,
+      minValue: `${minValue}barg`,
+      maxValue: `${maxValue}barg`,
+      average: `${avgValue}barg`,
+      stdDeviation: `${stdDev}barg`
+    });
+  }
+  return generatedData;
+};
+
+// Temperature table data generator (separate)
+export const generateTemperatureTableData = () => {
+  const generatedData = [];
+  for (let i = 1; i <= 58; i++) {
+    const minValue = parseFloat((131 + Math.random() * 5).toFixed(3));
+    const maxValue = parseFloat((145 + Math.random() * 5).toFixed(3));
+    const avgValue = parseFloat(((minValue + maxValue) / 2).toFixed(3));
+    const stdDev = parseFloat((Math.random() * 3).toFixed(3));
+
+    generatedData.push({
+      no: i,
+      date: `${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}/${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/2024`,
+      minValue: `${minValue}°C`,
+      maxValue: `${maxValue}°C`,
+      average: `${avgValue}°C`,
+      stdDeviation: `${stdDev}°C`
+    });
+  }
+  return generatedData;
+};
+
+// Flow Rate table data generator (separate)
+export const generateFlowRateTableData = () => {
+  const generatedData = [];
+  for (let i = 1; i <= 58; i++) {
+    const minValue = parseFloat((251 + Math.random() * 10).toFixed(3));
+    const maxValue = parseFloat((280 + Math.random() * 10).toFixed(3));
+    const avgValue = parseFloat(((minValue + maxValue) / 2).toFixed(3));
+    const stdDev = parseFloat((Math.random() * 5).toFixed(3));
+
+    generatedData.push({
+      no: i,
+      date: `${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}/${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}/2024`,
+      minValue: `${minValue}t/h`,
+      maxValue: `${maxValue}t/h`,
+      average: `${avgValue}t/h`,
+      stdDeviation: `${stdDev}t/h`
     });
   }
   return generatedData;

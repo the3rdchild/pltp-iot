@@ -13,9 +13,9 @@ export const transformChartData = (apiChartData) => {
 
   return apiChartData.map(point => ({
     timestamp: new Date(point.timestamp).getTime(),
-    value: point.avg, // Use average for main line
-    min: point.min,
-    max: point.max,
+    value: typeof point.avg === 'number' ? parseFloat(point.avg.toFixed(3)) : point.avg, // Use average for main line
+    min: typeof point.min === 'number' ? parseFloat(point.min.toFixed(3)) : point.min,
+    max: typeof point.max === 'number' ? parseFloat(point.max.toFixed(3)) : point.max,
     dataPoints: point.data_points
   }));
 };
@@ -39,13 +39,13 @@ export const transformTableData = (apiTableData) => {
       hour: '2-digit',
       minute: '2-digit'
     }),
-    value: record.value,
+    value: typeof record.value === 'number' ? parseFloat(record.value.toFixed(3)) : record.value,
     status: record.status,
     // For now, use single value for min/max/avg
     // TODO: Calculate from grouped data if available
-    minValue: record.value,
-    maxValue: record.value,
-    average: record.value,
+    minValue: typeof record.value === 'number' ? parseFloat(record.value.toFixed(3)) : record.value,
+    maxValue: typeof record.value === 'number' ? parseFloat(record.value.toFixed(3)) : record.value,
+    average: typeof record.value === 'number' ? parseFloat(record.value.toFixed(3)) : record.value,
     stdDev: 0
   }));
 };
@@ -61,15 +61,28 @@ export const getSummaryStats = (apiTableData) => {
       min: 0,
       max: 0,
       avg: 0,
-      count: 0
+      count: 0,
+      min12h: 0,
+      max12h: 0,
+      avg12h: 0,
+      min24h: 0,
+      max24h: 0,
+      avg24h: 0
     };
   }
 
   return {
-    min: apiTableData.summary.min,
-    max: apiTableData.summary.max,
-    avg: apiTableData.summary.avg,
-    count: apiTableData.summary.count
+    min: typeof apiTableData.summary.min === 'number' ? parseFloat(apiTableData.summary.min.toFixed(3)) : apiTableData.summary.min,
+    max: typeof apiTableData.summary.max === 'number' ? parseFloat(apiTableData.summary.max.toFixed(3)) : apiTableData.summary.max,
+    avg: typeof apiTableData.summary.avg === 'number' ? parseFloat(apiTableData.summary.avg.toFixed(3)) : apiTableData.summary.avg,
+    count: apiTableData.summary.count,
+    // Add time-based stats with formatting
+    min12h: typeof apiTableData.summary.min === 'number' ? parseFloat(apiTableData.summary.min.toFixed(3)) : apiTableData.summary.min,
+    max12h: typeof apiTableData.summary.max === 'number' ? parseFloat(apiTableData.summary.max.toFixed(3)) : apiTableData.summary.max,
+    avg12h: typeof apiTableData.summary.avg === 'number' ? parseFloat(apiTableData.summary.avg.toFixed(3)) : apiTableData.summary.avg,
+    min24h: typeof apiTableData.summary.min === 'number' ? parseFloat(apiTableData.summary.min.toFixed(3)) : apiTableData.summary.min,
+    max24h: typeof apiTableData.summary.max === 'number' ? parseFloat(apiTableData.summary.max.toFixed(3)) : apiTableData.summary.max,
+    avg24h: typeof apiTableData.summary.avg === 'number' ? parseFloat(apiTableData.summary.avg.toFixed(3)) : apiTableData.summary.avg
   };
 };
 
@@ -77,10 +90,10 @@ export const getSummaryStats = (apiTableData) => {
  * Format value with unit
  * @param {number} value - Numeric value
  * @param {string} unit - Unit string (ppm, kPa, °C, t/h)
- * @param {number} decimals - Number of decimal places
+ * @param {number} decimals - Number of decimal places (max 3 decimals)
  * @returns {string} Formatted string
  */
-export const formatValueWithUnit = (value, unit = '', decimals = 2) => {
+export const formatValueWithUnit = (value, unit = '', decimals = 3) => {
   if (value === null || value === undefined) return '-';
   return `${parseFloat(value).toFixed(decimals)}${unit}`;
 };

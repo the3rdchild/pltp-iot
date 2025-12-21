@@ -1,9 +1,10 @@
 // material-ui
 import { Box, Typography } from '@mui/material';
+import { useLocation } from 'react-router-dom';
 
 // project import
 import NavGroup from './NavGroup';
-import menuItem from 'menu-items';
+import menuItem, { getMenuItems } from 'menu-items';
 import NavItem from './NavItem';
 
 import { PoweroffOutlined } from '@ant-design/icons';
@@ -15,7 +16,13 @@ const icons = {
 // ==============================|| DRAWER CONTENT - NAVIGATION ||============================== //
 
 const Navigation = () => {
-  const navGroups = menuItem.items.map((item) => {
+  const location = useLocation();
+  const isTestEnvironment = location.pathname.startsWith('/test');
+
+  // Use test menu if in test environment, otherwise use production menu
+  const currentMenuItems = isTestEnvironment ? getMenuItems(true) : menuItem;
+
+  const navGroups = currentMenuItems.items.map((item) => {
     switch (item.type) {
       case 'group':
         return <NavGroup key={item.id} item={item} />;
