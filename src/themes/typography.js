@@ -30,12 +30,12 @@ export default function Typography(fontFamily) {
     },
     h5: {
       fontWeight: 600,
-      fontSize: '1rem',
+      fontSize: '1.2rem',
       lineHeight: 1.5
     },
     h6: {
       fontWeight: 400,
-      fontSize: '0.875rem',
+      fontSize: '0.955rem',
       lineHeight: 1.57
     },
     caption: {

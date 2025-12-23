@@ -45,16 +45,16 @@
       width: 60%;
     }
     .value {
-    /* now scales with the real gauge width (set by JS as --gauge-w) */
-    font-size: calc(var(--gauge-w, 720px) * 0.12);
+    /* Scales with gauge width but with responsive min/max sizes */
+    font-size: clamp(1.5rem, calc(var(--gauge-w, 720px) * 0.167), 2rem);
     color: var(--text);
     font-weight: 700;
     line-height: 1;
     }
 
     .unit {
-    /* keep unit relative to .value using em so it scales together */
-    font-size: 0.99rem;
+    /* Scales with gauge but maintains readable size */
+    font-size: clamp(0.75rem, calc(var(--gauge-w, 720px) * 0.025), 1.5rem);
     color: #9aa0a6;
     margin-left: 0.5ch;
     font-weight:600;
@@ -65,11 +65,11 @@
     margin-top: calc(var(--gauge-w, 200px) * 0.05); /* scales with gauge */
     background: var(--subtle);
     color: var(--pill-text);
-    padding: calc(var(--gauge-w, 200px) * 0.01) calc(var(--gauge-w, 200px) * 0.05); /* responsive padding */
+    padding: clamp(4px, calc(var(--gauge-w, 200px) * 0.01), 10px) clamp(12px, calc(var(--gauge-w, 200px) * 0.05), 28px);
     border-radius: 999px;
     font-weight: 700;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.063);
-    font-size: calc(var(--gauge-w, 200px) * 0.07);
+    font-size: clamp(0.7rem, calc(var(--gauge-w, 200px) * 0.07), 1.25rem);
     }
 
     /* The small circle pin that follows the arc */
@@ -111,9 +111,3 @@
 
     /* optional ticks for major labels (we don't render numbers by default) */
     .tick { stroke: rgba(0,0,0,0.06); stroke-width: 2; stroke-linecap:round; }
-
-    /* responsive tweaks */
-    @media (max-width:520px){
-      .value{font-size: calc(var(--size) * 0.06);}
-      .status-pill{padding:8px 20px;font-size:12px}
-    }
