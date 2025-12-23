@@ -133,8 +133,15 @@ export const useMetricStatistics = (metricKey, currentValue) => {
     const stats24h = calculateStats(records24h);
     const stats7d = calculateStats(records7d);
 
+    // Ensure currentValue is a number
+    const numericValue = typeof currentValue === 'number'
+      ? currentValue
+      : parseFloat(currentValue);
+
+    const safeCurrentValue = !isNaN(numericValue) ? numericValue : 0;
+
     return {
-      current: currentValue ? parseFloat(currentValue.toFixed(3)) : 0,
+      current: safeCurrentValue ? parseFloat(safeCurrentValue.toFixed(3)) : 0,
       min12h: stats12h.min,
       max12h: stats12h.max,
       avg12h: stats12h.avg,

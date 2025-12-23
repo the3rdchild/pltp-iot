@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import pertaminaLogo from '../../assets/images/pertamina1x1.svg';
 import unpadLogo from '../../assets/images/Logo-Unpad.svg';
@@ -7,13 +6,17 @@ import heroImage from '../../assets/images/landing_page_image.jpg';
 import engineerImage from '../../assets/images/landing_page_image_2.png';
 import tdsImage from '../../assets/images/tds.png';
 import drynessImage from '../../assets/images/dryness.png';
-import ncgImage from '../../assets/images/sampelncg.png';
+import ncgImage from '../../assets/images/ncg.png';
 import SC4500 from '../../assets/images/SC4500.png';
+import sampelncg from '../../assets/images/sampelncg.png';
+import DrynessFraction from '../../assets/images/DrynessFraction.jpg';
+import CARAPLTP from '../../assets/images/PLTPKMJ.jpg';
 import IndonesiaMAP from '../../assets/images/Indonesiaku.png';
 import PTPGE from '../../assets/images/LOGOPGE.png';
 import LogoPertamina from '../../assets/images/LOGOPertamina.png';
 import Hach from '../../assets/images/LOGOHach.png';
 import Honeywell from '../../assets/images/LOGOHW.png';
+import indonesiaMap from '../../assets/images/indonesia-map.png';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -180,6 +183,10 @@ const Home = () => {
           <a href="#services" className="sidebar-link">Layanan Kami</a>
           <a href="/unit-pemantauan" className="sidebar-link">Unit Pemantauan</a>
           <a href="#quality" className="sidebar-link">Kualitas Uap</a>
+          <a href="#pltp-works" className="sidebar-link">Cara Kerja PLTP</a>
+          <a href="#sampling" className="sidebar-link">Teknik Pengambilan Sampel</a>
+          <a href="#ai-monitoring" className="sidebar-link">Sistem Monitoring & Analisis AI</a>
+          <a href="#collaboration" className="sidebar-link">Kolaborasi & Kerja Sama</a>
         </div>
       </div>
 
@@ -312,14 +319,7 @@ const Home = () => {
               />
             </div>
             <div className="mission-button-container">
-
-            <a href="/misi-kami" className="btn-read-more">
-              READ MORE
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="m9 18 6-6-6-6"/>
-              </svg>
-            </a>
-          </div>
+            </div>
           </div>
         </div>
       </section>
@@ -327,7 +327,7 @@ const Home = () => {
       {/* Services Section */}
       <section id="services" className="services-section">
         <div className="container">
-            <div className="services-intro-grid">
+          <div className="services-intro-grid">
             <div>
               <h2 className="section-title">Layanan Kami</h2>
             </div>
@@ -427,6 +427,37 @@ const Home = () => {
         </div>
       </section>
 
+ {/* How Geothermal Power Plants Work Section */}
+ <section id="pltp-works" className="pltp-works-section">
+  <div className="container">
+    <div className="pltp-works-intro-grid">
+      <div>
+        <h2 className="section-title">Cara Kerja PLTP</h2>
+        
+        {/* GAMBAR PINDAH KE SINI - DI BAWAH JUDUL */}
+        <div className="pltp-works-image-container">
+          <img 
+            src={CARAPLTP} 
+            alt="Cara Kerja PLTP" 
+            className="pltp-works-image"
+          />
+        </div>
+      </div>
+      
+      <div>
+        <p className="section-intro">
+          Pembangkit Listrik Tenaga Panas Bumi (PLTP) memanfaatkan panas dari dalam bumi untuk menghasilkan listrik. Panas tersebut mengubah air bawah tanah menjadi uap bertekanan tinggi yang dialirkan ke permukaan untuk memutar turbin. Turbin yang berputar menggerakkan generator sehingga menghasilkan energi listrik. Uap sisa kemudian didinginkan dan airnya dikembalikan ke dalam bumi agar proses dapat berlangsung secara berkelanjutan.
+        </p>
+        <a href="/cara-kerja-pltp" className="btn-pltp-guide">
+          Selengkapnya
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="m9 18 6-6-6-6"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* Steam Quality Section */}
       <section id="quality" className="quality-section">
@@ -441,12 +472,6 @@ const Home = () => {
               <p className="section-intro">
                 Kualitas dan kemurnian uap yang masuk ke turbin memiliki peran penting dalam menjaga efisiensi serta umur peralatan pembangkit. Uap yang mengandung kotoran atau kadar air berlebih dapat menurunkan performa turbin, menyebabkan korosi, dan meningkatkan biaya perawatan. Melalui sistem pemantauan kualitas uap secara real-time, potensi gangguan tersebut dapat diminimalkan, sehingga kinerja pembangkit tetap optimal dan berkelanjutan.
               </p>
-              <a href="/cara-kerja-pltp" className="btn-pltp-guide">
-                CARA KERJA PLTP
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="m9 18 6-6-6-6"/>
-                </svg>
-              </a>
             </div>
           </div>
 
@@ -464,10 +489,10 @@ const Home = () => {
                   TDS (Total Dissolved Solid)
                 </h3>
                 <p className="quality-description">
-                TDS adalah perbandingan banyaknya zat padat dalam larutan/uap/cairan yang dinyatakan dalam persentase. TDS tinggi bisa menyebabkan carryover (terikutnya zat padat atau cairan dalam uap).
+                  TDS adalah perbandingan banyaknya zat padat dalam larutan/uap/cairan yang dinyatakan dalam persentase. TDS tinggi bisa menyebabkan carryover (terikutnya zat padat atau cairan dalam uap).
                 </p>
                 <a href="/artikel-tds" className="btn-quality-read-more">
-                  READ MORE
+                Selengkapnya
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
@@ -491,7 +516,7 @@ const Home = () => {
                   Dryness fraction adalah tingkat kadar air dalam uap yang dinyatakan dalam persentase. Banyaknya air dalam uap dapat menyebabkan korosi pada turbin
                 </p>
                 <a href="/artikel-dryness" className="btn-quality-read-more">
-                  READ MORE
+                  Selengkapnya
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
@@ -515,7 +540,7 @@ const Home = () => {
                   NCG adalah gas yang tidak dapat dikondensasikan yang dinyatakan dalam persen. Contoh: CO₂, H₂S, dan gas lainnya.
                 </p>
                 <a href="/artikel-ncg" className="btn-quality-read-more">
-                  READ MORE
+                Selengkapnya
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
@@ -526,10 +551,10 @@ const Home = () => {
         </div>
       </section>
 
-{/* Sampling Techniques Section */}
-<section id="quality" className="quality-section">
+      {/* Sampling Techniques Section */}
+      <section id="sampling" className="sampling-section">
         <div className="container">
-          <div className="quality-intro-grid">
+          <div className="sampling-intro-grid">
             <div>
               <h2 className="section-title">
                 Teknik Pengambilan Sampel
@@ -539,33 +564,27 @@ const Home = () => {
               <p className="section-intro">
                 Kualitas dan kemurnian uap yang masuk ke turbin memiliki peran penting dalam menjaga efisiensi serta umur peralatan pembangkit. Uap yang mengandung kotoran atau kadar air berlebih dapat menurunkan performa turbin, menyebabkan korosi, dan meningkatkan biaya perawatan. Melalui sistem pemantauan kualitas uap secara real-time, potensi gangguan tersebut dapat diminimalkan, sehingga kinerja pembangkit tetap optimal dan berkelanjutan.
               </p>
-              <a href="/cara-kerja-pltp" className="btn-pltp-guide">
-                CARA KERJA PLTP
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="m9 18 6-6-6-6"/>
-                </svg>
-              </a>
             </div>
           </div>
 
-          <div className="quality-cards">
-            <div className="quality-card">
-              <div className="quality-image-container">
+          <div className="sampling-cards">
+            <div className="sampling-card">
+              <div className="sampling-image-container">
                 <img 
                   src={SC4500} 
                   alt="TDS - Total Dissolved Solid" 
-                  className="quality-image"
+                  className="sampling-image"
                 />
               </div>
-              <div className="quality-content">
-                <h3 className="quality-title">
-                Cara Pengambilan Sampel TDS
+              <div className="sampling-content">
+                <h3 className="sampling-title">
+                  Sampling TDS<br />(Total Dissolved Solid)
                 </h3>
-                <p className="quality-description">
+                <p className="sampling-description">
                 Proses pengambilan sampel TDS menggunakan perangkat SC4500 untuk mengukur kadar Total Dissolved Solid dalam uap secara akurat. Data sampel ini menjadi input penting untuk sistem monitoring dan validasi prediksi AI.
                 </p>
-                <a href="/artikel-SamplingTDS" className="btn-quality-read-more">
-                  READ MORE
+                <a href="/artikel-SamplingTDS" className="btn-sampling-read-more">
+                Selengkapnya
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
@@ -573,23 +592,23 @@ const Home = () => {
               </div>
             </div>
 
-            <div className="quality-card">
-              <div className="quality-image-container">
+            <div className="sampling-card">
+              <div className="sampling-image-container">
                 <img
-                  src={drynessImage}
+                  src={DrynessFraction}
                   alt="Dryness Fraction"
-                  className="quality-image"
+                  className="sampling-image"
                 />
               </div>
-              <div className="quality-content">
-                <h3 className="quality-title">
-                  Cara Sampling Dryness Fraction
+              <div className="sampling-content">
+                <h3 className="sampling-title">
+                  Sampling Dryness Fraction
                 </h3>
-                <p className="quality-description">
+                <p className="sampling-description">
                   Dryness fraction adalah tingkat kadar air dalam uap yang dinyatakan dalam persentase. Banyaknya air dalam uap dapat menyebabkan korosi pada turbin
                 </p>
-                <a href="/artikel-SamplingDryness" className="btn-quality-read-more">
-                  READ MORE
+                <a href="/artikel-Samplingdryness" className="btn-sampling-read-more">
+                  Selengkapnya
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
@@ -597,23 +616,23 @@ const Home = () => {
               </div>
             </div>
 
-            <div className="quality-card">
-              <div className="quality-image-container">
+            <div className="sampling-card">
+              <div className="sampling-image-container">
                 <img
-                  src={ncgImage}
+                  src={sampelncg}
                   alt="NCG - Non Condensed Gas"
-                  className="quality-image"
+                  className="sampling-image"
                 />
               </div>
-              <div className="quality-content">
-                <h3 className="quality-title">
-                  Cara Sampling NCG (Non Condensed Gas)
+              <div className="sampling-content">
+                <h3 className="sampling-title">
+                  Sampling NCG<br />(Non Condensed Gas)
                 </h3>
-                <p className="quality-description">
+                <p className="sampling-description">
                   NCG adalah gas yang tidak dapat dikondensasikan yang dinyatakan dalam persen. Contoh: CO₂, H₂S, dan gas lainnya.
                 </p>
-                <a href="/artikel-SamplingNCG" className="btn-quality-read-more">
-                  READ MORE
+                <a href="/artikel-Samplingncg" className="btn-sampling-read-more">
+                Selengkapnya
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
@@ -644,30 +663,6 @@ const Home = () => {
             <div className="ai-card">
               <div className="ai-image-container">
                 <img
-                  src={SC4500}
-                  alt="Sampling TDS"
-                  className="ai-image"
-                />
-              </div>
-              <div className="ai-content">
-                <h3 className="ai-title">
-                  Cara Pengambilan Sampel TDS
-                </h3>
-                <p className="ai-description">
-                  Proses pengambilan sampel TDS menggunakan perangkat SC4500 untuk mengukur kadar Total Dissolved Solid dalam uap secara akurat. Data sampel ini menjadi input penting untuk sistem monitoring dan validasi prediksi AI.
-                </p>
-                <a href="/artikel-SamplingTDS" className="btn-ai-read-more">
-                  READ MORE
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="m9 18 6-6-6-6"/>
-                  </svg>
-                </a>
-              </div>
-            </div>
-
-            <div className="ai-card">
-              <div className="ai-image-container">
-                <img
                   src={drynessImage}
                   alt="AI1 Anomaly Detection"
                   className="ai-image"
@@ -681,7 +676,7 @@ const Home = () => {
                   Sistem AI1 menganalisis 12 parameter operasional secara real-time untuk mendeteksi anomali dan memprediksi risiko kerusakan turbin. AI memberikan status kondisi (Low/Medium/High) dan peringatan dini untuk tindakan preventif.
                 </p>
                 <a href="/artikel-AI1" className="btn-ai-read-more">
-                  READ MORE
+                Selengkapnya
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
@@ -705,7 +700,7 @@ const Home = () => {
                   AI2 berfungsi sebagai virtual sensor yang memprediksi nilai dryness fraction dan NCG content tanpa pengambilan sampel langsung. Teknologi ini mengurangi biaya operasional sambil tetap menjaga akurasi monitoring.
                 </p>
                 <a href="/artikel-AI2" className="btn-ai-read-more">
-                  READ MORE
+                Selengkapnya
                   <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="m9 18 6-6-6-6"/>
                   </svg>
@@ -716,83 +711,83 @@ const Home = () => {
         </div>
       </section>
 
-{/* Collaboration Section */}
-<section id="collaboration" className="collaboration-section">
-  <div className="container">
-    <div className="collaboration-header">
-      <span className="collaboration-badge">KOLABORASI RISET, AKADEMIK, DAN INDUSTRI</span>
-      <h2 className="section-title">KOLABORASI & KERJA SAMA</h2>
-    </div>
+      {/* Collaboration Section */}
+      <section id="collaboration" className="collaboration-section">
+        <div className="container">
+          <div className="collaboration-header">
+            <span className="collaboration-badge">KOLABORASI RISET, AKADEMIK, DAN INDUSTRI</span>
+            <h2 className="section-title">KOLABORASI & KERJA SAMA</h2>
+          </div>
 
-    <div className="collaboration-content">
-      <div className="collaboration-text">
-        <p className="section-intro">
-          PertaSmart secara aktif menjalin kerja sama strategis dengan mitra industri energi dan teknologi terkemuka,
-          antara lain PT Pertamina (Persero), PT Pertamina Geothermal Energy Tbk, Hach, dan Honeywell.
-          Kolaborasi ini berfokus pada penyediaan dan implementasi Sistem Online Monitoring & Analysis untuk pemantauan Kualitas Uap, 
-          Dryness Fraction, Total Dissolved Solids (TDS), serta deteksi anomali berbasis Artificial Intelligence (AI).
-          Sistem pemantauan ini telah diterapkan pada PLTP Kamojang dan PLTP Ulubelu, mendukung peningkatan keandalan operasi, efisiensi pembangkitan, serta pengambilan keputusan berbasis data secara real-time.
-          Melalui sinergi lintas disiplin dan pemanfaatan teknologi mutakhir, PertaSmart berkomitmen menghadirkan solusi yang presisi, 
-          terukur, dan berstandar industri untuk mendukung keberlanjutan sektor pemantauan panas bumi nasional.
-        </p>
-      </div>
+          <div className="collaboration-content">
+            <div className="collaboration-text">
+              <p className="section-intro">
+                PertaSmart secara aktif menjalin kerja sama strategis dengan mitra industri energi dan teknologi terkemuka,
+                antara lain PT Pertamina (Persero), PT Pertamina Geothermal Energy Tbk, Hach, dan Honeywell.
+                Kolaborasi ini berfokus pada penyediaan dan implementasi Sistem Online Monitoring & Analysis untuk pemantauan Kualitas Uap, 
+                Dryness Fraction, Total Dissolved Solids (TDS), serta deteksi anomali berbasis Artificial Intelligence (AI).
+                Sistem pemantauan ini telah diterapkan pada PLTP Kamojang dan PLTP Ulubelu, mendukung peningkatan keandalan operasi, efisiensi pembangkitan, serta pengambilan keputusan berbasis data secara real-time.
+                Melalui sinergi lintas disiplin dan pemanfaatan teknologi mutakhir, PertaSmart berkomitmen menghadirkan solusi yang presisi, 
+                terukur, dan berstandar industri untuk mendukung keberlanjutan sektor pemantauan panas bumi nasional.
+              </p>
+            </div>
 
-      <div className="collaboration-map">
-        <img 
-          src={IndonesiaMAP} 
-          alt="Global Collaboration Map" 
-          className="map-image"
-        />
-      </div>
-    </div>
+            <div className="collaboration-map">
+              <img 
+                src={IndonesiaMAP} 
+                alt="Global Collaboration Map" 
+                className="map-image"
+              />
+            </div>
+          </div>
 
-    <div className="partners-grid">
-      <div className="partner-card">
-        <div className="partner-logo-container">
-          <img 
-            src={PTPGE}
-            alt="Pertamina Geothermal Energy" 
-            className="partner-logo"
-          />
+          <div className="partners-grid">
+            <div className="partner-card">
+              <div className="partner-logo-container">
+                <img 
+                  src={PTPGE}
+                  alt="Pertamina Geothermal Energy" 
+                  className="partner-logo"
+                />
+              </div>
+              <h3 className="partner-name">PT. Pertamina Geothermal Energy</h3>
+            </div>
+
+            <div className="partner-card">
+              <div className="partner-logo-container">
+                <img 
+                  src={LogoPertamina} 
+                  alt="Pertamina" 
+                  className="partner-logo"
+                />
+              </div>
+              <h3 className="partner-name">PT. Pertamina</h3>
+            </div>
+
+            <div className="partner-card">
+              <div className="partner-logo-container">
+                <img 
+                  src={Hach} 
+                  alt="HACH" 
+                  className="partner-logo"
+                />
+              </div>
+              <h3 className="partner-name">Hach</h3>
+            </div>
+
+            <div className="partner-card">
+              <div className="partner-logo-container">
+                <img 
+                  src={Honeywell}
+                  alt="Honeywell" 
+                  className="partner-logo"
+                />
+              </div>
+              <h3 className="partner-name">Honeywell</h3>
+            </div>
+          </div>
         </div>
-        <h3 className="partner-name">PT. Pertamina Geothermal Energy</h3>
-      </div>
-
-      <div className="partner-card">
-        <div className="partner-logo-container">
-          <img 
-            src={LogoPertamina} 
-            alt="Pertamina" 
-            className="partner-logo"
-          />
-        </div>
-        <h3 className="partner-name">PT. Pertamina</h3>
-      </div>
-
-      <div className="partner-card">
-        <div className="partner-logo-container">
-          <img 
-            src={Hach} 
-            alt="HACH" 
-            className="partner-logo"
-          />
-        </div>
-        <h3 className="partner-name">Hach</h3>
-      </div>
-
-      <div className="partner-card">
-        <div className="partner-logo-container">
-          <img 
-            src={Honeywell}
-            alt="Honeywell" 
-            className="partner-logo"
-          />
-        </div>
-        <h3 className="partner-name">Honeywell</h3>
-      </div>
-    </div>
-  </div>
-</section>
+      </section>
 
       {/* Footer */}
       <footer className="footer">
@@ -801,7 +796,6 @@ const Home = () => {
             <div className="footer-col">
               <div className="footer-logos">
                 <img src={pertasmartLogo} alt="Pertasmart" className="header-logo" />
-                {/* <img src={unpadLogo} alt="UNPAD" className="footer-logo" /> */}
               </div>
               <p className="footer-text">
                 Kolaborasi PT. Pertamina dan Universitas Padjadjaran dalam 
@@ -822,9 +816,8 @@ const Home = () => {
             <div className="footer-col">
               <h4 className="footer-heading">Lokasi PLTP</h4>
               <ul className="footer-links">
-                <a href="/login" >Kamojang, Jawa Barat</a>
-                <li> </li>
-                <a href="#" >Ulubelu, Lampung</a>
+                <li>Kamojang, Jawa Barat</li>
+                <li>Ulubelu, Lampung</li>
               </ul>
             </div>
 
@@ -833,7 +826,7 @@ const Home = () => {
               <ul className="footer-links">
                 <li>PT. Pertamina Geothermal Energy</li>
                 <li>Universitas Padjadjaran</li>
-                <li>Email: pertasmart@unpad.ac.id</li>
+                <li>Email: info@pertasmart.com</li>
               </ul>
             </div>
           </div>
@@ -914,11 +907,6 @@ const Home = () => {
           background: rgba(37, 99, 235, 0.9);
         }
 
-    
-        .hamburger-menu:hover {
-          background: rgba(37, 99, 235, 0.9);
-        }
-
         .hamburger-line {
           width: 24px;
           height: 3px;
@@ -939,6 +927,7 @@ const Home = () => {
           z-index: 1000;
           transition: left 0.3s ease;
           box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
+          overflow-y: auto;
         }
 
         .sidebar.open {
@@ -1026,12 +1015,6 @@ const Home = () => {
           border-radius: 0 0 8px 8px;
         }
 
-        .logo-divider {
-          width: 1px;
-          height: 48px;
-          background-color: rgba(255, 255, 255, 0.3);
-        }
-
         .nav {
           display: flex;
           align-items: center;
@@ -1109,7 +1092,6 @@ const Home = () => {
         .hero-image {
           width: 100%;
           height: 400px;
-          top: 100px;
           object-fit: cover;
           object-position: bottom;
         }
@@ -1133,6 +1115,7 @@ const Home = () => {
           line-height: 1.8;
           margin-bottom: 48px;
           max-width: 900px;
+          text-align: justify
         }
 
         .mission-grid {
@@ -1140,7 +1123,6 @@ const Home = () => {
           grid-template-columns: repeat(3, 1fr);
           gap: 24px;
           align-items: stretch;
-          
         }
 
         .mission-cards {
@@ -1148,16 +1130,13 @@ const Home = () => {
         }
 
         .mission-card {
-          background:transparent;
+          background: transparent;
           padding: 24px;
-
           transition: all 0.3s ease;
           min-height: 320px;
           display: flex;
           flex-direction: column;
         }
-
-
 
         .mission-icon {
           background: #2563eb;
@@ -1196,7 +1175,6 @@ const Home = () => {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          object-position: right;
           object-position: 160% center; 
           transform: scale(1.5); 
         }
@@ -1222,6 +1200,7 @@ const Home = () => {
           gap: 4px;
           transition: all 0.3s ease;
           white-space: nowrap;
+          text-decoration: none;
         }
 
         .btn-read-more:hover {
@@ -1240,7 +1219,7 @@ const Home = () => {
         /* Services Section */
         .services-section {
           padding: 80px 0;
-          background: #f8f9fa;
+          background: ##ffffff;
         }
         
         .services-intro-grid {
@@ -1251,12 +1230,10 @@ const Home = () => {
           align-items: start;
           border-bottom: 1px solid #e9ecef;
           padding-bottom: 32px;
-          padding-top: 0;
         }
 
         .services-intro-grid .section-title {
           margin-top: 0;
-          padding-top: 0;
           font-size: 2.5rem;
           line-height: 1.2;
         }
@@ -1264,7 +1241,6 @@ const Home = () => {
         .services-intro-grid .section-intro {
           font-size: 1rem;
           margin-top: 0;
-          padding-top: 0;
         }
           
         .services-grid {
@@ -1331,115 +1307,10 @@ const Home = () => {
           line-height: 1.6;
         }
 
-
-        .popup-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: start;
-          margin-bottom: 20px;
-        }
-
-        .monitoring-title {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: white;
-          margin: 0;
-        }
-
-        .monitoring-location {
-          font-size: 0.875rem;
-          color: rgba(255, 255, 255, 0.7);
-          margin: 0;
-        }
-
-        .section-title-light {
-          color: white;
-          font-size: 2.5rem;
-
-        }
-
-        .section-intro-light {
-          color: rgba(255, 255, 255, 0.8);
-        }
-
-        .btn-unit-dropdown {
-          background: #2563eb;
-          color: white;
-          border: none;
-          padding: 8px 16px;
-          border-radius: 8px;
-          font-weight: 600;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .metrics-grid-compact {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
-          margin-bottom: 16px;
-        }
-
-        .metric-box-compact {
-          background: rgba(15, 23, 41, 0.8);
-          padding: 16px;
-          border-radius: 8px;
-          text-align: center;
-        }
-
-        .metric-label-compact {
-          font-size: 0.75rem;
-          color: rgba(255, 255, 255, 0.6);
-          margin-bottom: 8px;
-        }
-
-        .metric-label-compact span {
-          font-size: 0.65rem;
-        }
-
-        .metric-value-compact {
-          font-size: 1.25rem;
-          font-weight: 700;
-          color: white;
-        }
-
-        .metrics-row-compact {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 16px;
-          gap: 12px;
-        }
-
-        .metric-item-compact {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 4px;
-        }
-
-        .btn-dashboard-compact {
-          background: #2563eb;
-          color: white;
-          border: none;
-          padding: 12px;
-          border-radius: 8px;
-          font-weight: 700;
-          cursor: pointer;
-          width: 100%;
-          transition: all 0.3s ease;
-        }
-
-        .btn-dashboard-compact:hover {
-          background: #1e40af;
-        }
-
         /* Quality Section */
         .quality-section {
           padding: 80px 0;
-          background: linear-gradient(to bottom, #ffffff, #f8f9fa);
+          background: linear-gradient(to bottom, #ffffff, #ffffff);
         }
 
         .quality-intro-grid {
@@ -1450,12 +1321,10 @@ const Home = () => {
           align-items: start;
           border-bottom: 1px solid #e9ecef;
           padding-bottom: 32px;
-          padding-top: 0;
         }
 
         .quality-intro-grid .section-title {
           margin-top: 0;
-          padding-top: 0;
           font-size: 2.5rem;
           line-height: 1.2;
         }
@@ -1463,7 +1332,6 @@ const Home = () => {
         .quality-intro-grid .section-intro {
           font-size: 1rem;
           margin-top: 0;
-          padding-top: 0;
         }
 
         .quality-cards {
@@ -1471,6 +1339,7 @@ const Home = () => {
           grid-template-columns: repeat(3, 1fr);
           gap: 32px;
           margin-top: 64px;
+          text-align: justify
         }
 
         .quality-card {
@@ -1516,7 +1385,8 @@ const Home = () => {
           font-size: 1.5rem;
           font-weight: 700;
           color: #1a1a1a;
-          margin-bottom: 12px;
+          margin-bottom: 15px;
+          min-height: 70px
         }
 
         .quality-description {
@@ -1525,37 +1395,6 @@ const Home = () => {
           line-height: 1.6;
           margin-bottom: 16px;
           flex: 1;
-        }
-          
-        .btn-pltp-guide {
-          background: white;
-          color: #2563eb;
-          border: 2px solid #2563eb;
-          padding: 10px 24px;
-          border-radius: 50px;
-          font-weight: 600;
-          font-size: 0.875rem;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          transition: all 0.3s ease;
-          margin-top: 0px;
-          text-decoration: none;
-          white-space: nowrap;
-        }
-
-        .btn-pltp-guide:hover {
-          background: #2563eb;
-          color: white;
-        }
-
-        .btn-pltp-guide svg {
-          transition: transform 0.3s ease;
-        }
-
-        .btn-pltp-guide:hover svg {
-          transform: translateX(4px);
         }
 
         .btn-quality-read-more {
@@ -1575,6 +1414,7 @@ const Home = () => {
           margin-top: auto;
           align-self: flex-start;
           white-space: nowrap;
+          text-decoration: none;
         }
 
         .btn-quality-read-more:hover {
@@ -1590,10 +1430,249 @@ const Home = () => {
           transform: translateX(4px);
         }
 
+       /* Sampling Section */
+      .sampling-section {
+        padding: 80px 0;
+        background: #f8f9fa;
+      }
+
+      .sampling-intro-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 48px;
+        margin-bottom: 48px;
+        align-items: start;
+        border-bottom: 1px solid #e9ecef;
+        padding-bottom: 32px;
+      }
+
+      .sampling-intro-grid .section-title {
+        margin-top: 0;
+        font-size: 2.5rem;
+        line-height: 1.2;
+      }
+
+      .sampling-intro-grid .section-intro {
+        font-size: 1rem;
+        margin-top: 0;
+      }
+
+      .sampling-cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 32px;
+        margin-top: 64px;
+        text-align: justify;
+      }
+
+      .sampling-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sampling-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+      }
+
+      .sampling-image-container {
+        height: 320px;
+        overflow: hidden;
+      }
+
+      .sampling-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+      }
+
+      .sampling-card:hover .sampling-image {
+        transform: scale(1.1);
+      }
+
+      .sampling-content {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex: 1;
+      }
+
+      .sampling-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 15px;
+        min-height: 70px;
+      }
+
+      .sampling-description {
+        font-size: 0.9375rem;
+        color: #495057;
+        line-height: 1.6;
+        margin-bottom: 16px;
+        flex: 1;
+      }
+      .btn-sampling-read-more {
+        background: white;
+        color: #2563eb;
+        border: 2px solid #2563eb;
+        padding: 6px 16px;
+        border-radius: 50px;
+        font-weight: 600;
+        font-size: 0.75rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        transition: all 0.3s ease;
+        margin-top: auto;
+        align-self: flex-start;
+        white-space: nowrap;
+        text-decoration: none;
+      }
+
+      .btn-sampling-read-more:hover {
+        background: #2563eb;
+        color: white;
+      }
+
+      .btn-sampling-read-more svg {
+        transition: transform 0.3s ease;
+      }
+
+      .btn-sampling-read-more:hover svg {
+        transform: translateX(4px);
+      }
+
+
+        /* PLTP Works Section */
+        .pltp-works-section {
+          padding: 80px 0;
+          background: #f8f9fa;
+        }
+
+        .pltp-works-intro-grid {
+          display: grid;
+          grid-template-columns: 1fr 2fr;
+          gap: 48px;
+          align-items: start;
+          border-bottom: 1px solid #e9ecef;
+          padding-bottom: 32px;
+          margin-bottom: 48px;
+        }
+
+        .pltp-works-intro-grid .section-title {
+          margin-top: 0;
+          font-size: 2.5rem;
+          line-height: 1.2;
+          margin-bottom: 24px;
+        }
+
+        .pltp-works-image-container {
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+          width: 100%;
+          max-height: 250px;
+          margin-top: 16px;
+        }
+
+        .pltp-works-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .pltp-works-intro-grid .section-intro {
+          font-size: 1rem;
+          margin-top: 0;
+          margin-bottom: 24px;
+          text-align: justify;
+        }
+
+        .btn-pltp-guide {
+          background: white;
+          color: #2563eb;
+          border: 2px solid #2563eb;
+          padding: 10px 24px;
+          border-radius: 50px;
+          font-weight: 600;
+          font-size: 0.875rem;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.3s ease;
+          text-decoration: none;
+          white-space: nowrap;
+        }
+
+        .btn-pltp-guide:hover {
+          background: #2563eb;
+          color: white;
+        }
+
+        .btn-pltp-guide svg {
+          transition: transform 0.3s ease;
+        }
+
+        .btn-pltp-guide:hover svg {
+          transform: translateX(4px);
+        }
+
+        .btn-pltp-guide {
+          background: white;
+          color: #2563eb;
+          border: 2px solid #2563eb;
+          padding: 10px 24px;
+          border-radius: 50px;
+          font-weight: 600;
+          font-size: 0.875rem;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.3s ease;
+          margin-top: 16px;
+          text-decoration: none;
+          white-space: nowrap;
+        }
+
+        .btn-pltp-guide:hover {
+          background: #2563eb;
+          color: white;
+        }
+
+        .btn-pltp-guide svg {
+          transition: transform 0.3s ease;
+        }
+
+        .btn-pltp-guide:hover svg {
+          transform: translateX(4px);
+        }
+
+        .pltp-work-image-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+        }
+
+        .pltp-work-image-card:hover .pltp-work-image {
+          transform: scale(1.1);
+        }
+
         /* AI Monitoring Section */
         .ai-section {
           padding: 80px 0;
-          background: rgba(102, 102, 102, 0.15);
+          background: ##ffffff;
         }
 
         .ai-intro-grid {
@@ -1661,6 +1740,7 @@ const Home = () => {
           flex-direction: column;
           gap: 12px;
           flex: 1;
+          text-align: justify
         }
 
         .ai-title {
@@ -1711,115 +1791,134 @@ const Home = () => {
           transform: translateX(4px);
         }
 
-        /* Responsive */
-        @media (max-width: 1024px) {
-          .services-intro-grid {
-            grid-template-columns: 1fr;
-            gap: 24px;
-          }
-          .quality-intro-grid {
-            grid-template-columns: 1fr;
-            gap: 24px;
-          }
-
-          .quality-cards {
-            grid-template-columns: 1fr;
-          }
-
-          .ai-intro-grid {
-            grid-template-columns: 1fr;
-            gap: 24px;
-          }
-
-          .ai-cards {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        .quality-header {
-          text-align: center;
-          margin-bottom: 16px;
-        }
-
-        .quality-badge {
-          background: #2563eb;
+        /* Collaboration Section */
+        .collaboration-section {
+          padding: 80px 0;
+          background: #1a2642;
           color: white;
-          padding: 8px 16px;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .collaboration-section::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></svg>');
+          opacity: 0.3;
+        }
+
+        .collaboration-header {
+          text-align: center;
+          margin-bottom: 48px;
+          position: relative;
+          z-index: 1;
+        }
+
+        .collaboration-badge {
+          display: inline-block;
+          background: rgba(255, 255, 255, 0.2);
+          backdrop-filter: blur(10px);
+          color: white;
+          padding: 8px 20px;
           border-radius: 20px;
-          font-size: 0.875rem;
+          font-size: 0.75rem;
           font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .quality-cards {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 32px;
-          margin-top: 64px;
-        }
-
-        .quality-card {
-          background: white;
-          border-radius: 16px;
-          overflow: hidden;
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-          transition: all 0.3s ease;
-        }
-
-        .quality-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
-        }
-
-        .quality-image-container {
-          height: 256px;
-          overflow: hidden;
-        }
-
-        .quality-image {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.3s ease;
-        }
-
-        .quality-card:hover .quality-image {
-          transform: scale(1.1);
-        }
-
-        .quality-content {
-          padding: 24px;
-        }
-
-        .quality-title {
-          font-size: 1.5rem;
-          font-weight: 700;
-          color: #1a1a1a;
-          margin-bottom: 12px;
-        }
-
-        .quality-description {
-          font-size: 0.9375rem;
-          color: #495057;
-          line-height: 1.6;
+          letter-spacing: 1px;
           margin-bottom: 16px;
         }
 
-        .quality-link {
-          color: #2563eb;
-          font-weight: 600;
-          background: none;
-          border: none;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          transition: gap 0.3s ease;
+        .collaboration-header .section-title {
+          color: white;
+          font-size: 2.5rem;
+          margin-bottom: 0;
         }
 
-        .quality-card:hover .quality-link {
-          gap: 12px;
+        .collaboration-content {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 48px;
+          margin-bottom: 64px;
+          align-items: center;
+          position: relative;
+          z-index: 1;
+        }
+
+        .collaboration-text .section-intro {
+          color: rgba(255, 255, 255, 0.9);
+          font-size: 1rem;
+          line-height: 1.8;
+          margin: 0;
+          text-align: justify;
+        }
+
+        .collaboration-map {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .map-image {
+          width: 100%;
+          max-width: 500px;
+          height: auto;
+          filter: brightness(0) invert(1);
+          opacity: 0.9;
+        }
+
+        .partners-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 24px;
+          position: relative;
+          z-index: 1;
+        }
+
+        .partner-card {
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(10px);
+          border-radius: 16px;
+          padding: 32px 24px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 16px;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+          min-height: 200px;
+        }
+
+        .partner-card:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+          background: white;
+        }
+
+        .partner-logo-container {
+          width: 120px;
+          height: 80px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .partner-logo {
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+        }
+
+        .partner-name {
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: #1a1a1a;
+          text-align: center;
+          margin: 0;
         }
 
         /* Footer */
@@ -1836,9 +1935,6 @@ const Home = () => {
           margin-bottom: 32px;
         }
 
-        .footer-col {
-        }
-
         .footer-logos {
           display: flex;
           align-items: center;
@@ -1846,15 +1942,11 @@ const Home = () => {
           margin-bottom: 16px;
         }
 
-        .footer-logo {
-          height: 32px;
-          width: auto;
-        }
-
         .footer-text {
           font-size: 0.875rem;
           color: rgba(255, 255, 255, 0.7);
           line-height: 1.6;
+          text-align: justify
         }
 
         .footer-heading {
@@ -1900,13 +1992,20 @@ const Home = () => {
             max-width: 100%;
             grid-template-columns: 1fr;
           }
+            .pltp-works-content-grid {
+            grid-template-columns: 1fr;
+            gap: 32px;
 
           .mission-grid {
             grid-template-columns: 1fr;
           }
 
-          .mission-cards {
+          .services-intro-grid,
+          .quality-intro-grid,
+          .pltp-works-intro-grid,
+          .ai-intro-grid {
             grid-template-columns: 1fr;
+            gap: 24px;
           }
 
           .services-grid {
@@ -1918,8 +2017,22 @@ const Home = () => {
             max-width: 100%;
           }
 
-          .quality-cards {
+          .quality-cards,
+          .pltp-works-images{
+          width: 100%;
+          height: auto;
+          display: block;}
+          .ai-cards {
             grid-template-columns: 1fr;
+          }
+
+          .collaboration-content {
+            grid-template-columns: 1fr;
+            gap: 32px;
+          }
+
+          .partners-grid {
+            grid-template-columns: repeat(3, 1fr);
           }
 
           .footer-grid {
@@ -1955,196 +2068,35 @@ const Home = () => {
             max-width: 100%;
           }
 
-          .metrics-grid {
-            grid-template-columns: 1fr;
+          .collaboration-header .section-title {
+            font-size: 2rem;
+          }
+
+          .partners-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+          }
+
+          .partner-card {
+            padding: 24px 16px;
+            min-height: 160px;
+          }
+
+          .partner-logo-container {
+            width: 100px;
+            height: 60px;
           }
 
           .footer-grid {
             grid-template-columns: 1fr;
           }
         }
-          /* Collaboration Section */
-.collaboration-section {
-  padding: 80px 0;
-  background: #1a2642; /* INI WARNA NAVBAR */
-  color: white;
-  position: relative;
-  overflow: hidden;
-}
 
-.collaboration-section::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></svg>');
-  opacity: 0.3;
-}
-
-.collaboration-header {
-  text-align: center;
-  margin-bottom: 48px;
-  position: relative;
-  z-index: 1;
-}
-
-.collaboration-badge {
-  display: inline-block;
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  color: white;
-  padding: 8px 20px;
-  border-radius: 20px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 16px;
-}
-
-.collaboration-header .section-title {
-  color: white;
-  font-size: 2.5rem;
-  margin-bottom: 0;
-}
-
-.collaboration-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 48px;
-  margin-bottom: 64px;
-  align-items: center;
-  position: relative;
-  z-index: 1;
-}
-
-.collaboration-text .section-intro {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1rem;
-  line-height: 1.8;
-  margin: 0;
-  text-align: justify;
-}
-
-.collaboration-map {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.map-image {
-  width: 100%;
-  max-width: 500px;
-  height: auto;
-  filter: brightness(0) invert(1);
-  opacity: 0.9;
-}
-
-.partners-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  position: relative;
-  z-index: 1;
-}
-
-.partner-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  padding: 32px 24px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  min-height: 200px;
-}
-
-.partner-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
-  background: white;
-}
-
-.partner-logo-container {
-  width: 120px;
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.partner-logo {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.partner-name {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #1a1a1a;
-  text-align: center;
-  margin: 0;
-}
-
-.partner-placeholder {
-  border: 2px dashed rgba(76, 81, 191, 0.3);
-  background: rgba(255, 255, 255, 0.95)
-}
-
-.partner-placeholder .partner-logo-container {
-  color: rgba(76, 81, 191, 0.4);
-}
-
-.partner-placeholder .partner-name {
-  color: rgba(76, 81, 191, 0.6);
-  font-style: italic;
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .collaboration-content {
-    grid-template-columns: 1fr;
-    gap: 32px;
-  }
-
-  .partners-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .collaboration-header .section-title {
-    font-size: 2rem;
-  }
-
-  .partners-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-  }
-
-  .partner-card {
-    padding: 24px 16px;
-    min-height: 160px;
-  }
-
-  .partner-logo-container {
-    width: 100px;
-    height: 60px;
-  }
-}
-
-@media (max-width: 480px) {
-  .partners-grid {
-    grid-template-columns: 1fr;
-  }
-}
+        @media (max-width: 480px) {
+          .partners-grid {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
     </div>
   );

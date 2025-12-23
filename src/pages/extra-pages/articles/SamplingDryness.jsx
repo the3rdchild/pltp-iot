@@ -101,7 +101,7 @@ export default function SamplingDryness() {
     <>
       <style jsx>{`
       .footer {
-        background: #0f172a;
+        background: #0f1729;
         color: white;
         padding: 48px 0;
       }
@@ -123,7 +123,7 @@ export default function SamplingDryness() {
 
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(to bottom, #f8fafc 0%, #e2e8f0 100%)',
+      background: 'linear-gradient(135deg, #0f1729 0%, #1a2642 50%, #0f1729 100%)',
       padding: '40px 20px',
       position: 'relative'
     }}>
