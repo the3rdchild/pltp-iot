@@ -302,8 +302,7 @@ const GaugeChart = ({
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: titleStyles.justifyContent, mb: 0.5, flexShrink: 0 }}>
           <Link href={linkTo} underline={linkTo ? 'hover' : 'none'} color="inherit">
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <Typography sx={titleStyles}>{label}</Typography>
-              {linkTo && <ArrowOutwardIcon sx={{ fontSize: '.8rem', color: 'text.secondary' }} />}
+            <Typography sx={{ ...titleStyles, fontSize: '1.125rem' }}>{label}</Typography>              {linkTo && <ArrowOutwardIcon sx={{ fontSize: '.8rem', color: 'text.secondary' }} />}
             </Box>
           </Link>
         </Box>

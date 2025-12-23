@@ -47,8 +47,7 @@ export default function MetricCard({ label, value, unit, status, linkTo, titleCo
       <Box>
         {/* Label - Top */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: titleStyles.justifyContent, mb: 1 }}>
-          <Typography sx={titleStyles}>{label}</Typography>
-        </Box>
+        <Typography sx={{ ...titleStyles, fontSize: '1.115rem' }}>{label}</Typography>        </Box>
 
         {/* Value + Icon Layout */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -86,8 +85,8 @@ export default function MetricCard({ label, value, unit, status, linkTo, titleCo
                 borderRadius: 2,
                 bgcolor: statusColor + '15',
                 color: statusColor,
-                fontSize: '0.65rem',
-                fontWeight: 500,
+                fontSize: '0.905rem',
+                fontWeight: 700,
                 display: 'inline-block'
               }}
             >
