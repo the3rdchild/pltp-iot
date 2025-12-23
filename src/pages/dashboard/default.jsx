@@ -170,7 +170,7 @@ function MobileLayout({
           <Box>
             <Link href="/prediction" target="" rel="noopener noreferrer" underline="hover" color="inherit">
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Typography sx={TITLE_CONFIG}>Prediksi Resiko Turbin</Typography>
+                <Typography sx={TITLE_CONFIG}>Prediksi Resiko</Typography>
                 <ArrowOutwardIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />
               </Box>
             </Link>
@@ -308,7 +308,7 @@ function DesktopLayout({
 
   const CARD_CONFIG = {
     sensor: { width: 247, height: 190 },
-    power: { width: 250, height: 120 },
+    power: { width: 250, height: 135 },
     ai: { width: 250, height: 110 }
   };
 
@@ -321,10 +321,10 @@ function DesktopLayout({
     temperature: { top: '53.5%', left: '37%' },
     flow: { top: '77%', left: '37%' },
     activePower: { top: '50%', left: '64%' },
-    voltage: { top: '64%', left: '64%' },
-    current: { top: '78%', left: '64%' },
+    voltage: { top: '66%', left: '64%' },
+    current: { top: '82%', left: '64%' },
     reactivePower: { top: '50%', left: '85%' },
-    stSpeed: { top: '64%', left: '85%' }
+    stSpeed: { top: '66%', left: '85%' }
   };
 
   const IMAGE_CONFIG = {
@@ -393,12 +393,14 @@ function DesktopLayout({
           <line x1="49%" y1="31%" x2="45%" y2="31%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="49%" y1="55%" x2="45%" y2="55%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="49%" y1="78%" x2="45%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+
           <line x1="60%" y1="31%" x2="60%" y2="38%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="60%" y1="38%" x2="74.5%" y2="38%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
-          <line x1="74.5%" y1="38%" x2="74.5%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="74.5%" y1="38%" x2="74.5%" y2="83%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+
           <line x1="70%" y1="50%" x2="78%" y2="50%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
-          <line x1="70%" y1="64%" x2="78%" y2="64%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
-          <line x1="74.4%" y1="78%" x2="70%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="70%" y1="66%" x2="78%" y2="66%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+          <line x1="74.4%" y1="83%" x2="70%" y2="83%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
         </svg>
 
         <Positioned pos={POSITIONS.tds}>
@@ -501,7 +503,7 @@ function DesktopLayout({
               <Box>
                 <Link href="/prediction" target="" rel="noopener noreferrer" underline="hover" color="inherit">
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Typography sx={TITLE_CONFIG}>Prediksi Resiko Turbin</Typography>
+                    <Typography sx={TITLE_CONFIG}>Prediksi Resiko</Typography>
                     <ArrowOutwardIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />
                   </Box>
                 </Link>
@@ -769,7 +771,7 @@ export default function DashboardDefault() {
   const predConfig = getPredictionConfig(riskPrediction);
 
   const TITLE_CONFIG = {
-    fontSize: '1rem',
+    fontSize: '1.35rem',
     fontWeight: 600,
     color: '#334155',
     justifyContent: 'left'
