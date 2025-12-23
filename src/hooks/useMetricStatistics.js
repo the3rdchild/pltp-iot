@@ -162,27 +162,36 @@ export const useMetricStatistics = (metricKey, currentValue) => {
       return;
     }
 
-    // Save value every 5 minutes to avoid excessive writes
-    // But save immediately on first call
-    const shouldSaveNow = lastSavedRef.current === null;
+    const numericValue = typeof currentValue === 'number' ? currentValue : parseFloat(currentValue);
+    if (isNaN(numericValue)) return;
+
+    // Determine save interval based on environment
+    // Test: 10 seconds for faster testing
+    // Production: 5 minutes to avoid excessive writes
+    const saveIntervalMs = isTestEnvironment ? 10 * 1000 : 5 * 60 * 1000;
+
+    // Save immediately on first call OR if value changed significantly (> 0.1%)
+    const shouldSaveNow = lastSavedRef.current === null ||
+                          Math.abs(numericValue - lastSavedRef.current) > Math.abs(lastSavedRef.current * 0.001);
 
     if (shouldSaveNow) {
-      const updatedHistory = saveValue(currentValue);
+      saveValue(numericValue);
       const newStats = calculateAllStats();
       setStats(newStats);
-      lastSavedRef.current = currentValue;
+      lastSavedRef.current = numericValue;
     }
 
-    // Setup periodic save (every 5 minutes)
+    // Setup periodic save
     if (!saveIntervalRef.current) {
       saveIntervalRef.current = setInterval(() => {
-        if (currentValue !== lastSavedRef.current) {
-          saveValue(currentValue);
+        const currentNumeric = typeof currentValue === 'number' ? currentValue : parseFloat(currentValue);
+        if (!isNaN(currentNumeric) && currentNumeric !== lastSavedRef.current) {
+          saveValue(currentNumeric);
           const newStats = calculateAllStats();
           setStats(newStats);
-          lastSavedRef.current = currentValue;
+          lastSavedRef.current = currentNumeric;
         }
-      }, 5 * 60 * 1000); // 5 minutes
+      }, saveIntervalMs);
     }
 
     return () => {
@@ -191,7 +200,7 @@ export const useMetricStatistics = (metricKey, currentValue) => {
         saveIntervalRef.current = null;
       }
     };
-  }, [currentValue, saveValue, calculateAllStats]);
+  }, [currentValue, saveValue, calculateAllStats, isTestEnvironment]);
 
   /**
    * Recalculate stats periodically (every minute)
