@@ -46,15 +46,15 @@
     }
     .value {
     /* Scales with gauge width but with responsive min/max sizes */
-    font-size: clamp(1.5rem, calc(var(--gauge-w, 720px) * 0.167), 2rem);
+    font-size: clamp(1.5rem, calc(var(--gauge-w, 720px) * 0.2), 2rem);
     color: var(--text);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1;
     }
 
     .unit {
     /* Scales with gauge but maintains readable size */
-    font-size: clamp(0.75rem, calc(var(--gauge-w, 720px) * 0.025), 1.5rem);
+    font-size: clamp(0.8rem, calc(var(--gauge-w, 720px) * 0.025), 1.5rem);
     color: #9aa0a6;
     margin-left: 0.5ch;
     font-weight:600;
@@ -69,7 +69,7 @@
     border-radius: 999px;
     font-weight: 700;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.063);
-    font-size: clamp(0.7rem, calc(var(--gauge-w, 200px) * 0.07), 1.25rem);
+    font-size: clamp(0.9rem, calc(var(--gauge-w, 200px) * 0.07), 1.25rem);
     }
 
     /* The small circle pin that follows the arc */
