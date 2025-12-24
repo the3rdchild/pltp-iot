@@ -91,12 +91,21 @@ const AIAnalytics = () => {
   }, []);
 
   // Simulate real-time data generation
+  // Simulate real-time data generation with regression patterns
   useEffect(() => {
+    let trendValueRisk = 0; // Starting trend for risk
+    let trendValueDryness = 97.5; // Starting trend for dryness
+    let trendValueNCG = 1.5; // Starting trend for NCG
+    let trendDirection = 1; // 1 for up, -1 for down
+    
     const generateAIData = () => {
       const timestamp = new Date();
       
-      // AI1 predictions (Risk & Anomaly)
-      const risk = Math.random() * 100;
+      // Risk trend: slowly moves up and down with small noise
+      trendValueRisk += (Math.random() - 0.3) * trendDirection * 2;
+      if (trendValueRisk > 85) trendDirection = -1;
+      if (trendValueRisk < 15) trendDirection = 1;
+      const risk = Math.max(0, Math.min(100, trendValueRisk + (Math.random() - 0.5) * 5));
       const anomaly = risk > 70;
       
       const ai1Point = {
@@ -107,11 +116,20 @@ const AIAnalytics = () => {
         anomaly_score: Math.random() * 10
       };
 
-      // AI2 predictions (Dryness & NCG)
+      // Dryness trend: stays high with small fluctuations
+      trendValueDryness += (Math.random() - 0.5) * 0.15;
+      trendValueDryness = Math.max(95, Math.min(100, trendValueDryness));
+      const dryness = trendValueDryness + (Math.random() - 0.5) * 0.3;
+      
+      // NCG trend: slowly drifts up and down
+      trendValueNCG += (Math.random() - 0.5) * 0.08;
+      trendValueNCG = Math.max(0.5, Math.min(2.5, trendValueNCG));
+      const ncg = trendValueNCG + (Math.random() - 0.5) * 0.15;
+
       const ai2Point = {
         timestamp: timestamp.toLocaleTimeString(),
-        dryness_fraction: 95 + Math.random() * 5, // 95-100%
-        ncg: 0.5 + Math.random() * 2 // 0.5-2.5 wt%
+        dryness_fraction: dryness,
+        ncg: ncg
       };
 
       // Input features for table
@@ -215,6 +233,27 @@ const AIAnalytics = () => {
   const xAxisLabelsDryness = getXAxisLabels(timeRangeAI2Dryness);
   const xAxisLabelsNCG = getXAxisLabels(timeRangeAI2NCG);
 
+  // Linear regression helper
+  const getLinearRegression = (data, getValue) => {
+    if (data.length < 2) return null;
+    
+    const n = data.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    
+    data.forEach((point, i) => {
+      const x = i;
+      const y = getValue(point);
+      sumX += x;
+      sumY += y;
+      sumXY += x * y;
+      sumX2 += x * x;
+    });
+    
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    
+    return { slope, intercept };
+  };
   // Stats cards data
   const statsData = [
     {
@@ -437,7 +476,28 @@ const AIAnalytics = () => {
                     strokeLinecap="round"
                   />
                 )}
-
+                {/* Regression line - AI1 */}
+                {ai1Data.length > 1 && (() => {
+                  const slicedData = ai1Data.slice(-xAxisLabelsAI1.length);
+                  const regression = getLinearRegression(slicedData, d => d.risk_percentage);
+                  if (!regression) return null;
+                  
+                  const startY = regression.intercept;
+                  const endY = regression.intercept + regression.slope * (slicedData.length - 1);
+                  const endX = 60 + ((slicedData.length - 1) * (chartWidthAI1 - 100) / Math.max(1, xAxisLabelsAI1.length - 1));
+                  
+                  return (
+                    <line
+                      x1="60"
+                      y1={320 - (startY * 2.8)}
+                      x2={endX}
+                      y2={320 - (endY * 2.8)}
+                      stroke="#ff4444"
+                      strokeWidth="2"
+                      strokeDasharray="5,5"
+                    />
+                  );
+                })()}
                 {/* Anomaly markers */}
                 {ai1Data.slice(-xAxisLabelsAI1.length).map((d, i) => {
                   if (!d.anomaly_detected) return null;
@@ -682,6 +742,28 @@ const AIAnalytics = () => {
                     strokeLinecap="round"
                   />
                 )}
+                {/* Regression line - Dryness */}
+                {ai2Data.length > 1 && (() => {
+                  const slicedData = ai2Data.slice(-xAxisLabelsDryness.length);
+                  const regression = getLinearRegression(slicedData, d => d.dryness_fraction);
+                  if (!regression) return null;
+                  
+                  const startY = regression.intercept;
+                  const endY = regression.intercept + regression.slope * (slicedData.length - 1);
+                  const endX = 60 + ((slicedData.length - 1) * (chartWidthDryness - 100) / Math.max(1, xAxisLabelsDryness.length - 1));
+                  
+                  return (
+                    <line
+                      x1="60"
+                      y1={290 - ((startY - 95) * 50)}
+                      x2={endX}
+                      y2={290 - ((endY - 95) * 50)}
+                      stroke="#ff4444"
+                      strokeWidth="2"
+                      strokeDasharray="5,5"
+                    />
+                  );
+                })()}
 
                 {/* X-axis label */}
                 <text x={chartWidthDryness / 2} y="330" fontSize="12" fill="#666" textAnchor="middle" fontWeight="600">
@@ -837,7 +919,28 @@ const AIAnalytics = () => {
                     strokeLinecap="round"
                   />
                 )}
-
+                {/* Regression line - NCG */}
+                {ai2Data.length > 1 && (() => {
+                  const slicedData = ai2Data.slice(-xAxisLabelsNCG.length);
+                  const regression = getLinearRegression(slicedData, d => d.ncg);
+                  if (!regression) return null;
+                  
+                  const startY = regression.intercept;
+                  const endY = regression.intercept + regression.slope * (slicedData.length - 1);
+                  const endX = 60 + ((slicedData.length - 1) * (chartWidthNCG - 100) / Math.max(1, xAxisLabelsNCG.length - 1));
+                  
+                  return (
+                    <line
+                      x1="60"
+                      y1={290 - (startY * 85)}
+                      x2={endX}
+                      y2={290 - (endY * 85)}
+                      stroke="#ff4444"
+                      strokeWidth="2"
+                      strokeDasharray="5,5"
+                    />
+                  );
+                })()}
                 {/* X-axis label */}
                 <text x={chartWidthNCG / 2} y="330" fontSize="12" fill="#666" textAnchor="middle" fontWeight="600">
                   {getTimeLabel(timeRangeAI2NCG)} (x{xAxisLabelsNCG.length})
