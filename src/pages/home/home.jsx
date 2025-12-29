@@ -745,23 +745,23 @@ const Home = () => {
             <div className="partner-card">
               <div className="partner-logo-container">
                 <img 
-                  src={PTPGE}
-                  alt="Pertamina Geothermal Energy" 
-                  className="partner-logo"
-                />
-              </div>
-              <h3 className="partner-name">PT. Pertamina Geothermal Energy</h3>
-            </div>
-
-            <div className="partner-card">
-              <div className="partner-logo-container">
-                <img 
-                  src={LogoPertamina} 
+                  src={LogoPertamina}
                   alt="Pertamina" 
                   className="partner-logo"
                 />
               </div>
               <h3 className="partner-name">PT. Pertamina</h3>
+            </div>
+
+            <div className="partner-card">
+              <div className="partner-logo-container">
+                <img 
+                  src={PTPGE} 
+                  alt="Pertamina Geothermal Energy" 
+                  className="partner-logo"
+                />
+              </div>
+              <h3 className="partner-name">PT. Pertamina Geothermal Energy</h3>
             </div>
 
             <div className="partner-card">
