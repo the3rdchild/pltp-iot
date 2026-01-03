@@ -1,12 +1,12 @@
 {
-  "name": "mantis-material-free-react",
-  "version": "1.4.1",
-  "private": false,
-  "homepage": "https://themewagon.github.io/mantis-free-react-admin-template",
+  "name": "pertasmart-react",
+  "version": "2.2",
+  "private": true,
+  "homepage": "https://https://pertasmart.unpad.ac.id/",
   "author": {
-    "name": "CodedThemes",
-    "email": "codedthemes@gmail.com",
-    "url": "https://codedthemes.com/"
+    "name": "PertaSmart",
+    "email": "pertasmart@unpad.ac.idm",
+    "url": "https://pertasmart.unpad.ac.id/"
   },
   "scripts": {
     "start": "vite",
