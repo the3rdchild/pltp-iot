@@ -29,8 +29,8 @@ const TAGNAME_TO_COLUMN = {
  */
 async function fetchHoneywellData(params) {
   return new Promise((resolve, reject) => {
-    const apiUrl = process.env.HONEYWELL_API_URL || 'https://dbspge.mypge.id/api/pims-gateaway?endpoint=GetData';
-    const apiKey = process.env.HONEYWELL_API_X_API_KEY || 'sRTRS7d6Waw32s324af';
+    const apiUrl = process.env.HONEYWELL_API_URL;
+    const apiKey = process.env.HONEYWELL_API_X_API_KEY;
 
     const requestBody = {
       SampleInterval: params.SampleInterval || parseInt(process.env.HONEYWELL_API_SAMPLE_INTERVAL) || 1000,
