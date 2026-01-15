@@ -51,7 +51,7 @@ const TAGNAME_TO_COLUMN = {
   '5MAD02FS011PVI.PV': 'speed_detection',
   '5CGA01FG001PVI.PV': 'mcv_l',
   '5CGA01FG002PVI.PV': 'mcv_r',
-  '5MKA01FE004PVI.PV': 'gen_voltage_v_w',
+  '5MKA01FE004PVI.PV': 'gen_voltage_u_v',
   '5MKA01FE005PVI.PV': 'gen_voltage_v_w',
   '5MKA01FE006PVI.PV': 'gen_voltage_w_u'
 };
