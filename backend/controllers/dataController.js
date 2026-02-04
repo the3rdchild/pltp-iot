@@ -13,16 +13,14 @@ const getLiveData = async (req, res) => {
       'turbine_speed': 'speed_detection',
       'mcv_l_position': 'mcv_l',
       'mcv_r_position': 'mcv_r',
-      'voltage_u_v': 'gen_voltage_v_w',
+      'voltage_u_v': 'gen_voltage_u_v',
       'voltage_v_w': 'gen_voltage_v_w',
-      'voltage_u_w': 'gen_voltage_w_u',
+      'voltage_w_u': 'gen_voltage_w_u',
       'tds': 'tds',
       'pressure': 'pressure',
       'temperature': 'temperature',
       'flow_rate': 'flow_rate',
-      'voltage': 'voltage',
-      'current': 'current',
-      'gen_power_factor': 'gen_power_factor'
+      'current': 'current'
     };
 
     const metrics = Object.keys(metricToColumnMap);
