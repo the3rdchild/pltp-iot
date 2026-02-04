@@ -20,7 +20,6 @@ const getLiveData = async (req, res) => {
       'pressure': 'pressure',
       'temperature': 'temperature',
       'flow_rate': 'flow_rate',
-      'humidity': 'humidity',
       'voltage': 'voltage',
       'current': 'current',
       'gen_power_factor': 'gen_power_factor'

@@ -218,7 +218,7 @@ async function insertSensorData(records) {
       const metricColumns = [
         'pressure', 'flow_rate', 'temperature', 'gen_reactive_power',
         'gen_output', 'gen_frequency', 'speed_detection', 'mcv_l', 'mcv_r',
-        'gen_voltage_v_w', 'gen_voltage_w_u', 'humidity', 'voltage',
+        'gen_voltage_v_w', 'gen_voltage_w_u', 'voltage',
         'current', 'gen_power_factor', 'tds'
       ];
 
