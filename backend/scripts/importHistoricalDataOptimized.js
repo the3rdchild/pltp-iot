@@ -1,26 +1,24 @@
 #!/usr/bin/env node
 /**
- * Optimized Historical Data Import from Honeywell API (ZERO-SAFE VERSION)
+ * Optimized Historical Data Import from Honeywell API (ZERO-SAFE VERSION + CURRENT CALCULATION)
  * 
  * CRITICAL FIX: Properly handle zero values (0) vs NULL
  * - Previous bug: 0 || null → null (treated 0 as falsy)
  * - Fixed: Explicit null/undefined checks only
  *
+ * NEW FEATURE: Automatic current calculation
+ * - Formula: current = sqrt((P^2) + (Q^2)) / (sqrt(3) * V_avg)
+ * - Where: P = gen_output, Q = gen_reactive_power, V_avg = average of 3 line voltages
+ *
  * Features:
  * - Smart resume from last imported timestamp
  * - NULL data detection for ALL parameters
  * - ZERO value preservation (0 is valid data!)
+ * - Automatic current calculation and storage
  * - Data quality validation
  * - File logging with rotation
  * - Skip chunks that are already complete
  * - Batch insertion to avoid PostgreSQL parameter limits
- *
- * Configuration:
- * - Sample Interval: 1 minute (60000 ms)
- * - Chunk Size: 6 days per batch (8640 records)
- * - Batch Size: 1000 records per SQL insert
- * - MaxRows: 10000 per API request
- * - NULL Threshold: 50% (re-fetch if > 50% of all fields are NULL)
  */
 
 require('dotenv').config({ path: '/www/wwwroot/frontend/backend/.env' });
@@ -57,11 +55,11 @@ const CONFIG = {
   API_KEY: process.env.HONEYWELL_API_X_API_KEY,
   DEVICE_ID: null,
   REQUEST_DELAY: 1000,
-  COMPLETENESS_THRESHOLD: 1.0, // 100% of expected records
-  NULL_THRESHOLD: 0.00, // Re-fetch if > 10% of ALL fields are NULL
-  MIN_NON_NULL_FIELDS: 12, // At least 12 out of 12 fields must be non-null
-  MAX_RETRY_FOR_NULLS: 5, // Max retries for high NULL percentage
-  LOG_MAX_SIZE: 10 * 1024 * 1024, // 10 MB
+  COMPLETENESS_THRESHOLD: 1.0,
+  NULL_THRESHOLD: 0.00,
+  MIN_NON_NULL_FIELDS: 12,
+  MAX_RETRY_FOR_NULLS: 5,
+  LOG_MAX_SIZE: 10 * 1024 * 1024,
 };
 
 // Tag mapping
@@ -101,7 +99,9 @@ const stats = {
   totalErrors: 0,
   nullChunksRefetched: 0,
   nullRecordsFixed: 0,
-  zeroValuesPreserved: 0, // NEW: Track zero values
+  zeroValuesPreserved: 0,
+  currentCalculated: 0, // NEW: Track calculated current values
+  currentCalculationErrors: 0, // NEW: Track calculation errors
   startTime: Date.now(),
   tagStats: {},
   nullFieldStats: {}
@@ -166,7 +166,7 @@ class Logger {
 
   logProgress(currentChunk, totalChunks, elapsed, eta, stats) {
     const progress = (currentChunk / totalChunks * 100).toFixed(1);
-    const message = `Progress: ${progress}% (${currentChunk}/${totalChunks}) | Elapsed: ${elapsed} | ETA: ${eta} | Inserted: ${stats.totalRecordsInserted.toLocaleString()} | Errors: ${stats.totalErrors}`;
+    const message = `Progress: ${progress}% (${currentChunk}/${totalChunks}) | Elapsed: ${elapsed} | ETA: ${eta} | Inserted: ${stats.totalRecordsInserted.toLocaleString()} | Current Calc: ${stats.currentCalculated.toLocaleString()} | Errors: ${stats.totalErrors}`;
     this.log(message, 'info');
   }
 
@@ -195,15 +195,17 @@ class Logger {
 ${'='.repeat(80)}
 IMPORT SUMMARY
 ${'='.repeat(80)}
-Duration:             ${duration}
-Total Chunks:         ${stats.totalChunks}
-Skipped Chunks:       ${stats.skippedChunks}
-Processed Chunks:     ${stats.totalChunks - stats.skippedChunks}
-NULL Chunks Refetched: ${stats.nullChunksRefetched}
-Records Fetched:      ${stats.totalRecordsFetched.toLocaleString()}
-Records Inserted:     ${stats.totalRecordsInserted.toLocaleString()}
-Zero Values Preserved: ${stats.zeroValuesPreserved.toLocaleString()}
-Total Errors:         ${stats.totalErrors}
+Duration:                 ${duration}
+Total Chunks:             ${stats.totalChunks}
+Skipped Chunks:           ${stats.skippedChunks}
+Processed Chunks:         ${stats.totalChunks - stats.skippedChunks}
+NULL Chunks Refetched:    ${stats.nullChunksRefetched}
+Records Fetched:          ${stats.totalRecordsFetched.toLocaleString()}
+Records Inserted:         ${stats.totalRecordsInserted.toLocaleString()}
+Zero Values Preserved:    ${stats.zeroValuesPreserved.toLocaleString()}
+Current Values Calculated: ${stats.currentCalculated.toLocaleString()}
+Current Calc Errors:      ${stats.currentCalculationErrors.toLocaleString()}
+Total Errors:             ${stats.totalErrors}
 
 Per-Tag Statistics:
 ${Object.entries(stats.tagStats).map(([tag, count]) => 
@@ -232,9 +234,73 @@ function isNullOrUndefined(value) {
  * CRITICAL: Get value or null, but preserve 0
  */
 function getValueOrNull(value) {
-  // Explicit check: only return null if value is actually null/undefined
-  // This preserves 0, false, empty string, etc.
   return isNullOrUndefined(value) ? null : value;
+}
+
+/**
+ * Calculate three-phase current from power and voltage
+ * 
+ * Formula: I = sqrt(P² + Q²) / (sqrt(3) * V_avg)
+ * 
+ * Where:
+ * - P = Active Power (gen_output) in MW
+ * - Q = Reactive Power (gen_reactive_power) in MVAR
+ * - V_avg = Average line-to-line voltage in kV
+ * - I = Current in Amperes
+ * 
+ * @param {Object} record - Record containing power and voltage data
+ * @returns {number|null} - Calculated current in Amperes, or null if calculation fails
+ */
+function calculateCurrent(record) {
+  try {
+    const genOutput = record.gen_output;
+    const genReactivePower = record.gen_reactive_power;
+    const voltageUV = record.gen_voltage_u_v;
+    const voltageVW = record.gen_voltage_v_w;
+    const voltageWU = record.gen_voltage_w_u;
+
+    // Check if all required values are present and not null
+    if (isNullOrUndefined(genOutput) || 
+        isNullOrUndefined(genReactivePower) ||
+        isNullOrUndefined(voltageUV) || 
+        isNullOrUndefined(voltageVW) || 
+        isNullOrUndefined(voltageWU)) {
+      return null;
+    }
+
+    // Calculate average voltage
+    const avgVoltage = (voltageUV + voltageVW + voltageWU) / 3;
+
+    // Prevent division by zero
+    if (avgVoltage === 0) {
+      logger.log(`Current calculation skipped: average voltage is zero`, 'debug');
+      stats.currentCalculationErrors++;
+      return null;
+    }
+
+    // Calculate apparent power: S = sqrt(P² + Q²)
+    const apparentPower = Math.sqrt(
+      (genOutput * genOutput) + (genReactivePower * genReactivePower)
+    );
+
+    // Calculate current: I = S / (sqrt(3) * V_avg)
+    const current = apparentPower / (Math.sqrt(3) * avgVoltage);
+
+    // Sanity check: current should be a valid number
+    if (!isFinite(current) || isNaN(current)) {
+      logger.log(`Invalid current calculation: ${current} (P=${genOutput}, Q=${genReactivePower}, V_avg=${avgVoltage})`, 'warn');
+      stats.currentCalculationErrors++;
+      return null;
+    }
+
+    stats.currentCalculated++;
+    return current;
+
+  } catch (error) {
+    logger.log(`Current calculation error: ${error.message}`, 'error');
+    stats.currentCalculationErrors++;
+    return null;
+  }
 }
 
 async function getLastImportedTimestamp() {
@@ -357,7 +423,6 @@ function validateRecord(record) {
   let nonNullCount = 0;
   
   for (const field of ALL_SENSOR_FIELDS) {
-    // Use explicit null check - 0 is valid!
     if (!isNullOrUndefined(record[field])) {
       nonNullCount++;
     }
@@ -563,11 +628,9 @@ function transformAndMergeData(allTagResponses) {
           };
         }
 
-        // CRITICAL FIX: Use explicit null check, preserve 0 values!
         if (!isNullOrUndefined(values[i])) {
           mergedRecords[timestamp][columnName] = values[i];
           
-          // Track zero values
           if (values[i] === 0) {
             stats.zeroValuesPreserved++;
           }
@@ -589,9 +652,11 @@ async function bulkInsertRecords(records) {
     return { inserted: 0 };
   }
 
+  // NEW: Add 'current' to columns list
   const columns = ['timestamp', 'device_id', 'pressure', 'flow_rate', 'temperature',
                    'gen_reactive_power', 'gen_output', 'gen_frequency', 'speed_detection',
-                   'mcv_l', 'mcv_r', 'gen_voltage_u_v', 'gen_voltage_v_w', 'gen_voltage_w_u', 'status'];
+                   'mcv_l', 'mcv_r', 'gen_voltage_u_v', 'gen_voltage_v_w', 'gen_voltage_w_u', 
+                   'current', 'status'];
 
   let totalInserted = 0;
 
@@ -604,8 +669,9 @@ async function bulkInsertRecords(records) {
     for (let i = 0; i < batch.length; i++) {
       const record = batch[i];
       
-      // CRITICAL FIX: Use getValueOrNull() instead of || operator
-      // This preserves 0 values instead of converting them to null
+      // NEW: Calculate current before inserting
+      const current = calculateCurrent(record);
+      
       const recordValues = [
         record.timestamp,
         record.device_id,
@@ -621,6 +687,7 @@ async function bulkInsertRecords(records) {
         getValueOrNull(record.gen_voltage_u_v),
         getValueOrNull(record.gen_voltage_v_w),
         getValueOrNull(record.gen_voltage_w_u),
+        current, // NEW: Add calculated current
         'normal'
       ];
 
@@ -646,7 +713,8 @@ async function bulkInsertRecords(records) {
         mcv_r = COALESCE(EXCLUDED.mcv_r, sensor_data.mcv_r),
         gen_voltage_u_v = COALESCE(EXCLUDED.gen_voltage_u_v, sensor_data.gen_voltage_u_v),
         gen_voltage_v_w = COALESCE(EXCLUDED.gen_voltage_v_w, sensor_data.gen_voltage_v_w),
-        gen_voltage_w_u = COALESCE(EXCLUDED.gen_voltage_w_u, sensor_data.gen_voltage_w_u)
+        gen_voltage_w_u = COALESCE(EXCLUDED.gen_voltage_w_u, sensor_data.gen_voltage_w_u),
+        current = COALESCE(EXCLUDED.current, sensor_data.current)
     `;
 
     try {
@@ -774,10 +842,10 @@ async function processChunk(chunk, retryCount = 0) {
   }
 
   if (mergedRecords.length > 0) {
-    process.stdout.write(`  Inserting to database... `);
+    process.stdout.write(`  Calculating current & inserting to database... `);
     try {
       const result = await bulkInsertRecords(mergedRecords);
-      console.log(`✓ ${result.inserted} records`);
+      console.log(`✓ ${result.inserted} records (${stats.currentCalculated} with current)`);
       
       const nullStatsStr = `avg ${nullStats.avgNullFields.toFixed(1)} NULL fields`;
       logger.logChunkComplete(result.inserted, stats.totalRecordsFetched, quality, nullStatsStr);
@@ -870,7 +938,7 @@ async function importHistoricalData() {
   }
 
   console.log('═══════════════════════════════════════════════════════════');
-  console.log('   Honeywell Data Import (ZERO-SAFE + ALL FIELDS NULL-SAFE)');
+  console.log('   Honeywell Data Import + Current Calculation');
   console.log('═══════════════════════════════════════════════════════════');
   console.log(`Start Date:        ${startDate}`);
   console.log(`End Date:          ${endDate}`);
@@ -881,8 +949,12 @@ async function importHistoricalData() {
   console.log(`Min Non-NULL:      ${CONFIG.MIN_NON_NULL_FIELDS}/${ALL_SENSOR_FIELDS.length} fields`);
   console.log(`Force Re-import:   ${forceReimport ? 'Yes' : 'No'}`);
   console.log(`Log Files:         ${path.basename(logger.mainLogFile)}`);
+  console.log('═══════════════════════════════════════════════════════════');
+  console.log('🔧 FEATURES:');
+  console.log('   • Zero values (0) preserved as valid data');
+  console.log('   • Automatic current calculation from power & voltage');
+  console.log('   • Formula: I = sqrt(P² + Q²) / (sqrt(3) * V_avg)');
   console.log('═══════════════════════════════════════════════════════════\n');
-  console.log('🔧 CRITICAL FIX: Zero values (0) now preserved as valid data!\n');
   
   logger.log(`Import started: ${startDate} → ${endDate}`, 'info');
 
@@ -924,7 +996,7 @@ async function importHistoricalData() {
     const eta = calculateETA();
 
     console.log(`\n  📈 Progress: ${progress}% | Elapsed: ${elapsed} | ETA: ${eta}`);
-    console.log(`  📊 Stats: ${stats.totalRecordsInserted.toLocaleString()} inserted | ${stats.zeroValuesPreserved.toLocaleString()} zeros preserved | ${stats.skippedChunks} skipped | ${stats.nullChunksRefetched} refetched | ${stats.totalErrors} errors`);
+    console.log(`  📊 Stats: ${stats.totalRecordsInserted.toLocaleString()} inserted | ${stats.currentCalculated.toLocaleString()} current calc | ${stats.zeroValuesPreserved.toLocaleString()} zeros | ${stats.skippedChunks} skipped | ${stats.totalErrors} errors`);
     
     logger.logProgress(stats.currentChunk, stats.totalChunks, elapsed, eta, stats);
   }
@@ -934,15 +1006,17 @@ async function importHistoricalData() {
   console.log('\n═══════════════════════════════════════════════════════════');
   console.log('   ✅ Import Complete!');
   console.log('═══════════════════════════════════════════════════════════');
-  console.log(`Total Duration:        ${duration}`);
-  console.log(`Total Chunks:          ${stats.totalChunks}`);
-  console.log(`Skipped Chunks:        ${stats.skippedChunks}`);
-  console.log(`NULL Chunks Refetched: ${stats.nullChunksRefetched}`);
-  console.log(`Processed Chunks:      ${stats.totalChunks - stats.skippedChunks}`);
-  console.log(`Records Fetched:       ${stats.totalRecordsFetched.toLocaleString()}`);
-  console.log(`Records Inserted:      ${stats.totalRecordsInserted.toLocaleString()}`);
-  console.log(`Zero Values Preserved: ${stats.zeroValuesPreserved.toLocaleString()}`);
-  console.log(`Errors:                ${stats.totalErrors}`);
+  console.log(`Total Duration:            ${duration}`);
+  console.log(`Total Chunks:              ${stats.totalChunks}`);
+  console.log(`Skipped Chunks:            ${stats.skippedChunks}`);
+  console.log(`NULL Chunks Refetched:     ${stats.nullChunksRefetched}`);
+  console.log(`Processed Chunks:          ${stats.totalChunks - stats.skippedChunks}`);
+  console.log(`Records Fetched:           ${stats.totalRecordsFetched.toLocaleString()}`);
+  console.log(`Records Inserted:          ${stats.totalRecordsInserted.toLocaleString()}`);
+  console.log(`Zero Values Preserved:     ${stats.zeroValuesPreserved.toLocaleString()}`);
+  console.log(`Current Values Calculated: ${stats.currentCalculated.toLocaleString()}`);
+  console.log(`Current Calc Errors:       ${stats.currentCalculationErrors.toLocaleString()}`);
+  console.log(`Errors:                    ${stats.totalErrors}`);
   console.log(`\nPer-Tag Statistics:`);
 
   Object.entries(stats.tagStats).forEach(([tag, count]) => {
