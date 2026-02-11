@@ -17,7 +17,7 @@ const apiConfig = getApiConfig();
 // Create axios instance with base configuration
 const apiClient = axios.create({
   baseURL: apiConfig.baseURL,
-  timeout: 10000, // 10 seconds
+  timeout: 30000, // 30 seconds (increased for Honeywell API calls)
   headers: {
     'Content-Type': 'application/json'
   }

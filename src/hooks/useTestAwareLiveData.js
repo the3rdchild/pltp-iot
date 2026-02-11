@@ -7,11 +7,11 @@ import { useTestData } from '../contexts/TestDataContext';
  * Test-aware wrapper for useLiveData hook
  * Returns mock data in test environment, real data in production
  */
-export const useLiveData = (refreshInterval = 1000) => {
+export const useLiveData = (refreshInterval = null) => {
   const location = useLocation();
   const isTestEnvironment = location.pathname.startsWith('/test');
 
-  // Get real data hook
+  // Get real data hook (will use configured interval if null)
   const realData = useRealLiveData(refreshInterval);
 
   // Get test data if in test environment

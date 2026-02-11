@@ -161,8 +161,8 @@ async function fetchLiveDataForDashboard() {
     'gen_voltage_w_u': '5MKA01FE006PVI.PV'
   };
 
-  // Fetch data for each tag
-  for (const [metricName, tagName] of Object.entries(dashboardTags)) {
+  // Fetch all tags in parallel for better performance (avoids timeout)
+  const fetchPromises = Object.entries(dashboardTags).map(async ([metricName, tagName]) => {
     try {
       const response = await fetchHoneywellData({
         TagName: tagName,
@@ -179,18 +179,33 @@ async function fetchLiveDataForDashboard() {
         const confidences = tagData.Confidence || [];
 
         if (values.length > 0 && confidences[0] >= 100) {
-          metrics[metricName] = {
-            value: values[0],
-            timestamp: timestamps[0] ? parseHoneywellTimestamp(timestamps[0]) : new Date().toISOString(),
-            confidence: confidences[0]
+          return {
+            metricName,
+            data: {
+              value: values[0],
+              timestamp: timestamps[0] ? parseHoneywellTimestamp(timestamps[0]) : new Date().toISOString(),
+              confidence: confidences[0]
+            }
           };
         }
       }
+      return null;
     } catch (error) {
       console.error(`Error fetching ${metricName}:`, error.message);
       errors.push({ metric: metricName, error: error.message });
+      return null;
     }
-  }
+  });
+
+  // Wait for all fetches to complete
+  const results = await Promise.all(fetchPromises);
+
+  // Build metrics object from results
+  results.forEach(result => {
+    if (result) {
+      metrics[result.metricName] = result.data;
+    }
+  });
 
   // Calculate voltage average
   if (metrics.gen_voltage_u_v && metrics.gen_voltage_v_w && metrics.gen_voltage_w_u) {
