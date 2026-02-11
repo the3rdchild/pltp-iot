@@ -1,8 +1,92 @@
 const { query } = require('../config/database');
+const { fetchLiveDataForDashboard } = require('../services/honeywellService');
 
 const getLiveData = async (req, res) => {
   try {
-    // This mapping translates the desired metric names to the actual column names in your database.
+    // Check data source from query parameter (default: database)
+    const dataSource = req.query.source || 'database';
+
+    // Fetch from Honeywell API directly
+    if (dataSource === 'api' || dataSource === 'honeywell') {
+      const honeywellData = await fetchLiveDataForDashboard();
+
+      if (!honeywellData.success) {
+        throw new Error('Failed to fetch data from Honeywell API');
+      }
+
+      // Transform to match expected format
+      const formattedMetrics = {};
+
+      // Map Honeywell metrics to dashboard format
+      if (honeywellData.metrics.pressure) {
+        formattedMetrics.pressure = {
+          value: honeywellData.metrics.pressure.value,
+          timestamp: honeywellData.metrics.pressure.timestamp
+        };
+      }
+
+      if (honeywellData.metrics.temperature) {
+        formattedMetrics.temperature = {
+          value: honeywellData.metrics.temperature.value,
+          timestamp: honeywellData.metrics.temperature.timestamp
+        };
+      }
+
+      if (honeywellData.metrics.flow_rate) {
+        formattedMetrics.flow_rate = {
+          value: honeywellData.metrics.flow_rate.value,
+          timestamp: honeywellData.metrics.flow_rate.timestamp
+        };
+      }
+
+      if (honeywellData.metrics.gen_output) {
+        formattedMetrics.active_power = {
+          value: honeywellData.metrics.gen_output.value,
+          timestamp: honeywellData.metrics.gen_output.timestamp
+        };
+      }
+
+      if (honeywellData.metrics.voltage) {
+        formattedMetrics.voltage = {
+          value: honeywellData.metrics.voltage.value,
+          timestamp: honeywellData.metrics.voltage.timestamp,
+          calculated: true
+        };
+      }
+
+      if (honeywellData.metrics.current) {
+        formattedMetrics.current = {
+          value: honeywellData.metrics.current.value,
+          timestamp: honeywellData.metrics.current.timestamp,
+          calculated: true
+        };
+      }
+
+      if (honeywellData.metrics.gen_reactive_power) {
+        formattedMetrics.reactive_power = {
+          value: honeywellData.metrics.gen_reactive_power.value,
+          timestamp: honeywellData.metrics.gen_reactive_power.timestamp
+        };
+      }
+
+      if (honeywellData.metrics.speed_detection) {
+        formattedMetrics.speed = {
+          value: honeywellData.metrics.speed_detection.value,
+          timestamp: honeywellData.metrics.speed_detection.timestamp
+        };
+      }
+
+      return res.json({
+        success: true,
+        data: {
+          metrics: formattedMetrics,
+          timestamp: honeywellData.timestamp,
+          source: 'honeywell_api'
+        }
+      });
+    }
+
+    // Fetch from database (default behavior)
     const metricToColumnMap = {
       'main_steam_pressure': 'pressure',
       'main_steam_flow': 'flow_rate',
@@ -55,7 +139,8 @@ const getLiveData = async (req, res) => {
       success: true,
       data: {
         metrics: results,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        source: 'database'
       }
     });
 

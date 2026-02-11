@@ -1,5 +1,4 @@
 const https = require('https');
-const { query } = require('../config/database');
 
 // TagName mapping dari Honeywell ke column database
 const TAGNAME_TO_COLUMN = {
@@ -12,9 +11,9 @@ const TAGNAME_TO_COLUMN = {
   '5MAD02FS011PVI.PV': 'speed_detection',    // Turbine Speed
   '5CGA01FG001PVI.PV': 'mcv_l',              // MCV L Position
   '5CGA01FG002PVI.PV': 'mcv_r',              // MCV R Position
-  '5MKA01FE004PVI.PV': 'gen_voltage_v_w',    // Voltage U-V
-  '5MKA01FE005PVI.PV': 'gen_voltage_v_w',    // Voltage V-W (same column)
-  '5MKA01FE006PVI.PV': 'gen_voltage_w_u'     // Voltage U-W
+  '5MKA01FE004PVI.PV': 'gen_voltage_u_v',    // Voltage U-V
+  '5MKA01FE005PVI.PV': 'gen_voltage_v_w',    // Voltage V-W
+  '5MKA01FE006PVI.PV': 'gen_voltage_w_u'     // Voltage W-U
 };
 
 /**
@@ -137,186 +136,160 @@ function formatToHoneywellTimestamp(date) {
 }
 
 /**
- * Transform Honeywell API response to database format
- * @param {Object} honeywellResponse - Response from Honeywell API
- * @param {string} deviceId - Device ID to associate with data
- * @returns {Array} - Array of records ready to insert into database
+ * Fetch live data from Honeywell API for dashboard display
+ * Returns processed data with calculated current
+ * @returns {Promise<Object>} - Live data metrics
  */
-function transformHoneywellData(honeywellResponse, deviceId = null) {
-  if (!honeywellResponse.data || !Array.isArray(honeywellResponse.data)) {
-    throw new Error('Invalid Honeywell response format');
-  }
-
-  const records = [];
-
-  for (const tagData of honeywellResponse.data) {
-    const tagName = tagData.TagName;
-    const columnName = TAGNAME_TO_COLUMN[tagName];
-
-    if (!columnName) {
-      console.warn(`Unknown TagName: ${tagName}, skipping...`);
-      continue;
-    }
-
-    const timestamps = tagData.TimeStamp || [];
-    const values = tagData.Value || [];
-    const confidences = tagData.Confidence || [];
-
-    // Process each timestamp-value pair
-    for (let i = 0; i < timestamps.length; i++) {
-      const timestamp = parseHoneywellTimestamp(timestamps[i]);
-      const value = values[i];
-      const confidence = confidences[i];
-
-      // Only process data with confidence >= 100 (or as configured)
-      if (confidence < 100) {
-        continue;
-      }
-
-      // Find existing record for this timestamp or create new one
-      let record = records.find(r => r.timestamp === timestamp);
-
-      if (!record) {
-        record = {
-          timestamp,
-          device_id: deviceId || process.env.HONEYWELL_DEVICE_ID || null,
-          status: 'normal'
-        };
-        records.push(record);
-      }
-
-      // Set the value for the appropriate column
-      record[columnName] = value;
-    }
-  }
-
-  return records;
-}
-
-/**
- * Insert sensor data into database
- * @param {Array} records - Array of sensor data records
- * @returns {Promise<Object>} - Insert result
- */
-async function insertSensorData(records) {
-  if (!records || records.length === 0) {
-    return { inserted: 0, message: 'No records to insert' };
-  }
-
-  let inserted = 0;
-  const errors = [];
-
-  for (const record of records) {
-    try {
-      // Build column names and values dynamically
-      const columns = ['timestamp', 'device_id', 'status'];
-      const values = [record.timestamp, record.device_id, record.status];
-      const placeholders = ['$1', '$2', '$3'];
-      let paramIndex = 4;
-
-      // Add all metric columns that have values
-      const metricColumns = [
-        'pressure', 'flow_rate', 'temperature', 'gen_reactive_power',
-        'gen_output', 'gen_frequency', 'speed_detection', 'mcv_l', 'mcv_r',
-        'gen_voltage_v_w', 'gen_voltage_w_u', 'gen_voltage_u_v',
-        'current', 'tds'
-      ];
-
-      for (const col of metricColumns) {
-        if (record[col] !== undefined && record[col] !== null) {
-          columns.push(col);
-          values.push(record[col]);
-          placeholders.push(`$${paramIndex}`);
-          paramIndex++;
-        }
-      }
-
-      // Insert or update on conflict (upsert)
-      const sql = `
-        INSERT INTO sensor_data (${columns.join(', ')})
-        VALUES (${placeholders.join(', ')})
-        ON CONFLICT (timestamp, device_id)
-        DO UPDATE SET
-          ${metricColumns.map(col =>
-            columns.includes(col) ? `${col} = EXCLUDED.${col}` : null
-          ).filter(Boolean).join(', ')}
-      `;
-
-      await query(sql, values);
-      inserted++;
-    } catch (error) {
-      console.error('Error inserting record:', error);
-      errors.push({
-        record,
-        error: error.message
-      });
-    }
-  }
-
-  return {
-    inserted,
-    total: records.length,
-    errors: errors.length > 0 ? errors : undefined
-  };
-}
-
-/**
- * Fetch and store live data from Honeywell for all tags
- * @returns {Promise<Object>} - Result summary
- */
-async function fetchAndStoreLiveData() {
-  const tagNames = Object.keys(TAGNAME_TO_COLUMN);
-  const allRecords = [];
-
-  // Current time
+async function fetchLiveDataForDashboard() {
   const now = new Date();
   const startTime = formatToHoneywellTimestamp(new Date(now.getTime() - 10000)); // 10 seconds ago
   const endTime = formatToHoneywellTimestamp(now);
 
-  console.log(`Fetching live data for ${tagNames.length} tags from Honeywell...`);
+  const metrics = {};
+  const errors = [];
 
-  for (const tagName of tagNames) {
+  // Define which tags to fetch for dashboard
+  const dashboardTags = {
+    'pressure': '5LBB31FP002PVI.PV',
+    'temperature': '5LBB31FT001PVI.PV',
+    'flow_rate': '5LBB31FF001PVI.PV',
+    'gen_output': '5MKA01FE008PVI.PV',
+    'gen_reactive_power': '5BAT01AQ1-B02PVI.PV',
+    'speed_detection': '5MAD02FS011PVI.PV',
+    'gen_voltage_u_v': '5MKA01FE004PVI.PV',
+    'gen_voltage_v_w': '5MKA01FE005PVI.PV',
+    'gen_voltage_w_u': '5MKA01FE006PVI.PV'
+  };
+
+  // Fetch data for each tag
+  for (const [metricName, tagName] of Object.entries(dashboardTags)) {
     try {
       const response = await fetchHoneywellData({
         TagName: tagName,
         StartTime: startTime,
         EndTime: endTime,
-        MaxRows: 10,
+        MaxRows: 1,
         ReductionData: 'now'
       });
 
-      const records = transformHoneywellData(response);
-      allRecords.push(...records);
+      if (response.data && response.data.length > 0) {
+        const tagData = response.data[0];
+        const values = tagData.Value || [];
+        const timestamps = tagData.TimeStamp || [];
+        const confidences = tagData.Confidence || [];
 
-      console.log(`✓ Fetched ${records.length} records for ${tagName}`);
+        if (values.length > 0 && confidences[0] >= 100) {
+          metrics[metricName] = {
+            value: values[0],
+            timestamp: timestamps[0] ? parseHoneywellTimestamp(timestamps[0]) : new Date().toISOString(),
+            confidence: confidences[0]
+          };
+        }
+      }
     } catch (error) {
-      console.error(`✗ Error fetching ${tagName}:`, error.message);
+      console.error(`Error fetching ${metricName}:`, error.message);
+      errors.push({ metric: metricName, error: error.message });
     }
   }
 
-  // Merge records with same timestamp
-  const mergedRecords = {};
-  for (const record of allRecords) {
-    const key = record.timestamp;
-    if (!mergedRecords[key]) {
-      mergedRecords[key] = { ...record };
-    } else {
-      // Merge values
-      Object.assign(mergedRecords[key], record);
-    }
+  // Calculate voltage average
+  if (metrics.gen_voltage_u_v && metrics.gen_voltage_v_w && metrics.gen_voltage_w_u) {
+    const avgVoltage = (
+      parseFloat(metrics.gen_voltage_u_v.value) +
+      parseFloat(metrics.gen_voltage_v_w.value) +
+      parseFloat(metrics.gen_voltage_w_u.value)
+    ) / 3;
+
+    metrics.voltage = {
+      value: Math.round(avgVoltage * 100) / 100,
+      timestamp: metrics.gen_voltage_u_v.timestamp,
+      calculated: true
+    };
   }
 
-  const finalRecords = Object.values(mergedRecords);
+  // Calculate current from power and voltage
+  if (metrics.gen_output && metrics.voltage) {
+    try {
+      const current = computeLineCurrent({
+        P_MW: parseFloat(metrics.gen_output.value),
+        Q_MVar: metrics.gen_reactive_power ? parseFloat(metrics.gen_reactive_power.value) : null,
+        Vab: parseFloat(metrics.gen_voltage_u_v.value),
+        Vbc: parseFloat(metrics.gen_voltage_v_w.value),
+        Vca: parseFloat(metrics.gen_voltage_w_u.value)
+      }, { voltageUnit: 'kV' });
 
-  console.log(`Inserting ${finalRecords.length} merged records into database...`);
-  const result = await insertSensorData(finalRecords);
+      metrics.current = {
+        value: Math.round(current.I_line_A * 100) / 100,
+        timestamp: metrics.gen_output.timestamp,
+        calculated: true
+      };
+    } catch (error) {
+      console.error('Error calculating current:', error.message);
+      errors.push({ metric: 'current', error: error.message });
+    }
+  }
 
   return {
     success: true,
-    fetched: allRecords.length,
-    merged: finalRecords.length,
-    ...result
+    metrics,
+    timestamp: new Date().toISOString(),
+    errors: errors.length > 0 ? errors : undefined
   };
+}
+
+/**
+ * Calculate line current from power and voltage values
+ * @param {Object} params - Power and voltage parameters
+ * @param {Object} opts - Options including voltage unit
+ * @returns {Object} - Calculated current values
+ */
+function computeLineCurrent(params, opts = {}) {
+  const { P_MW, Q_MVar, Vab, Vbc, Vca } = params;
+  const voltageUnit = opts.voltageUnit || 'kV';
+  const assume_pf = (typeof opts.assume_pf === 'number') ? opts.assume_pf : null;
+
+  if (P_MW == null) throw new Error('P_MW required');
+
+  // Handle Q missing
+  let Q = Q_MVar;
+  if (Q == null) {
+    if (assume_pf == null) {
+      Q = 0; // Assume purely real power
+    } else {
+      const pf = Math.max(0, Math.min(1, assume_pf));
+      Q = P_MW * Math.tan(Math.acos(pf));
+    }
+  }
+
+  // Apparent power (MVA) and convert to VA
+  const S_MVA = Math.sqrt(P_MW * P_MW + Q * Q);
+  const S_VA = S_MVA * 1e6;
+
+  // Voltage unit conversion
+  const conv = (voltageUnit === 'kV') ? 1000 : 1;
+  const Vab_V = Vab * conv;
+  const Vbc_V = Vbc * conv;
+  const Vca_V = Vca * conv;
+
+  // Balanced line current using average V_LL
+  const V_LL_avg = (Vab_V + Vbc_V + Vca_V) / 3;
+  if (V_LL_avg <= 0) throw new Error('Invalid voltage inputs');
+
+  const I_line_A = S_VA / (Math.sqrt(3) * V_LL_avg);
+
+  // Per-phase currents
+  const S_phase = S_VA / 3;
+  const V_phase_a = Vab_V / Math.sqrt(3);
+  const V_phase_b = Vbc_V / Math.sqrt(3);
+  const V_phase_c = Vca_V / Math.sqrt(3);
+
+  const I_phase = {
+    A: S_phase / V_phase_a,
+    B: S_phase / V_phase_b,
+    C: S_phase / V_phase_c
+  };
+
+  return { S_MVA, I_line_A, I_phase };
 }
 
 /**
@@ -357,11 +330,10 @@ async function testConnection(tagName = null) {
 
 module.exports = {
   fetchHoneywellData,
-  transformHoneywellData,
-  insertSensorData,
-  fetchAndStoreLiveData,
+  fetchLiveDataForDashboard,
   testConnection,
   parseHoneywellTimestamp,
   formatToHoneywellTimestamp,
+  computeLineCurrent,
   TAGNAME_TO_COLUMN
 };

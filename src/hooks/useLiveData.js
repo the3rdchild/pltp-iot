@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getLiveData, getLiveMetric } from '../utils/api';
+import { getLiveData, getLiveMetric, getRefreshInterval } from '../utils/api';
 
 /**
  * Custom hook to fetch all live data for dashboard
- * Auto-refreshes every 3 seconds by default
+ * Auto-refreshes based on configured interval (default: 3000ms)
  *
- * @param {number} refreshInterval - Refresh interval in milliseconds (default: 3000)
+ * @param {number} refreshInterval - Refresh interval in milliseconds (default: from config or 3000)
  * @returns {object} { data, loading, error, refresh }
  *
  * @example
@@ -14,11 +14,24 @@ import { getLiveData, getLiveMetric } from '../utils/api';
  * if (error) return <div>Error: {error.message}</div>;
  * return <div>TDS: {data.metrics.tds.value}</div>;
  */
-export const useLiveData = (refreshInterval = 1000) => {
+export const useLiveData = (refreshInterval = null) => {
+  // Use configured refresh interval if not explicitly provided
+  const configuredInterval = getRefreshInterval();
+  const actualInterval = refreshInterval !== null ? refreshInterval : configuredInterval;
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+
+  // Warn if interval is below recommended minimum
+  useEffect(() => {
+    if (actualInterval < 3000) {
+      console.warn(
+        `⚠️ Refresh interval (${actualInterval}ms) is below the recommended minimum of 3000ms. ` +
+        `This may cause excessive API calls and potential rate limiting from Honeywell API.`
+      );
+    }
+  }, [actualInterval]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -45,11 +58,11 @@ export const useLiveData = (refreshInterval = 1000) => {
   useEffect(() => {
     fetchData();
 
-    if (refreshInterval > 0) {
-      const interval = setInterval(fetchData, refreshInterval);
+    if (actualInterval > 0) {
+      const interval = setInterval(fetchData, actualInterval);
       return () => clearInterval(interval);
     }
-  }, [refreshInterval, fetchData]);
+  }, [actualInterval, fetchData]);
 
   return {
     data,

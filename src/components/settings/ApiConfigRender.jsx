@@ -5,12 +5,20 @@ import {
   TextField,
   Button,
   Divider,
-  Chip
+  Chip,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormHelperText,
+  Alert
 } from '@mui/material';
 import MainCard from 'components/MainCard';
 import SaveIcon from '@mui/icons-material/Save';
 import RestoreIcon from '@mui/icons-material/Restore';
 import ApiIcon from '@mui/icons-material/Api';
+import SettingsInputAntennaIcon from '@mui/icons-material/SettingsInputAntenna';
+import { useState } from 'react';
 
 // Section configuration for API endpoints
 export const API_SECTIONS = [
@@ -18,6 +26,11 @@ export const API_SECTIONS = [
     title: 'Base Configuration',
     description: 'Configure the base API URL',
     type: 'base'
+  },
+  {
+    title: 'Honeywell Live Data',
+    description: 'Configure Honeywell API integration for live data',
+    type: 'honeywell'
   },
   {
     title: 'Dashboard Endpoints',
@@ -102,6 +115,100 @@ export const BaseUrlCard = ({ baseURL, onChange }) => (
     />
   </MainCard>
 );
+
+// Honeywell Configuration Card
+export const HoneywellConfigCard = ({ config, onChange }) => {
+  const [refreshIntervalError, setRefreshIntervalError] = useState('');
+
+  const handleRefreshIntervalChange = (value) => {
+    const interval = parseInt(value);
+    if (interval < 3000 && interval > 0) {
+      setRefreshIntervalError(
+        '⚠️ Warning: Refresh interval below 3000ms may cause excessive API calls and potential rate limiting.'
+      );
+    } else {
+      setRefreshIntervalError('');
+    }
+    onChange('refreshInterval', interval);
+  };
+
+  return (
+    <MainCard>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <SettingsInputAntennaIcon color="primary" />
+        <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+          Honeywell Live Data Configuration
+        </Typography>
+      </Box>
+
+      <Grid container spacing={3}>
+        {/* Data Source Selection */}
+        <Grid size={12}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Live Data Source</InputLabel>
+            <Select
+              value={config.liveDataSource || 'database'}
+              label="Live Data Source"
+              onChange={(e) => onChange('liveDataSource', e.target.value)}
+            >
+              <MenuItem value="database">Database (Historical Data)</MenuItem>
+              <MenuItem value="api">Honeywell API (Direct Live Feed)</MenuItem>
+            </Select>
+            <FormHelperText>
+              Select whether to fetch live data from database or directly from Honeywell API
+            </FormHelperText>
+          </FormControl>
+        </Grid>
+
+        {/* Honeywell API URL */}
+        <Grid size={12}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Honeywell API URL"
+            value={config.honeywellApiUrl || ''}
+            onChange={(e) => onChange('honeywellApiUrl', e.target.value)}
+            placeholder="https://honeywell-api.example.com/data"
+            helperText="The Honeywell API URL for fetching live data (API key is configured in backend .env)"
+            disabled={config.liveDataSource === 'database'}
+          />
+        </Grid>
+
+        {/* Refresh Interval */}
+        <Grid size={12}>
+          <TextField
+            fullWidth
+            size="small"
+            type="number"
+            label="Refresh Interval (ms)"
+            value={config.refreshInterval || 3000}
+            onChange={(e) => handleRefreshIntervalChange(e.target.value)}
+            placeholder="3000"
+            helperText="How often to refresh live data (minimum recommended: 3000ms)"
+            inputProps={{ min: 1000, step: 1000 }}
+          />
+          {refreshIntervalError && (
+            <Alert severity="warning" sx={{ mt: 1 }}>
+              {refreshIntervalError}
+            </Alert>
+          )}
+        </Grid>
+
+        {/* Info about current selection */}
+        {config.liveDataSource === 'api' && (
+          <Grid size={12}>
+            <Alert severity="info">
+              <Typography variant="body2">
+                <strong>Direct Honeywell API Mode:</strong> Live data will be fetched directly from Honeywell API.
+                Make sure the Honeywell API URL and credentials are properly configured.
+              </Typography>
+            </Alert>
+          </Grid>
+        )}
+      </Grid>
+    </MainCard>
+  );
+};
 
 // Endpoint card component for a category
 export const EndpointCategoryCard = ({ category, endpoints, onChange }) => (
@@ -220,7 +327,7 @@ export const ActionButtons = ({ onSave, onReset }) => (
 );
 
 // Section component
-export const ApiSection = ({ section, apiConfig, onChange, onMetricsChange }) => {
+export const ApiSection = ({ section, apiConfig, onChange, onMetricsChange, onHoneywellChange }) => {
   if (section.type === 'base') {
     return (
       <Box sx={{ mb: 5 }}>
@@ -236,6 +343,26 @@ export const ApiSection = ({ section, apiConfig, onChange, onMetricsChange }) =>
         <BaseUrlCard
           baseURL={apiConfig.baseURL}
           onChange={(value) => onChange('baseURL', null, value)}
+        />
+      </Box>
+    );
+  }
+
+  if (section.type === 'honeywell') {
+    return (
+      <Box sx={{ mb: 5 }}>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h5" sx={{ fontWeight: 600, color: 'text.primary' }}>
+            {section.title}
+          </Typography>
+          <Typography variant="body2" color="textSecondary">
+            {section.description}
+          </Typography>
+          <Divider sx={{ mt: 2 }} />
+        </Box>
+        <HoneywellConfigCard
+          config={apiConfig}
+          onChange={onHoneywellChange}
         />
       </Box>
     );
@@ -298,7 +425,7 @@ export const ApiInfoCard = () => (
 );
 
 // Main ApiConfigRender component
-const ApiConfigRender = ({ apiConfig, onChange, onMetricsChange, onSave, onReset }) => (
+const ApiConfigRender = ({ apiConfig, onChange, onMetricsChange, onHoneywellChange, onSave, onReset }) => (
   <>
     <ApiInfoCard />
     <ActionButtons onSave={onSave} onReset={onReset} />
@@ -310,6 +437,7 @@ const ApiConfigRender = ({ apiConfig, onChange, onMetricsChange, onSave, onReset
         apiConfig={apiConfig}
         onChange={onChange}
         onMetricsChange={onMetricsChange}
+        onHoneywellChange={onHoneywellChange}
       />
     ))}
 

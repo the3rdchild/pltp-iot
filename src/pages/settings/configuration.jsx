@@ -111,6 +111,13 @@ const ConfigurationSettings = () => {
     }
   };
 
+  const handleHoneywellChange = (key, value) => {
+    setApiConfig(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
   const handleMetricsChange = (type, value) => {
     setApiConfig(prev => ({
       ...prev,
@@ -234,11 +241,12 @@ const ConfigurationSettings = () => {
       {activeTab === 1 && (
         <Box>
           <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-            Configure API endpoints and base URL. Make sure endpoints match your backend API structure.
+            Configure API endpoints, Honeywell integration, and base URL. Make sure endpoints match your backend API structure.
           </Typography>
           <ApiConfigRender
             apiConfig={apiConfig}
             onChange={handleApiChange}
+            onHoneywellChange={handleHoneywellChange}
             onMetricsChange={handleMetricsChange}
             onSave={handleApiSave}
             onReset={handleApiReset}

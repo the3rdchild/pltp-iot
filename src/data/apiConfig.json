@@ -1,5 +1,8 @@
 {
   "baseURL": "/api",
+  "liveDataSource": "database",
+  "honeywellApiUrl": "",
+  "refreshInterval": 3000,
   "endpoints": {
     "dashboard": {
       "liveData": "/data/live",

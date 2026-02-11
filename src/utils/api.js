@@ -66,7 +66,13 @@ const buildURL = (endpoint, params = {}) => {
  */
 export const getLiveData = async () => {
   try {
-    const response = await apiClient.get(apiConfig.endpoints.dashboard.liveData);
+    // Get fresh config to support runtime changes
+    const currentConfig = getApiConfig();
+    const dataSource = currentConfig.liveDataSource || 'database';
+
+    const response = await apiClient.get(apiConfig.endpoints.dashboard.liveData, {
+      params: { source: dataSource }
+    });
     return response;
   } catch (error) {
     console.error('Error fetching live data:', error);
@@ -266,6 +272,14 @@ export const getAvailableMetrics = () => apiConfig.metrics.dashboard;
  */
 export const getAvailableRanges = () => apiConfig.metrics.ranges;
 
+/**
+ * Get configured refresh interval
+ */
+export const getRefreshInterval = () => {
+  const currentConfig = getApiConfig();
+  return currentConfig.refreshInterval || 3000;
+};
+
 // Export axios instance for advanced usage
 export { apiClient };
 
@@ -284,5 +298,6 @@ export default {
   getAPIConfig,
   getAvailableMetrics,
   getAvailableRanges,
+  getRefreshInterval,
   apiClient
 };
