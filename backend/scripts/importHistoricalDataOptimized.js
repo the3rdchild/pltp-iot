@@ -284,7 +284,7 @@ function calculateCurrent(record) {
     );
 
     // Calculate current: I = S / (sqrt(3) * V_avg)
-    const current = apparentPower / (Math.sqrt(3) * avgVoltage);
+    const current = (apparentPower / (Math.sqrt(3) * avgVoltage)) * 1000;
 
     // Sanity check: current should be a valid number
     if (!isFinite(current) || isNaN(current)) {
