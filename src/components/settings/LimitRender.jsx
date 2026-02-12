@@ -15,7 +15,7 @@ export const SECTIONS = [
   {
     title: 'TDS (Total Dissolved Solids)',
     description: 'Configure limits for TDS measurements',
-    parameters: ['TDS: Overall', 'tdsCO2', 'tdsArgon', 'tdsMethane', 'tdsMA3']
+    parameters: ['TDS: Overall', 'tdsCO2', 'tdsArgon', 'tdsMethane', 'tdsMA3', 'tds_honeywell']
   },
   {
     title: 'Steam Quality',
@@ -26,21 +26,54 @@ export const SECTIONS = [
     title: 'Pipe Parameters',
     description: 'Configure limits for pressure, temperature, and flow',
     parameters: ['pressure', 'temperature', 'flow']
+  },
+  {
+    title: 'Power & Generator',
+    description: 'Configure limits for active power, reactive power, voltage, current, and turbine speed',
+    parameters: ['gen_output', 'reactive_power', 'voltage', 'current', 'speed_detection']
+  },
+  {
+    title: 'Honeywell Raw Parameters',
+    description: 'Configure limits for individual Honeywell sensor readings',
+    parameters: [
+      'main_steam_pressure', 'main_steam_flow', 'main_steam_temp',
+      'gen_output_mw', 'gen_reactive_power_net', 'gen_freq',
+      'turbine_speed', 'mcv_l_position', 'mcv_r_position',
+      'voltage_u_v', 'voltage_v_w', 'voltage_u_w'
+    ]
   }
 ];
 
 // Display names for parameters
 export const PARAMETER_LABELS = {
   'TDS: Overall': 'TDS Overall',
-  'tdsCO2': 'TDS CO‚',
+  'tdsCO2': 'TDS CO2',
   'tdsArgon': 'TDS Argon',
-  'tdsMethane': 'TDS Methane (CH„)',
+  'tdsMethane': 'TDS Methane (CH4)',
   'tdsMA3': 'TDS MA3',
+  'tds_honeywell': 'TDS (Honeywell)',
   'dryness': 'Dryness Fraction',
   'ncg': 'NCG (Non-Condensable Gas)',
   'pressure': 'Pressure',
   'temperature': 'Temperature',
-  'flow': 'Flow Rate'
+  'flow': 'Flow Rate',
+  'gen_output': 'Active Power',
+  'voltage': 'Voltage (Average)',
+  'reactive_power': 'Reactive Power',
+  'current': 'Current',
+  'speed_detection': 'S.T Speed',
+  'main_steam_pressure': 'Main Steam Pressure',
+  'main_steam_flow': 'Main Steam Flow',
+  'main_steam_temp': 'Main Steam Temperature',
+  'gen_output_mw': 'Gen Output (MW)',
+  'gen_reactive_power_net': 'Gen Reactive Power Net',
+  'gen_freq': 'Gen Frequency',
+  'turbine_speed': 'Turbine Speed',
+  'mcv_l_position': 'MCV L Position',
+  'mcv_r_position': 'MCV R Position',
+  'voltage_u_v': 'Voltage U-V',
+  'voltage_v_w': 'Voltage V-W',
+  'voltage_u_w': 'Voltage W-U'
 };
 
 // Parameter card component
