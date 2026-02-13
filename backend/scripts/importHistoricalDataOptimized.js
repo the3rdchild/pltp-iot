@@ -88,7 +88,7 @@ const ALL_SENSOR_FIELDS = [
 const args = process.argv.slice(2);
 const forceReimport = args.includes('--force') || args.includes('-f');
 const fixNulls = args.includes('--fix-nulls');
-const DEFAULT_START = "13-MAY-2025 14:05:33.000";
+const DEFAULT_START = "13-MAY-2025 14:07:33.000";
 
 const stats = {
   totalChunks: 0,
