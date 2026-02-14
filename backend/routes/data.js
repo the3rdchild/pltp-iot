@@ -8,7 +8,11 @@ const {
   getFieldData,
   createFieldData,
   getDashboardStats,
-  exportSensorData
+  exportSensorData,
+  getMetricStats,
+  getAnomalyCounts,
+  getMetricLimits,
+  saveMetricLimits
 } = require('../controllers/dataController');
 const {
   getLiveMetric,
@@ -51,5 +55,19 @@ router.get('/chart/:metric', optionalAuth, getChartData);
 
 // GET /api/data/stats/:metric - Get statistics table data
 router.get('/stats/:metric', optionalAuth, getStatsData);
+
+// ==================== METRIC STATS & ANOMALY ROUTES ====================
+
+// GET /api/data/metric-stats/:metric - Get min/max/avg for 12h, 24h, 7d
+router.get('/metric-stats/:metric', optionalAuth, getMetricStats);
+
+// GET /api/data/anomaly-counts/:metric - Get anomaly counts for 12h, 24h, 7d
+router.get('/anomaly-counts/:metric', optionalAuth, getAnomalyCounts);
+
+// GET /api/data/metric-limits - Get all metric limits
+router.get('/metric-limits', optionalAuth, getMetricLimits);
+
+// POST /api/data/metric-limits - Save/sync metric limits from frontend
+router.post('/metric-limits', optionalAuth, saveMetricLimits);
 
 module.exports = router;

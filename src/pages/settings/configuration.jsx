@@ -62,9 +62,27 @@ const ConfigurationSettings = () => {
     }));
   };
 
-  const handleLimitSave = () => {
+  const handleLimitSave = async () => {
     try {
       localStorage.setItem('limitData', JSON.stringify(limitData));
+
+      // Sync limits to backend metric_limits table
+      const limitsPayload = {};
+      for (const [key, config] of Object.entries(limitData)) {
+        limitsPayload[key] = config;
+      }
+
+      try {
+        const apiBaseURL = apiConfig.baseURL || '/api';
+        await fetch(`${apiBaseURL}/data/metric-limits`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ limits: limitsPayload })
+        });
+      } catch (syncError) {
+        console.warn('Failed to sync limits to backend:', syncError);
+      }
+
       setSnackbar({
         open: true,
         message: 'Limit settings saved successfully! Refresh the page to see changes.',

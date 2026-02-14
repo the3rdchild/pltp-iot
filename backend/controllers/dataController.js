@@ -563,6 +563,265 @@ const exportSensorData = async (req, res) => {
   }
 };
 
+// ==================== METRIC STATS & ANOMALY ENDPOINTS ====================
+
+/**
+ * Mapping from metric key to sensor_data column name
+ */
+const METRIC_COLUMN_MAP = {
+  'pressure': 'pressure',
+  'temperature': 'temperature',
+  'flow_rate': 'flow_rate',
+  'flow': 'flow_rate',
+  'gen_output': 'gen_output',
+  'active_power': 'gen_output',
+  'gen_reactive_power': 'gen_reactive_power',
+  'reactive_power': 'gen_reactive_power',
+  'speed_detection': 'speed_detection',
+  'speed': 'speed_detection',
+  'current': 'current',
+  'tds': 'tds',
+  'gen_frequency': 'gen_frequency',
+  'gen_voltage_u_v': 'gen_voltage_u_v',
+  'gen_voltage_v_w': 'gen_voltage_v_w',
+  'gen_voltage_w_u': 'gen_voltage_w_u'
+};
+
+/**
+ * Build SQL expression for metric column (handles voltage average)
+ */
+const getMetricExpression = (metric) => {
+  if (metric === 'voltage') {
+    return `(COALESCE(gen_voltage_u_v, 0) + COALESCE(gen_voltage_v_w, 0) + COALESCE(gen_voltage_w_u, 0)) / NULLIF(((CASE WHEN gen_voltage_u_v IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN gen_voltage_v_w IS NOT NULL THEN 1 ELSE 0 END) + (CASE WHEN gen_voltage_w_u IS NOT NULL THEN 1 ELSE 0 END)), 0)`;
+  }
+  const col = METRIC_COLUMN_MAP[metric];
+  return col || null;
+};
+
+/**
+ * Build SQL WHERE clause for non-null metric values
+ */
+const getNotNullCondition = (metric) => {
+  if (metric === 'voltage') {
+    return '(gen_voltage_u_v IS NOT NULL OR gen_voltage_v_w IS NOT NULL OR gen_voltage_w_u IS NOT NULL)';
+  }
+  const col = METRIC_COLUMN_MAP[metric];
+  return `${col} IS NOT NULL`;
+};
+
+/**
+ * GET /api/data/metric-stats/:metric
+ * Returns min, max, avg for 12h, 24h, 7d time windows
+ */
+const getMetricStats = async (req, res) => {
+  try {
+    const { metric } = req.params;
+    const expr = getMetricExpression(metric);
+
+    if (!expr) {
+      return res.status(400).json({ success: false, message: `Unknown metric: ${metric}` });
+    }
+
+    const notNull = getNotNullCondition(metric);
+
+    const sql = `
+      SELECT
+        MIN(CASE WHEN timestamp >= NOW() - INTERVAL '12 hours' THEN (${expr}) END) AS min_12h,
+        MAX(CASE WHEN timestamp >= NOW() - INTERVAL '12 hours' THEN (${expr}) END) AS max_12h,
+        AVG(CASE WHEN timestamp >= NOW() - INTERVAL '12 hours' THEN (${expr}) END) AS avg_12h,
+        MIN(CASE WHEN timestamp >= NOW() - INTERVAL '24 hours' THEN (${expr}) END) AS min_24h,
+        MAX(CASE WHEN timestamp >= NOW() - INTERVAL '24 hours' THEN (${expr}) END) AS max_24h,
+        AVG(CASE WHEN timestamp >= NOW() - INTERVAL '24 hours' THEN (${expr}) END) AS avg_24h,
+        MIN(CASE WHEN timestamp >= NOW() - INTERVAL '7 days' THEN (${expr}) END) AS min_7d,
+        MAX(CASE WHEN timestamp >= NOW() - INTERVAL '7 days' THEN (${expr}) END) AS max_7d,
+        AVG(CASE WHEN timestamp >= NOW() - INTERVAL '7 days' THEN (${expr}) END) AS avg_7d
+      FROM sensor_data
+      WHERE ${notNull}
+        AND timestamp >= NOW() - INTERVAL '7 days'
+    `;
+
+    const result = await query(sql);
+    const row = result.rows[0];
+
+    const round = (v) => v !== null && v !== undefined ? Math.round(parseFloat(v) * 1000) / 1000 : 0;
+
+    res.json({
+      success: true,
+      metric,
+      data: {
+        min12h: round(row.min_12h),
+        max12h: round(row.max_12h),
+        avg12h: round(row.avg_12h),
+        min24h: round(row.min_24h),
+        max24h: round(row.max_24h),
+        avg24h: round(row.avg_24h),
+        min7d: round(row.min_7d),
+        max7d: round(row.max_7d),
+        avg7d: round(row.avg_7d)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching metric stats:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch metric statistics' });
+  }
+};
+
+/**
+ * GET /api/data/anomaly-counts/:metric
+ * Returns anomaly event counts for 12h, 24h, 7d
+ * Uses warning thresholds from metric_limits table as anomaly boundary
+ */
+const getAnomalyCounts = async (req, res) => {
+  try {
+    const { metric } = req.params;
+    const expr = getMetricExpression(metric);
+
+    if (!expr) {
+      return res.status(400).json({ success: false, message: `Unknown metric: ${metric}` });
+    }
+
+    const notNull = getNotNullCondition(metric);
+
+    // Get limits from metric_limits table
+    const limitsResult = await query(
+      'SELECT warning_low, warning_high FROM metric_limits WHERE metric_key = $1',
+      [metric]
+    );
+
+    if (limitsResult.rows.length === 0) {
+      return res.json({
+        success: true,
+        metric,
+        data: { last12h: 0, last24h: 0, last7d: 0 },
+        message: 'No limits configured for this metric'
+      });
+    }
+
+    const limits = limitsResult.rows[0];
+    const wLow = limits.warning_low;
+    const wHigh = limits.warning_high;
+
+    // Build anomaly condition
+    const conditions = [];
+    if (wLow !== null) conditions.push(`(${expr}) < ${wLow}`);
+    if (wHigh !== null) conditions.push(`(${expr}) > ${wHigh}`);
+
+    if (conditions.length === 0) {
+      return res.json({
+        success: true,
+        metric,
+        data: { last12h: 0, last24h: 0, last7d: 0 },
+        message: 'No warning thresholds configured'
+      });
+    }
+
+    const anomalyCondition = conditions.join(' OR ');
+
+    const sql = `
+      SELECT
+        COUNT(CASE WHEN timestamp >= NOW() - INTERVAL '12 hours' AND (${anomalyCondition}) THEN 1 END) AS count_12h,
+        COUNT(CASE WHEN timestamp >= NOW() - INTERVAL '24 hours' AND (${anomalyCondition}) THEN 1 END) AS count_24h,
+        COUNT(CASE WHEN timestamp >= NOW() - INTERVAL '7 days' AND (${anomalyCondition}) THEN 1 END) AS count_7d
+      FROM sensor_data
+      WHERE ${notNull}
+        AND timestamp >= NOW() - INTERVAL '7 days'
+    `;
+
+    const result = await query(sql);
+    const row = result.rows[0];
+
+    res.json({
+      success: true,
+      metric,
+      limits: { warningLow: wLow, warningHigh: wHigh },
+      data: {
+        last12h: parseInt(row.count_12h) || 0,
+        last24h: parseInt(row.count_24h) || 0,
+        last7d: parseInt(row.count_7d) || 0
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching anomaly counts:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch anomaly counts' });
+  }
+};
+
+/**
+ * GET /api/data/metric-limits
+ * Returns all metric limits from database
+ */
+const getMetricLimits = async (req, res) => {
+  try {
+    const result = await query('SELECT * FROM metric_limits ORDER BY metric_key');
+    res.json({ success: true, data: result.rows });
+  } catch (error) {
+    console.error('Error fetching metric limits:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch metric limits' });
+  }
+};
+
+/**
+ * POST /api/data/metric-limits
+ * Save/sync metric limits from frontend settings
+ * Body: { limits: { pressure: { unit, min, max, warningLow, warningHigh, ... }, ... } }
+ */
+const saveMetricLimits = async (req, res) => {
+  try {
+    const { limits } = req.body;
+
+    if (!limits || typeof limits !== 'object') {
+      return res.status(400).json({ success: false, message: 'limits object is required' });
+    }
+
+    let upserted = 0;
+
+    for (const [metricKey, config] of Object.entries(limits)) {
+      const sql = `
+        INSERT INTO metric_limits (metric_key, display_name, unit, min_value, max_value,
+          warning_low, warning_high, abnormal_low, abnormal_high, ideal_low, ideal_high, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+        ON CONFLICT (metric_key) DO UPDATE SET
+          display_name = EXCLUDED.display_name,
+          unit = EXCLUDED.unit,
+          min_value = EXCLUDED.min_value,
+          max_value = EXCLUDED.max_value,
+          warning_low = EXCLUDED.warning_low,
+          warning_high = EXCLUDED.warning_high,
+          abnormal_low = EXCLUDED.abnormal_low,
+          abnormal_high = EXCLUDED.abnormal_high,
+          ideal_low = EXCLUDED.ideal_low,
+          ideal_high = EXCLUDED.ideal_high,
+          updated_at = NOW()
+      `;
+
+      await query(sql, [
+        metricKey,
+        config.displayName || config.value || metricKey,
+        config.unit || null,
+        config.min !== undefined ? config.min : null,
+        config.max !== undefined ? config.max : null,
+        config.warningLow !== undefined ? config.warningLow : null,
+        config.warningHigh !== undefined ? config.warningHigh : null,
+        config.abnormalLow !== undefined ? config.abnormalLow : null,
+        config.abnormalHigh !== undefined ? config.abnormalHigh : null,
+        config.idealLow !== undefined ? config.idealLow : null,
+        config.idealHigh !== undefined ? config.idealHigh : null
+      ]);
+
+      upserted++;
+    }
+
+    res.json({
+      success: true,
+      message: `${upserted} metric limits saved successfully`,
+      upserted
+    });
+  } catch (error) {
+    console.error('Error saving metric limits:', error);
+    res.status(500).json({ success: false, message: 'Failed to save metric limits' });
+  }
+};
+
 module.exports = {
   getLiveData,
   getLatestSensorData,
@@ -571,5 +830,9 @@ module.exports = {
   getFieldData,
   createFieldData,
   getDashboardStats,
-  exportSensorData
+  exportSensorData,
+  getMetricStats,
+  getAnomalyCounts,
+  getMetricLimits,
+  saveMetricLimits
 };

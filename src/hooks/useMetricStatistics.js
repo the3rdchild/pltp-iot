@@ -223,7 +223,7 @@ export const useMetricStatistics = (metricKey, currentValue) => {
 
 /**
  * Hook for getting metric statistics from API (production)
- * This is a placeholder - backend should provide this data
+ * Fetches min/max/avg for 12h, 24h, 7d from sensor_data via backend
  *
  * @param {string} metricKey - Metric key
  * @returns {object} Statistics from API
@@ -242,27 +242,29 @@ export const useMetricStatisticsFromAPI = (metricKey) => {
     avg7d: 0
   });
 
-  useEffect(() => {
-    // TODO: Fetch statistics from backend API
-    // Example:
-    // fetch(`/api/metrics/${metricKey}/statistics`)
-    //   .then(res => res.json())
-    //   .then(data => setStats(data));
+  const fetchStats = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/data/metric-stats/${metricKey}`);
+      const result = await response.json();
 
-    // For now, return zeros (backend should implement this)
-    setStats({
-      current: 0,
-      min12h: 0,
-      max12h: 0,
-      avg12h: 0,
-      min24h: 0,
-      max24h: 0,
-      avg24h: 0,
-      min7d: 0,
-      max7d: 0,
-      avg7d: 0
-    });
+      if (result.success && result.data) {
+        setStats(prev => ({
+          ...prev,
+          ...result.data
+        }));
+      }
+    } catch (error) {
+      console.error(`Error fetching stats for ${metricKey}:`, error);
+    }
   }, [metricKey]);
+
+  useEffect(() => {
+    fetchStats();
+
+    // Refresh stats every 60 seconds
+    const interval = setInterval(fetchStats, 60000);
+    return () => clearInterval(interval);
+  }, [fetchStats]);
 
   return stats;
 };

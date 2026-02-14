@@ -174,7 +174,7 @@ export const useAnomalyTracker = (metricKey, currentValue) => {
 
 /**
  * Hook for getting anomaly counts from API (production)
- * This is a placeholder - backend should provide this data
+ * Fetches anomaly counts based on warning thresholds from metric_limits table
  *
  * @param {string} metricKey - Metric key
  * @returns {object} Anomaly counts from API
@@ -186,20 +186,26 @@ export const useAnomalyCountsFromAPI = (metricKey) => {
     last7d: 0
   });
 
-  useEffect(() => {
-    // TODO: Fetch anomaly counts from backend API
-    // Example:
-    // fetch(`/api/metrics/${metricKey}/anomaly-counts`)
-    //   .then(res => res.json())
-    //   .then(data => setAnomalyCounts(data));
+  const fetchCounts = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/data/anomaly-counts/${metricKey}`);
+      const result = await response.json();
 
-    // For now, return zeros (backend should implement this)
-    setAnomalyCounts({
-      last12h: 0,
-      last24h: 0,
-      last7d: 0
-    });
+      if (result.success && result.data) {
+        setAnomalyCounts(result.data);
+      }
+    } catch (error) {
+      console.error(`Error fetching anomaly counts for ${metricKey}:`, error);
+    }
   }, [metricKey]);
+
+  useEffect(() => {
+    fetchCounts();
+
+    // Refresh anomaly counts every 60 seconds
+    const interval = setInterval(fetchCounts, 60000);
+    return () => clearInterval(interval);
+  }, [fetchCounts]);
 
   return anomalyCounts;
 };
