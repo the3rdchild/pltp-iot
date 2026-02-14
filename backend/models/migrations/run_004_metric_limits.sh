@@ -8,7 +8,7 @@ BACKEND_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Load environment variables from backend/.env
 if [ -f "$BACKEND_DIR/.env" ]; then
-    export $(cat "$BACKEND_DIR/.env" | grep -v '^#' | grep -v '^$' | xargs)
+    export $(cat "$BACKEND_DIR/.env" | tr -d '\r' | grep -v '^#' | grep -v '^$' | xargs)
 else
     echo "Error: .env file not found at $BACKEND_DIR/.env"
     exit 1
