@@ -26,19 +26,25 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle errors
+// Add response interceptor to handle errors and expired tokens
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
-      // Server responded with error
+      // Token expired or invalid - force logout
+      if (error.response.status === 401 || error.response.status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // Only redirect if not already on login page
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login';
+        }
+      }
       const message = error.response.data?.message || 'An error occurred';
       throw new Error(message);
     } else if (error.request) {
-      // Request made but no response
       throw new Error('Cannot connect to server. Please check your connection.');
     } else {
-      // Something else happened
       throw new Error(error.message || 'An error occurred');
     }
   }
@@ -85,18 +91,13 @@ export const logout = () => {
 };
 
 /**
- * Verify token
+ * Verify token with backend
+ * Does NOT auto-logout - caller should handle the error
  * @returns {Promise<Object>}
  */
 export const verifyToken = async () => {
-  try {
-    const response = await api.get('/auth/verify');
-    return response.data;
-  } catch (error) {
-    console.error('Token verification failed:', error);
-    logout();
-    throw error;
-  }
+  const response = await api.get('/auth/verify');
+  return response.data;
 };
 
 /**

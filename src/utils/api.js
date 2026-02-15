@@ -23,11 +23,10 @@ const apiClient = axios.create({
   }
 });
 
-// Request interceptor (for adding auth tokens if needed)
+// Request interceptor (for adding auth tokens)
 apiClient.interceptors.request.use(
   (config) => {
-    // Add auth token if available
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -38,10 +37,18 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Response interceptor (for error handling)
+// Response interceptor (for error handling and expired token redirect)
 apiClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
+    // Token expired or invalid - force logout
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/test')) {
+        window.location.href = '/login';
+      }
+    }
     console.error('API Error:', error.response?.data || error.message);
     return Promise.reject(error.response?.data || error);
   }
