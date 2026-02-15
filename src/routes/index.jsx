@@ -5,12 +5,12 @@ import { lazy } from 'react';
 import DashboardLayout from 'layout/Dashboard';
 import AuthLayout from 'layout/Auth';
 import DashboardDefault from 'pages/dashboard/default';
-// import SamplePage from 'pages/extra-pages/documentationpage';
 import History from 'pages/component-overview/history';
 import HomePage from 'pages/home/home';
 import Loadable from 'components/Loadable';
 import Typography from 'pages/component-overview/typography';
 import Color from 'pages/component-overview/color';
+import ProtectedRoute from 'components/ProtectedRoute';
 //analytics pages
 import Dryness from 'pages/analytics/dryness';
 import NCG from 'pages/analytics/NCG';
@@ -80,20 +80,12 @@ const router = createBrowserRouter([
   },
   {
     path: '/dashboard',
-    element: <DashboardLayout />,
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
     children: [
       {
         index: true,
         element: <DashboardDefault />
       },
-      // {
-      //   path: 'documentation', //documentationpage
-      //   element: <SamplePage />
-      // },
-      // {
-      //   path: 'History', //documentationpage
-      //   element: <History />
-      // },
       {
         path: 'typography',
         element: <Typography />
@@ -107,7 +99,7 @@ const router = createBrowserRouter([
   //Analytics Pages
   {
     path: '/dryness',
-    element: <DashboardLayout />,
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
     children: [
       {
         index: true,
@@ -117,7 +109,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/ncg',
-    element: <DashboardLayout />,
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
     children: [
       {
         index: true,
@@ -127,7 +119,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/tds',
-    element: <DashboardLayout />,
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
     children: [
       {
         index: true,
@@ -137,7 +129,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/ptf',
-    element: <DashboardLayout />,
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
     children: [
       {
         index: true,
@@ -147,7 +139,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/prediction',
-    element: <DashboardLayout />,
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
     children: [
       {
         index: true,
@@ -158,7 +150,7 @@ const router = createBrowserRouter([
   //Settings Pages
   {
     path: '/dataInput',
-    element: <DashboardLayout />,
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
     children: [
       {
         index: true,
@@ -168,7 +160,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/calibration',
-    element: <DashboardLayout />,
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
     children: [
       {
         index: true,
@@ -178,8 +170,8 @@ const router = createBrowserRouter([
   },
   {
     path: '/configuration',
-    element: <DashboardLayout />,
-    children: [ 
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
+    children: [
       {
         index: true,
         element: <Configuration />
@@ -187,7 +179,7 @@ const router = createBrowserRouter([
     ]
   },
 
-  //articles
+  //articles (public)
   {
     path:'/cara-kerja-pltp',
     element: <CaraKerjaPLTP />
@@ -215,11 +207,11 @@ const router = createBrowserRouter([
   {
     path:'/artikel-AI1',
     element: <AnalisisAI1 />
-  }, 
+  },
   {
     path:'/artikel-AI2',
     element: <AnalisisAI2 />
-  }, 
+  },
   {
     path:'/artikel-SamplingTDS',
     element: <SamplingTDS />
