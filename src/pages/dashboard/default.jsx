@@ -756,7 +756,6 @@ export default function DashboardDefault() {
     if (limit.warningLow != null && val < limit.warningLow) return 'Warning';
     if (limit.abnormalHigh != null && val > limit.abnormalHigh) return 'Abnormal';
     if (limit.warningHigh != null && val > limit.warningHigh) return 'Warning';
-    if (limit.idealLow != null && limit.idealHigh != null && val >= limit.idealLow && val <= limit.idealHigh) return 'Ideal';
     return 'Normal';
   };
 
