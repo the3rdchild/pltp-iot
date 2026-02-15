@@ -17,7 +17,8 @@ const {
 const {
   getLiveMetric,
   getChartData,
-  getStatsData
+  getStatsData,
+  getAggregatedStatsData
 } = require('../controllers/liveDataController');
 const { authenticateToken, optionalAuth } = require('../middleware/auth');
 
@@ -50,11 +51,14 @@ router.get('/live', optionalAuth, getLiveData);
 // GET /api/data/live/:metric - Get single live metric (tds, pressure, temperature, etc.)
 router.get('/live/:metric', optionalAuth, getLiveMetric);
 
-// GET /api/data/chart/:metric - Get chart data with time range (1h, 1d, 7d, 1m, 10y)
+// GET /api/data/chart/:metric - Get chart data with time range (1h, 1d, 7d, 1m, all)
 router.get('/chart/:metric', optionalAuth, getChartData);
 
 // GET /api/data/stats/:metric - Get statistics table data
 router.get('/stats/:metric', optionalAuth, getStatsData);
+
+// GET /api/data/stats/:metric/aggregated - Get aggregated daily stats (60 rows, min/max/avg/stddev)
+router.get('/stats/:metric/aggregated', optionalAuth, getAggregatedStatsData);
 
 // ==================== METRIC STATS & ANOMALY ROUTES ====================
 

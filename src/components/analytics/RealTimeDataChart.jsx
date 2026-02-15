@@ -92,12 +92,12 @@ const RealTimeDataChart = ({
     { value: '7d', label: '7d' },
     { value: '1m', label: '1m' },
     { value: '1y', label: '1y' },
-    { value: '10y', label: '10y' }
+    { value: 'all', label: 'All' }
   ];
 
   // Determine if we should show comparison (AI vs Field)
   const shouldShowComparison = useMemo(() => {
-    const isYearlyRange = ['1y', '10y'].includes(timeRange) || isCustomRange;
+    const isYearlyRange = ['1y', 'all'].includes(timeRange) || isCustomRange;
     const isComparisonType = ['dryness', 'ncg'].includes(dataType);
     return showComparison && isYearlyRange && isComparisonType;
   }, [timeRange, isCustomRange, dataType, showComparison]);
@@ -106,7 +106,7 @@ const RealTimeDataChart = ({
   useEffect(() => {
     if (shouldShowComparison) {
       // Generate AI vs Field data for comparison
-      const start = isCustomRange ? startDate.toDate() : dayjs().subtract(timeRange === '10y' ? 10 : 1, 'year').toDate();
+      const start = isCustomRange ? startDate.toDate() : dayjs().subtract(timeRange === 'all' ? 10 : 1, 'year').toDate();
       const end = isCustomRange ? endDate.toDate() : dayjs().toDate();
 
       const aiDataPoints = generateAIData(start, end, dataType);

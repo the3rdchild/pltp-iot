@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
+import { getAggregatedStats } from '../utils/api';
 
 /**
- * Hook to fetch statistics table data from API (production mode)
- * In test mode, this hook returns empty array (table will use generator instead)
+ * Hook to fetch aggregated statistics table data from API (production mode)
+ * Returns daily aggregated rows: { no, date, minValue, maxValue, average, stdDeviation }
  *
  * @param {string} metric - The metric to fetch data for (e.g., 'pressure', 'tds', 'dryness')
- * @param {object} options - Query options (limit, offset, date range, etc.)
- * @returns {object} { data, loading, error }
+ * @returns {object} { data, loading, error, refetch }
  */
-export const useStatsTableData = (metric, options = {}) => {
+export const useStatsTableData = (metric) => {
   const location = useLocation();
   const isTestEnvironment = location.pathname.startsWith('/test');
 
@@ -17,52 +17,37 @@ export const useStatsTableData = (metric, options = {}) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    // In test mode, don't fetch from API (use generator instead)
-    if (isTestEnvironment) {
+  const fetchTableData = useCallback(async () => {
+    if (isTestEnvironment || !metric) {
       setData([]);
       setLoading(false);
       return;
     }
 
-    // Production: Fetch from API
-    const fetchTableData = async () => {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    setError(null);
 
-      try {
-        // TODO: Replace with actual API endpoint
-        // const response = await fetch(`/api/analytics/${metric}/table?limit=${options.limit || 50}&offset=${options.offset || 0}`);
-        // const result = await response.json();
-
-        // Placeholder: Return empty array for now
-        // Backend should implement endpoint that returns:
-        // [
-        //   {
-        //     no: 1,
-        //     date: '2024-12-21',
-        //     minValue: 5.123,
-        //     maxValue: 6.789,
-        //     average: 5.956,
-        //     stdDeviation: 0.234
-        //   },
-        //   ...
-        // ]
-
+    try {
+      const response = await getAggregatedStats(metric);
+      if (response.success && Array.isArray(response.data)) {
+        setData(response.data);
+      } else {
         setData([]);
-      } catch (err) {
-        console.error('Error fetching stats table data:', err);
-        setError(err);
-        setData([]);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      console.error('Error fetching stats table data:', err);
+      setError(err);
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [metric, isTestEnvironment]);
 
+  useEffect(() => {
     fetchTableData();
-  }, [metric, isTestEnvironment, options.limit, options.offset]);
+  }, [fetchTableData]);
 
-  return { data, loading, error };
+  return { data, loading, error, refetch: fetchTableData };
 };
 
 export default useStatsTableData;

@@ -140,6 +140,6 @@
       "voltage_u_w",
       "tds_honeywell"
     ],
-    "ranges": ["1h", "1d", "7d", "1m", "10y"]
+    "ranges": ["1h", "1d", "7d", "1m", "all"]
   }
 }

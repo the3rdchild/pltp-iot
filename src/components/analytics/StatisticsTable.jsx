@@ -51,11 +51,8 @@ const StatisticsTable = ({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  // Fetch data from API for production mode
-  const { data: apiData, loading: apiLoading } = useStatsTableData(metric, {
-    limit: 100,
-    offset: 0
-  });
+  // Fetch aggregated stats from API for production mode
+  const { data: apiData, loading: apiLoading } = useStatsTableData(metric);
 
   // Select appropriate data generator based on metric
   const getDataGenerator = () => {

@@ -291,7 +291,7 @@ export const MetricsCard = ({ metrics, onChange }) => (
               e.target.value.split(',').map((s) => s.trim()).filter(Boolean)
             )
           }
-          helperText="Available time ranges for charts (e.g., 1h, 1d, 7d, 1m, 10y)"
+          helperText="Available time ranges for charts (e.g., 1h, 1d, 7d, 1m, all)"
         />
         <Box sx={{ mt: 1, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
           {metrics.ranges.map((range) => (

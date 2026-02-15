@@ -34,8 +34,8 @@ const generateMockChartData = (metric, range, currentValue, variance = 0) => {
       numPoints = 30;
       intervalMs = 86400000; // daily
       break;
-    case '10y':
-      numPoints = 120;
+    case 'all':
+      numPoints = 60;
       intervalMs = 2592000000; // monthly
       break;
   }

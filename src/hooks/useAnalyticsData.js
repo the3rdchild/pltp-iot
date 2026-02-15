@@ -6,7 +6,7 @@ import { getLiveMetric, getChartData, getStatsTable } from '../utils/api';
  * Fetches live value, chart data, and statistics table
  *
  * @param {string} metric - Metric name (tds, pressure, temperature, flow_rate)
- * @param {string} chartRange - Chart time range (1h, 1d, 7d, 1m, 10y)
+ * @param {string} chartRange - Chart time range (1h, 1d, 7d, 1m, all)
  * @param {object} tableOptions - Table options {limit, offset}
  * @param {number} refreshInterval - Refresh interval in ms (default: 3000)
  * @returns {object} { liveData, chartData, tableData, loading, error, refetch }

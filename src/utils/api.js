@@ -115,7 +115,7 @@ export const getDashboardStats = async () => {
 /**
  * Get chart data for a metric
  * @param {string} metric - metric name
- * @param {string} range - time range (1h, 1d, 7d, 1m, 10y)
+ * @param {string} range - time range (1h, 1d, 7d, 1m, all)
  */
 export const getChartData = async (metric, range = '1d') => {
   try {
@@ -150,6 +150,21 @@ export const getStatsTable = async (metric, options = {}) => {
     return response;
   } catch (error) {
     console.error(`Error fetching stats table for ${metric}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Get aggregated daily statistics (60 rows with min/max/avg/stddev)
+ * @param {string} metric - metric name
+ */
+export const getAggregatedStats = async (metric) => {
+  try {
+    const url = buildURL('/data/stats/{metric}/aggregated', { metric });
+    const response = await apiClient.get(url);
+    return response;
+  } catch (error) {
+    console.error(`Error fetching aggregated stats for ${metric}:`, error);
     throw error;
   }
 };
@@ -290,6 +305,7 @@ export default {
   getDashboardStats,
   getChartData,
   getStatsTable,
+  getAggregatedStats,
   getTDSPageData,
   getPressurePageData,
   getTemperaturePageData,

@@ -170,7 +170,7 @@ const getLiveMetric = async (req, res) => {
 /**
  * GET /api/data/chart/:metric
  * Get chart data with time range aggregation
- * Query params: range (1h, 1d, 7d, 1m, 10y)
+ * Query params: range (1h, 1d, 7d, 1m, all)
  */
 const getChartData = async (req, res) => {
   try {
@@ -188,20 +188,20 @@ const getChartData = async (req, res) => {
     // Handle calculated metrics (current, voltage)
     const isCalculatedMetric = ['current', 'voltage'].includes(metric);
 
-    // Define range configurations
+    // Define range configurations (all target 60 data points)
     const rangeConfig = {
-      '1h': { interval: '1 hour', truncate: 'minute', points: 60 },
-      '1d': { interval: '1 day', truncate: 'hour', points: 24 },
-      '7d': { interval: '7 days', truncate: 'hour', points: 42 }, // ~4 hour intervals
-      '1m': { interval: '30 days', truncate: 'day', points: 30 },
-      '10y': { interval: '3650 days', truncate: 'month', points: 120 }
+      '1h': { interval: '1 hour', bucketSeconds: 60, points: 60 },         // 1-min buckets
+      '1d': { interval: '1 day', bucketSeconds: 1440, points: 60 },        // 24-min buckets
+      '7d': { interval: '7 days', bucketSeconds: 10080, points: 60 },      // 2.8h buckets
+      '1m': { interval: '30 days', bucketSeconds: 43200, points: 60 },     // 12h buckets
+      'all': { interval: null, bucketSeconds: null, points: 60 }           // dynamic
     };
 
     const config = rangeConfig[range];
     if (!config) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid range. Valid ranges: 1h, 1d, 7d, 1m, 10y'
+        message: 'Invalid range. Valid ranges: 1h, 1d, 7d, 1m, all'
       });
     }
 
@@ -249,52 +249,59 @@ const getChartData = async (req, res) => {
 
 /**
  * Get chart data for direct database column metrics
+ * Uses epoch-based bucketing for consistent 60-point output
  */
 const getDirectMetricChartData = async (column, config) => {
-  const { interval, truncate, points } = config;
+  const { interval, bucketSeconds, points } = config;
 
-  // Calculate the bucket size based on interval and desired points
-  let bucketInterval;
-  switch (truncate) {
-    case 'minute':
-      bucketInterval = '1 minute';
-      break;
-    case 'hour':
-      if (interval === '7 days') {
-        bucketInterval = '4 hours';
-      } else {
-        bucketInterval = '1 hour';
-      }
-      break;
-    case 'day':
-      bucketInterval = '1 day';
-      break;
-    case 'month':
-      bucketInterval = '1 month';
-      break;
-    default:
-      bucketInterval = '1 hour';
-  }
+  let sql;
 
-  const sql = `
-    WITH time_buckets AS (
+  if (interval === null) {
+    // "all" range: dynamically calculate bucket size from data span
+    sql = `
+      WITH data_span AS (
+        SELECT
+          EXTRACT(EPOCH FROM MIN(timestamp)) AS min_epoch,
+          EXTRACT(EPOCH FROM MAX(timestamp)) AS max_epoch
+        FROM sensor_data
+        WHERE ${column} IS NOT NULL
+      ),
+      bucket_size AS (
+        SELECT GREATEST((max_epoch - min_epoch) / ${points}, 1) AS bs, min_epoch
+        FROM data_span
+      )
       SELECT
-        DATE_TRUNC('${truncate}', timestamp) ${truncate === 'hour' && interval === '7 days' ?
-          `- (EXTRACT(HOUR FROM timestamp)::int % 4) * INTERVAL '1 hour'` : ''
-        } AS bucket,
-        MIN(${column}) AS min_value,
-        AVG(${column}) AS avg_value,
-        MAX(${column}) AS max_value,
+        TO_TIMESTAMP(FLOOR((EXTRACT(EPOCH FROM s.timestamp) - b.min_epoch) / b.bs) * b.bs + b.min_epoch) AS bucket,
+        MIN(s.${column}) AS min_value,
+        AVG(s.${column}) AS avg_value,
+        MAX(s.${column}) AS max_value,
         COUNT(*) AS data_points
-      FROM sensor_data
-      WHERE timestamp >= NOW() - INTERVAL '${interval}'
-        AND ${column} IS NOT NULL
-      GROUP BY 1
+      FROM sensor_data s, bucket_size b
+      WHERE s.${column} IS NOT NULL
+      GROUP BY 1, b.bs, b.min_epoch
       ORDER BY bucket ASC
-    )
-    SELECT * FROM time_buckets
-    LIMIT ${points}
-  `;
+      LIMIT ${points}
+    `;
+  } else {
+    // Fixed interval range: use epoch-based bucketing
+    sql = `
+      WITH range_start AS (
+        SELECT EXTRACT(EPOCH FROM NOW() - INTERVAL '${interval}') AS start_epoch
+      )
+      SELECT
+        TO_TIMESTAMP(FLOOR((EXTRACT(EPOCH FROM s.timestamp) - r.start_epoch) / ${bucketSeconds}) * ${bucketSeconds} + r.start_epoch) AS bucket,
+        MIN(s.${column}) AS min_value,
+        AVG(s.${column}) AS avg_value,
+        MAX(s.${column}) AS max_value,
+        COUNT(*) AS data_points
+      FROM sensor_data s, range_start r
+      WHERE s.timestamp >= NOW() - INTERVAL '${interval}'
+        AND s.${column} IS NOT NULL
+      GROUP BY 1, r.start_epoch
+      ORDER BY bucket ASC
+      LIMIT ${points}
+    `;
+  }
 
   const result = await query(sql);
 
@@ -309,36 +316,46 @@ const getDirectMetricChartData = async (column, config) => {
 
 /**
  * Get chart data for calculated metrics (current, voltage)
+ * Uses epoch-based bucketing for consistent 60-point output
  */
 const getCalculatedMetricChartData = async (metric, config) => {
-  const { interval, truncate, points } = config;
+  const { interval, bucketSeconds, points } = config;
 
   // For calculated metrics, we need to fetch raw data and calculate per bucket
+  const whereClause = interval === null ? '' : `WHERE timestamp >= NOW() - INTERVAL '${interval}'`;
+
   const sql = `
     SELECT
-      DATE_TRUNC('${truncate}', timestamp) AS bucket,
+      timestamp,
       gen_output,
       gen_voltage_v_w,
       gen_voltage_w_u,
       gen_reactive_power,
       gen_power_factor
     FROM sensor_data
-    WHERE timestamp >= NOW() - INTERVAL '${interval}'
+    ${whereClause}
     ORDER BY timestamp ASC
   `;
 
   const result = await query(sql);
+  if (result.rows.length === 0) return [];
+
+  // Determine bucket size
+  const firstTs = new Date(result.rows[0].timestamp).getTime() / 1000;
+  const lastTs = new Date(result.rows[result.rows.length - 1].timestamp).getTime() / 1000;
+  const effectiveBucket = bucketSeconds || Math.max((lastTs - firstTs) / points, 1);
 
   // Group by bucket and calculate
   const buckets = {};
 
   result.rows.forEach(row => {
-    const bucketKey = row.bucket.toISOString();
+    const ts = new Date(row.timestamp).getTime() / 1000;
+    const bucketIndex = Math.floor((ts - firstTs) / effectiveBucket);
+    const bucketTs = new Date((bucketIndex * effectiveBucket + firstTs) * 1000);
+    const bucketKey = bucketTs.toISOString();
+
     if (!buckets[bucketKey]) {
-      buckets[bucketKey] = {
-        timestamp: row.bucket,
-        values: []
-      };
+      buckets[bucketKey] = { timestamp: bucketTs, values: [] };
     }
 
     let value;
@@ -364,19 +381,11 @@ const getCalculatedMetricChartData = async (metric, config) => {
   return Object.values(buckets)
     .map(bucket => {
       if (bucket.values.length === 0) {
-        return {
-          timestamp: bucket.timestamp,
-          min: null,
-          avg: null,
-          max: null,
-          data_points: 0
-        };
+        return { timestamp: bucket.timestamp, min: null, avg: null, max: null, data_points: 0 };
       }
-
       const min = Math.min(...bucket.values);
       const max = Math.max(...bucket.values);
       const avg = bucket.values.reduce((s, v) => s + v, 0) / bucket.values.length;
-
       return {
         timestamp: bucket.timestamp,
         min: parseFloat(min.toFixed(2)),
@@ -514,10 +523,121 @@ const getStatsData = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/data/stats/:metric/aggregated
+ * Get aggregated statistics table data (daily min/max/avg/stddev, max 60 rows)
+ * Used by PTF page statistics tables
+ */
+const getAggregatedStatsData = async (req, res) => {
+  try {
+    const { metric } = req.params;
+
+    if (!VALID_METRICS.includes(metric)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid metric. Valid metrics: ${VALID_METRICS.join(', ')}`
+      });
+    }
+
+    const isCalculatedMetric = ['current', 'voltage'].includes(metric);
+    const dbColumn = isCalculatedMetric ? null : getDbColumnForMetric(metric);
+
+    let rows;
+
+    if (isCalculatedMetric) {
+      // For calculated metrics, fetch raw then aggregate in JS
+      const sql = `
+        SELECT timestamp, gen_output, gen_voltage_v_w, gen_voltage_w_u,
+               gen_reactive_power, gen_power_factor
+        FROM sensor_data
+        ORDER BY timestamp DESC
+      `;
+      const result = await query(sql);
+
+      // Group by date and calculate metric values
+      const dayBuckets = {};
+      result.rows.forEach(row => {
+        const dateKey = new Date(row.timestamp).toISOString().split('T')[0];
+        if (!dayBuckets[dateKey]) dayBuckets[dateKey] = [];
+
+        let value;
+        if (metric === 'voltage') {
+          const v1 = row.gen_voltage_v_w;
+          const v2 = row.gen_voltage_w_u;
+          const voltages = [v1, v2].filter(v => typeof v === 'number');
+          value = voltages.length > 0 ? voltages.reduce((s, v) => s + v, 0) / voltages.length : null;
+        } else if (metric === 'current') {
+          const processed = processSensorData(row);
+          value = processed.current;
+        }
+        if (value !== null) dayBuckets[dateKey].push(value);
+      });
+
+      rows = Object.entries(dayBuckets)
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .slice(0, 60)
+        .map(([date, values]) => {
+          const min = Math.min(...values);
+          const max = Math.max(...values);
+          const avg = values.reduce((s, v) => s + v, 0) / values.length;
+          const variance = values.reduce((s, v) => s + Math.pow(v - avg, 2), 0) / values.length;
+          return {
+            date,
+            min_value: parseFloat(min.toFixed(3)),
+            max_value: parseFloat(max.toFixed(3)),
+            avg_value: parseFloat(avg.toFixed(3)),
+            std_dev: parseFloat(Math.sqrt(variance).toFixed(3))
+          };
+        });
+    } else {
+      const sql = `
+        SELECT
+          DATE(timestamp) AS date,
+          MIN(${dbColumn}) AS min_value,
+          MAX(${dbColumn}) AS max_value,
+          AVG(${dbColumn}) AS avg_value,
+          STDDEV(${dbColumn}) AS std_dev
+        FROM sensor_data
+        WHERE ${dbColumn} IS NOT NULL
+        GROUP BY DATE(timestamp)
+        ORDER BY date DESC
+        LIMIT 60
+      `;
+      const result = await query(sql);
+      rows = result.rows;
+    }
+
+    const limit = getLimitForMetric(metric);
+    const unit = limit ? limit.unit : '';
+
+    const data = rows.map((row, index) => ({
+      no: index + 1,
+      date: row.date,
+      minValue: row.min_value !== null ? `${parseFloat(parseFloat(row.min_value).toFixed(3))}${unit}` : '-',
+      maxValue: row.max_value !== null ? `${parseFloat(parseFloat(row.max_value).toFixed(3))}${unit}` : '-',
+      average: row.avg_value !== null ? `${parseFloat(parseFloat(row.avg_value).toFixed(3))}${unit}` : '-',
+      stdDeviation: row.std_dev !== null ? `${parseFloat(parseFloat(row.std_dev).toFixed(3))}` : '-'
+    }));
+
+    res.json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    console.error('Error fetching aggregated stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch aggregated statistics',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getLiveData,
   getLiveMetric,
   getChartData,
   getStatsData,
+  getAggregatedStatsData,
   VALID_METRICS
 };

@@ -1,8 +1,7 @@
 import { Grid, Box, Typography } from '@mui/material';
-import { useState } from 'react';
 
-import { useMultiMetricData, useStatsTable } from '../../hooks/useTestAwareAnalyticsData';
-import { transformPTFChartData, getSummaryStats, formatValueWithUnit } from '../../utils/analyticsHelpers';
+import { useMultiMetricData } from '../../hooks/useTestAwareAnalyticsData';
+import { formatValueWithUnit } from '../../utils/analyticsHelpers';
 import { useAnomalyCounts } from '../../hooks/useAnomalyTracker';
 import { useMetricStats } from '../../hooks/useMetricStatistics';
 import { PTFChart, AnalyticsHeader, StatisticsTable, StatCard } from '../../components/analytics';
@@ -17,12 +16,11 @@ import DragHandleIcon from '@mui/icons-material/DragHandle';
 import AddIcon from '@mui/icons-material/Add';
 
 const PTF = () => {
-    const [timeRange, setTimeRange] = useState('1d');
     const limitData = getLimitData();
 
     const { metricsData, loading } = useMultiMetricData(
         ['pressure', 'temperature', 'flow_rate'],
-        timeRange
+        '1d'
     );
 
     const pressure = metricsData.pressure?.live?.value;
@@ -32,8 +30,6 @@ const PTF = () => {
     const pressureChangePct = metricsData.pressure?.live?.change_pct;
     const temperatureChangePct = metricsData.temperature?.live?.change_pct;
     const flowChangePct = metricsData.flow_rate?.live?.change_pct;
-
-    const chartData = transformPTFChartData(metricsData);
 
     // Real-time statistics tracking (works for both test and production)
     const pressureStats = useMetricStats('pressure', pressure);
@@ -415,10 +411,7 @@ const PTF = () => {
                     <PTFChart
                         title="PTF Real Time Data"
                         subtitle="Pressure, Temperature, Flow data chart"
-                        data={chartData}
-                        timeRange={timeRange}
-                        onTimeRangeChange={setTimeRange}
-                        loading={loading}
+                        liveValues={{ pressure, temperature, flow_rate: flow }}
                     />
                 </Grid>
 

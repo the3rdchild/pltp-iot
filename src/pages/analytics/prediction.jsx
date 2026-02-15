@@ -177,7 +177,7 @@ const AIAnalytics = () => {
         return Array.from({length: 30}, (_, i) => (i + 1).toString());
       case '1y':
         return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      case '10y':
+      case 'all':
         return Array.from({length: 10}, (_, i) => (2015 + i).toString());
       default:
         return Array.from({length: 60}, (_, i) => (i + 1).toString());
@@ -198,7 +198,7 @@ const AIAnalytics = () => {
         return 'Date';
       case '1y':
         return 'Month';
-      case '10y':
+      case 'all':
         return 'Year';
       default:
         return 'Time';
@@ -534,7 +534,7 @@ const AIAnalytics = () => {
 
             {/* Time range buttons - Bottom Right */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 1, flexWrap: 'wrap' }}>
-              {['Now', '1h', '1d', '7d', '1m', '1y', '10y'].map((range) => (
+              {['Now', '1h', '1d', '7d', '1m', '1y', 'all'].map((range) => (
                 <Box
                   key={range}
                   onClick={() => setTimeRangeAI1(range)}
@@ -553,7 +553,7 @@ const AIAnalytics = () => {
                     }
                   }}
                 >
-                  {range}
+                  {range === 'all' ? 'All' : range}
                 </Box>
               ))}
             </Box>
@@ -788,7 +788,7 @@ const AIAnalytics = () => {
 
             {/* Time range buttons - Bottom Right */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 0.5, flexWrap: 'wrap' }}>
-              {['Now', '1h', '1d', '7d', '1m', '1y', '10y'].map((range) => (
+              {['Now', '1h', '1d', '7d', '1m', '1y', 'all'].map((range) => (
                 <Box
                   key={range}
                   onClick={() => setTimeRangeAI2Dryness(range)}
@@ -807,7 +807,7 @@ const AIAnalytics = () => {
                     }
                   }}
                 >
-                  {range}
+                  {range === 'all' ? 'All' : range}
                 </Box>
               ))}
             </Box>
@@ -964,7 +964,7 @@ const AIAnalytics = () => {
 
             {/* Time range buttons - Bottom Right */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 0.5, flexWrap: 'wrap' }}>
-              {['Now', '1h', '1d', '7d', '1m', '1y', '10y'].map((range) => (
+              {['Now', '1h', '1d', '7d', '1m', '1y', 'all'].map((range) => (
                 <Box
                   key={range}
                   onClick={() => setTimeRangeAI2NCG(range)}
@@ -983,7 +983,7 @@ const AIAnalytics = () => {
                     }
                   }}
                 >
-                  {range}
+                  {range === 'all' ? 'All' : range}
                 </Box>
               ))}
             </Box>
