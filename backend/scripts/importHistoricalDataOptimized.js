@@ -271,11 +271,11 @@ function calculateCurrent(record) {
     // Calculate average voltage
     const avgVoltage = (voltageUV + voltageVW + voltageWU) / 3;
 
-    // Prevent division by zero
-    if (avgVoltage === 0) {
-      logger.log(`Current calculation skipped: average voltage is zero`, 'debug');
-      stats.currentCalculationErrors++;
-      return null;
+    // SPECIAL CASE: If voltage <= 0, current = 0 (no voltage = no current)
+    if (avgVoltage <= 0) {
+      logger.log(`Current set to 0: voltage is ${avgVoltage.toFixed(3)} kV (≤ 0)`, 'debug');
+      stats.currentCalculated++;
+      return 0;
     }
 
     // Calculate apparent power: S = sqrt(P² + Q²)
@@ -286,26 +286,27 @@ function calculateCurrent(record) {
     // Calculate current: I = S / (sqrt(3) * V_avg)
     const current = (apparentPower / (Math.sqrt(3) * avgVoltage)) * 1000;
 
-    // DEBUG LOGGING for problematic values
-    if (!isFinite(current) || current > 50000 || current < 0) {
-      logger.log(`🔴 OVERFLOW DETECTED:`, 'error');
-      logger.log(`   gen_output: ${genOutput} MW`, 'error');
-      logger.log(`   gen_reactive_power: ${genReactivePower} MVAR`, 'error');
-      logger.log(`   voltage_u_v: ${voltageUV} kV`, 'error');
-      logger.log(`   voltage_v_w: ${voltageVW} kV`, 'error');
-      logger.log(`   voltage_w_u: ${voltageWU} kV`, 'error');
-      logger.log(`   avg_voltage: ${avgVoltage.toFixed(3)} kV`, 'error');
-      logger.log(`   apparent_power: ${apparentPower.toFixed(3)} MVA`, 'error');
-      logger.log(`   calculated_current: ${current} A`, 'error');
+    // SAFETY CHECK: Validate result is finite and within reasonable bounds
+    if (!isFinite(current) || isNaN(current)) {
+      logger.log(`Invalid current calculation: ${current} (P=${genOutput}, Q=${genReactivePower}, V_avg=${avgVoltage})`, 'warn');
       stats.currentCalculationErrors++;
       return null;
     }
 
-    // Max/min bounds
-    if (current > 50000) {
-      logger.log(`⚠️  Current too high: ${current.toFixed(2)} A (capped at 50000 A)`, 'warn');
+    // SAFETY CHECK: Maximum current threshold (typical large generator: ~5000-50000 A)
+    const MAX_CURRENT = 50000; // Amperes
+    
+    if (current > MAX_CURRENT) {
+      logger.log(`Current exceeds max limit: ${current.toFixed(2)} A > ${MAX_CURRENT} A (P=${genOutput} MW, Q=${genReactivePower} MVAR, V_avg=${avgVoltage.toFixed(2)} kV)`, 'warn');
       stats.currentCalculationErrors++;
-      return null;
+      return null; // Return null for overflow instead of capping
+    }
+
+    // Negative current check (shouldn't happen with sqrt, but just in case)
+    if (current < 0) {
+      logger.log(`Negative current detected: ${current.toFixed(2)} A, setting to 0`, 'warn');
+      stats.currentCalculationErrors++;
+      return 0;
     }
 
     stats.currentCalculated++;
