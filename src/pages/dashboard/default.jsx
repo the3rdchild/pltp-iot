@@ -195,8 +195,8 @@ function MobileLayout({
           <MetricCard
             label="Active Power"
             value={activePower}
-            unit="MW"
-            status={getPowerStatus(activePower, 32, 33)}
+            unit={limitData.gen_output?.unit || 'MW'}
+            status={getPowerStatus(activePower, 'gen_output')}
             linkTo="#"
             titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
             icon={BoltIcon}
@@ -209,8 +209,8 @@ function MobileLayout({
           <MetricCard
             label="Reactive Power"
             value={reactivePower}
-            unit="MVAR"
-            status={getPowerStatus(reactivePower, 6.0, 6.5)}
+            unit={limitData.reactive_power?.unit || 'MVAR'}
+            status={getPowerStatus(reactivePower, 'reactive_power')}
             linkTo="#"
             titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
             icon={FaBolt}
@@ -223,8 +223,8 @@ function MobileLayout({
           <MetricCard
             label="Voltage"
             value={voltage}
-            unit="kV"
-            status={getPowerStatus(voltage, 13, 14)}
+            unit={limitData.voltage?.unit || 'kV'}
+            status={getPowerStatus(voltage, 'voltage')}
             linkTo="#"
             titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
             icon={OfflineBoltIcon}
@@ -237,8 +237,8 @@ function MobileLayout({
           <MetricCard
             label="S.T Speed"
             value={stSpeed}
-            unit="rpm"
-            status={getPowerStatus(stSpeed, 2900, 3100)}
+            unit={limitData.speed_detection?.unit || 'RPM'}
+            status={getPowerStatus(stSpeed, 'speed_detection')}
             linkTo="#"
             titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
             icon={RiSpeedUpFill}
@@ -252,8 +252,8 @@ function MobileLayout({
         <MetricCard
           label="Current"
           value={current}
-          unit="A"
-          status={getPowerStatus(current, 1300, 1400)}
+          unit={limitData.current?.unit || 'A'}
+          status={getPowerStatus(current, 'current')}
           linkTo="#"
           titleConfig={TITLE_CONFIG}
           icon={TbCircuitResistor}
@@ -542,8 +542,8 @@ function DesktopLayout({
             <MetricCard
               label="Active Power"
               value={activePower}
-              unit="MW"
-              status={getPowerStatus(activePower, 32, 33)}
+              unit={limitData.gen_output?.unit || 'MW'}
+              status={getPowerStatus(activePower, 'gen_output')}
               linkTo="#"
               titleConfig={TITLE_CONFIG}
               icon={BoltIcon}
@@ -557,8 +557,8 @@ function DesktopLayout({
             <MetricCard
               label="Voltage"
               value={voltage}
-              unit="kV"
-              status={getPowerStatus(voltage, 13, 14)}
+              unit={limitData.voltage?.unit || 'kV'}
+              status={getPowerStatus(voltage, 'voltage')}
               linkTo="#"
               titleConfig={TITLE_CONFIG}
               icon={OfflineBoltIcon}
@@ -572,8 +572,8 @@ function DesktopLayout({
             <MetricCard
               label="Current"
               value={current}
-              unit="A"
-              status={getPowerStatus(current, 1300, 1400)}
+              unit={limitData.current?.unit || 'A'}
+              status={getPowerStatus(current, 'current')}
               linkTo="#"
               titleConfig={TITLE_CONFIG}
               icon={TbCircuitResistor}
@@ -587,8 +587,8 @@ function DesktopLayout({
             <MetricCard
               label="Reactive Power"
               value={reactivePower}
-              unit="MVAR"
-              status={getPowerStatus(reactivePower, 6.0, 6.5)}
+              unit={limitData.reactive_power?.unit || 'MVAR'}
+              status={getPowerStatus(reactivePower, 'reactive_power')}
               linkTo="#"
               titleConfig={TITLE_CONFIG}
               icon={FaBolt}
@@ -602,8 +602,8 @@ function DesktopLayout({
             <MetricCard
               label="S.T Speed"
               value={stSpeed}
-              unit="rpm"
-              status={getPowerStatus(stSpeed, 2900, 3100)}
+              unit={limitData.speed_detection?.unit || 'RPM'}
+              status={getPowerStatus(stSpeed, 'speed_detection')}
               linkTo="#"
               titleConfig={TITLE_CONFIG}
               icon={RiSpeedUpFill}
@@ -749,9 +749,14 @@ export default function DashboardDefault() {
 
   const riskPrediction = getOverallRiskPrediction();
 
-  const getPowerStatus = (val, low, high) => {
-    if (val < low) return 'Low';
-    if (val > high) return 'High';
+  const getPowerStatus = (val, limitKey) => {
+    const limit = limitData[limitKey];
+    if (!limit) return 'Normal';
+    if (limit.abnormalLow != null && val < limit.abnormalLow) return 'Abnormal';
+    if (limit.warningLow != null && val < limit.warningLow) return 'Warning';
+    if (limit.abnormalHigh != null && val > limit.abnormalHigh) return 'Abnormal';
+    if (limit.warningHigh != null && val > limit.warningHigh) return 'Warning';
+    if (limit.idealLow != null && limit.idealHigh != null && val >= limit.idealLow && val <= limit.idealHigh) return 'Ideal';
     return 'Normal';
   };
 
