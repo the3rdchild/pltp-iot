@@ -286,9 +286,17 @@ function calculateCurrent(record) {
     // Calculate current: I = S / (sqrt(3) * V_avg)
     const current = (apparentPower / (Math.sqrt(3) * avgVoltage)) * 1000;
 
-    // SAFETY CHECK: Validate result is finite and within reasonable bounds
-    if (!isFinite(current) || isNaN(current)) {
-      logger.log(`Invalid current calculation: ${current} (P=${genOutput}, Q=${genReactivePower}, V_avg=${avgVoltage})`, 'warn');
+    // DEBUG LOGGING for problematic values
+    if (!isFinite(current) || current > 50000 || current < 0) {
+      logger.log(`🔴 OVERFLOW DETECTED:`, 'error');
+      logger.log(`   gen_output: ${genOutput} MW`, 'error');
+      logger.log(`   gen_reactive_power: ${genReactivePower} MVAR`, 'error');
+      logger.log(`   voltage_u_v: ${voltageUV} kV`, 'error');
+      logger.log(`   voltage_v_w: ${voltageVW} kV`, 'error');
+      logger.log(`   voltage_w_u: ${voltageWU} kV`, 'error');
+      logger.log(`   avg_voltage: ${avgVoltage.toFixed(3)} kV`, 'error');
+      logger.log(`   apparent_power: ${apparentPower.toFixed(3)} MVA`, 'error');
+      logger.log(`   calculated_current: ${current} A`, 'error');
       stats.currentCalculationErrors++;
       return null;
     }
