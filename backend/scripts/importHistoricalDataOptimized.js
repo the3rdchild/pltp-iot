@@ -307,7 +307,7 @@ function calculateCurrent(record) {
     if (current > MAX_CURRENT) {
       logger.log(`Current exceeds max limit: ${current.toFixed(2)} A > ${MAX_CURRENT} A (P=${genOutput} MW, Q=${genReactivePower} MVAR, V_avg=${avgVoltage.toFixed(2)} kV)`, 'warn');
       stats.currentCalculationErrors++;
-      return null; // Return null for overflow instead of capping
+      return 0; // Return null for overflow instead of capping
     }
 
     // Negative current check (shouldn't happen with sqrt, but just in case)
