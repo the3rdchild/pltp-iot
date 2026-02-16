@@ -416,8 +416,66 @@ const PTFChart = ({
     chartInstanceRef.current = chart;
 
     return () => {
-      // Don't destroy chart here - let the next render handle it
+      if (chartInstanceRef.current) {
+        chartInstanceRef.current.destroy();
+        chartInstanceRef.current = null;
+      }
     };
+  }, [timeRange]); // Only recreate chart when timeRange changes
+
+  // Separate effect to update data smoothly without destroying chart
+  useEffect(() => {
+    if (!chartInstanceRef.current) return;
+    if (timeRange === 'now') return; // "now" mode updates handled by interval
+    if (pressureData.length === 0 || temperatureData.length === 0 || flowData.length === 0) return;
+
+    // Update refs
+    pressureRef.current = pressureData.slice();
+    tempRef.current = temperatureData.slice();
+    flowRef.current = flowData.slice();
+    timestampsRef.current = timestamps.slice();
+
+    // Update categories
+    const categories = timestamps.length > 0
+      ? timestamps.map(ts => formatTimestamp(ts, timeRange))
+      : Array.from({ length: pressureData.length }, (_, i) => `${i + 1}`);
+
+    // Calculate dynamic ranges
+    const pressureMin = Math.min(...pressureData.filter(v => v != null));
+    const pressureMax = Math.max(...pressureData.filter(v => v != null));
+    const tempMin = Math.min(...temperatureData.filter(v => v != null));
+    const tempMax = Math.max(...temperatureData.filter(v => v != null));
+    const flowMin = Math.min(...flowData.filter(v => v != null));
+    const flowMax = Math.max(...flowData.filter(v => v != null));
+
+    // Smooth update: update series and axis without destroying chart
+    chartInstanceRef.current.updateOptions({
+      xaxis: { categories },
+      yaxis: [
+        {
+          seriesName: 'Pressure (barg)',
+          min: Math.floor(pressureMin * 0.95),
+          max: Math.ceil(pressureMax * 1.05)
+        },
+        {
+          seriesName: 'Temperature (\u00b0C)',
+          min: Math.floor(tempMin * 0.95),
+          max: Math.ceil(tempMax * 1.05)
+        },
+        {
+          seriesName: 'Flow (t/h)',
+          opposite: true,
+          min: Math.floor(flowMin * 0.95),
+          max: Math.ceil(flowMax * 1.05)
+        }
+      ]
+    }, false, false);
+
+    chartInstanceRef.current.updateSeries([
+      { name: 'Pressure (barg)', data: pressureData },
+      { name: 'Temperature (\u00b0C)', data: temperatureData },
+      { name: 'Flow (t/h)', data: flowData }
+    ], true); // animate: true for smooth transition
   }, [pressureData, temperatureData, flowData, timestamps, timeRange, formatTimestamp]);
 
   const handleTimeRangeChange = (newRange) => {
