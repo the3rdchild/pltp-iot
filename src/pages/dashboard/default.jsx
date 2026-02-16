@@ -296,10 +296,10 @@ function DesktopLayout({
   const pressure = parseValue(liveData?.metrics?.pressure?.value, 5.87);
   const temperature = parseValue(liveData?.metrics?.temperature?.value, 165.2);
   const flow = parseValue(liveData?.metrics?.flow_rate?.value, 245.71);
-  const tds = parseValue(liveData?.metrics?.tds?.value, 1.0012);
+  const tds = parseValue(liveData?.metrics?.tds?.value, NaN);
   // Convert dryness to percentage (0.95 -> 95%)
-  const dryness = parseValue(liveData?.metrics?.dryness?.value, 95);
-  const ncg = parseValue(liveData?.metrics?.ncg?.value, 0.45);
+  const dryness = parseValue(liveData?.metrics?.dryness?.value, NaN);
+  const ncg = parseValue(liveData?.metrics?.ncg?.value, NaN);
   const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5);
   const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.22);
   const voltage = parseValue(liveData?.metrics?.voltage?.value, 13.86);
