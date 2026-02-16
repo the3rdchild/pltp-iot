@@ -132,7 +132,7 @@ const TDS = () => {
                       backgroundColor: (changePct > 0 ? 'success.light' : changePct < 0 ? 'error.light' : 'grey.100'),
                     }}
                   >
-                    {loading ? '...' : (changePct > 0 ? `+${changePct}%` : `${changePct}%`)}
+                    {loading ? '...' : (changePct == null ? '–' : (changePct < 0 ? `+${changePct}%` : `${changePct}%`))}
                   </Box>
                 </Box>
                 <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>

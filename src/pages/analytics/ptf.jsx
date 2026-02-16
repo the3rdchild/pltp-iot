@@ -232,7 +232,7 @@ const PTF = () => {
                                     backgroundColor: (pressureChangePct > 0 ? 'success.light' : pressureChangePct < 0 ? 'error.light' : 'grey.100'),
                                 }}
                             >
-                                {loading ? '...' : (pressureChangePct > 0 ? `+${pressureChangePct}%` : `${pressureChangePct}%`)}
+                                {loading ? '...' : (pressureChangePct == null ? '–' : (pressureChangePct > 0 ? `+${pressureChangePct}%` : `${pressureChangePct}%`))}
                             </Box>
                         </Box>
 
@@ -299,7 +299,7 @@ const PTF = () => {
                                     backgroundColor: (temperatureChangePct > 0 ? 'success.light' : temperatureChangePct < 0 ? 'error.light' : 'grey.100'),
                                 }}
                             >
-                                {loading ? '...' : (temperatureChangePct > 0 ? `+${temperatureChangePct}%` : `${temperatureChangePct}%`)}
+                                {loading ? '...' : (temperatureChangePct == null ? '–' : (temperatureChangePct > 0 ? `+${temperatureChangePct}%` : `${temperatureChangePct}%`))}
                             </Box>
                         </Box>
 
@@ -366,7 +366,7 @@ const PTF = () => {
                                     backgroundColor: (flowChangePct > 0 ? 'success.light' : flowChangePct < 0 ? 'error.light' : 'grey.100'),
                                 }}
                             >
-                                {loading ? '...' : (flowChangePct > 0 ? `+${flowChangePct}%` : `${flowChangePct}%`)}
+                                {loading ? '...' : (flowChangePct == null ? '–' : (flowChangePct > 0 ? `+${flowChangePct}%` : `${flowChangePct}%`))}
                             </Box>
                         </Box>
 
