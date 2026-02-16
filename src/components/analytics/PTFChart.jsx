@@ -277,7 +277,9 @@ const PTFChart = ({
   // Initialize/reinitialize ApexCharts when data or range changes
   useEffect(() => {
     if (!chartRef.current) return;
-    if (pressureData.length === 0 && temperatureData.length === 0 && flowData.length === 0) return;
+    // For "now" mode, create chart immediately with placeholder data
+    // For other modes, wait for real data before creating chart
+    if (timeRange !== 'now' && pressureData.length === 0 && temperatureData.length === 0 && flowData.length === 0) return;
 
     const initialPressure = pressureData.length > 0 ? pressureData : Array(60).fill(0);
     const initialTemp = temperatureData.length > 0 ? temperatureData : Array(60).fill(0);
@@ -426,8 +428,10 @@ const PTFChart = ({
   // Separate effect to update data smoothly without destroying chart
   useEffect(() => {
     if (!chartInstanceRef.current) return;
-    if (timeRange === 'now') return; // "now" mode updates handled by interval
     if (pressureData.length === 0 || temperatureData.length === 0 || flowData.length === 0) return;
+
+    // For "now" mode: only update on initial data load, then live updates take over
+    if (timeRange === 'now' && dbFetchedRef.current && pressureRef.current.length > 0) return;
 
     // Update refs
     pressureRef.current = pressureData.slice();
