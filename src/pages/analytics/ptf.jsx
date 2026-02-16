@@ -1,4 +1,5 @@
 import { Grid, Box, Typography } from '@mui/material';
+import { useState, useEffect, useRef } from 'react';
 
 import { useMultiMetricData } from '../../hooks/useTestAwareAnalyticsData';
 import { formatValueWithUnit } from '../../utils/analyticsHelpers';
@@ -27,9 +28,54 @@ const PTF = () => {
     const temperature = metricsData.temperature?.live?.value;
     const flow = metricsData.flow_rate?.live?.value;
 
-    const pressureChangePct = metricsData.pressure?.live?.change_pct;
-    const temperatureChangePct = metricsData.temperature?.live?.change_pct;
-    const flowChangePct = metricsData.flow_rate?.live?.change_pct;
+    // Local state for percentage changes
+    const [pressureChangePct, setPressureChangePct] = useState(null);
+    const [temperatureChangePct, setTemperatureChangePct] = useState(null);
+    const [flowChangePct, setFlowChangePct] = useState(null);
+
+    // Refs to track previous values
+    const prevPressureRef = useRef(null);
+    const prevTemperatureRef = useRef(null);
+    const prevFlowRef = useRef(null);
+
+    // Calculate percentage changes
+    useEffect(() => {
+        // Calculate pressure change
+        if (pressure !== undefined && pressure !== null) {
+            const prevPressure = prevPressureRef.current;
+            if (prevPressure === null || prevPressure === undefined) {
+                setPressureChangePct(0);
+            } else {
+                const pct = prevPressure === 0 ? 0 : ((pressure - prevPressure) / Math.abs(prevPressure)) * 100;
+                setPressureChangePct(Math.round(pct));
+            }
+            prevPressureRef.current = pressure;
+        }
+
+        // Calculate temperature change
+        if (temperature !== undefined && temperature !== null) {
+            const prevTemperature = prevTemperatureRef.current;
+            if (prevTemperature === null || prevTemperature === undefined) {
+                setTemperatureChangePct(0);
+            } else {
+                const pct = prevTemperature === 0 ? 0 : ((temperature - prevTemperature) / Math.abs(prevTemperature)) * 100;
+                setTemperatureChangePct(Math.round(pct));
+            }
+            prevTemperatureRef.current = temperature;
+        }
+
+        // Calculate flow change
+        if (flow !== undefined && flow !== null) {
+            const prevFlow = prevFlowRef.current;
+            if (prevFlow === null || prevFlow === undefined) {
+                setFlowChangePct(0);
+            } else {
+                const pct = prevFlow === 0 ? 0 : ((flow - prevFlow) / Math.abs(prevFlow)) * 100;
+                setFlowChangePct(Math.round(pct));
+            }
+            prevFlowRef.current = flow;
+        }
+    }, [pressure, temperature, flow]);
 
     // Real-time statistics tracking (works for both test and production)
     const pressureStats = useMetricStats('pressure', pressure);
