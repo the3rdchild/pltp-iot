@@ -774,14 +774,18 @@ function splitDateRange(startDate, endDate, chunkDays) {
   const start = parseHoneywellTimestamp(startDate);
   const end = parseHoneywellTimestamp(endDate);
 
+  // ALIGN start to minute boundary
+  start.setSeconds(0);
+  start.setMilliseconds(0);
+
   let currentStart = new Date(start);
 
   while (currentStart < end) {
     const currentEnd = new Date(currentStart.getTime() + (chunkDays * 24 * 60 * 60 * 1000));
 
     chunks.push({
-      start: formatToHoneywellTimestamp(currentStart),
-      end: formatToHoneywellTimestamp(currentEnd > end ? end : currentEnd)
+      start: formatToHoneywellTimestamp(currentStart, true),  // ← Align to minute
+      end: formatToHoneywellTimestamp(currentEnd > end ? end : currentEnd, true)  // ← Align to minute
     });
 
     currentStart = currentEnd;
