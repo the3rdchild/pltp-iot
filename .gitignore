@@ -116,13 +116,13 @@ dist
 .vscode
 .firebaserc
 firebase.json
+
 backend/MIGRATION_GUIDE.md
 backend/run-migration.js
 backend/test-db-connection.js
 FRONTEND_API_SETUP.md
 src/utils/API_USAGE_EXAMPLES.md
 DASHBOARD_INTEGRATION_SUMMARY.md
-.gitignore
 NAN_FIX_SUMMARY.md
 CURRENT_CALCULATION_FIX.md
 VOLTAGE_CALCULATION_SUMMARY.md
@@ -138,5 +138,4 @@ backend/scripts/fix-sensor-data-schema.sql
 DEPLOY_FIX.md
 HISTORICAL_DATA_IMPORT_GUIDE.md
 TEST_ENVIRONMENT_README.md
-.gitignore
 STATISTICS_TABLE_API_SPEC.md
