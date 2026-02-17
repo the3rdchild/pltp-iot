@@ -876,6 +876,36 @@ async function processChunk(chunk, retryCount = 0) {
   return 0;
 }
 
+async function fetchWithPagination(params) {
+  const allRecords = [];
+  let currentStart = params.StartTime;
+  const finalEnd = params.EndTime;
+  const CHUNK_SIZE_HOURS = 24; // 1 day per request
+  
+  while (parseHoneywellTimestamp(currentStart) < parseHoneywellTimestamp(finalEnd)) {
+    const chunkEnd = new Date(parseHoneywellTimestamp(currentStart).getTime() + (CHUNK_SIZE_HOURS * 60 * 60 * 1000));
+    const endTime = chunkEnd > parseHoneywellTimestamp(finalEnd) ? finalEnd : formatToHoneywellTimestamp(chunkEnd);
+    
+    console.log(`Fetching: ${currentStart} → ${endTime}`);
+    
+    const response = await fetchHoneywellData({
+      TagName: params.TagName,
+      StartTime: currentStart,
+      EndTime: endTime
+    });
+    
+    const records = response.data?.[0]?.TimeStamp?.length || 0;
+    console.log(`  Got ${records} records`);
+    allRecords.push(response);
+    
+    currentStart = endTime;
+    await sleep(1000);
+  }
+  
+  console.log(`Total records across all requests: ${allRecords.reduce((sum, r) => sum + (r.data?.[0]?.TimeStamp?.length || 0), 0)}`);
+  return allRecords;
+}
+
 async function fixExistingNulls() {
   console.log('\n═══════════════════════════════════════════════════════════');
   console.log('   Fixing Existing NULL Records (ALL Parameters)');
