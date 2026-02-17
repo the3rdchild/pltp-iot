@@ -51,8 +51,8 @@ async function testSingleTag() {
           if (jsonData.data && jsonData.data[0]) {
             const count = jsonData.data[0].TimeStamp?.length || 0;
             console.log('   Records:', count);
-            console.log('   Expected:', 8641);
-            console.log('   Match:', count === 8641 ? '✅ YES' : '❌ NO');
+            console.log('   Expected:', 7201);
+            console.log('   Match:', count === 7201 ? '✅ YES' : '❌ NO');
             
             if (count > 0) {
               console.log('   First:', jsonData.data[0].TimeStamp[0]);
@@ -77,6 +77,31 @@ async function testSingleTag() {
     req.end();
   });
 }
+
+// Test different MaxRows values
+const testMaxRows = async () => {
+  const testValues = [1000, 5000, 8641, 10000, 15000];
+  
+  for (const maxRows of testValues) {
+    const requestBody = {
+      SampleInterval: 60000,
+      ResampleMethod: "Around",
+      MinimumConfidence: 100,
+      MaxRows: maxRows,
+      TimeFormat: 1,
+      ReductionData: "now",
+      TagName: "5LBB31FF001PVI.PV",
+      StartTime: "30-SEP-2025 14:07:00.000",
+      EndTime: "05-OCT-2025 14:07:00.000",
+      OutputTimeFormat: 1
+    };
+    
+    const result = await fetchHoneywellData(requestBody);
+    const actualCount = result.data?.[0]?.TimeStamp?.length || 0;
+    
+    console.log(`MaxRows: ${maxRows} → Got: ${actualCount} records`);
+  }
+};
 
 testSingleTag()
   .then(() => console.log('\n✅ Test complete'))
