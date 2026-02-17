@@ -49,7 +49,7 @@ const pool = new Pool({
 const CONFIG = {
   SAMPLE_INTERVAL: 60000,
   MAX_ROWS_PER_REQUEST: 10000,
-  CHUNK_DAYS: 6,
+  CHUNK_DAYS: 5,
   BATCH_SIZE: 1000,
   API_URL: process.env.HONEYWELL_API_URL,
   API_KEY: process.env.HONEYWELL_API_X_API_KEY,
@@ -59,7 +59,7 @@ const CONFIG = {
   NULL_THRESHOLD: 0.00,
   MIN_NON_NULL_FIELDS: 12,
   MAX_RETRY_FOR_NULLS: 5,
-  LOG_MAX_SIZE: 10 * 1024 * 1024,
+  LOG_MAX_SIZE: 100 * 1024 * 1024,
 };
 
 // Tag mapping
