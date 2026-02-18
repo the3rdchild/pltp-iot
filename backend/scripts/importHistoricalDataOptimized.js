@@ -49,7 +49,7 @@ const pool = new Pool({
 const CONFIG = {
   SAMPLE_INTERVAL: 60000,
   MAX_ROWS_PER_REQUEST: 10000,
-  CHUNK_DAYS: 5,
+  CHUNK_DAYS: 1,
   BATCH_SIZE: 1000,
   API_URL: process.env.HONEYWELL_API_URL,
   API_KEY: process.env.HONEYWELL_API_X_API_KEY,
