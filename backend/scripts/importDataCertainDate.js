@@ -78,31 +78,6 @@ async function testSingleTag() {
   });
 }
 
-// Test different MaxRows values
-const testMaxRows = async () => {
-  const testValues = [1000, 5000, 8641, 10000, 15000];
-  
-  for (const maxRows of testValues) {
-    const requestBody = {
-      SampleInterval: 60000,
-      ResampleMethod: "Around",
-      MinimumConfidence: 100,
-      MaxRows: maxRows,
-      TimeFormat: 1,
-      ReductionData: "now",
-      TagName: "5LBB31FF001PVI.PV",
-      StartTime: "21-AUG-2025 14:07:00.000",
-      EndTime: "22-AUG-2025 14:07:00.000",
-      OutputTimeFormat: 1
-    };
-    
-    const result = await fetchHoneywellData(requestBody);
-    const actualCount = result.data?.[0]?.TimeStamp?.length || 0;
-    
-    console.log(`MaxRows: ${maxRows} → Got: ${actualCount} records`);
-  }
-};
-
 testSingleTag()
   .then(() => console.log('\n✅ Test complete'))
   .catch(err => console.error('\n❌ Test failed:', err));
