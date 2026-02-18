@@ -1,9 +1,7 @@
-import { Grid, Box, Typography, useTheme } from '@mui/material';
+import { Grid, Box, Typography } from '@mui/material';
+import { useState, useEffect, useRef } from 'react';
 
-import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { generateAnalyticData } from 'data/simulasi';
-import { useTestData } from '../../contexts/TestDataContext';
+import { useAi2Data } from '../../hooks/useAi2Data';
 import { useAnomalyCounts } from '../../hooks/useAnomalyTracker';
 import { useMetricStats } from '../../hooks/useMetricStatistics';
 
@@ -13,11 +11,9 @@ import { getLimitData } from '../../utils/limitData';
 import {
   AnalyticsHeader,
   StatCard,
-  RealTimeDataChart,
-  HistoryComparisonChart,
+  Ai2Chart,
   StatisticsTable
 } from '../../components/analytics';
-import { ncgRealTimeData, ncgHistoryDataset1, ncgHistoryDataset2, generateNCGTableData } from '../../data/chartData';
 
 // icons
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
@@ -27,54 +23,25 @@ import AddIcon from '@mui/icons-material/Add';
 
 
 const NCG = () => {
-    const theme = useTheme();
-    const location = useLocation();
-    const isTestEnvironment = location.pathname.startsWith('/test');
-    const testDataContext = isTestEnvironment ? useTestData() : null;
-
-    const [analyticData, setAnalyticData] = useState(null);
-    const [changePct, setChangePct] = useState(null);
     const limitData = getLimitData();
 
+    const { liveData, loading } = useAi2Data();
+    const ncg = liveData?.ncg_predict != null ? parseFloat(liveData.ncg_predict) : null;
+
+    const [changePct, setChangePct] = useState(null);
+    const prevNcgRef = useRef(null);
 
     useEffect(() => {
-      const prevNCGRef = { current: null };
-
-      const updateData = () => {
-        let data;
-        if (isTestEnvironment && testDataContext) {
-          // Use test data from TestDataContext
-          const ncgValue = testDataContext.mockData.metrics.ncg?.value ?? 0.45;
-          data = {
-            ncg: parseFloat(ncgValue.toFixed(3))
-          };
-        } else {
-          // Use production data
-          data = generateAnalyticData();
-        }
-
-        setAnalyticData((prev) => {
-          const prevVal = prev?.ncg ?? prevNCGRef.current;
-          if (prevVal === undefined || prevVal === null) {
+        if (ncg == null) return;
+        const prev = prevNcgRef.current;
+        if (prev == null) {
             setChangePct(0);
-          } else {
-            const cur = data.ncg;
-            const pct = prevVal === 0 ? 0 : ((cur - prevVal) / Math.abs(prevVal)) * 100;
+        } else {
+            const pct = prev === 0 ? 0 : ((ncg - prev) / Math.abs(prev)) * 100;
             setChangePct(Math.round(pct));
-          }
-          prevNCGRef.current = data.ncg;
-          return data;
-        });
-      };
-
-      updateData();
-
-      const interval = setInterval(updateData, 3000);
-
-      return () => clearInterval(interval);
-    }, [isTestEnvironment, testDataContext]);
-
-    const ncg = analyticData?.ncg ?? 0.45;
+        }
+        prevNcgRef.current = ncg;
+    }, [ncg]);
 
     // Real-time statistics tracking
     const ncgStats = useMetricStats('ncg', ncg);
@@ -160,7 +127,7 @@ const NCG = () => {
             >
                 {/* header */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="subtitle1" color="textSecondary">NCG Level</Typography>
+                  <Typography variant="subtitle1" color="textSecondary">NCG Level (AI)</Typography>
                   <Box
                     sx={{
                       borderRadius: '6px',
@@ -174,11 +141,10 @@ const NCG = () => {
                       backgroundColor: (changePct > 0 ? 'success.light' : changePct < 0 ? 'error.light' : 'grey.100'),
                     }}
                   >
-                    {changePct === null ? '–' : (changePct > 0 ? `+${changePct}%` : `${changePct}%`)}
+                    {loading ? '...' : (changePct === null ? '–' : (changePct > 0 ? `+${changePct}%` : `${changePct}%`))}
                   </Box>
                 </Box>
 
-                {/* content: allow gauge to take available area but not force card height on small screens */}
                 <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
                   <GaugeChart
                     value={ncg}
@@ -191,6 +157,7 @@ const NCG = () => {
                     changePct={changePct}
                     withCard={false}
                     sx={{ width: '100%', maxWidth: 360 }}
+                    loading={loading}
                   />
                 </Box>
               </MainCard>
@@ -213,27 +180,15 @@ const NCG = () => {
             ))}
 
             <Grid size={12} sx={{ mt: { xs: 0, lg: -5 } }}>
-              <RealTimeDataChart
-                title="Real Time Data"
-                subtitle="NCG level data chart"
-                dataType="ncg"
-                data={ncgRealTimeData}
+              <Ai2Chart
+                title="NCG Real Time Data (AI)"
+                subtitle="NCG prediction dari AI model"
+                metric="ncg_predict"
+                liveValue={ncg}
+                unit=" wt%"
                 yAxisTitle="NCG (wt%)"
-                unit="wt%"
-                showComparison={true}
               />
             </Grid>
-
-            {/* <Grid size={12}>
-              <HistoryComparisonChart
-                title="History Data & Perbandingan"
-                subtitle="Grafik NCG history data dan perbandingan"
-                dataset1={ncgHistoryDataset1}
-                dataset2={ncgHistoryDataset2}
-                yAxisTitle="NCG (wt%)"
-                unit="wt%"
-              />
-            </Grid> */}
 
             <Grid size={12}>
               <StatisticsTable

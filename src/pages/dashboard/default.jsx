@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 
 // Real data API hook - test-aware (uses mock data in /test environment)
 import { useLiveData } from '../../hooks/useTestAwareLiveData';
+import { useAi2Data } from '../../hooks/useAi2Data';
 import { useLocation } from 'react-router-dom';
 
 // project imports - Individual Cards
@@ -25,22 +26,23 @@ import { getLimitData } from '../../utils/limitData';
 import mainImage from './image/main.png';
 
 // ==============================|| MOBILE LAYOUT COMPONENT ||============================== //
-function MobileLayout({ 
-  limitData, 
-  liveData, 
-  parseValue, 
-  getPowerStatus, 
+function MobileLayout({
+  limitData,
+  liveData,
+  ai2Data,
+  parseValue,
+  getPowerStatus,
   predConfig,
-  TITLE_CONFIG 
+  TITLE_CONFIG
 }) {
   // Extract values from live API data
   const pressure = parseValue(liveData?.metrics?.pressure?.value, 5.87);
   const temperature = parseValue(liveData?.metrics?.temperature?.value, 165.2);
   const flow = parseValue(liveData?.metrics?.flow_rate?.value, 245.71);
   const tds = parseValue(liveData?.metrics?.tds?.value, NaN);
-  // Convert dryness to percentage (0.95 -> 95%)
-  const dryness = parseValue(liveData?.metrics?.dryness?.value, NaN);
-  const ncg = parseValue(liveData?.metrics?.ncg?.value, NaN);
+  // Use AI2 predictions for dryness and NCG
+  const dryness = ai2Data?.dryness_predict != null ? parseFloat(ai2Data.dryness_predict) : parseValue(liveData?.metrics?.dryness?.value, NaN);
+  const ncg = ai2Data?.ncg_predict != null ? parseFloat(ai2Data.ncg_predict) : parseValue(liveData?.metrics?.ncg?.value, NaN);
   const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5);
   const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.22);
   const voltage = parseValue(liveData?.metrics?.voltage?.value, 13.86);
@@ -282,24 +284,25 @@ function Positioned({ pos, children, center = true }) {
   );
 }
 
-function DesktopLayout({ 
-  limitData, 
-  liveData, 
-  parseValue, 
-  getPowerStatus, 
+function DesktopLayout({
+  limitData,
+  liveData,
+  ai2Data,
+  parseValue,
+  getPowerStatus,
   predConfig,
   TITLE_CONFIG,
   scale,
-  DASHBOARD_CONFIG 
+  DASHBOARD_CONFIG
 }) {
   // Extract values from live API data
   const pressure = parseValue(liveData?.metrics?.pressure?.value, 5.87);
   const temperature = parseValue(liveData?.metrics?.temperature?.value, 165.2);
   const flow = parseValue(liveData?.metrics?.flow_rate?.value, 245.71);
   const tds = parseValue(liveData?.metrics?.tds?.value, NaN);
-  // Convert dryness to percentage (0.95 -> 95%)
-  const dryness = parseValue(liveData?.metrics?.dryness?.value, NaN);
-  const ncg = parseValue(liveData?.metrics?.ncg?.value, NaN);
+  // Use AI2 predictions for dryness and NCG
+  const dryness = ai2Data?.dryness_predict != null ? parseFloat(ai2Data.dryness_predict) : parseValue(liveData?.metrics?.dryness?.value, NaN);
+  const ncg = ai2Data?.ncg_predict != null ? parseFloat(ai2Data.ncg_predict) : parseValue(liveData?.metrics?.ncg?.value, NaN);
   const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5);
   const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.22);
   const voltage = parseValue(liveData?.metrics?.voltage?.value, 13.86);
@@ -637,6 +640,9 @@ export default function DashboardDefault() {
   // Real data from API
   const { data: liveData, loading, error } = useLiveData();
 
+  // AI2 predictions for dryness and NCG
+  const { liveData: ai2LiveData } = useAi2Data();
+
   // Calculate scale for desktop layout only
   useEffect(() => {
     if (isMobile) return; // Skip scale calculation for mobile
@@ -797,6 +803,7 @@ export default function DashboardDefault() {
         <MobileLayout
           limitData={limitData}
           liveData={liveData}
+          ai2Data={ai2LiveData}
           parseValue={parseValue}
           getPowerStatus={getPowerStatus}
           predConfig={predConfig}
@@ -806,6 +813,7 @@ export default function DashboardDefault() {
         <DesktopLayout
           limitData={limitData}
           liveData={liveData}
+          ai2Data={ai2LiveData}
           parseValue={parseValue}
           getPowerStatus={getPowerStatus}
           predConfig={predConfig}

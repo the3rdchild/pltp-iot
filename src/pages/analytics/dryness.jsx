@@ -1,9 +1,7 @@
-import { Grid, Box, Typography, useTheme } from '@mui/material';
+import { Grid, Box, Typography } from '@mui/material';
+import { useState, useEffect, useRef } from 'react';
 
-import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { generateAnalyticData } from 'data/simulasi';
-import { useTestData } from '../../contexts/TestDataContext';
+import { useAi2Data } from '../../hooks/useAi2Data';
 import { useAnomalyCounts } from '../../hooks/useAnomalyTracker';
 import { useMetricStats } from '../../hooks/useMetricStatistics';
 
@@ -14,8 +12,7 @@ import { getLimitData } from '../../utils/limitData';
 import {
   AnalyticsHeader,
   StatCard,
-  RealTimeDataChart,
-  HistoryComparisonChart,
+  Ai2Chart,
   StatisticsTable
 } from '../../components/analytics';
 
@@ -26,58 +23,25 @@ import DragHandleIcon from '@mui/icons-material/DragHandle';
 import AddIcon from '@mui/icons-material/Add';
 
 const Dryness = () => {
-    const theme = useTheme();
-    const location = useLocation();
-    const isTestEnvironment = location.pathname.startsWith('/test');
-    const testDataContext = isTestEnvironment ? useTestData() : null;
-
-    const [analyticData, setAnalyticData] = useState(null);
-    const [changePct, setChangePct] = useState(null);
     const limitData = getLimitData();
 
+    const { liveData, loading } = useAi2Data();
+    const dryness = liveData?.dryness_predict != null ? parseFloat(liveData.dryness_predict) : null;
+
+    const [changePct, setChangePct] = useState(null);
+    const prevDryRef = useRef(null);
 
     useEffect(() => {
-      const prevDryRef = { current: null }; // simple ref-like object (no extra hook required)
-
-      const updateData = () => {
-        let data;
-        if (isTestEnvironment && testDataContext) {
-          // Use test data from TestDataContext
-          const drynessValue = testDataContext.mockData.metrics.dryness?.value ?? 95;
-          data = {
-            dryness: parseFloat(drynessValue.toFixed(3))
-          };
-        } else {
-          // Use production data
-          data = generateAnalyticData();
-        }
-
-        setAnalyticData((prev) => {
-          // compute percent change relative to previous (prefer prev from state if present)
-          const prevVal = prev?.dryness ?? prevDryRef.current;
-          if (prevVal === undefined || prevVal === null) {
-            // first run: no change
+        if (dryness == null) return;
+        const prev = prevDryRef.current;
+        if (prev == null) {
             setChangePct(0);
-          } else {
-            const cur = data.dryness;
-            // protect against division by zero
-            const pct = prevVal === 0 ? 0 : ((cur - prevVal) / Math.abs(prevVal)) * 100;
-            setChangePct(Math.round(pct)); // integer percent, change as you like
-          }
-          prevDryRef.current = data.dryness;
-          return data;
-        });
-      };
-
-      // first-run populate
-      updateData();
-
-      const interval = setInterval(updateData, 3000);
-
-      return () => clearInterval(interval);
-    }, [isTestEnvironment, testDataContext]);
-
-    const dryness = analyticData?.dryness ?? 95;
+        } else {
+            const pct = prev === 0 ? 0 : ((dryness - prev) / Math.abs(prev)) * 100;
+            setChangePct(Math.round(pct));
+        }
+        prevDryRef.current = dryness;
+    }, [dryness]);
 
     // Real-time statistics tracking
     const drynessStats = useMetricStats('dryness', dryness);
@@ -140,14 +104,13 @@ const Dryness = () => {
     return (
         <Box>
           <AnalyticsHeader title="Dryness" subtitle="Analytic" />
-      
-          {/* Give the whole grid a definite height on large screens so % heights work */}
+
           <Grid
             container
             spacing={3}
             alignItems="stretch"
             sx={{
-            minHeight: { lg: '640px' }, // 640px is an example — 84% of 640 ≈ 538px; adjust to taste
+              minHeight: { lg: '640px' },
             }}
           >
             {/* Left big gauge card */}
@@ -157,16 +120,14 @@ const Dryness = () => {
                 display: 'flex',
                 flexDirection: 'column',
                 width: '100%',
-                // percent only on lg+, auto on smaller sizes
                 height: { xs: 'auto', lg: '84%' },
                 minHeight: { md: '230px' },
-                // add a small bottom margin on lg to guarantee visual gap if needed
                 mb: { lg: 3 },
               }}
             >
                 {/* header */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography variant="subtitle1" color="textSecondary">Dryness Fraction</Typography>
+                  <Typography variant="subtitle1" color="textSecondary">Dryness Fraction (AI)</Typography>
                   <Box
                     sx={{
                       borderRadius: '6px',
@@ -180,11 +141,10 @@ const Dryness = () => {
                       backgroundColor: (changePct > 0 ? 'success.light' : changePct < 0 ? 'error.light' : 'grey.100'),
                     }}
                   >
-                    {changePct === null ? '–' : (changePct > 0 ? `+${changePct}%` : `${changePct}%`)}
+                    {loading ? '...' : (changePct === null ? '–' : (changePct > 0 ? `+${changePct}%` : `${changePct}%`))}
                   </Box>
                 </Box>
-      
-                {/* content: allow gauge to take available area but not force card height on small screens */}
+
                 <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
                   <GaugeChart
                     value={dryness}
@@ -200,11 +160,12 @@ const Dryness = () => {
                     changePct={changePct}
                     withCard={false}
                     sx={{ width: '100%', maxWidth: 360 }}
+                    loading={loading}
                   />
                 </Box>
               </MainCard>
             </Grid>
-      
+
             {/* small cards */}
             {cardData.map((card, index) => (
               <Grid size={{ xs: 12, sm: 6, md: 2.25 }} key={index} sx={{ display: 'flex' }}>
@@ -216,30 +177,22 @@ const Dryness = () => {
                   iconBgColor={card.iconBgColor}
                   iconColor={card.iconColor}
                   backgroundColor="#F5F5F5"
-                  additionalData={card.additionalData}  
+                  additionalData={card.additionalData}
                 />
               </Grid>
             ))}
-      
+
             <Grid size={12} sx={{ mt: { xs: 0, lg: -5 } }}>
-              <RealTimeDataChart
-                title="Real Time Data"
-                subtitle="Dryness level data chart monthly"
-                dataType="dryness"
-                yAxisTitle="Dryness (%)"
+              <Ai2Chart
+                title="Dryness Real Time Data (AI)"
+                subtitle="Dryness prediction dari AI model"
+                metric="dryness_predict"
+                liveValue={dryness}
                 unit="%"
-                showComparison={true}
+                yAxisTitle="Dryness (%)"
+                color="#3b82f6"
               />
             </Grid>
-
-            {/* <Grid size={12}>
-              <HistoryComparisonChart
-                title="History Data & Perbandingan"
-                subtitle="Grafik dryness history data dan perbandingan"
-                yAxisTitle="Dryness (%)"
-                unit="%"
-              />
-            </Grid> */}
 
             <Grid size={12}>
               <StatisticsTable

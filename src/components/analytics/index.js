@@ -4,3 +4,4 @@ export { default as RealTimeDataChart } from './RealTimeDataChart';
 export { default as HistoryComparisonChart } from './HistoryComparisonChart';
 export { default as StatisticsTable } from './StatisticsTable';
 export { default as PTFChart } from './PTFChart';
+export { default as Ai2Chart } from './Ai2Chart';
