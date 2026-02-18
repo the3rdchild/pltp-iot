@@ -23,8 +23,8 @@ router.post('/honeywell', validateApiKey, fetchHoneywellData);
 router.post('/sensor-data', validateApiKey, receiveExternalData);
 
 // POST /api/external/ml-prediction - Receive ML predictions from edge computing
-// Protected with API Key authentication
-router.post('/ml-prediction', validateApiKey, receiveMLPrediction);
+// No authentication required
+router.post('/ml-prediction', receiveMLPrediction);
 
 // POST /api/external/batch - Receive batch sensor data
 // Protected with API Key authentication
