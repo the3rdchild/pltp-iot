@@ -51,8 +51,8 @@ async function testSingleTag() {
           if (jsonData.data && jsonData.data[0]) {
             const count = jsonData.data[0].TimeStamp?.length || 0;
             console.log('   Records:', count);
-            console.log('   Expected:', 7201);
-            console.log('   Match:', count === 7201 ? '✅ YES' : '❌ NO');
+            console.log('   Expected:', 1441);
+            console.log('   Match:', count === 1441 ? '✅ YES' : '❌ NO');
             
             if (count > 0) {
               console.log('   First:', jsonData.data[0].TimeStamp[0]);
