@@ -13,9 +13,9 @@ async function testSingleTag() {
     MaxRows: 8641,  // ← Same as Talend
     TimeFormat: 1,
     ReductionData: "now",
-    TagName: "5MAD02FS011PVI.PV",
-    StartTime: "01-OCT-2025 14:07:00.000",
-    EndTime: "02-OCT-2025 14:07:00.000",
+    TagName: "5LBB31FP002PVI.PV",
+    StartTime: "04-OCT-2025 14:07:00.000",
+    EndTime: "05-OCT-2025 14:07:00.000",
     OutputTimeFormat: 1
   };
 
