@@ -14,8 +14,8 @@ async function testSingleTag() {
     TimeFormat: 1,
     ReductionData: "now",
     TagName: "5LBB31FF001PVI.PV",
-    StartTime: "30-SEP-2025 14:07:00.000",  // ← Aligned to minute
-    EndTime: "05-OCT-2025 14:07:00.000",    // ← Aligned to minute
+    StartTime: "21-AUG-2025 14:07:00.000",
+    EndTime: "22-AUG-2025 14:07:00.000",
     OutputTimeFormat: 1
   };
 
