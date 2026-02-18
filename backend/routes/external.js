@@ -14,6 +14,7 @@ const {
 
 // Import API Key authentication middleware
 const { validateApiKey } = require('../middleware/apiKeyAuth');
+const { getLatestMLPredictions } = require('../controllers/dataController');
 
 // POST /api/external/honeywell - Fetch and store data from Honeywell PIMS
 router.post('/honeywell', validateApiKey, fetchHoneywellData);
@@ -21,6 +22,9 @@ router.post('/honeywell', validateApiKey, fetchHoneywellData);
 // POST /api/external/sensor-data - Receive sensor data from Honeywell
 // Protected with API Key authentication
 router.post('/sensor-data', validateApiKey, receiveExternalData);
+
+// GET /api/external/ml-prediction - Get latest ML predictions
+router.get('/ml-prediction', getLatestMLPredictions);
 
 // POST /api/external/ml-prediction - Receive ML predictions from edge computing
 // No authentication required
