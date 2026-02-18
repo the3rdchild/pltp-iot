@@ -9,7 +9,9 @@ const {
   receiveBatchUlubeluData,
   testConnection,
   generateDummyData,
-  validateSetup
+  validateSetup,
+  receiveAi2Data,
+  getAi2Data
 } = require('../controllers/externalController');
 
 // Import API Key authentication middleware
@@ -41,6 +43,12 @@ router.post('/sensor-data/ulubelu', validateApiKey, receiveUlubeluData);
 // POST /api/external/batch/ulubelu - Receive batch sensor data from Ulubelu
 // Protected with API Key authentication
 router.post('/batch/ulubelu', validateApiKey, receiveBatchUlubeluData);
+
+// GET /api/external/ai2 - Get latest AI2 predictions
+router.get('/ai2', getAi2Data);
+
+// POST /api/external/ai2 - Receive AI2 predictions (dryness & NCG)
+router.post('/ai2', receiveAi2Data);
 
 // Testing endpoints - protected with API Key for security
 router.post('/test', validateApiKey, testConnection); // Test connection and insert sample data

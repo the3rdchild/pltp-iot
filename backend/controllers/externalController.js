@@ -838,6 +838,103 @@ const receiveBatchUlubeluData = async (req, res) => {
   }
 };
 
+// Receive AI2 predictions (dryness & NCG)
+const receiveAi2Data = async (req, res) => {
+  try {
+    const data = req.body;
+
+    console.log('📥 Received AI2 prediction:', JSON.stringify(data, null, 2));
+
+    if (!data || typeof data !== 'object') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid data format'
+      });
+    }
+
+    const {
+      model_name = 'ai2_model',
+      dryness_predict,
+      dryness_confidence,
+      dryness_mae,
+      ncg_predict,
+      ncg_confidence,
+      ncg_mae,
+      status = 'normal',
+      processed_at = new Date().toISOString()
+    } = data;
+
+    const result = await query(
+      `INSERT INTO ai2
+       (model_name, dryness_predict, dryness_confidence, dryness_mae,
+        ncg_predict, ncg_confidence, ncg_mae, status, processed_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING *`,
+      [
+        model_name,
+        dryness_predict,
+        dryness_confidence,
+        dryness_mae,
+        ncg_predict,
+        ncg_confidence,
+        ncg_mae,
+        status,
+        processed_at
+      ]
+    );
+
+    console.log('✅ AI2 prediction saved:', result.rows[0].id);
+
+    res.status(201).json({
+      success: true,
+      message: 'AI2 prediction received successfully',
+      data: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error('❌ Error receiving AI2 prediction:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save AI2 prediction',
+      error: error.message
+    });
+  }
+};
+
+// Get latest AI2 predictions
+const getAi2Data = async (req, res) => {
+  try {
+    const { limit = 50, status } = req.query;
+
+    let sql = `SELECT * FROM ai2 WHERE 1=1`;
+    const params = [];
+
+    if (status) {
+      params.push(status);
+      sql += ` AND status = $${params.length}`;
+    }
+
+    params.push(parseInt(limit));
+    sql += ` ORDER BY processed_at DESC LIMIT $${params.length}`;
+
+    const result = await query(sql, params);
+
+    res.json({
+      success: true,
+      data: result.rows,
+      count: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching AI2 data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch AI2 data',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   fetchHoneywellData,
   receiveExternalData,
@@ -847,5 +944,7 @@ module.exports = {
   receiveBatchUlubeluData,
   testConnection,
   generateDummyData,
-  validateSetup
+  validateSetup,
+  receiveAi2Data,
+  getAi2Data
 };
