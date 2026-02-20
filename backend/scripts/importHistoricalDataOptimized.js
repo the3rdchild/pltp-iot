@@ -492,9 +492,18 @@ function getNullStatistics(records) {
   return { avgNullFields, fieldBreakdown };
 }
 
-function formatToHoneywellTimestamp(date) {
+function formatToHoneywellTimestamp(date, alignToMinute = false) {
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
                   'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+  // Clone date to avoid mutation
+  const d = new Date(date);
+  
+  // ALIGN TO MINUTE BOUNDARY if requested
+  if (alignToMinute) {
+    d.setSeconds(0);
+    d.setMilliseconds(0);
+  }
 
   const day = String(date.getDate()).padStart(2, '0');
   const month = months[date.getMonth()];
@@ -777,15 +786,22 @@ function splitDateRange(startDate, endDate, chunkDays) {
   // ALIGN start to minute boundary
   start.setSeconds(0);
   start.setMilliseconds(0);
+  
+  // ALIGN end to minute boundary too
+  end.setSeconds(0);
+  end.setMilliseconds(0);
 
   let currentStart = new Date(start);
 
   while (currentStart < end) {
     const currentEnd = new Date(currentStart.getTime() + (chunkDays * 24 * 60 * 60 * 1000));
+    
+    // Make sure end doesn't exceed final end
+    const chunkEndTime = currentEnd > end ? end : currentEnd;
 
     chunks.push({
-      start: formatToHoneywellTimestamp(currentStart, true),  // ← Align to minute
-      end: formatToHoneywellTimestamp(currentEnd > end ? end : currentEnd, true)  // ← Align to minute
+      start: formatToHoneywellTimestamp(currentStart, true),
+      end: formatToHoneywellTimestamp(chunkEndTime, true)
     });
 
     currentStart = currentEnd;
