@@ -290,7 +290,7 @@ function calculateCurrent(record) {
     const MAX_CURRENT = 50000; // Amperes
     
     if (current > MAX_CURRENT) {
-      logger.log(`Current exceeds max limit: ${current.toFixed(2)} A > ${MAX_CURRENT} A (P=${genOutput} MW, Q=${genReactivePower} MVAR, V_avg=${avgVoltage.toFixed(2)} kV)`, 'warn');
+      logger.log(`Current exceeds max limit: ${current.toFixed(2)} A > ${MAX_CURRENT} A (P=${genOutput} MW, Q=${genReactivePower} MVAR, V_avg=${avgVoltage.toFixed(2)} kV), setting to 0`, 'warn');
       stats.currentCalculationErrors++;
       return 0; // Return null for overflow instead of capping
     }
