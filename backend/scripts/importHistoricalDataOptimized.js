@@ -53,7 +53,7 @@ const CONFIG = {
   BATCH_SIZE: 1000,
   API_URL: process.env.HONEYWELL_API_URL,
   API_KEY: process.env.HONEYWELL_API_X_API_KEY,
-  DEVICE_ID: null,
+  DEVICE_ID: process.env.HONEYWELL_DEVICE_ID,
   REQUEST_DELAY: 1500,
   COMPLETENESS_THRESHOLD: 1.0,
   NULL_THRESHOLD: 0.00,
@@ -292,7 +292,7 @@ function calculateCurrent(record) {
     if (current > MAX_CURRENT) {
       logger.log(`Current exceeds max limit: ${current.toFixed(2)} A > ${MAX_CURRENT} A (P=${genOutput} MW, Q=${genReactivePower} MVAR, V_avg=${avgVoltage.toFixed(2)} kV), setting to 0`, 'warn');
       stats.currentCalculationErrors++;
-      return 0; // Return null for overflow instead of capping
+      return 0; // Return 0 for overflow instead of capping
     }
 
     // Negative current check (shouldn't happen with sqrt, but just in case)
