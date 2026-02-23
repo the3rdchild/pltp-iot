@@ -720,7 +720,7 @@ async function bulkInsertRecords(records) {
     const sql = `
       INSERT INTO sensor_data (${columns.join(', ')})
       VALUES ${placeholders.join(', ')}
-      ON CONFLICT (timestamp, device_id) WHERE device_id IS NULL
+      ON CONFLICT (timestamp, device_id)
       DO UPDATE SET
         pressure = COALESCE(EXCLUDED.pressure, sensor_data.pressure),
         flow_rate = COALESCE(EXCLUDED.flow_rate, sensor_data.flow_rate),
