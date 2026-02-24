@@ -103,8 +103,14 @@ const stats = {
   currentCalculated: 0, // NEW: Track calculated current values
   currentCalculationErrors: 0, // NEW: Track calculation errors
   startTime: Date.now(),
-  tagStats: {},
-  nullFieldStats: {}
+  tagStats: Object.keys(TAGNAME_TO_COLUMN).reduce((acc, tag) => {
+    acc[tag] = 0;
+    return acc;
+  }, {}),
+  nullFieldStats: ALL_SENSOR_FIELDS.reduce((acc, field) => {
+    acc[field] = 0;
+    return acc;
+  }, {})
 };
 
 // Logging system
@@ -452,11 +458,7 @@ function calculateNullPercentage(records) {
       totalFields++;
       if (isNullOrUndefined(record[field])) {
         totalNullFields++;
-        
-        if (!stats.nullFieldStats[field]) {
-          stats.nullFieldStats[field] = 0;
-        }
-        stats.nullFieldStats[field]++;
+        stats.nullFieldStats[field]++;   // now guaranteed to exist
       }
     }
   }
