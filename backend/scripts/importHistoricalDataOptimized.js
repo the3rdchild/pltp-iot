@@ -1,24 +1,13 @@
 #!/usr/bin/env node
 /**
- * Optimized Historical Data Import from Honeywell API (ZERO-SAFE VERSION + CURRENT CALCULATION)
+ * Optimized Historical Data Import with 502 ERROR HANDLING
  * 
- * CRITICAL FIX: Properly handle zero values (0) vs NULL
- * - Previous bug: 0 || null → null (treated 0 as falsy)
- * - Fixed: Explicit null/undefined checks only
- *
- * NEW FEATURE: Automatic current calculation
- * - Formula: current = sqrt((P^2) + (Q^2)) / (sqrt(3) * V_avg)
- * - Where: P = gen_output, Q = gen_reactive_power, V_avg = average of 3 line voltages
- *
  * Features:
- * - Smart resume from last imported timestamp
- * - NULL data detection for ALL parameters
- * - ZERO value preservation (0 is valid data!)
- * - Automatic current calculation and storage
- * - Data quality validation
- * - File logging with rotation
- * - Skip chunks that are already complete
- * - Batch insertion to avoid PostgreSQL parameter limits
+ * - Auto-retry on 502 Bad Gateway
+ * - Exponential backoff strategy
+ * - Failed chunks queue and resume
+ * - Server health monitoring
+ * - Graceful degradation
  */
 
 require('dotenv').config({ path: '/www/wwwroot/frontend/backend/.env' });
@@ -53,14 +42,14 @@ const CONFIG = {
   BATCH_SIZE: 1000,
   API_URL: process.env.HONEYWELL_API_URL,
   API_KEY: process.env.HONEYWELL_API_X_API_KEY,
-  DEVICE_ID: process.env.HONEYWELL_DEVICE_ID,
+  DEVICE_ID: null,
   REQUEST_DELAY: 1500,
   COMPLETENESS_THRESHOLD: 1.0,
   NULL_THRESHOLD: 0.00,
   MIN_NON_NULL_FIELDS: 12,
   MAX_RETRY_FOR_NULLS: 5,
   LOG_MAX_SIZE: 100 * 1024 * 1024,
-
+  
   // NEW: Error handling configuration
   MAX_RETRY_ATTEMPTS: 10,           // Max retries for 502 errors
   INITIAL_RETRY_DELAY: 5000,        // 5 seconds initial wait
@@ -110,21 +99,16 @@ const stats = {
   nullChunksRefetched: 0,
   nullRecordsFixed: 0,
   zeroValuesPreserved: 0,
-  currentCalculated: 0, // NEW: Track calculated current values
-  currentCalculationErrors: 0, // NEW: Track calculation errors
+  currentCalculated: 0,
+  currentCalculationErrors: 0,
+  // NEW: Error tracking
   serverErrors: 0,
   retriedRequests: 0,
   failedChunks: 0,
   recoveredChunks: 0,
   startTime: Date.now(),
-  tagStats: Object.keys(TAGNAME_TO_COLUMN).reduce((acc, tag) => {
-    acc[tag] = 0;
-    return acc;
-  }, {}),
-  nullFieldStats: ALL_SENSOR_FIELDS.reduce((acc, field) => {
-    acc[field] = 0;
-    return acc;
-  }, {})
+  tagStats: {},
+  nullFieldStats: {}
 };
 
 // NEW: Failed chunks queue
@@ -136,7 +120,7 @@ let consecutiveErrors = 0;
 let serverHealthy = true;
 let lastServerCheck = Date.now();
 
-// Logging system
+// Logging system (keep existing Logger class)
 class Logger {
   constructor() {
     const today = new Date().toISOString().split('T')[0];
@@ -179,7 +163,8 @@ class Logger {
       error: '❌ ERROR',
       warn: '⚠️  WARN',
       debug: '🔍 DEBUG',
-      realtime: '🔄 REALTIME'
+      retry: '🔄 RETRY',
+      server: '🖥️  SERVER'
     }[level] || '📝 INFO';
     
     const consoleMessage = `[${timestamp}] ${prefix}: ${message}`;
@@ -195,7 +180,7 @@ class Logger {
 
   logProgress(currentChunk, totalChunks, elapsed, eta, stats) {
     const progress = (currentChunk / totalChunks * 100).toFixed(1);
-    const message = `Progress: ${progress}% (${currentChunk}/${totalChunks}) | Elapsed: ${elapsed} | ETA: ${eta} | Inserted: ${stats.totalRecordsInserted.toLocaleString()} | Current Calc: ${stats.currentCalculated.toLocaleString()} | Errors: ${stats.totalErrors}`;
+    const message = `Progress: ${progress}% (${currentChunk}/${totalChunks}) | Elapsed: ${elapsed} | ETA: ${eta} | Inserted: ${stats.totalRecordsInserted.toLocaleString()} | 502 Errors: ${stats.serverErrors} | Retries: ${stats.retriedRequests}`;
     this.log(message, 'info');
   }
 
@@ -224,19 +209,21 @@ class Logger {
 ${'='.repeat(80)}
 IMPORT SUMMARY
 ${'='.repeat(80)}
-Duration:                 ${duration}
-Total Chunks:             ${stats.totalChunks}
-Skipped Chunks:           ${stats.skippedChunks}
-Processed Chunks:         ${stats.totalChunks - stats.skippedChunks}
-NULL Chunks Refetched:    ${stats.nullChunksRefetched}
-Records Fetched:          ${stats.totalRecordsFetched.toLocaleString()}
-Records Inserted:         ${stats.totalRecordsInserted.toLocaleString()}
-Zero Values Preserved:    ${stats.zeroValuesPreserved.toLocaleString()}
+Duration:                  ${duration}
+Total Chunks:              ${stats.totalChunks}
+Skipped Chunks:            ${stats.skippedChunks}
+Processed Chunks:          ${stats.totalChunks - stats.skippedChunks}
+Failed Chunks:             ${stats.failedChunks}
+Recovered Chunks:          ${stats.recoveredChunks}
+NULL Chunks Refetched:     ${stats.nullChunksRefetched}
+Records Fetched:           ${stats.totalRecordsFetched.toLocaleString()}
+Records Inserted:          ${stats.totalRecordsInserted.toLocaleString()}
+Zero Values Preserved:     ${stats.zeroValuesPreserved.toLocaleString()}
 Current Values Calculated: ${stats.currentCalculated.toLocaleString()}
-Current Calc Errors:      ${stats.currentCalculationErrors.toLocaleString()}
-Server Errors (502):      ${stats.serverErrors}
-Retried Requests:         ${stats.retriedRequests}
-Total Errors:             ${stats.totalErrors}
+Current Calc Errors:       ${stats.currentCalculationErrors.toLocaleString()}
+Server Errors (502):       ${stats.serverErrors}
+Retried Requests:          ${stats.retriedRequests}
+Total Errors:              ${stats.totalErrors}
 
 Per-Tag Statistics:
 ${Object.entries(stats.tagStats).map(([tag, count]) => 
@@ -392,17 +379,6 @@ function getValueOrNull(value) {
 
 /**
  * Calculate three-phase current from power and voltage
- * 
- * Formula: I = sqrt(P² + Q²) / (sqrt(3) * V_avg)
- * 
- * Where:
- * - P = Active Power (gen_output) in MW
- * - Q = Reactive Power (gen_reactive_power) in MVAR
- * - V_avg = Average line-to-line voltage in kV
- * - I = Current in Amperes
- * 
- * @param {Object} record - Record containing power and voltage data
- * @returns {number|null} - Calculated current in Amperes, or null if calculation fails
  */
 function calculateCurrent(record) {
   try {
@@ -412,7 +388,6 @@ function calculateCurrent(record) {
     const voltageVW = record.gen_voltage_v_w;
     const voltageWU = record.gen_voltage_w_u;
 
-    // Check if all required values are present and not null
     if (isNullOrUndefined(genOutput) || 
         isNullOrUndefined(genReactivePower) ||
         isNullOrUndefined(voltageUV) || 
@@ -421,34 +396,27 @@ function calculateCurrent(record) {
       return null;
     }
 
-    // Calculate average voltage
     const avgVoltage = (voltageUV + voltageVW + voltageWU) / 3;
 
-    // SPECIAL CASE: If voltage <= 0, current = 0 (no voltage = no current)
     if (avgVoltage <= 0) {
-      logger.log(`Current set to 0: voltage is ${avgVoltage.toFixed(3)} kV (≤ 0)`, 'debug');
       stats.currentCalculated++;
       return 0;
     }
 
-    // Calculate apparent power: S = sqrt(P² + Q²)
     const apparentPower = Math.sqrt(
       (genOutput * genOutput) + (genReactivePower * genReactivePower)
     );
 
-    // Calculate current: I = S / (sqrt(3) * V_avg)
     const current = (apparentPower / (Math.sqrt(3) * avgVoltage)) * 1000;
 
-    // SAFETY CHECK: Maximum current threshold (typical large generator: ~5000-50000 A)
-    const MAX_CURRENT = 50000; // Amperes
+    const MAX_CURRENT = 50000;
     
     if (current > MAX_CURRENT) {
-      logger.log(`Current exceeds max limit: ${current.toFixed(2)} A > ${MAX_CURRENT} A (P=${genOutput} MW, Q=${genReactivePower} MVAR, V_avg=${avgVoltage.toFixed(2)} kV), setting to 0`, 'warn');
+      logger.log(`Current exceeds max limit: ${current.toFixed(2)} A > ${MAX_CURRENT} A`, 'warn');
       stats.currentCalculationErrors++;
-      return 0; // Return 0 for overflow instead of capping
+      return 0;
     }
 
-    // Negative current check (shouldn't happen with sqrt, but just in case)
     if (current < 0) {
       logger.log(`Negative current detected: ${current.toFixed(2)} A, setting to 0`, 'warn');
       stats.currentCalculationErrors++;
@@ -460,7 +428,6 @@ function calculateCurrent(record) {
 
   } catch (error) {
     logger.log(`Current calculation error: ${error.message}`, 'error');
-    logger.log(`Stack: ${error.stack}`, 'debug');
     stats.currentCalculationErrors++;
     return null;
   }
@@ -605,11 +572,11 @@ function calculateNullPercentage(records) {
       totalFields++;
       if (isNullOrUndefined(record[field])) {
         totalNullFields++;
-
+        
         if (!stats.nullFieldStats[field]) {
           stats.nullFieldStats[field] = 0;
         }
-        stats.nullFieldStats[field]++;   // now guaranteed to exist
+        stats.nullFieldStats[field]++;
       }
     }
   }
@@ -649,22 +616,20 @@ function formatToHoneywellTimestamp(date, alignToMinute = false) {
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
                   'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
-  // Clone date to avoid mutation
   const d = new Date(date);
   
-  // ALIGN TO MINUTE BOUNDARY if requested
   if (alignToMinute) {
     d.setSeconds(0);
     d.setMilliseconds(0);
   }
 
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  const milliseconds = String(date.getMilliseconds()).padStart(3, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  const seconds = String(d.getSeconds()).padStart(2, '0');
+  const milliseconds = String(d.getMilliseconds()).padStart(3, '0');
 
   return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}.${milliseconds}`;
 }
@@ -709,12 +674,15 @@ function parseHoneywellTimestampToISO(honeywellTimestamp) {
   return `${year}-${month}-${day}T${timePart}Z`;
 }
 
+/**
+ * NEW: Fetch with retry logic and 502 handling
+ */
 function fetchHoneywellData(params, retryAttempt = 0) {
   return new Promise((resolve, reject) => {
     const url = new URL(CONFIG.API_URL);
     const requestBody = {
       SampleInterval: CONFIG.SAMPLE_INTERVAL,
-      ResampleMethod: "Around",
+      ResampleMethod: "Interpolated",
       MinimumConfidence: 100,
       MaxRows: CONFIG.MAX_ROWS_PER_REQUEST,
       TimeFormat: 1,
@@ -756,8 +724,6 @@ function fetchHoneywellData(params, retryAttempt = 0) {
           const error = new Error(`502 Bad Gateway - Server unavailable`);
           error.statusCode = 502;
           error.retryable = true;
-
-          logger.log(`502 Error for ${params.TagName} (attempt ${retryAttempt + 1}/${CONFIG.MAX_RETRY_ATTEMPTS})`, 'retry');
           
           if (retryAttempt < CONFIG.MAX_RETRY_ATTEMPTS) {
             const delay = calculateBackoffDelay(retryAttempt);
@@ -783,97 +749,30 @@ function fetchHoneywellData(params, retryAttempt = 0) {
           }
           return;
         }
+        
+        // Other HTTP errors
+        if (res.statusCode !== 200) {
+          const error = new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`);
+          error.statusCode = res.statusCode;
+          reject(error);
+          return;
+        }
 
-        // Handle other 5xx errors
-        if (res.statusCode >= 500) {
-          stats.serverErrors++;
-          consecutiveErrors++;
+        try {
+          const jsonData = JSON.parse(data);
           
-          const error = new Error(`HTTP ${res.statusCode}: ${res.statusMessage} (${params.TagName})`);
-          error.statusCode = res.statusCode;
-          error.retryable = true;
-          
-          logger.log(`Server error ${res.statusCode} for ${params.TagName} (attempt ${retryAttempt + 1}/${CONFIG.MAX_RETRY_ATTEMPTS})`, 'retry');
-          
-          if (retryAttempt < CONFIG.MAX_RETRY_ATTEMPTS) {
-            const delay = calculateBackoffDelay(retryAttempt);
-            stats.retriedRequests++;
-            
-            await sleep(delay, true);
-            resolve(fetchHoneywellData(params, retryAttempt + 1));
-          } else {
-            reject(error);
+          if (!jsonData.status) {
+            reject(new Error(jsonData.message || 'API returned error'));
+            return;
           }
-          return;
-        }
-        
-        // Handle 4xx client errors (don't retry)
-        if (res.statusCode >= 400 && res.statusCode < 500) {
-          const error = new Error(`HTTP ${res.statusCode}: ${res.statusMessage} (${params.TagName})`);
-          error.statusCode = res.statusCode;
-          error.retryable = false;
-          reject(error);
-          return;
-        }
-        
-        // Only parse JSON for successful responses (200-299)
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          try {
-            // ✅ FIX: Check if response is actually JSON
-            const contentType = res.headers['content-type'] || '';
-            
-            if (!contentType.includes('application/json')) {
-              logger.log(`Unexpected content-type: ${contentType} for ${params.TagName}`, 'warn');
-              logger.log(`Response body: ${data.substring(0, 500)}`, 'debug');
-              
-              const error = new Error(`Unexpected response type: ${contentType}`);
-              error.retryable = true;
-              
-              if (retryAttempt < CONFIG.MAX_RETRY_ATTEMPTS) {
-                const delay = calculateBackoffDelay(retryAttempt);
-                stats.retriedRequests++;
-                await sleep(delay);
-                resolve(fetchHoneywellData(params, retryAttempt + 1));
-              } else {
-                reject(error);
-              }
-              return;
-            }
-            
-            const jsonData = JSON.parse(data);
-            
-            if (!jsonData.status) {
-              reject(new Error(jsonData.message || 'API returned error'));
-              return;
-            }
-            
-            // Success - reset consecutive errors
-            consecutiveErrors = 0;
-            serverHealthy = true;
-            
-            resolve(jsonData);
-          } catch (error) {
-            // JSON parse error
-            logger.log(`JSON parse error for ${params.TagName}: ${error.message}`, 'error');
-            logger.log(`Response preview: ${data.substring(0, 200)}...`, 'debug');
-            
-            const parseError = new Error(`Failed to parse API response: ${error.message}`);
-            parseError.retryable = true;
-            
-            if (retryAttempt < CONFIG.MAX_RETRY_ATTEMPTS) {
-              const delay = calculateBackoffDelay(retryAttempt);
-              stats.retriedRequests++;
-              await sleep(delay);
-              resolve(fetchHoneywellData(params, retryAttempt + 1));
-            } else {
-              reject(parseError);
-            }
-          }
-        } else {
-          // Unexpected status code
-          const error = new Error(`Unexpected HTTP ${res.statusCode}: ${res.statusMessage}`);
-          error.statusCode = res.statusCode;
-          reject(error);
+          
+          // Success - reset consecutive errors
+          consecutiveErrors = 0;
+          serverHealthy = true;
+          
+          resolve(jsonData);
+        } catch (error) {
+          reject(new Error('Failed to parse API response: ' + error.message));
         }
       });
     });
@@ -881,8 +780,6 @@ function fetchHoneywellData(params, retryAttempt = 0) {
     req.on('error', async (error) => {
       stats.totalErrors++;
       consecutiveErrors++;
-
-      logger.log(`Network error for ${params.TagName}: ${error.message}`, 'error');
       
       if (isRetryableError(error) && retryAttempt < CONFIG.MAX_RETRY_ATTEMPTS) {
         const delay = calculateBackoffDelay(retryAttempt);
@@ -943,7 +840,7 @@ function transformAndMergeData(allTagResponses) {
       const confidences = tagData.Confidence || [];
 
       for (let i = 0; i < timestamps.length; i++) {
-        if (confidences[i] < 90) continue;
+        if (confidences[i] < 50) continue;
 
         const timestamp = parseHoneywellTimestampToISO(timestamps[i]);
 
@@ -978,7 +875,6 @@ async function bulkInsertRecords(records) {
     return { inserted: 0 };
   }
 
-  // NEW: Add 'current' to columns list
   const columns = ['timestamp', 'device_id', 'pressure', 'flow_rate', 'temperature',
                    'gen_reactive_power', 'gen_output', 'gen_frequency', 'speed_detection',
                    'mcv_l', 'mcv_r', 'gen_voltage_u_v', 'gen_voltage_v_w', 'gen_voltage_w_u', 
@@ -995,7 +891,6 @@ async function bulkInsertRecords(records) {
     for (let i = 0; i < batch.length; i++) {
       const record = batch[i];
       
-      // NEW: Calculate current before inserting
       const current = calculateCurrent(record);
       
       const recordValues = [
@@ -1013,7 +908,7 @@ async function bulkInsertRecords(records) {
         getValueOrNull(record.gen_voltage_u_v),
         getValueOrNull(record.gen_voltage_v_w),
         getValueOrNull(record.gen_voltage_w_u),
-        current, // NEW: Add calculated current
+        current,
         'normal'
       ];
 
@@ -1027,7 +922,7 @@ async function bulkInsertRecords(records) {
     const sql = `
       INSERT INTO sensor_data (${columns.join(', ')})
       VALUES ${placeholders.join(', ')}
-      ON CONFLICT (timestamp, device_id)
+      ON CONFLICT (timestamp) WHERE (device_id IS NULL)
       DO UPDATE SET
         pressure = COALESCE(EXCLUDED.pressure, sensor_data.pressure),
         flow_rate = COALESCE(EXCLUDED.flow_rate, sensor_data.flow_rate),
@@ -1087,11 +982,8 @@ function splitDateRange(startDate, endDate, chunkDays) {
   const start = parseHoneywellTimestamp(startDate);
   const end = parseHoneywellTimestamp(endDate);
 
-  // ALIGN start to minute boundary
   start.setSeconds(0);
   start.setMilliseconds(0);
-  
-  // ALIGN end to minute boundary too
   end.setSeconds(0);
   end.setMilliseconds(0);
 
@@ -1099,8 +991,6 @@ function splitDateRange(startDate, endDate, chunkDays) {
 
   while (currentStart < end) {
     const currentEnd = new Date(currentStart.getTime() + (chunkDays * 24 * 60 * 60 * 1000));
-    
-    // Make sure end doesn't exceed final end
     const chunkEndTime = currentEnd > end ? end : currentEnd;
 
     chunks.push({
@@ -1115,6 +1005,9 @@ function splitDateRange(startDate, endDate, chunkDays) {
   return chunks;
 }
 
+/**
+ * NEW: Process chunk with enhanced error handling
+ */
 async function processChunk(chunk, retryCount = 0) {
   const tagNames = Object.keys(TAGNAME_TO_COLUMN);
   const allTagResponses = [];
@@ -1145,9 +1038,11 @@ async function processChunk(chunk, retryCount = 0) {
       console.log(`✗ Error: ${error.message}`);
       logger.log(`Failed to fetch ${tagName}: ${error.message}`, 'error');
       stats.totalErrors++;
-
+      
+      // Mark chunk as failed if critical error
       if (!isRetryableError(error) || error.statusCode === 502) {
         chunkFailed = true;
+      }
     }
   }
 
@@ -1200,11 +1095,18 @@ async function processChunk(chunk, retryCount = 0) {
     process.stdout.write(`  Calculating current & inserting to database... `);
     try {
       const result = await bulkInsertRecords(mergedRecords);
-      console.log(`✓ ${result.inserted} records (${stats.currentCalculated} with current)`);
+      console.log(`✓ ${result.inserted} records`);
       
       const nullStatsStr = `avg ${nullStats.avgNullFields.toFixed(1)} NULL fields`;
       logger.logChunkComplete(result.inserted, stats.totalRecordsFetched, quality, nullStatsStr);
       stats.totalRecordsInserted += result.inserted;
+      
+      // If chunk was in failed queue and now succeeded, mark as recovered
+      if (chunk.retryCount > 0) {
+        stats.recoveredChunks++;
+        logger.log(`Chunk recovered after ${chunk.retryCount} retries`, 'success');
+      }
+      
       return result.inserted;
     } catch (error) {
       console.log(`✗ ${error.message}`);
@@ -1386,17 +1288,13 @@ async function importHistoricalData() {
       const completeness = await isChunkDataComplete(chunk.start, chunk.end);
       
       if (completeness.isComplete) {
-        console.log(`  ⏭️  Skipping chunk (${completeness.completeness}% complete, ${completeness.nullPercentage}% have NULLs, avg ${completeness.avgNullFields} NULL fields)`);
-        logger.log(`Skipping chunk: ${completeness.completeness}% complete, ${completeness.nullPercentage}% have NULLs`, 'info');
+        console.log(`  ⏭️  Skipping chunk (${completeness.completeness}% complete)`);
+        logger.log(`Skipping chunk: ${completeness.completeness}% complete`, 'info');
         stats.skippedChunks++;
         continue;
       } else if (completeness.existingCount > 0) {
-        console.log(`  📊 Partial data: ${completeness.completeness}% complete, ${completeness.nullPercentage}% have NULLs (avg ${completeness.avgNullFields} NULL fields)`);
-        logger.log(`Partial data: ${completeness.completeness}% complete, avg ${completeness.avgNullFields} NULL fields`, 'info');
-        if (parseFloat(completeness.nullPercentage) > CONFIG.NULL_THRESHOLD * 100) {
-          console.log(`  🔄 High NULL percentage detected, will re-fetch`);
-          logger.log('High NULL percentage detected, will re-fetch', 'warn');
-        }
+        console.log(`  📊 Partial data: ${completeness.completeness}% complete`);
+        logger.log(`Partial data: ${completeness.completeness}% complete`, 'info');
       }
     }
 
@@ -1407,7 +1305,7 @@ async function importHistoricalData() {
     const eta = calculateETA();
 
     console.log(`\n  📈 Progress: ${progress}% | Elapsed: ${elapsed} | ETA: ${eta}`);
-    console.log(`  📊 Stats: ${stats.totalRecordsInserted.toLocaleString()} inserted | ${stats.currentCalculated.toLocaleString()} current calc | ${stats.serverErrors} 502s | ${stats.retriedRequests} retries | ${stats.failedChunks} failed`);
+    console.log(`  📊 Stats: ${stats.totalRecordsInserted.toLocaleString()} inserted | ${stats.currentCalculated.toLocaleString()} current | ${stats.serverErrors} 502s | ${stats.retriedRequests} retries | ${stats.failedChunks} failed`);
     
     logger.logProgress(stats.currentChunk, stats.totalChunks, elapsed, eta, stats);
   }
@@ -1437,7 +1335,7 @@ async function importHistoricalData() {
   console.log(`Server Errors (502):       ${stats.serverErrors}`);
   console.log(`Retried Requests:          ${stats.retriedRequests}`);
   console.log(`Total Errors:              ${stats.totalErrors}`);
-
+  
   if (failedChunksQueue.length > 0) {
     console.log(`\n⚠️  ${failedChunksQueue.length} chunks still failed after retries`);
     console.log(`Run with --resume-failed to retry them later`);
@@ -1480,9 +1378,9 @@ process.on('SIGTERM', async () => {
     console.error(error.stack);
     logger.log(`Fatal error: ${error.message}`, 'error');
     logger.log(`Stack trace: ${error.stack}`, 'debug');
-
+    
     saveFailedChunks();
-
+    
     await pool.end();
     process.exit(1);
   }
