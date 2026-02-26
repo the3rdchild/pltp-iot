@@ -714,7 +714,7 @@ function fetchHoneywellData(params, retryAttempt = 0) {
     const url = new URL(CONFIG.API_URL);
     const requestBody = {
       SampleInterval: CONFIG.SAMPLE_INTERVAL,
-      ResampleMethod: "Interpolated",
+      ResampleMethod: "Around",
       MinimumConfidence: 100,
       MaxRows: CONFIG.MAX_ROWS_PER_REQUEST,
       TimeFormat: 1,
@@ -756,6 +756,8 @@ function fetchHoneywellData(params, retryAttempt = 0) {
           const error = new Error(`502 Bad Gateway - Server unavailable`);
           error.statusCode = 502;
           error.retryable = true;
+
+          logger.log(`502 Error for ${params.TagName} (attempt ${retryAttempt + 1}/${CONFIG.MAX_RETRY_ATTEMPTS})`, 'retry');
           
           if (retryAttempt < CONFIG.MAX_RETRY_ATTEMPTS) {
             const delay = calculateBackoffDelay(retryAttempt);
@@ -781,30 +783,97 @@ function fetchHoneywellData(params, retryAttempt = 0) {
           }
           return;
         }
-        
-        // Other HTTP errors
-        if (res.statusCode !== 200) {
-          const error = new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`);
+
+        // Handle other 5xx errors
+        if (res.statusCode >= 500) {
+          stats.serverErrors++;
+          consecutiveErrors++;
+          
+          const error = new Error(`HTTP ${res.statusCode}: ${res.statusMessage} (${params.TagName})`);
           error.statusCode = res.statusCode;
+          error.retryable = true;
+          
+          logger.log(`Server error ${res.statusCode} for ${params.TagName} (attempt ${retryAttempt + 1}/${CONFIG.MAX_RETRY_ATTEMPTS})`, 'retry');
+          
+          if (retryAttempt < CONFIG.MAX_RETRY_ATTEMPTS) {
+            const delay = calculateBackoffDelay(retryAttempt);
+            stats.retriedRequests++;
+            
+            await sleep(delay, true);
+            resolve(fetchHoneywellData(params, retryAttempt + 1));
+          } else {
+            reject(error);
+          }
+          return;
+        }
+        
+        // Handle 4xx client errors (don't retry)
+        if (res.statusCode >= 400 && res.statusCode < 500) {
+          const error = new Error(`HTTP ${res.statusCode}: ${res.statusMessage} (${params.TagName})`);
+          error.statusCode = res.statusCode;
+          error.retryable = false;
           reject(error);
           return;
         }
-
-        try {
-          const jsonData = JSON.parse(data);
-          
-          if (!jsonData.status) {
-            reject(new Error(jsonData.message || 'API returned error'));
-            return;
+        
+        // Only parse JSON for successful responses (200-299)
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            // ✅ FIX: Check if response is actually JSON
+            const contentType = res.headers['content-type'] || '';
+            
+            if (!contentType.includes('application/json')) {
+              logger.log(`Unexpected content-type: ${contentType} for ${params.TagName}`, 'warn');
+              logger.log(`Response body: ${data.substring(0, 500)}`, 'debug');
+              
+              const error = new Error(`Unexpected response type: ${contentType}`);
+              error.retryable = true;
+              
+              if (retryAttempt < CONFIG.MAX_RETRY_ATTEMPTS) {
+                const delay = calculateBackoffDelay(retryAttempt);
+                stats.retriedRequests++;
+                await sleep(delay);
+                resolve(fetchHoneywellData(params, retryAttempt + 1));
+              } else {
+                reject(error);
+              }
+              return;
+            }
+            
+            const jsonData = JSON.parse(data);
+            
+            if (!jsonData.status) {
+              reject(new Error(jsonData.message || 'API returned error'));
+              return;
+            }
+            
+            // Success - reset consecutive errors
+            consecutiveErrors = 0;
+            serverHealthy = true;
+            
+            resolve(jsonData);
+          } catch (error) {
+            // JSON parse error
+            logger.log(`JSON parse error for ${params.TagName}: ${error.message}`, 'error');
+            logger.log(`Response preview: ${data.substring(0, 200)}...`, 'debug');
+            
+            const parseError = new Error(`Failed to parse API response: ${error.message}`);
+            parseError.retryable = true;
+            
+            if (retryAttempt < CONFIG.MAX_RETRY_ATTEMPTS) {
+              const delay = calculateBackoffDelay(retryAttempt);
+              stats.retriedRequests++;
+              await sleep(delay);
+              resolve(fetchHoneywellData(params, retryAttempt + 1));
+            } else {
+              reject(parseError);
+            }
           }
-          
-          // Success - reset consecutive errors
-          consecutiveErrors = 0;
-          serverHealthy = true;
-          
-          resolve(jsonData);
-        } catch (error) {
-          reject(new Error('Failed to parse API response: ' + error.message));
+        } else {
+          // Unexpected status code
+          const error = new Error(`Unexpected HTTP ${res.statusCode}: ${res.statusMessage}`);
+          error.statusCode = res.statusCode;
+          reject(error);
         }
       });
     });
@@ -812,6 +881,8 @@ function fetchHoneywellData(params, retryAttempt = 0) {
     req.on('error', async (error) => {
       stats.totalErrors++;
       consecutiveErrors++;
+
+      logger.log(`Network error for ${params.TagName}: ${error.message}`, 'error');
       
       if (isRetryableError(error) && retryAttempt < CONFIG.MAX_RETRY_ATTEMPTS) {
         const delay = calculateBackoffDelay(retryAttempt);
