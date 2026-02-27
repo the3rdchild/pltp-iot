@@ -414,7 +414,7 @@ function calculateCurrent(record) {
     if (current > MAX_CURRENT) {
       logger.log(`Current exceeds max limit: ${current.toFixed(2)} A > ${MAX_CURRENT} A`, 'warn');
       stats.currentCalculationErrors++;
-      return 0;
+      return null;
     }
 
     if (current < 0) {
