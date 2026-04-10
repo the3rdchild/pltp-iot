@@ -2,18 +2,20 @@ const https = require('https');
 
 // TagName mapping dari Honeywell ke column database
 const TAGNAME_TO_COLUMN = {
-  '5LBB31FP002PVI.PV': 'pressure',           // Main Steam Pressure
-  '5LBB31FF001PVI.PV': 'flow_rate',          // Main Steam Flow
-  '5LBB31FT001PVI.PV': 'temperature',        // Main Steam Temp
-  '5BAT01AQ1-B02PVI.PV': 'gen_reactive_power', // Gen Reactive Power Net
-  '5MKA01FE008PVI.PV': 'gen_output',         // Gen Output MW
-  '5MKA01FE010PVI.PV': 'gen_frequency',      // Gen Frequency
-  '5MAD02FS011PVI.PV': 'speed_detection',    // Turbine Speed
-  '5CGA01FG001PVI.PV': 'mcv_l',              // MCV L Position
-  '5CGA01FG002PVI.PV': 'mcv_r',              // MCV R Position
-  '5MKA01FE004PVI.PV': 'gen_voltage_u_v',    // Voltage U-V
-  '5MKA01FE005PVI.PV': 'gen_voltage_v_w',    // Voltage V-W
-  '5MKA01FE006PVI.PV': 'gen_voltage_w_u'     // Voltage W-U
+  '5LBB31FP002PVI.PV': 'pressure',
+  '5LBB31FF001PVI.PV': 'flow_rate',
+  '5LBB31FT001PVI.PV': 'temperature',
+  '5BAT01AQ1-B02PVI.PV': 'gen_reactive_power',
+  '5MKA01FE008PVI.PV': 'gen_output',
+  '5MKA01FE010PVI.PV': 'gen_frequency',
+  '5MAD02FS011PVI.PV': 'speed_detection',
+  '5CGA01FG001PVI.PV': 'mcv_l',
+  '5CGA01FG002PVI.PV': 'mcv_r',
+  '5MKA01FE004PVI.PV': 'gen_voltage_u_v',
+  '5MKA01FE005PVI.PV': 'gen_voltage_v_w',
+  '5MKA01FE006PVI.PV': 'gen_voltage_w_u',
+  '5LBB31FQ001PVI.PV': 'tds',
+  '5LBB31FT002PVI.PV': 'tempt_tds'
 };
 
 /**
@@ -158,7 +160,8 @@ async function fetchLiveDataForDashboard() {
     'speed_detection': '5MAD02FS011PVI.PV',
     'gen_voltage_u_v': '5MKA01FE004PVI.PV',
     'gen_voltage_v_w': '5MKA01FE005PVI.PV',
-    'gen_voltage_w_u': '5MKA01FE006PVI.PV'
+    'gen_voltage_w_u': '5MKA01FE006PVI.PV',
+    'tds': '5LBB31FQ001PVI.PV'
   };
 
   // Fetch all tags in parallel for better performance (avoids timeout)
