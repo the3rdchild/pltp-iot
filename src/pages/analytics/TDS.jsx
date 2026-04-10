@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 // a. Import - test-aware (uses mock data in /test environment)
 import { useAnalyticsData } from '../../hooks/useTestAwareAnalyticsData';
-import { transformChartData, getSummaryStats, formatValueWithUnit } from '../../utils/analyticsHelpers';
+import { formatValueWithUnit } from '../../utils/analyticsHelpers';
 import { useAnomalyCounts } from '../../hooks/useAnomalyTracker';
 import { useMetricStats } from '../../hooks/useMetricStatistics';
 import GaugeChart from '../../components/GaugeChart';
@@ -31,12 +31,9 @@ const TDS = () => {
     const [timeRange] = useState('1d');
     const limitData = getLimitData();
 
-    // b. Replace simulation
-    const { liveData, chartData, tableData, loading } = useAnalyticsData('tds', timeRange);
+    const { liveData, loading } = useAnalyticsData('tds', timeRange);
 
-    // c. Use real data
     const tdsValue = liveData?.value;
-    const chartPoints = transformChartData(chartData?.chart);
     const changePct = liveData?.change_pct;
 
     // Real-time statistics tracking
@@ -291,7 +288,6 @@ const TDS = () => {
                 unit="ppm"
                 fetchFromApi={true}
                 liveValue={tdsValue}
-                loading={loading}
               />
             </Grid>
 

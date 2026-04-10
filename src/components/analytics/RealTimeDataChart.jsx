@@ -21,7 +21,7 @@ const RealTimeDataChart = ({
   dataType = 'dryness',
   unit = '%',
   yAxisTitle = 'Dryness (%)',
-  xAxisTitle = 'Time x60',
+  xAxisTitle = null,   // null = auto-compute from selected time range
   legendItems = [
     { name: 'Trend', color: '#3b82f6' },
     { name: 'Max', color: '#ef4444' },
@@ -53,7 +53,10 @@ const RealTimeDataChart = ({
     try {
       const res = await getChartData(dataType, range);
       const chart = res?.data?.chart || [];
-      return chart.map(p => p.avg ?? p.value ?? 0).filter(v => v != null);
+      return {
+        values: chart.map(p => p.avg ?? p.value ?? 0),
+        timestamps: chart.map(p => p.timestamp)
+      };
     } catch (err) {
       console.error(`Error fetching chart data for ${dataType}:`, err);
       return null;
@@ -62,6 +65,7 @@ const RealTimeDataChart = ({
 
   const [timeRange, setTimeRange] = useState('now');
   const [chartData, setChartData] = useState([]);
+  const [apiTimestamps, setApiTimestamps] = useState([]); // real timestamps from API
   const [fieldData, setFieldData] = useState([]);
   const [aiData, setAiData] = useState([]);
   const [datePickerAnchor, setDatePickerAnchor] = useState(null);
@@ -133,11 +137,13 @@ const RealTimeDataChart = ({
     } else if (fetchFromApi && !isTestEnvironment && ['now', '1h', '1d', '7d', '1m'].includes(timeRange)) {
       // Fetch real data from API for standard ranges
       dbFetchedRef.current = false;
+      setApiTimestamps([]);
       setShowComparisonData(false);
       const rangeToFetch = timeRange === 'now' ? '1h' : timeRange;
-      fetchChartFromAPI(rangeToFetch).then(values => {
-        if (values && values.length > 0) {
-          setChartData(values);
+      fetchChartFromAPI(rangeToFetch).then(result => {
+        if (result && result.values.length > 0) {
+          setChartData(result.values);
+          setApiTimestamps(result.timestamps);
           dbFetchedRef.current = true;
         }
       });
@@ -188,7 +194,9 @@ const RealTimeDataChart = ({
     if (timeRange !== 'now' || !fetchFromApi || isTestEnvironment || !dbFetchedRef.current) return;
     if (liveValue == null) return;
 
+    const now = new Date().toISOString();
     setChartData(prev => [...prev.slice(-59), liveValue]);
+    setApiTimestamps(prev => [...prev.slice(-59), now]);
   }, [liveValue, timeRange, fetchFromApi, isTestEnvironment]);
 
   // Calculate statistics
@@ -248,6 +256,37 @@ const RealTimeDataChart = ({
     ];
   }, [stats, unit, showComparisonData]);
 
+  // Map time range to a readable x-axis label
+  const XAXIS_LABEL_MAP = {
+    now:    'Real-time',
+    '1h':   'Last 1 Hour',
+    '1d':   'Last 24 Hours',
+    '7d':   'Last 7 Days',
+    '1m':   'Last 30 Days',
+    '1y':   'Last 1 Year',
+    all:    'All Time',
+    custom: 'Custom Range'
+  };
+  const computedXAxisTitle = xAxisTitle ?? XAXIS_LABEL_MAP[timeRange] ?? timeRange;
+
+  // Format a timestamp string for x-axis labels based on the active range
+  const formatTS = (ts) => {
+    if (!ts) return '';
+    const d = new Date(ts);
+    switch (timeRange) {
+      case 'now':
+      case '1h':
+        return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      case '1d':
+        return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      case '7d':
+      case '1m':
+        return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+      default:
+        return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+    }
+  };
+
   // Initialize ApexCharts (only once or when major config changes)
   useEffect(() => {
     if (!chartRef.current) return;
@@ -266,7 +305,9 @@ const RealTimeDataChart = ({
       ? (fieldData.length > 0 ? fieldData : Array(60).fill(0))
       : (chartData.length > 0 ? chartData : Array(60).fill(0));
 
-    const categories = Array.from({ length: initialData.length }, (_, i) => `${i + 1}`);
+    const categories = apiTimestamps.length > 0
+      ? apiTimestamps.map(ts => formatTS(ts))
+      : Array.from({ length: initialData.length }, (_, i) => `${i + 1}`);
 
     const annotations = [];
     if (thresholds.showMax && maxValue) {
@@ -362,7 +403,7 @@ const RealTimeDataChart = ({
         axisBorder: { show: false },
         axisTicks: { show: false },
         title: {
-          text: xAxisTitle,
+          text: computedXAxisTitle,
           style: {
             color: '#86868b',
             fontSize: '12px',
@@ -437,7 +478,7 @@ const RealTimeDataChart = ({
         chartInstanceRef.current = null;
       }
     };
-  }, [timeRange, showComparisonData, unit, yAxisTitle, xAxisTitle, thresholds, chartRefConfig, dataType]);
+  }, [timeRange, showComparisonData, unit, yAxisTitle, computedXAxisTitle, thresholds, chartRefConfig, dataType, apiTimestamps]);
 
   // Update chart data without re-rendering (for smooth updates)
   useEffect(() => {
@@ -490,8 +531,13 @@ const RealTimeDataChart = ({
         ]
       : [{ name: yAxisTitle, data: chartData }];
 
+    const updatedCategories = apiTimestamps.length > 0
+      ? apiTimestamps.map(ts => formatTS(ts))
+      : undefined;
+
     chartInstanceRef.current.updateOptions({
       series: series,
+      ...(updatedCategories ? { xaxis: { categories: updatedCategories } } : {}),
       yaxis: {
         min: minValue ? Math.floor(minValue * 0.99) : undefined,
         max: maxValue ? Math.ceil(maxValue * 1.01) : undefined
@@ -500,7 +546,7 @@ const RealTimeDataChart = ({
         yaxis: annotations
       }
     }, false, timeRange === 'now' && !showComparisonData);
-  }, [chartData, aiData, fieldData, stats, showComparisonData, timeRange, yAxisTitle, thresholds, chartRefConfig, dataType]);
+  }, [chartData, aiData, fieldData, stats, showComparisonData, timeRange, yAxisTitle, thresholds, chartRefConfig, dataType, apiTimestamps]);
 
   const handleTimeRangeChange = (newRange) => {
     setTimeRange(newRange);
@@ -655,7 +701,7 @@ const RealTimeDataChart = ({
       <div ref={chartRef}></div>
 
       {/* Time Range Buttons */}
-      <Box sx={{ display: 'flex', justifyContent: 'right', mt: -2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
         <ButtonGroup variant="outlined" size="small">
           {timeRanges.map((range) => (
             <Button
@@ -688,7 +734,7 @@ RealTimeDataChart.propTypes = {
   dataType: PropTypes.oneOf(['dryness', 'ncg', 'tds', 'pressure', 'temperature', 'flow']),
   unit: PropTypes.string,
   yAxisTitle: PropTypes.string,
-  xAxisTitle: PropTypes.string,
+  xAxisTitle: PropTypes.string, // null = auto-computed from time range
   legendItems: PropTypes.arrayOf(
     PropTypes.shape({
       name: PropTypes.string.isRequired,
