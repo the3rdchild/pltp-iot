@@ -935,6 +935,56 @@ const getAi2Data = async (req, res) => {
   }
 };
 
+// Get aggregated daily stats for an ai2 metric (ncg_predict | dryness_predict)
+const getAi2AggregatedStats = async (req, res) => {
+  const VALID_AI2_METRICS = ['ncg_predict', 'dryness_predict', 'ncg_confidence', 'dryness_confidence'];
+  const { metric = 'ncg_predict' } = req.query;
+
+  if (!VALID_AI2_METRICS.includes(metric)) {
+    return res.status(400).json({
+      success: false,
+      message: `Invalid metric. Valid: ${VALID_AI2_METRICS.join(', ')}`
+    });
+  }
+
+  try {
+    const sql = `
+      SELECT
+        ROW_NUMBER() OVER (ORDER BY DATE(processed_at) DESC) AS no,
+        DATE(processed_at)::text                              AS date,
+        MIN(${metric})                                        AS min_value,
+        MAX(${metric})                                        AS max_value,
+        AVG(${metric})                                        AS avg_value,
+        COALESCE(STDDEV(${metric}), 0)                        AS std_dev
+      FROM ai2
+      WHERE ${metric} IS NOT NULL AND processed_at IS NOT NULL
+      GROUP BY DATE(processed_at)
+      ORDER BY DATE(processed_at) DESC
+      LIMIT 60
+    `;
+
+    const result = await query(sql);
+
+    const data = result.rows.map(row => ({
+      no:           parseInt(row.no),
+      date:         row.date,
+      minValue:     parseFloat(parseFloat(row.min_value).toFixed(4)),
+      maxValue:     parseFloat(parseFloat(row.max_value).toFixed(4)),
+      average:      parseFloat(parseFloat(row.avg_value).toFixed(4)),
+      stdDeviation: parseFloat(parseFloat(row.std_dev).toFixed(4))
+    }));
+
+    res.json({ success: true, data });
+  } catch (error) {
+    console.error('Error fetching ai2 aggregated stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch ai2 aggregated stats',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   fetchHoneywellData,
   receiveExternalData,
@@ -946,5 +996,6 @@ module.exports = {
   generateDummyData,
   validateSetup,
   receiveAi2Data,
-  getAi2Data
+  getAi2Data,
+  getAi2AggregatedStats
 };

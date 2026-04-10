@@ -11,7 +11,8 @@ const {
   generateDummyData,
   validateSetup,
   receiveAi2Data,
-  getAi2Data
+  getAi2Data,
+  getAi2AggregatedStats
 } = require('../controllers/externalController');
 
 // Import API Key authentication middleware
@@ -46,6 +47,9 @@ router.post('/batch/ulubelu', validateApiKey, receiveBatchUlubeluData);
 
 // GET /api/external/ai2 - Get latest AI2 predictions
 router.get('/ai2', getAi2Data);
+
+// GET /api/external/ai2/stats - Get daily aggregated stats for an ai2 metric
+router.get('/ai2/stats', getAi2AggregatedStats);
 
 // POST /api/external/ai2 - Receive AI2 predictions (dryness & NCG)
 router.post('/ai2', receiveAi2Data);

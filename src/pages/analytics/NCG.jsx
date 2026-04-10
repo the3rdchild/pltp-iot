@@ -2,6 +2,7 @@ import { Grid, Box, Typography } from '@mui/material';
 import { useState, useEffect, useRef } from 'react';
 
 import { useAi2Data } from '../../hooks/useAi2Data';
+import { useAi2StatsTable } from '../../hooks/useAi2StatsTable';
 import { useAnomalyCounts } from '../../hooks/useAnomalyTracker';
 import { useMetricStats } from '../../hooks/useMetricStatistics';
 
@@ -26,6 +27,7 @@ const NCG = () => {
     const limitData = getLimitData();
 
     const { liveData, loading } = useAi2Data();
+    const { data: ncgTableData } = useAi2StatsTable('ncg_predict');
     const ncg = liveData?.ncg_predict != null ? parseFloat(liveData.ncg_predict) : null;
 
     const [changePct, setChangePct] = useState(null);
@@ -195,6 +197,7 @@ const NCG = () => {
                 title="Tabel Data Statistik"
                 subtitle="Tabel data statistik yang telah diperoleh"
                 metric="ncg"
+                data={ncgTableData}
               />
             </Grid>
           </Grid>
