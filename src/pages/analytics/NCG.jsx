@@ -28,13 +28,13 @@ const NCG = () => {
 
     const { liveData, loading } = useAi2Data();
     const { data: ncgTableData } = useAi2StatsTable('ncg_predict');
-    const ncg = liveData?.ncg_predict != null ? parseFloat(liveData.ncg_predict) : null;
+    const ncg = liveData?.ncg_predict != null ? parseFloat(liveData.ncg_predict) : NaN;
 
     const [changePct, setChangePct] = useState(null);
     const prevNcgRef = useRef(null);
 
     useEffect(() => {
-        if (ncg == null) return;
+        if (ncg == null || isNaN(ncg)) return;
         const prev = prevNcgRef.current;
         if (prev == null) {
             setChangePct(0);

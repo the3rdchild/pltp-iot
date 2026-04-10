@@ -722,15 +722,19 @@ export default function DashboardDefault() {
     if (tdsVal > limitData["TDS: Overall"].abnormalHigh) criticalCount++;
     else if (tdsVal > limitData["TDS: Overall"].warningHigh) warningCount++;
 
-    // Check Dryness (already in percentage)
-    const drynessVal = parseValue(metrics.dryness?.value, 95);
-    if (drynessVal < limitData.dryness.abnormalLow || drynessVal > limitData.dryness.abnormalHigh) criticalCount++;
-    else if (drynessVal < limitData.dryness.warningLow || drynessVal > limitData.dryness.warningHigh) warningCount++;
+    // Check Dryness — from ai2 predictions, not sensor_data
+    const drynessVal = ai2LiveData?.dryness_predict != null ? parseFloat(ai2LiveData.dryness_predict) : NaN;
+    if (!isNaN(drynessVal)) {
+      if (drynessVal < limitData.dryness.abnormalLow || drynessVal > limitData.dryness.abnormalHigh) criticalCount++;
+      else if (drynessVal < limitData.dryness.warningLow || drynessVal > limitData.dryness.warningHigh) warningCount++;
+    }
 
-    // Check NCG
-    const ncgVal = parseValue(metrics.ncg?.value, 0);
-    if (ncgVal > limitData.ncg.abnormalHigh) criticalCount++;
-    else if (ncgVal > limitData.ncg.warningHigh) warningCount++;
+    // Check NCG — from ai2 predictions, not sensor_data
+    const ncgVal = ai2LiveData?.ncg_predict != null ? parseFloat(ai2LiveData.ncg_predict) : NaN;
+    if (!isNaN(ncgVal)) {
+      if (ncgVal > limitData.ncg.abnormalHigh) criticalCount++;
+      else if (ncgVal > limitData.ncg.warningHigh) warningCount++;
+    }
 
     // Check Pressure
     const pressureVal = parseValue(metrics.pressure?.value, 0);

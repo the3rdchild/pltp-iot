@@ -26,13 +26,13 @@ const Dryness = () => {
     const limitData = getLimitData();
 
     const { liveData, loading } = useAi2Data();
-    const dryness = liveData?.dryness_predict != null ? parseFloat(liveData.dryness_predict) : null;
+    const dryness = liveData?.dryness_predict != null ? parseFloat(liveData.dryness_predict) : NaN;
 
     const [changePct, setChangePct] = useState(null);
     const prevDryRef = useRef(null);
 
     useEffect(() => {
-        if (dryness == null) return;
+        if (dryness == null || isNaN(dryness)) return;
         const prev = prevDryRef.current;
         if (prev == null) {
             setChangePct(0);
