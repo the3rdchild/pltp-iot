@@ -259,13 +259,13 @@ const RealTimeDataChart = ({
   // Map time range to a readable x-axis label
   const XAXIS_LABEL_MAP = {
     now:    'Real-time',
-    '1h':   'Last 1 Hour',
-    '1d':   'Last 24 Hours',
-    '7d':   'Last 7 Days',
-    '1m':   'Last 30 Days',
-    '1y':   'Last 1 Year',
-    all:    'All Time',
-    custom: 'Custom Range'
+    '1h':   'Time Range: 1h',
+    '1d':   'Time Range: 24 Hours',
+    '7d':   'Time Range: 7 Days',
+    '1m':   'Time Range: 30 Days',
+    '1y':   'Time Range: 1 Year',
+    all:    'Time Range: All',
+    custom: 'Time Range: Custom'
   };
   const computedXAxisTitle = xAxisTitle ?? XAXIS_LABEL_MAP[timeRange] ?? timeRange;
 

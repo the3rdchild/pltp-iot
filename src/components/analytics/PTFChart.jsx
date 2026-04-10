@@ -500,55 +500,58 @@ const PTFChart = ({
 
   return (
     <MainCard>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-        <Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+        <Box sx={{ flex: 1 }}>
           <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>{title}</Typography>
           <Typography variant="body2" color="text.secondary">{subtitle}</Typography>
         </Box>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<CalendarMonthIcon />}
-          onClick={handleDatePickerOpen}
-          sx={{
-            borderRadius: 2, textTransform: 'none', borderColor: '#d2d2d7', color: '#86868b',
-            '&:hover': { borderColor: '#86868b', backgroundColor: '#f5f5f7' }
-          }}
-        >
-          {isCustomRange
-            ? `${startDate.format('MMM DD, YYYY')} - ${endDate.format('MMM DD, YYYY')}`
-            : 'Select Range'}
-        </Button>
-        <Popover
-          open={openDatePicker}
-          anchorEl={datePickerAnchor}
-          onClose={handleDatePickerClose}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        >
-          <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker label="Start Date" value={startDate} onChange={(v) => setStartDate(v)} slotProps={{ textField: { size: 'small' } }} />
-              <DatePicker label="End Date" value={endDate} onChange={(v) => setEndDate(v)} slotProps={{ textField: { size: 'small' } }} />
-            </LocalizationProvider>
-            <Button variant="contained" size="small" onClick={handleApplyCustomRange} sx={{ textTransform: 'none' }}>Apply</Button>
-          </Box>
-        </Popover>
-      </Box>
 
-      {/* Legend */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 3, mb: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 16, height: 16, borderRadius: '3px', backgroundColor: '#3b82f6' }} />
-          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.875rem' }}>Pressure</Typography>
+        {/* Legend — centered */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flex: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Box sx={{ width: 15, height: 15, borderRadius: '10%', backgroundColor: '#3b82f6' }} />
+            <Typography variant="caption" color="textSecondary">Pressure</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Box sx={{ width: 15, height: 15, borderRadius: '10%', backgroundColor: '#ef4444' }} />
+            <Typography variant="caption" color="textSecondary">Temperature</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Box sx={{ width: 15, height: 15, borderRadius: '10%', backgroundColor: '#22c55e' }} />
+            <Typography variant="caption" color="textSecondary">Flow</Typography>
+          </Box>
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 16, height: 16, borderRadius: '3px', backgroundColor: '#ef4444' }} />
-          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.875rem' }}>Temperature</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 16, height: 16, borderRadius: '3px', backgroundColor: '#22c55e' }} />
-          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.875rem' }}>Flow</Typography>
+
+        <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<CalendarMonthIcon />}
+            onClick={handleDatePickerOpen}
+            sx={{
+              borderRadius: 2, textTransform: 'none', borderColor: '#d2d2d7', color: '#86868b',
+              '&:hover': { borderColor: '#86868b', backgroundColor: '#f5f5f7' }
+            }}
+          >
+            {isCustomRange
+              ? `${startDate.format('MMM DD, YYYY')} - ${endDate.format('MMM DD, YYYY')}`
+              : 'Select Range'}
+          </Button>
+          <Popover
+            open={openDatePicker}
+            anchorEl={datePickerAnchor}
+            onClose={handleDatePickerClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+          >
+            <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker label="Start Date" value={startDate} onChange={(v) => setStartDate(v)} slotProps={{ textField: { size: 'small' } }} />
+                <DatePicker label="End Date" value={endDate} onChange={(v) => setEndDate(v)} slotProps={{ textField: { size: 'small' } }} />
+              </LocalizationProvider>
+              <Button variant="contained" size="small" onClick={handleApplyCustomRange} sx={{ textTransform: 'none' }}>Apply</Button>
+            </Box>
+          </Popover>
         </Box>
       </Box>
 

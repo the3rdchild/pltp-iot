@@ -904,7 +904,7 @@ const receiveAi2Data = async (req, res) => {
 // Get latest AI2 predictions
 const getAi2Data = async (req, res) => {
   try {
-    const { limit = 50, status } = req.query;
+    const { limit = 50, status, start_date, end_date } = req.query;
 
     let sql = `SELECT * FROM ai2 WHERE 1=1`;
     const params = [];
@@ -914,8 +914,16 @@ const getAi2Data = async (req, res) => {
       sql += ` AND status = $${params.length}`;
     }
 
-    params.push(parseInt(limit));
-    sql += ` ORDER BY processed_at DESC LIMIT $${params.length}`;
+    if (start_date && end_date) {
+      params.push(start_date);
+      sql += ` AND processed_at >= $${params.length}`;
+      params.push(end_date);
+      sql += ` AND processed_at <= $${params.length}`;
+      sql += ` ORDER BY processed_at DESC`;
+    } else {
+      params.push(parseInt(limit));
+      sql += ` ORDER BY processed_at DESC LIMIT $${params.length}`;
+    }
 
     const result = await query(sql, params);
 
