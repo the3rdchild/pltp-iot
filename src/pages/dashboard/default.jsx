@@ -361,18 +361,21 @@ function DesktopLayout({
         transition: 'transform 0.3s ease-out, left 0.3s ease-out'
       }}>
         <Box
-          component="img"
-          src={mainImage}
-          alt="VENTURI System Diagram"
           sx={{
             position: 'absolute',
             top: IMAGE_CONFIG.top,
             left: IMAGE_CONFIG.left,
             transform: IMAGE_CONFIG.left === '50%' ? 'translateX(-50%)' : undefined,
             width: IMAGE_CONFIG.width,
-            height: 'auto',
+            height: `${DASHBOARD_CONFIG.baseHeight}px`,
+            backgroundImage: `url(${mainImage})`,
+            backgroundSize: 'contain',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'top center',
             zIndex: 0,
-            opacity: IMAGE_CONFIG.opacity
+            opacity: IMAGE_CONFIG.opacity,
+            userSelect: 'none',
+            pointerEvents: 'none',
           }}
         />
         <svg
