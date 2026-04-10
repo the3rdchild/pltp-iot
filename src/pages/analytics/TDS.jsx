@@ -21,15 +21,14 @@ import PriorityHighIcon from '@mui/icons-material/PriorityHigh';
 import RemoveIcon from '@mui/icons-material/Remove';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
 import AddIcon from '@mui/icons-material/Add';
-import { generateTDSTableData } from '../../data/chartData';
 
-const tdsCO2 = 0.5;
-const tdsArgon = 0.3;
-const tdsMethane = 0.2;
-const tdsMA3 = 0.1;
+const tdsCO2 = NaN;
+const tdsArgon = NaN;
+const tdsMethane = NaN;
+const tdsMA3 = NaN;
 
 const TDS = () => {
-    const [timeRange, setTimeRange] = useState('1d');
+    const [timeRange] = useState('1d');
     const limitData = getLimitData();
 
     // b. Replace simulation
@@ -132,7 +131,7 @@ const TDS = () => {
                       backgroundColor: (changePct > 0 ? 'success.light' : changePct < 0 ? 'error.light' : 'grey.100'),
                     }}
                   >
-                    {loading ? '...' : (changePct == null ? '–' : (changePct < 0 ? `+${changePct}%` : `${changePct}%`))}
+                    {loading ? '...' : (changePct == null ? '–' : (changePct > 0 ? `+${changePct}%` : `${changePct}%`))}
                   </Box>
                 </Box>
                 <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
@@ -288,11 +287,10 @@ const TDS = () => {
                 title="Real Time Data"
                 subtitle="TDS Overall level data chart"
                 dataType="tds"
-                data={generateTDSTableData}
                 yAxisTitle="TDS (ppm)"
                 unit="ppm"
-                timeRange={timeRange}
-                onTimeRangeChange={setTimeRange}
+                fetchFromApi={true}
+                liveValue={tdsValue}
                 loading={loading}
               />
             </Grid>

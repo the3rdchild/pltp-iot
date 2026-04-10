@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import ApexCharts from 'apexcharts';
 import { Box, Typography, Button, ButtonGroup, Popover, Grid } from '@mui/material';
@@ -13,6 +13,7 @@ import { generateRealTimeChartData } from '../../data/simulasi';
 import { generateAIData, generateFieldData } from '../../data/chartData';
 import { useTestData } from '../../contexts/TestDataContext';
 import { useChartReferenceConfig } from '../../hooks/useChartReferenceConfig';
+import { getChartData } from '../../utils/api';
 
 const RealTimeDataChart = ({
   title = 'Real Time Data',
@@ -32,7 +33,9 @@ const RealTimeDataChart = ({
     showMin: true,
     showAverage: true
   },
-  showComparison = false // Show AI vs Field comparison (only for dryness/ncg on 1y+ ranges)
+  showComparison = false, // Show AI vs Field comparison (only for dryness/ncg on 1y+ ranges)
+  fetchFromApi = false,  // Fetch real data from API instead of simulation
+  liveValue = null       // Current live value to append in 'now' mode (requires fetchFromApi=true)
 }) => {
   const location = useLocation();
   const isTestEnvironment = location.pathname.startsWith('/test');
@@ -44,6 +47,18 @@ const RealTimeDataChart = ({
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
   const updateIntervalRef = useRef(null);
+  const dbFetchedRef = useRef(false);
+
+  const fetchChartFromAPI = useCallback(async (range) => {
+    try {
+      const res = await getChartData(dataType, range);
+      const chart = res?.data?.chart || [];
+      return chart.map(p => p.avg ?? p.value ?? 0).filter(v => v != null);
+    } catch (err) {
+      console.error(`Error fetching chart data for ${dataType}:`, err);
+      return null;
+    }
+  }, [dataType]);
 
   const [timeRange, setTimeRange] = useState('now');
   const [chartData, setChartData] = useState([]);
@@ -115,6 +130,17 @@ const RealTimeDataChart = ({
       setAiData(aiDataPoints.map(d => d.value));
       setFieldData(fieldDataPoints.map(d => d.value));
       setShowComparisonData(true);
+    } else if (fetchFromApi && !isTestEnvironment && ['now', '1h', '1d', '7d', '1m'].includes(timeRange)) {
+      // Fetch real data from API for standard ranges
+      dbFetchedRef.current = false;
+      setShowComparisonData(false);
+      const rangeToFetch = timeRange === 'now' ? '1h' : timeRange;
+      fetchChartFromAPI(rangeToFetch).then(values => {
+        if (values && values.length > 0) {
+          setChartData(values);
+          dbFetchedRef.current = true;
+        }
+      });
     } else {
       // Use test data or real-time data for shorter ranges
       let initialData;
@@ -126,11 +152,14 @@ const RealTimeDataChart = ({
       setChartData(initialData);
       setShowComparisonData(false);
     }
-  }, [timeRange, dataType, isCustomRange, startDate, endDate, shouldShowComparison, isTestEnvironment, testDataContext]);
+  }, [timeRange, dataType, isCustomRange, startDate, endDate, shouldShowComparison, isTestEnvironment, testDataContext, fetchFromApi, fetchChartFromAPI]);
 
   // Real-time updates for 'Now' mode only
   useEffect(() => {
     if (timeRange === 'now' && !showComparisonData) {
+      // When using API data in production, skip simulation interval (live appended via liveValue prop)
+      if (fetchFromApi && !isTestEnvironment) return;
+
       updateIntervalRef.current = setInterval(() => {
         setChartData(prevData => {
           if (isTestEnvironment && testDataContext) {
@@ -152,7 +181,15 @@ const RealTimeDataChart = ({
         clearInterval(updateIntervalRef.current);
       }
     };
-  }, [timeRange, dataType, showComparisonData, isTestEnvironment, testDataContext]);
+  }, [timeRange, dataType, showComparisonData, isTestEnvironment, testDataContext, fetchFromApi]);
+
+  // Append live value in 'now' mode when using real API data
+  useEffect(() => {
+    if (timeRange !== 'now' || !fetchFromApi || isTestEnvironment || !dbFetchedRef.current) return;
+    if (liveValue == null) return;
+
+    setChartData(prev => [...prev.slice(-59), liveValue]);
+  }, [liveValue, timeRange, fetchFromApi, isTestEnvironment]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -663,7 +700,9 @@ RealTimeDataChart.propTypes = {
     showMin: PropTypes.bool,
     showAverage: PropTypes.bool
   }),
-  showComparison: PropTypes.bool
+  showComparison: PropTypes.bool,
+  fetchFromApi: PropTypes.bool,
+  liveValue: PropTypes.number
 };
 
 export default RealTimeDataChart;
