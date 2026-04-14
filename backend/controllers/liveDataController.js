@@ -8,8 +8,12 @@ const { getMetricAnomalyStatus, getLimitForMetric } = require('../utils/limits')
 const VALID_METRICS = [
   'tds', 'pressure', 'temperature', 'flow_rate', 'flow',
   'gen_output', 'active_power', 'voltage', 'gen_reactive_power', 'reactive_power',
-  'speed_detection', 'speed', 'current', 'gen_power_factor', 'gen_frequency'
+  'speed_detection', 'speed', 'current', 'gen_power_factor', 'gen_frequency',
+  'dryness', 'ncg'
 ];
+
+// AI2 metrics — stored in ai2 table, not sensor_data
+const AI2_METRIC_COL = { dryness: 'dryness_predict', ncg: 'ncg_predict' };
 
 /**
  * GET /api/data/live
@@ -420,6 +424,54 @@ const getStatsData = async (req, res) => {
       });
     }
 
+    // AI2 metrics (dryness, ncg) — query ai2 table
+    if (AI2_METRIC_COL[metric]) {
+      const col = AI2_METRIC_COL[metric];
+      let sql = `SELECT id, processed_at AS timestamp, ${col} AS value, status FROM ai2 WHERE ${col} IS NOT NULL`;
+      const params = [];
+
+      if (start_date) { params.push(start_date); sql += ` AND processed_at >= $${params.length}`; }
+      if (end_date)   { params.push(end_date);   sql += ` AND processed_at <= $${params.length}`; }
+
+      sql += ` ORDER BY processed_at DESC`;
+      params.push(parseInt(limit), parseInt(offset));
+      sql += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
+
+      const result = await query(sql, params);
+
+      let countSql = `SELECT COUNT(*) AS total FROM ai2 WHERE ${col} IS NOT NULL`;
+      const countParams = [];
+      if (start_date) { countParams.push(start_date); countSql += ` AND processed_at >= $${countParams.length}`; }
+      if (end_date)   { countParams.push(end_date);   countSql += ` AND processed_at <= $${countParams.length}`; }
+      const countResult = await query(countSql, countParams);
+      const totalRecords = parseInt(countResult.rows[0].total);
+
+      const data = result.rows.map(row => {
+        const value = row.value !== null ? parseFloat(row.value) : null;
+        const anomaly = getMetricAnomalyStatus(metric, value);
+        return { id: row.id, timestamp: row.timestamp, device_id: 'ai2', value, status: anomaly.status, details: anomaly.details };
+      });
+
+      const values = data.map(d => d.value).filter(v => v !== null);
+      const summary = values.length > 0 ? {
+        min: parseFloat(Math.min(...values).toFixed(3)),
+        max: parseFloat(Math.max(...values).toFixed(3)),
+        avg: parseFloat((values.reduce((s, v) => s + v, 0) / values.length).toFixed(3)),
+        count: values.length
+      } : null;
+
+      const limit_info = getLimitForMetric(metric);
+      return res.json({
+        success: true,
+        data: {
+          metric, summary,
+          limit: limit_info ? { unit: limit_info.unit, min: limit_info.min, max: limit_info.max, warningLow: limit_info.warningLow, warningHigh: limit_info.warningHigh, abnormalLow: limit_info.abnormalLow, abnormalHigh: limit_info.abnormalHigh } : null,
+          records: data,
+          pagination: { total: totalRecords, limit: parseInt(limit), offset: parseInt(offset), current_page: Math.floor(parseInt(offset) / parseInt(limit)) + 1, total_pages: Math.ceil(totalRecords / parseInt(limit)) }
+        }
+      });
+    }
+
     const isCalculatedMetric = ['current', 'voltage'].includes(metric);
     const dbColumn = isCalculatedMetric ? null : getDbColumnForMetric(metric);
 
@@ -537,6 +589,36 @@ const getAggregatedStatsData = async (req, res) => {
         success: false,
         message: `Invalid metric. Valid metrics: ${VALID_METRICS.join(', ')}`
       });
+    }
+
+    // AI2 metrics (dryness, ncg) — query ai2 table
+    if (AI2_METRIC_COL[metric]) {
+      const col = AI2_METRIC_COL[metric];
+      const sql = `
+        SELECT
+          DATE(processed_at) AS date,
+          MIN(${col})    AS min_value,
+          MAX(${col})    AS max_value,
+          AVG(${col})    AS avg_value,
+          STDDEV(${col}) AS std_dev
+        FROM ai2
+        WHERE ${col} IS NOT NULL
+        GROUP BY DATE(processed_at)
+        ORDER BY date DESC
+        LIMIT 60
+      `;
+      const result = await query(sql);
+      const limit_info = getLimitForMetric(metric);
+      const unit = limit_info ? limit_info.unit : '';
+      const data = result.rows.map((row, index) => ({
+        no: index + 1,
+        date: row.date,
+        minValue:     row.min_value !== null ? `${parseFloat(parseFloat(row.min_value).toFixed(3))}${unit}` : '-',
+        maxValue:     row.max_value !== null ? `${parseFloat(parseFloat(row.max_value).toFixed(3))}${unit}` : '-',
+        average:      row.avg_value !== null ? `${parseFloat(parseFloat(row.avg_value).toFixed(3))}${unit}` : '-',
+        stdDeviation: row.std_dev  !== null ? `${parseFloat(parseFloat(row.std_dev).toFixed(3))}`          : '-'
+      }));
+      return res.json({ success: true, data });
     }
 
     const isCalculatedMetric = ['current', 'voltage'].includes(metric);

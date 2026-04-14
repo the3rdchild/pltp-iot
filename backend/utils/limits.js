@@ -34,7 +34,9 @@ const METRIC_TO_LIMIT_KEY = {
   reactive_power: 'reactive_power',
   speed_detection: 'speed_detection',
   speed: 'speed_detection',
-  current: 'current'
+  current: 'current',
+  dryness: 'dryness',
+  ncg: 'ncg'
 };
 
 /**
