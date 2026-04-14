@@ -37,10 +37,10 @@ const TDS = () => {
     const changePct = liveData?.change_pct;
 
     // Real-time statistics tracking
-    const tdsStats = useMetricStats('TDS: Overall', tdsValue);
+    const tdsStats = useMetricStats('tds', tdsValue);
 
     // Real-time anomaly tracking
-    const anomalies = useAnomalyCounts('TDS: Overall', tdsValue);
+    const anomalies = useAnomalyCounts('tds', tdsValue);
 
     const cardData = [
         {

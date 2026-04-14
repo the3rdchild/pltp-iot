@@ -609,6 +609,18 @@ const getNotNullCondition = (metric) => {
   return `${col} IS NOT NULL`;
 };
 
+// AI2 metric column mapping
+const AI2_METRIC_MAP = {
+  'dryness': 'dryness_predict',
+  'ncg': 'ncg_predict'
+};
+
+// Limits for AI2 metrics (mirrors Limit.json)
+const AI2_METRIC_LIMITS = {
+  'dryness': { warningLow: 97, warningHigh: 100 },
+  'ncg':     { warningLow: null, warningHigh: 5 }
+};
+
 /**
  * GET /api/data/metric-stats/:metric
  * Returns min, max, avg for 12h, 24h, 7d time windows
@@ -616,6 +628,38 @@ const getNotNullCondition = (metric) => {
 const getMetricStats = async (req, res) => {
   try {
     const { metric } = req.params;
+
+    // Handle AI2 metrics (dryness, ncg) — stored in ai2 table
+    if (AI2_METRIC_MAP[metric]) {
+      const col = AI2_METRIC_MAP[metric];
+      const sql = `
+        SELECT
+          MIN(CASE WHEN processed_at >= NOW() - INTERVAL '12 hours' THEN ${col} END) AS min_12h,
+          MAX(CASE WHEN processed_at >= NOW() - INTERVAL '12 hours' THEN ${col} END) AS max_12h,
+          AVG(CASE WHEN processed_at >= NOW() - INTERVAL '12 hours' THEN ${col} END) AS avg_12h,
+          MIN(CASE WHEN processed_at >= NOW() - INTERVAL '24 hours' THEN ${col} END) AS min_24h,
+          MAX(CASE WHEN processed_at >= NOW() - INTERVAL '24 hours' THEN ${col} END) AS max_24h,
+          AVG(CASE WHEN processed_at >= NOW() - INTERVAL '24 hours' THEN ${col} END) AS avg_24h,
+          MIN(CASE WHEN processed_at >= NOW() - INTERVAL '7 days' THEN ${col} END) AS min_7d,
+          MAX(CASE WHEN processed_at >= NOW() - INTERVAL '7 days' THEN ${col} END) AS max_7d,
+          AVG(CASE WHEN processed_at >= NOW() - INTERVAL '7 days' THEN ${col} END) AS avg_7d
+        FROM ai2
+        WHERE ${col} IS NOT NULL
+          AND processed_at >= NOW() - INTERVAL '7 days'
+      `;
+      const result = await query(sql);
+      const row = result.rows[0];
+      const round = (v) => v !== null && v !== undefined ? Math.round(parseFloat(v) * 1000) / 1000 : 0;
+      return res.json({
+        success: true, metric,
+        data: {
+          min12h: round(row.min_12h), max12h: round(row.max_12h), avg12h: round(row.avg_12h),
+          min24h: round(row.min_24h), max24h: round(row.max_24h), avg24h: round(row.avg_24h),
+          min7d:  round(row.min_7d),  max7d:  round(row.max_7d),  avg7d:  round(row.avg_7d)
+        }
+      });
+    }
+
     const expr = getMetricExpression(metric);
 
     if (!expr) {
@@ -674,6 +718,41 @@ const getMetricStats = async (req, res) => {
 const getAnomalyCounts = async (req, res) => {
   try {
     const { metric } = req.params;
+
+    // Handle AI2 metrics (dryness, ncg) — stored in ai2 table
+    if (AI2_METRIC_MAP[metric]) {
+      const col = AI2_METRIC_MAP[metric];
+      const limits = AI2_METRIC_LIMITS[metric];
+      const conditions = [];
+      if (limits.warningLow !== null)  conditions.push(`${col} < ${limits.warningLow}`);
+      if (limits.warningHigh !== null) conditions.push(`${col} > ${limits.warningHigh}`);
+
+      if (conditions.length === 0) {
+        return res.json({ success: true, metric, data: { last12h: 0, last24h: 0, last7d: 0 } });
+      }
+
+      const anomalyCondition = conditions.join(' OR ');
+      const sql = `
+        SELECT
+          COUNT(CASE WHEN processed_at >= NOW() - INTERVAL '12 hours' AND (${anomalyCondition}) THEN 1 END) AS count_12h,
+          COUNT(CASE WHEN processed_at >= NOW() - INTERVAL '24 hours' AND (${anomalyCondition}) THEN 1 END) AS count_24h,
+          COUNT(CASE WHEN processed_at >= NOW() - INTERVAL '7 days'   AND (${anomalyCondition}) THEN 1 END) AS count_7d
+        FROM ai2
+        WHERE ${col} IS NOT NULL
+          AND processed_at >= NOW() - INTERVAL '7 days'
+      `;
+      const result = await query(sql);
+      const row = result.rows[0];
+      return res.json({
+        success: true, metric,
+        data: {
+          last12h: parseInt(row.count_12h) || 0,
+          last24h: parseInt(row.count_24h) || 0,
+          last7d:  parseInt(row.count_7d)  || 0
+        }
+      });
+    }
+
     const expr = getMetricExpression(metric);
 
     if (!expr) {
