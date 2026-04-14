@@ -200,7 +200,7 @@ const Ai2Chart = ({
         animations: {
           enabled: timeRange === 'now' && !isCustomRange,
           easing: 'linear',
-          dynamicAnimation: { enabled: true, speed: 1000 }
+          dynamicAnimation: { enabled: false, speed: 1000 }
         }
       },
       series: [{ name: yAxisTitle, data: initialData }],
