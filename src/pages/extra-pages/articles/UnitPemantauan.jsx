@@ -4,6 +4,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import pertasmartLogo from '../../../assets/images/Pertasmart4x1.svg';
 import { generateLiveUnitData } from '../../../data/simulasi';
+import { useLiveData } from '../../../hooks/useTestAwareLiveData';
+import { useAi2Data } from '../../../hooks/useAi2Data';
 
 // Fix Leaflet default marker icon
 delete L.Icon.Default.prototype._getIconUrl;
@@ -25,22 +27,15 @@ const customIcon = new L.Icon({
   popupAnchor: [0, -40]
 });
 
-// Data lokasi - will be populated with live data
-const getLocations = (liveData) => ({
+// Data lokasi - kamojang uses real API data, ulubelu uses simulated data
+const getLocations = (kamojangData, ulubeluSimData) => ({
   kamojang: {
     id: 'kamojang',
     name: 'Kamojang Unit 5',
     shortName: 'Kamojang',
     location: 'Jawa Barat',
     position: [-7.1485, 107.7947],
-    data: {
-      dryness: liveData.kamojang.dryness,
-      tds: liveData.kamojang.tds,
-      ncg: liveData.kamojang.ncg,
-      pressure: liveData.kamojang.pressure,
-      temp: liveData.kamojang.temp,
-      power: liveData.kamojang.power
-    }
+    data: kamojangData
   },
   ulubelu: {
     id: 'ulubelu',
@@ -49,12 +44,12 @@ const getLocations = (liveData) => ({
     location: 'Lampung',
     position: [-5.0833, 104.5833],
     data: {
-      dryness: liveData.ulubelu.dryness,
-      tds: liveData.ulubelu.tds,
-      ncg: liveData.ulubelu.ncg,
-      pressure: liveData.ulubelu.pressure,
-      temp: liveData.ulubelu.temp,
-      power: liveData.ulubelu.power
+      dryness: ulubeluSimData.ulubelu.dryness,
+      tds: ulubeluSimData.ulubelu.tds,
+      ncg: ulubeluSimData.ulubelu.ncg,
+      pressure: ulubeluSimData.ulubelu.pressure,
+      temp: ulubeluSimData.ulubelu.temp,
+      power: ulubeluSimData.ulubelu.power
     }
   }
 });
@@ -88,22 +83,55 @@ const UnitPemantauan = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [targetLocation, setTargetLocation] = useState(null);
-  const [liveUnitData, setLiveUnitData] = useState(generateLiveUnitData());
+  // Real live data for Kamojang (same source as dashboard)
+  const { data: apiLiveData } = useLiveData();
+  const { liveData: ai2Data } = useAi2Data();
+
+  // Simulated data for Ulubelu (no real API available)
+  const [ulubeluSimData, setUlubeluSimData] = useState(generateLiveUnitData());
 
   const sidebarRef = useRef(null);
   const searchRef = useRef(null);
 
-  // Live data update every 1 second
+  // Ulubelu simulated data update every 1 second
   useEffect(() => {
     const interval = setInterval(() => {
-      setLiveUnitData(generateLiveUnitData());
+      setUlubeluSimData(generateLiveUnitData());
     }, 1000);
 
     return () => clearInterval(interval);
   }, []);
 
+  // Helper: safely parse numeric values
+  const parseValue = (value, fallback = null) => {
+    if (value === null || value === undefined || value === 'null') return fallback;
+    const parsed = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(parsed)) return fallback;
+    return Math.round(parsed * 100) / 100;
+  };
+
+  // Helper: format value with unit, fallback to 'N/A'
+  const fmt = (value, decimals, unit) => {
+    const v = parseValue(value);
+    return v != null ? `${v.toFixed(decimals)} ${unit}` : 'N/A';
+  };
+
+  // Build formatted Kamojang data from real API (mirrors dashboard logic)
+  const kamojangData = {
+    dryness: ai2Data?.dryness_predict != null
+      ? `${parseFloat(ai2Data.dryness_predict).toFixed(2)} %`
+      : fmt(apiLiveData?.metrics?.dryness?.value, 2, '%'),
+    tds: fmt(apiLiveData?.metrics?.tds?.value, 2, 'ppm'),
+    ncg: ai2Data?.ncg_predict != null
+      ? `${parseFloat(ai2Data.ncg_predict).toFixed(2)} wt%`
+      : fmt(apiLiveData?.metrics?.ncg?.value, 2, 'wt%'),
+    pressure: fmt(apiLiveData?.metrics?.pressure?.value, 2, 'barg'),
+    temp: fmt(apiLiveData?.metrics?.temperature?.value, 1, '°C'),
+    power: fmt(apiLiveData?.metrics?.active_power?.value, 2, 'MW'),
+  };
+
   // Get locations with live data
-  const locations = getLocations(liveUnitData);
+  const locations = getLocations(kamojangData, ulubeluSimData);
 
   // Search handler
   const handleSearch = (query) => {
