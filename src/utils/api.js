@@ -73,12 +73,8 @@ const buildURL = (endpoint, params = {}) => {
  */
 export const getLiveData = async () => {
   try {
-    // Get fresh config to support runtime changes
-    const currentConfig = getApiConfig();
-    const dataSource = currentConfig.liveDataSource || 'database';
-
     const response = await apiClient.get(apiConfig.endpoints.dashboard.liveData, {
-      params: { source: dataSource }
+      params: { source: 'honeywell' }
     });
     return response;
   } catch (error) {
