@@ -75,14 +75,17 @@ const TAGNAME_TO_COLUMN = {
   '5CGA01FG002PVI.PV': 'mcv_r',
   '5MKA01FE004PVI.PV': 'gen_voltage_u_v',
   '5MKA01FE005PVI.PV': 'gen_voltage_v_w',
-  '5MKA01FE006PVI.PV': 'gen_voltage_w_u'
+  '5MKA01FE006PVI.PV': 'gen_voltage_w_u',
+  '5LBB31FQ001PVI.PV': 'tds',
+  '5LBB31CT002PVI.PV': 'temp_tds'
 };
 
 const ALL_SENSOR_FIELDS = [
   'pressure', 'flow_rate', 'temperature',
   'gen_reactive_power', 'gen_output', 'gen_frequency',
   'speed_detection', 'mcv_l', 'mcv_r',
-  'gen_voltage_u_v', 'gen_voltage_v_w', 'gen_voltage_w_u'
+  'gen_voltage_u_v', 'gen_voltage_v_w', 'gen_voltage_w_u',
+  'tds', 'temp_tds'
 ];
 
 const args = process.argv.slice(2);
@@ -675,7 +678,7 @@ async function bulkInsertRecords(records) {
   const columns = ['timestamp', 'device_id', 'pressure', 'flow_rate', 'temperature',
                    'gen_reactive_power', 'gen_output', 'gen_frequency', 'speed_detection',
                    'mcv_l', 'mcv_r', 'gen_voltage_u_v', 'gen_voltage_v_w', 'gen_voltage_w_u', 
-                   'current', 'status'];
+                   'tds', 'temp_tds', 'current', 'status'];
 
   let totalInserted = 0;
 
@@ -706,6 +709,8 @@ async function bulkInsertRecords(records) {
         getValueOrNull(record.gen_voltage_u_v),
         getValueOrNull(record.gen_voltage_v_w),
         getValueOrNull(record.gen_voltage_w_u),
+        getValueOrNull(record.tds),
+        getValueOrNull(record.temp_tds),
         current, // NEW: Add calculated current
         'normal'
       ];
@@ -734,6 +739,8 @@ async function bulkInsertRecords(records) {
         gen_voltage_u_v = COALESCE(EXCLUDED.gen_voltage_u_v, sensor_data.gen_voltage_u_v),
         gen_voltage_v_w = COALESCE(EXCLUDED.gen_voltage_v_w, sensor_data.gen_voltage_v_w),
         gen_voltage_w_u = COALESCE(EXCLUDED.gen_voltage_w_u, sensor_data.gen_voltage_w_u),
+        tds = COALESCE(EXCLUDED.tds, sensor_data.tds),
+        temp_tds = COALESCE(EXCLUDED.temp_tds, sensor_data.temp_tds),
         current = COALESCE(EXCLUDED.current, sensor_data.current)
     `;
 
