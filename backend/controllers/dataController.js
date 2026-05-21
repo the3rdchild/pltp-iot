@@ -12,6 +12,7 @@ async function fetchTdsFromHoneywell() {
       StartTime: startTime,
       EndTime: endTime,
       MaxRows: 1,
+      MinimumConfidence: 50,
       ReductionData: 'now',
       TimeFormat: 1
     });
