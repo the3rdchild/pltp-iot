@@ -117,6 +117,7 @@ dist
 .firebaserc
 firebase.json
 
+# Project-specific generated docs / scripts
 backend/MIGRATION_GUIDE.md
 backend/run-migration.js
 backend/test-db-connection.js
@@ -139,3 +140,8 @@ DEPLOY_FIX.md
 HISTORICAL_DATA_IMPORT_GUIDE.md
 TEST_ENVIRONMENT_README.md
 STATISTICS_TABLE_API_SPEC.md
+backend/models/FULL-DDL-DB.sql
+.gitignore
+backend/models/revisi.md
+PIMS_Honeywell.postman_collection.json
+.claude/settings.json
