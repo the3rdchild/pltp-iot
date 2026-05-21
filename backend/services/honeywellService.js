@@ -144,7 +144,7 @@ function formatToHoneywellTimestamp(date) {
  */
 async function fetchLiveDataForDashboard() {
   const now = new Date();
-  const startTime = formatToHoneywellTimestamp(new Date(now.getTime() - 10000)); // 10 seconds ago
+  const startTime = formatToHoneywellTimestamp(new Date(now.getTime() - 300000)); // 5 minutes ago
   const endTime = formatToHoneywellTimestamp(now);
 
   const metrics = {};
@@ -172,22 +172,22 @@ async function fetchLiveDataForDashboard() {
         StartTime: startTime,
         EndTime: endTime,
         MaxRows: 1,
+        MinimumConfidence: 50,
         ReductionData: 'now'
       });
 
       if (response.data && response.data.length > 0) {
         const tagData = response.data[0];
         const values = tagData.Value || [];
-        const timestamps = tagData.TimeStamp || [];
         const confidences = tagData.Confidence || [];
 
-        if (values.length > 0 && confidences[0] >= 100) {
+        if (values.length > 0) {
           return {
             metricName,
             data: {
               value: values[0],
-              timestamp: timestamps[0] ? parseHoneywellTimestamp(timestamps[0]) : new Date().toISOString(),
-              confidence: confidences[0]
+              timestamp: new Date().toISOString(),
+              confidence: confidences[0] ?? null
             }
           };
         }

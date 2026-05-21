@@ -1,35 +1,5 @@
 const { query } = require('../config/database');
-const { fetchHoneywellData, fetchLiveDataForDashboard, formatToHoneywellTimestamp } = require('../services/honeywellService');
-
-async function fetchTdsFromHoneywell() {
-  try {
-    const now = new Date();
-    const startTime = formatToHoneywellTimestamp(new Date(now.getTime() - 300000)); // 5 min ago
-    const endTime = formatToHoneywellTimestamp(now);
-
-    const response = await fetchHoneywellData({
-      TagName: '5LBB31FQ001PVI.PV',
-      StartTime: startTime,
-      EndTime: endTime,
-      MaxRows: 1,
-      MinimumConfidence: 50,
-      ReductionData: 'now',
-      TimeFormat: 1
-    });
-
-    if (response.data && response.data.length > 0) {
-      const tagData = response.data[0];
-      const values = tagData.Value || [];
-      if (values.length > 0) {
-        return { value: values[0], timestamp: new Date().toISOString() };
-      }
-    }
-    return null;
-  } catch (err) {
-    console.error('TDS Honeywell fallback error:', err.message);
-    return null;
-  }
-}
+const { fetchLiveDataForDashboard } = require('../services/honeywellService');
 
 const getLiveData = async (req, res) => {
   try {
@@ -106,6 +76,13 @@ const getLiveData = async (req, res) => {
         };
       }
 
+      if (honeywellData.metrics.tds) {
+        formattedMetrics.tds = {
+          value: honeywellData.metrics.tds.value,
+          timestamp: honeywellData.metrics.tds.timestamp
+        };
+      }
+
       return res.json({
         success: true,
         data: {
@@ -162,14 +139,6 @@ const getLiveData = async (req, res) => {
         };
       } else {
         results[metric] = { value: null, timestamp: null, device_id: null };
-      }
-    }
-
-    // If TDS is null in DB, fetch real-time from Honeywell
-    if (!results['tds'] || results['tds'].value === null) {
-      const honeywellTds = await fetchTdsFromHoneywell();
-      if (honeywellTds) {
-        results['tds'] = { value: honeywellTds.value, timestamp: honeywellTds.timestamp, device_id: null };
       }
     }
 
