@@ -102,15 +102,20 @@ const TDS = () => {
             container
             spacing={3}
             alignItems="stretch"
+            sx={{
+              minHeight: { lg: '640px' },
+            }}
           >
             {/* Top row: Main gauge and stat cards */}
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            <Grid size={{ xs: 12, md: 3 }} sx={{ display: 'flex' }}>
               <MainCard
                 sx={{
                   display: 'flex',
                   flexDirection: 'column',
-                  height: '100%',
+                  width: '100%',
+                  height: { xs: 'auto', lg: '84%' },
                   minHeight: { md: '230px' },
+                  mb: { lg: 3 },
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -147,7 +152,22 @@ const TDS = () => {
                 </Box>
               </MainCard>
             </Grid>
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
+            {cardData.map((card, index) => (
+              <Grid size={{ xs: 12, sm: 6, md: 2.25 }} key={index} sx={{ display: 'flex' }}>
+                <StatCard
+                  title={card.title}
+                  value={loading ? '...' : card.value}
+                  unit={card.unit}
+                  icon={card.icon}
+                  iconBgColor={card.iconBgColor}
+                  iconColor={card.iconColor}
+                  backgroundColor="#F5F5F5"
+                  additionalData={card.additionalData}
+                  loading={loading}
+                />
+              </Grid>
+            ))}
+            {/* <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
               <MainCard
                 sx={{
                   display: 'flex',
@@ -257,29 +277,9 @@ const TDS = () => {
                   />
                 </Box>
               </MainCard>
-            </Grid>
-
-            <Grid size={{ xs: 12, md: 12 }}>
-                <Grid container spacing={3}>
-                    {cardData.map((card, index) => (
-                      <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
-                        <StatCard
-                          title={card.title}
-                          value={loading ? '...' : card.value}
-                          unit={card.unit}
-                          icon={card.icon}
-                          iconBgColor={card.iconBgColor}
-                          iconColor={card.iconColor}
-                          backgroundColor="#F5F5F5"
-                          additionalData={card.additionalData}
-                          loading={loading}
-                        />
-                      </Grid>
-                    ))}
-                </Grid>
-            </Grid>
+            </Grid> */}
             
-            <Grid size={{ xs: 12 }}>
+            <Grid size={12} sx={{ mt: { xs: 0, lg: -5 } }}>
               <RealTimeDataChart
                 title="Real Time Data"
                 subtitle="TDS Overall level data chart"
