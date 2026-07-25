@@ -1,0 +1,80 @@
+# PERTASMART — Backend + Frontend (pltp-iot).
+#
+# Postgres & Redis TIDAK didefinisikan di sini: keduanya milik stack AI
+# (AI_Pertasmart_V3/docker-compose.yml). Compose ini menempel ke jaringan yang
+# sama supaya backend dapat memanggil `db` secara langsung.
+#
+# ── Cara pakai (2 perintah total) ────────────────────────────────────────────
+#   1) cd ../AI_Pertasmart_V3  && docker compose --profile ai up -d --build
+#   2) cd pltp-iot             && docker compose up -d --build
+#
+# Urutan penting: jaringan dibuat oleh stack AI, jadi stack itu harus menyala
+# lebih dulu.
+#
+#   docker compose logs -f            # pantau
+#   docker compose down               # matikan (DB tetap hidup di stack AI)
+#
+# Kredensial nyata (Honeywell, JWT) dibaca dari backend/.env yang gitignored —
+# tidak ada rahasia di berkas ini.
+
+services:
+  backend:
+    image: node:20-alpine
+    container_name: pertasmart_backend
+    working_dir: /app/backend
+    restart: unless-stopped
+    # `npm install` saat start, bukan di Dockerfile, supaya perubahan
+    # package.json tidak perlu rebuild image dan kode ikut ter-mount hidup.
+    # Konsekuensi: start pertama ±30–60 detik lebih lama.
+    command: sh -c "npm install --no-audit --no-fund && node server.js"
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      # Menimpa nilai .env yang memakai alamat host: di dalam jaringan compose,
+      # service dipanggil lewat NAMA dan port INTERNAL (5432), bukan port yang
+      # dipublish ke host (5433).
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${SIM_DB_NAME:-pertasmart_sim}
+      DB_USER: pertasmart
+      DB_PASSWORD: pertasmart_dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+      - backend_node_modules:/app/backend/node_modules
+    networks: [ai_net]
+
+  frontend:
+    image: node:20-alpine
+    container_name: pertasmart_frontend
+    working_dir: /app
+    restart: unless-stopped
+    # `--host 0.0.0.0` wajib: tanpa itu Vite hanya listen di dalam container
+    # dan tidak terjangkau browser host.
+    command: sh -c "npm install --no-audit --no-fund && npx vite --host 0.0.0.0 --port 3000"
+    environment:
+      # Dibaca vite.config.mjs. Tanpa ini, proxy /api menunjuk ke `localhost`
+      # yang di dalam container berarti container frontend itu sendiri —
+      # seluruh panggilan API gagal.
+      VITE_PROXY_TARGET: http://backend:5000
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/node_modules
+    networks: [ai_net]
+    depends_on: [backend]
+
+volumes:
+  backend_node_modules:
+  frontend_node_modules:
+
+networks:
+  ai_net:
+    # Jaringan milik AI_Pertasmart_V3/docker-compose.yml. Nama default Compose
+    # adalah "<nama-folder-lowercase>_default". Verifikasi: docker network ls
+    name: ai_pertasmart_v3_default
+    external: true

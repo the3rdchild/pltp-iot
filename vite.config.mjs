@@ -16,9 +16,17 @@ export default defineConfig(({ mode }) => {
       host: true,
       // Proxy relative /api calls (axios apiClient baseURL, raw fetch() in
       // hooks like useAi1Data/useAi2Data) to the local backend in dev.
+      //
+      // Target overridable via VITE_PROXY_TARGET. Needed when Vite runs inside
+      // a container: there `localhost` resolves to the frontend container
+      // itself, not the backend, so every /api call fails. Docker compose sets
+      // it to the backend service name (e.g. http://backend:5000). Default is
+      // unchanged, so running natively needs no configuration.
       proxy: {
         '/api': {
-          target: 'http://localhost:5000',
+          // process.env dulu: variabel dari `docker compose environment:` hanya
+          // muncul di sana, sedangkan loadEnv() cuma membaca berkas .env.
+          target: process.env.VITE_PROXY_TARGET || env.VITE_PROXY_TARGET || 'http://localhost:5000',
           changeOrigin: true
         }
       }
