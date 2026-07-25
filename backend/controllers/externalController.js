@@ -993,6 +993,74 @@ const getAi2AggregatedStats = async (req, res) => {
   }
 };
 
+// Get latest AI1a anomaly detection results
+const getAi1aData = async (req, res) => {
+  try {
+    const { limit = 50 } = req.query;
+
+    const sql = `
+      SELECT timestamp, model_version, anomaly_score, is_anomaly,
+             risk_percentage, risk_label, severity, created_at
+      FROM ai1a
+      ORDER BY timestamp DESC
+      LIMIT $1
+    `;
+
+    const result = await query(sql, [parseInt(limit)]);
+
+    res.json({
+      success: true,
+      data: result.rows,
+      count: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching AI1a data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch AI1a data',
+      error: error.message
+    });
+  }
+};
+
+// Get latest AI1b 30-day risk forecasts
+const getAi1bData = async (req, res) => {
+  try {
+    const { limit = 50 } = req.query;
+
+    const sql = `
+      SELECT generated_at, model_version,
+             day_1_risk, day_2_risk, day_3_risk, day_4_risk, day_5_risk,
+             day_6_risk, day_7_risk, day_8_risk, day_9_risk, day_10_risk,
+             day_11_risk, day_12_risk, day_13_risk, day_14_risk, day_15_risk,
+             day_16_risk, day_17_risk, day_18_risk, day_19_risk, day_20_risk,
+             day_21_risk, day_22_risk, day_23_risk, day_24_risk, day_25_risk,
+             day_26_risk, day_27_risk, day_28_risk, day_29_risk, day_30_risk,
+             created_at
+      FROM ai1b
+      ORDER BY generated_at DESC
+      LIMIT $1
+    `;
+
+    const result = await query(sql, [parseInt(limit)]);
+
+    res.json({
+      success: true,
+      data: result.rows,
+      count: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching AI1b data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch AI1b data',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   fetchHoneywellData,
   receiveExternalData,
@@ -1005,5 +1073,7 @@ module.exports = {
   validateSetup,
   receiveAi2Data,
   getAi2Data,
-  getAi2AggregatedStats
+  getAi2AggregatedStats,
+  getAi1aData,
+  getAi1bData
 };

@@ -12,7 +12,9 @@ const {
   validateSetup,
   receiveAi2Data,
   getAi2Data,
-  getAi2AggregatedStats
+  getAi2AggregatedStats,
+  getAi1aData,
+  getAi1bData
 } = require('../controllers/externalController');
 
 // Import API Key authentication middleware
@@ -53,6 +55,12 @@ router.get('/ai2/stats', getAi2AggregatedStats);
 
 // POST /api/external/ai2 - Receive AI2 predictions (dryness & NCG)
 router.post('/ai2', receiveAi2Data);
+
+// GET /api/external/ai1a - Get latest AI1a anomaly detection results
+router.get('/ai1a', getAi1aData);
+
+// GET /api/external/ai1b - Get latest AI1b 30-day risk forecasts
+router.get('/ai1b', getAi1bData);
 
 // Testing endpoints - protected with API Key for security
 router.post('/test', validateApiKey, testConnection); // Test connection and insert sample data

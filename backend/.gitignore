@@ -33,3 +33,7 @@ build/
 # Temporary files
 tmp/
 temp/
+
+# Local simulation stack artifacts (schema dumps, CSV loaders, compose files)
+.local_sim/
+.env.local_sim

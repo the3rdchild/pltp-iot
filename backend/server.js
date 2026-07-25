@@ -155,6 +155,27 @@ app.listen(PORT, () => {
   console.log(`✅ Health check: http://localhost:${PORT}/health`);
   console.log(`✅ API Base URL: http://localhost:${PORT}/api`);
   console.log('════════════════════════════════════════');
+
+  // Opt-in continuous Honeywell PIMS -> sensor_data collection. OFF by
+  // default so deploying this code doesn't silently start polling the real
+  // production PIMS/DB - enable per-environment via HONEYWELL_LIVE_COLLECTION_ENABLED.
+  if (process.env.HONEYWELL_LIVE_COLLECTION_ENABLED === 'true') {
+    const { fetchAndStoreLiveData } = require('./services/honeywellService');
+    const intervalMs = parseInt(process.env.HONEYWELL_LIVE_COLLECTION_INTERVAL_MS) || 60000;
+
+    const collect = async () => {
+      try {
+        const result = await fetchAndStoreLiveData();
+        console.log(`[honeywell-collector] inserted=${result.inserted} skipped=${result.skipped}${result.errors ? ` errors=${result.errors.length}` : ''}`);
+      } catch (error) {
+        console.error('[honeywell-collector] fetch/store failed:', error.message);
+      }
+    };
+
+    console.log(`✅ Honeywell live collection ENABLED (every ${intervalMs}ms)`);
+    collect();
+    setInterval(collect, intervalMs);
+  }
 });
 
 // Graceful shutdown
