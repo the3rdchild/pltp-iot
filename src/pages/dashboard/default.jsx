@@ -10,10 +10,12 @@ import { RiSpeedUpFill } from "react-icons/ri";
 import { TbCircuitResistor } from "react-icons/tb";
 
 import { useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Real data API hook - test-aware (uses mock data in /test environment)
 import { useLiveData } from '../../hooks/useTestAwareLiveData';
 import { useAi2Data } from '../../hooks/useAi2Data';
+import { useAi1aData, useAi1bData } from '../../hooks/useAi1Data';
 import { useLocation } from 'react-router-dom';
 
 // project imports - Individual Cards
@@ -33,6 +35,8 @@ function MobileLayout({
   parseValue,
   getPowerStatus,
   predConfig,
+  riskPercentage,
+  usingAi1a,
   TITLE_CONFIG
 }) {
   // Extract values from live API data
@@ -176,10 +180,20 @@ function MobileLayout({
                 <ArrowOutwardIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />
               </Box>
             </Link>
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60px' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '60px' }}>
               <Typography variant="h1" sx={{ fontSize: '2.5rem', fontWeight: 700, color: predConfig.color, textAlign: 'center', lineHeight: 1 }}>
                 {predConfig.label}
               </Typography>
+              {riskPercentage != null && (
+                <Typography variant="body2" sx={{ color: predConfig.color, fontWeight: 600, mt: 0.5 }}>
+                  {riskPercentage.toFixed(1)}%
+                </Typography>
+              )}
+              {!usingAi1a && (
+                <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center', mt: 0.5 }}>
+                  Data AI belum tersedia — estimasi dari ambang sensor
+                </Typography>
+              )}
             </Box>
           </Box>
         </MainCard>
@@ -291,6 +305,8 @@ function DesktopLayout({
   parseValue,
   getPowerStatus,
   predConfig,
+  riskPercentage,
+  usingAi1a,
   TITLE_CONFIG,
   scale,
   DASHBOARD_CONFIG
@@ -513,10 +529,20 @@ function DesktopLayout({
                     <ArrowOutwardIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />
                   </Box>
                 </Link>
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60px' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '60px' }}>
                   <Typography variant="h1" sx={{ fontSize: '2.5rem', fontWeight: 700, color: predConfig.color, textAlign: 'center', lineHeight: 1 }}>
                     {predConfig.label}
                   </Typography>
+                  {riskPercentage != null && (
+                    <Typography variant="body2" sx={{ color: predConfig.color, fontWeight: 600, mt: 0.5 }}>
+                      {riskPercentage.toFixed(1)}%
+                    </Typography>
+                  )}
+                  {!usingAi1a && (
+                    <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center', mt: 0.5, fontSize: '0.65rem', lineHeight: 1.2 }}>
+                      Data AI belum tersedia — estimasi dari ambang sensor
+                    </Typography>
+                  )}
                 </Box>
               </Box>
             </MainCard>
@@ -622,6 +648,40 @@ function DesktopLayout({
   );
 }
 
+// ==============================|| AI1b 30-DAY RISK FORECAST ||============================== //
+function Ai1bForecastCard({ liveData }) {
+  const forecastData = liveData
+    ? Array.from({ length: 30 }, (_, i) => ({
+        day: i + 1,
+        risk: parseFloat(liveData[`day_${i + 1}_risk`])
+      })).filter((d) => !Number.isNaN(d.risk))
+    : [];
+
+  return (
+    <Box sx={{ width: '100%', p: 2, pt: 0 }}>
+      <MainCard title={<Typography variant="h5">Prakiraan Risiko 30 Hari (AI1b)</Typography>}>
+        {liveData && forecastData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={forecastData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis dataKey="day" label={{ value: 'Hari ke-', position: 'insideBottom', offset: -5 }} stroke="#64748b" />
+              <YAxis domain={[0, 100]} label={{ value: 'Risiko (%)', angle: -90, position: 'insideLeft' }} stroke="#64748b" />
+              <Tooltip formatter={(value) => `${value.toFixed(1)}%`} labelFormatter={(day) => `Hari ke-${day}`} />
+              <Line type="monotone" dataKey="risk" stroke="#2563eb" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 5 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <Box sx={{ py: 4, textAlign: 'center' }}>
+            <Typography variant="body2" color="text.secondary">
+              Data prakiraan 30 hari (AI1b) belum tersedia atau sudah basi.
+            </Typography>
+          </Box>
+        )}
+      </MainCard>
+    </Box>
+  );
+}
+
 // ==============================|| MAIN DASHBOARD - RESPONSIVE ||============================== //
 const DASHBOARD_CONFIG = {
   baseWidth: 1400,
@@ -645,6 +705,10 @@ export default function DashboardDefault() {
 
   // AI2 predictions for dryness and NCG
   const { liveData: ai2LiveData } = useAi2Data();
+
+  // AI1a current risk status + AI1b 30-day forecast
+  const { liveData: ai1aLiveData } = useAi1aData();
+  const { liveData: ai1bLiveData } = useAi1bData();
 
   // Calculate scale for desktop layout only
   useEffect(() => {
@@ -760,8 +824,6 @@ export default function DashboardDefault() {
     return 'Ideal';
   };
 
-  const riskPrediction = getOverallRiskPrediction();
-
   const getPowerStatus = (val, limitKey) => {
     const limit = limitData[limitKey];
     if (!limit) return 'Normal';
@@ -774,16 +836,26 @@ export default function DashboardDefault() {
 
   const getPredictionConfig = (pred) => {
     switch (pred?.toLowerCase()) {
+      case 'normal':
       case 'ideal':
-        return { label: 'Ideal', color: '#22c55e', bgColor: '#22c55e15' };
+        return { label: pred.toLowerCase() === 'normal' ? 'Normal' : 'Ideal', color: '#22c55e', bgColor: '#22c55e15' };
       case 'warning':
         return { label: 'Warning', color: '#f59e0b', bgColor: '#f59e0b15' };
+      case 'critical':
       case 'abnormal':
-        return { label: 'Abnormal', color: '#ef4444', bgColor: '#ef444415' };
+        return { label: pred.toLowerCase() === 'critical' ? 'Critical' : 'Abnormal', color: '#ef4444', bgColor: '#ef444415' };
       default:
         return { label: 'Ideal', color: '#22c55e', bgColor: '#22c55e15' };
     }
   };
+
+  // Prefer real AI1a output (severity + risk_percentage); when AI1a data is
+  // missing or stale (see useAi1aData's 10-min freshness check on created_at),
+  // fall back to the sensor-threshold estimate below rather than showing a
+  // frozen/last-known AI value as if it were current.
+  const usingAi1a = !!ai1aLiveData;
+  const riskPrediction = usingAi1a ? ai1aLiveData.severity : getOverallRiskPrediction();
+  const riskPercentage = usingAi1a && ai1aLiveData.risk_percentage != null ? parseFloat(ai1aLiveData.risk_percentage) : null;
 
   const predConfig = getPredictionConfig(riskPrediction);
 
@@ -795,40 +867,48 @@ export default function DashboardDefault() {
   };
 
   return (
-    <Box sx={{
-      position: 'relative',
-      width: '100%',
-      display: 'flex',
-      flexGrow: 1,
-      flexDirection: 'column',
-      overflow: isMobile ? 'auto' : 'hidden',
-      p: 0,
-      pt: isMobile ? 2 : 5,
-      m: 0
-    }}>
-      {isMobile ? (
-        <MobileLayout
-          limitData={limitData}
-          liveData={liveData}
-          ai2Data={ai2LiveData}
-          parseValue={parseValue}
-          getPowerStatus={getPowerStatus}
-          predConfig={predConfig}
-          TITLE_CONFIG={TITLE_CONFIG}
-        />
-      ) : (
-        <DesktopLayout
-          limitData={limitData}
-          liveData={liveData}
-          ai2Data={ai2LiveData}
-          parseValue={parseValue}
-          getPowerStatus={getPowerStatus}
-          predConfig={predConfig}
-          TITLE_CONFIG={TITLE_CONFIG}
-          scale={scale}
-          DASHBOARD_CONFIG={DASHBOARD_CONFIG}
-        />
-      )}
-    </Box>
+    <>
+      <Box sx={{
+        position: 'relative',
+        width: '100%',
+        display: 'flex',
+        flexGrow: 1,
+        flexDirection: 'column',
+        overflow: isMobile ? 'auto' : 'hidden',
+        p: 0,
+        pt: isMobile ? 2 : 5,
+        m: 0
+      }}>
+        {isMobile ? (
+          <MobileLayout
+            limitData={limitData}
+            liveData={liveData}
+            ai2Data={ai2LiveData}
+            parseValue={parseValue}
+            getPowerStatus={getPowerStatus}
+            predConfig={predConfig}
+            riskPercentage={riskPercentage}
+            usingAi1a={usingAi1a}
+            TITLE_CONFIG={TITLE_CONFIG}
+          />
+        ) : (
+          <DesktopLayout
+            limitData={limitData}
+            liveData={liveData}
+            ai2Data={ai2LiveData}
+            parseValue={parseValue}
+            getPowerStatus={getPowerStatus}
+            predConfig={predConfig}
+            riskPercentage={riskPercentage}
+            usingAi1a={usingAi1a}
+            TITLE_CONFIG={TITLE_CONFIG}
+            scale={scale}
+            DASHBOARD_CONFIG={DASHBOARD_CONFIG}
+          />
+        )}
+        {isMobile && <Ai1bForecastCard liveData={ai1bLiveData} />}
+      </Box>
+      {!isMobile && <Ai1bForecastCard liveData={ai1bLiveData} />}
+    </>
   );
 }

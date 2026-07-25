@@ -13,7 +13,15 @@ export default defineConfig(({ mode }) => {
       open: true,
       // this sets a default port to 3000
       port: PORT,
-      host: true
+      host: true,
+      // Proxy relative /api calls (axios apiClient baseURL, raw fetch() in
+      // hooks like useAi1Data/useAi2Data) to the local backend in dev.
+      proxy: {
+        '/api': {
+          target: 'http://localhost:5000',
+          changeOrigin: true
+        }
+      }
     },
     preview: {
       open: true,

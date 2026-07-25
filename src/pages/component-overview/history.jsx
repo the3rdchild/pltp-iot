@@ -1,5 +1,5 @@
 import * as React from 'react';
-import PropTypes from 'prop-types';
+import { useState, useEffect } from 'react';
 import { useTheme } from '@mui/material/styles';
 import Grid from '@mui/material/Grid';
 import Typography from '@mui/material/Typography';
@@ -11,99 +11,126 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
+import Chip from '@mui/material/Chip';
+import Box from '@mui/material/Box';
 
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(value, max));
+const SEVERITY_COLOR = {
+  normal: 'success',
+  warning: 'warning',
+  critical: 'error'
+};
+
+function fmt(value, digits = 2) {
+  if (value === null || value === undefined) return '—';
+  const n = typeof value === 'string' ? parseFloat(value) : value;
+  return Number.isNaN(n) ? '—' : n.toFixed(digits);
 }
 
-function createRow() {
-  const pressureSeparator = clamp(Math.random() * 111 + 1000, 1000, 1300);
-  const pressureSteam = clamp(Math.random() * 20 + 910, 900, 1133);
-  const pipeTemp = clamp(Math.random() * 10 + 180, 180, 190);
-
-  const tdsOverall = clamp(Math.random() * 5 + 5, 5, 10);
-  const co2 = clamp(Math.random() * 2 + 4, 1, 5);
-  const argon = clamp(Math.random() * 5 + 2, 1, 8);
-  const methane = clamp(Math.random() * 3 + 1, 1, 5);
-  const ma3 = clamp(Math.random() * 2 + 1, 1, 3);
-  const scalingDeposit = clamp(Math.random() * 1.5 + 0.5, 0.5, 2);
-
-  const drynessFraction = clamp(Math.random() * 0.1 + 0.85, 0.85, 1);
-  const anomalyScore = clamp(Math.random() * 0.1 + 0.05, 0, 1);
-  const riskLevels = ['Low', 'Medium', 'Medium'];
-  const riskIndex = drynessFraction < 0.9 || anomalyScore > 0.3 ? 2 : (anomalyScore > 0.15 ? 1 : 0);
-  const riskPrediction = riskLevels[riskIndex];
-
-  const dot = "...";
-
-  return {
-    pressureSeparator,
-    pressureSteam,
-    pipeTemp,
-    tdsOverall,
-    co2,
-    argon,
-    methane,
-    ma3,
-    scalingDeposit,
-    drynessFraction,
-    anomalyScore,
-    riskPrediction,
-    dot
-  };
+function fmtTimestamp(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'medium' });
 }
-
-const rows = Array.from({ length: 200 }, () => createRow());
 
 export default function HistoryTable() {
   const theme = useTheme();
+  const [sensorRows, setSensorRows] = useState([]);
+  const [ai1aByTimestamp, setAi1aByTimestamp] = useState(new Map());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/data/sensor/latest?limit=60').then((r) => r.json()),
+      fetch('/api/external/ai1a?limit=60').then((r) => r.json())
+    ])
+      .then(([sensorJson, ai1aJson]) => {
+        if (sensorJson.success) setSensorRows(sensorJson.data);
+
+        if (ai1aJson.success) {
+          const map = new Map();
+          ai1aJson.data.forEach((row) => {
+            map.set(new Date(row.timestamp).getTime(), row);
+          });
+          setAi1aByTimestamp(map);
+        }
+      })
+      .catch((err) => {
+        console.error('history data fetch error:', err);
+        setError('Gagal memuat riwayat data');
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <MainCard title={<Typography variant="h5">Riwayat Data Sensor</Typography>}>
-      <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }} size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Separator (kPa)</TableCell>
-              <TableCell>Steam (kPa)</TableCell>
-              <TableCell>Pipe Temp (°C)</TableCell>
-              <TableCell>TDS (ppm)</TableCell>
-              <TableCell>CO2 (ppm)</TableCell>
-              <TableCell>Argon (ppm)</TableCell>
-              <TableCell>Methane (ppm)</TableCell>
-              <TableCell>MA3 (ppm)</TableCell>
-              <TableCell>Scaling (ppm)</TableCell>
-              <TableCell>Dryness</TableCell>
-              <TableCell>Anomaly</TableCell>
-              <TableCell>Risk</TableCell>
-            </TableRow>
-          </TableHead>
+      {!loading && ai1aByTimestamp.size === 0 && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="caption" color="text.secondary">
+            Data AI1a (severity/risk) belum tersedia — kolom terkait ditampilkan sebagai &ldquo;—&rdquo;.
+          </Typography>
+        </Box>
+      )}
 
-          <TableBody>
-            {rows.map((row, i) => (
-              <TableRow key={i}>
-                <TableCell>{row.pressureSeparator.toFixed(2)}</TableCell>
-                <TableCell>{row.pressureSteam.toFixed(2)}</TableCell>
-                <TableCell>{row.pipeTemp.toFixed(1)}</TableCell>
-                <TableCell>{row.tdsOverall.toFixed(1)}</TableCell>
-                <TableCell>{row.co2.toFixed(1)}</TableCell>
-                <TableCell>{row.argon.toFixed(1)}</TableCell>
-                <TableCell>{row.methane.toFixed(1)}</TableCell>
-                <TableCell>{row.ma3.toFixed(1)}</TableCell>
-                <TableCell>{row.scalingDeposit.toFixed(2)}</TableCell>
-                <TableCell>{row.drynessFraction.toFixed(3)}</TableCell>
-                <TableCell>{row.anomalyScore.toFixed(3)}</TableCell>
-                <TableCell>{row.riskPrediction}</TableCell>
+      {loading ? (
+        <Typography variant="body2" color="text.secondary">
+          Memuat riwayat data sensor...
+        </Typography>
+      ) : error ? (
+        <Typography variant="body2" color="error">
+          {error}
+        </Typography>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table sx={{ minWidth: 650 }} size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell>Waktu</TableCell>
+                <TableCell>Pressure (bar)</TableCell>
+                <TableCell>Temperature (°C)</TableCell>
+                <TableCell>Flow Rate</TableCell>
+                <TableCell>TDS (ppm)</TableCell>
+                <TableCell>Gen Output (MW)</TableCell>
+                <TableCell>Current (A)</TableCell>
+                <TableCell>Severity (AI1a)</TableCell>
+                <TableCell>Risk % (AI1a)</TableCell>
+                <TableCell>Anomaly Score (AI1a)</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-          
-        </Table>
-      </TableContainer>
+            </TableHead>
+
+            <TableBody>
+              {sensorRows.map((row) => {
+                const ai1a = ai1aByTimestamp.get(new Date(row.timestamp).getTime());
+                const severity = ai1a?.severity?.toLowerCase();
+
+                return (
+                  <TableRow key={row.id}>
+                    <TableCell>{fmtTimestamp(row.timestamp)}</TableCell>
+                    <TableCell>{fmt(row.pressure)}</TableCell>
+                    <TableCell>{fmt(row.temperature, 1)}</TableCell>
+                    <TableCell>{fmt(row.flow_rate)}</TableCell>
+                    <TableCell>{fmt(row.tds)}</TableCell>
+                    <TableCell>{fmt(row.gen_output)}</TableCell>
+                    <TableCell>{fmt(row.current)}</TableCell>
+                    <TableCell>
+                      {severity ? (
+                        <Chip
+                          size="small"
+                          label={severity.charAt(0).toUpperCase() + severity.slice(1)}
+                          color={SEVERITY_COLOR[severity] || 'default'}
+                        />
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
+                    <TableCell>{ai1a ? fmt(ai1a.risk_percentage, 1) : '—'}</TableCell>
+                    <TableCell>{ai1a ? fmt(ai1a.anomaly_score, 3) : '—'}</TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
     </MainCard>
   );
 }
-
-HistoryTable.propTypes = {
-  theme: PropTypes.object
-};
