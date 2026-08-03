@@ -253,7 +253,7 @@ const AIAnalytics = () => {
               ai1bLoading
                 ? 'Memuat forecast...'
                 : ai1bChart.peakDay
-                  ? `Tertinggi di hari ke-${ai1bChart.peakDay} dari 30`
+                  ? `Tertinggi di ${ai1bChart.peakDay} hari ke depan dari 30 hari ke depan`
                   : 'Forecast belum tersedia'
             }
             value={ai1bChart.peak === null ? null : fmtNum(ai1bChart.peak, 1)}
@@ -267,7 +267,7 @@ const AIAnalytics = () => {
       {/* ---------------- chart 1: AI1a observed ---------------- */}
       <Box sx={{ mb: 3 }}>
         <RiskChart
-          title="Histori Risk Teramati"
+          title="Observed Risk History"
           subtitle="Risk percentage yang teramati per window waktu - hasil anomaly detection"
           badge="OBSERVED"
           badgeColor="info"
@@ -277,6 +277,7 @@ const AIAnalytics = () => {
           showRangeSelector
           color="#3b82f6"
           chartType="area"
+          yAxisMax={100}
           emptyMessage="Belum ada window yang valid"
           footnote={
             <>
@@ -304,6 +305,7 @@ const AIAnalytics = () => {
           legendItems={FORECAST_LEGEND}
           color="#9271FF"
           chartType="line"
+          yAxisMax={100}
           xAxisTitle="Hari ke depan (D+1 ... D+30)"
           emptyMessage="Forecast belum tersedia / run terakhir sudah stale"
           footnote={

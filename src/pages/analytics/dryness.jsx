@@ -195,6 +195,9 @@ const Dryness = () => {
                 unit="%"
                 yAxisTitle="Dryness (%)"
                 color="#3b82f6"
+                yAxisMin={98}
+                yAxisMax={100}
+                decimals={4}
               />
             </Grid>
 

@@ -193,6 +193,8 @@ const NCG = () => {
                 liveValue={ncg}
                 unit=" wt%"
                 yAxisTitle="NCG (wt%)"
+                yAxisMin={-1}
+                yAxisMax={1}
               />
             </Grid>
 

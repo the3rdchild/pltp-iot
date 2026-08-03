@@ -39,11 +39,35 @@ const TIME_RANGES = [
   { value: 'all', label: 'All' }
 ];
 
+// Given the observed data range, returns the y-axis [min, max] to render.
+// With no fixed baseline (yAxisMin/yAxisMax undefined), pads 1% around the
+// observed data like before. With a baseline given, the axis sticks to
+// exactly that range -- it only grows past the baseline on whichever side
+// the data actually exceeds it, so a metric that's normally flat (e.g.
+// dryness hovering near 100%) doesn't get a misleadingly zoomed-in axis.
+const computeYRange = (vals, yAxisMin, yAxisMax) => {
+  const dataMin = vals.length ? Math.min(...vals) : null;
+  const dataMax = vals.length ? Math.max(...vals) : null;
+
+  if (yAxisMin != null && yAxisMax != null) {
+    return {
+      min: dataMin != null && dataMin < yAxisMin ? dataMin : yAxisMin,
+      max: dataMax != null && dataMax > yAxisMax ? dataMax : yAxisMax
+    };
+  }
+
+  const min = dataMin ?? 0;
+  const max = dataMax ?? 100;
+  return { min: Math.floor(min * 0.99), max: Math.ceil(max * 1.01) };
+};
+
 /**
  * Ai2Chart — chart for a single ai2 metric (dryness_predict | ncg_predict).
  * - Seeds chart from /api/external/ai2 on mount / range change
  * - In "now" mode, appends liveValue when it changes (kept to 60 points max)
  * - Supports custom date range via date picker
+ * - yAxisMin/yAxisMax: fixed baseline range (e.g. dryness 98-100%); omit for
+ *   the old auto-scaled-to-data behavior. decimals: label/tooltip precision.
  */
 const Ai2Chart = ({
   title = 'Real Time Data',
@@ -52,7 +76,10 @@ const Ai2Chart = ({
   liveValue = null,
   unit = '%',
   yAxisTitle = 'Value',
-  color = '#3b82f6'
+  color = '#3b82f6',
+  yAxisMin = null,
+  yAxisMax = null,
+  decimals = 3
 }) => {
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
@@ -142,19 +169,18 @@ const Ai2Chart = ({
     const activeRange = isCustomRange ? 'custom' : timeRange;
     const categories = timestampsRef.current.map(ts => formatTimestamp(ts, activeRange));
     const vals = dataRef.current.filter(v => v != null);
-    const minY = vals.length ? Math.min(...vals) : 0;
-    const maxY = vals.length ? Math.max(...vals) : 100;
+    const { min: minY, max: maxY } = computeYRange(vals, yAxisMin, yAxisMax);
 
     chartInstanceRef.current.updateOptions(
       {
         xaxis: { categories, title: { text: XAXIS_LABEL_MAP[activeRange] ?? activeRange } },
-        yaxis: { min: Math.floor(minY * 0.99), max: Math.ceil(maxY * 1.01) }
+        yaxis: { min: minY, max: maxY }
       },
       false,
       false
     );
     chartInstanceRef.current.updateSeries([{ name: yAxisTitle, data: dataRef.current }], true);
-  }, [isCustomRange, timeRange, yAxisTitle, formatTimestamp]);
+  }, [isCustomRange, timeRange, yAxisTitle, formatTimestamp, yAxisMin, yAxisMax]);
 
   // "Now" mode: append live value and update chart directly (no React state cycle)
   useEffect(() => {
@@ -188,8 +214,7 @@ const Ai2Chart = ({
         : Array.from({ length: initialData.length }, (_, i) => `${i + 1}`);
 
     const vals = initialData.filter(v => v != null);
-    const minY = vals.length ? Math.min(...vals) : 0;
-    const maxY = vals.length ? Math.max(...vals) : 100;
+    const { min: minY, max: maxY } = computeYRange(vals, yAxisMin, yAxisMax);
 
     const options = {
       chart: {
@@ -232,11 +257,11 @@ const Ai2Chart = ({
         }
       },
       yaxis: {
-        min: Math.floor(minY * 0.99),
-        max: Math.ceil(maxY * 1.01),
+        min: minY,
+        max: maxY,
         labels: {
           style: { colors: '#86868b', fontSize: '11px' },
-          formatter: v => (v != null ? v.toFixed(3) + unit : '')
+          formatter: v => (v != null ? v.toFixed(decimals) + unit : '')
         },
         title: {
           text: yAxisTitle,
@@ -253,7 +278,7 @@ const Ai2Chart = ({
         enabled: true,
         theme: 'light',
         x: { show: true },
-        y: { formatter: v => (v != null ? v.toFixed(3) + unit : '') },
+        y: { formatter: v => (v != null ? v.toFixed(decimals) + unit : '') },
         marker: { show: true }
       },
       legend: { show: false }
@@ -398,7 +423,10 @@ Ai2Chart.propTypes = {
   liveValue: PropTypes.number,
   unit: PropTypes.string,
   yAxisTitle: PropTypes.string,
-  color: PropTypes.string
+  color: PropTypes.string,
+  yAxisMin: PropTypes.number,
+  yAxisMax: PropTypes.number,
+  decimals: PropTypes.number
 };
 
 export default Ai2Chart;

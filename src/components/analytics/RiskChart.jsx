@@ -58,7 +58,8 @@ const RiskChart = ({
   chartType = 'area',
   height = 340,
   emptyMessage = 'Belum ada data',
-  footnote
+  footnote,
+  yAxisMax
 }) => {
   const containerRef = useRef(null);
   const chartRef = useRef(null);
@@ -168,7 +169,8 @@ const RiskChart = ({
       },
       yaxis: {
         min: 0,
-        forceNiceScale: true,
+        max: yAxisMax,
+        forceNiceScale: yAxisMax === undefined,
         title: { text: 'Risk Percentage (%)', style: { fontSize: '12px', color: '#8b93a7' } },
         labels: {
           formatter: (v) => (v === null || v === undefined ? '' : `${v.toFixed(1)}%`),
@@ -191,7 +193,7 @@ const RiskChart = ({
     };
     // Rebuilding on every change is cheap here: both series are small
     // (<= 60 observed rows, exactly 30 forecast points) and refresh slowly.
-  }, [view, stats, color, chartType, height, xAxisTitle, emptyMessage, range, legendItems]);
+  }, [view, stats, color, chartType, height, xAxisTitle, emptyMessage, range, legendItems, yAxisMax]);
 
   const open = Boolean(anchorEl);
 
@@ -330,7 +332,8 @@ RiskChart.propTypes = {
   chartType: PropTypes.string,
   height: PropTypes.number,
   emptyMessage: PropTypes.string,
-  footnote: PropTypes.node
+  footnote: PropTypes.node,
+  yAxisMax: PropTypes.number
 };
 
 export default RiskChart;
