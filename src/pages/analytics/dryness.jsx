@@ -13,7 +13,8 @@ import {
   AnalyticsHeader,
   StatCard,
   Ai2Chart,
-  StatisticsTable
+  StatisticsTable,
+  Ai2ProvisionalBadge
 } from '../../components/analytics';
 
 // icons
@@ -103,7 +104,10 @@ const Dryness = () => {
 
     return (
         <Box>
-          <AnalyticsHeader title="Dryness" subtitle="Analytic" />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <AnalyticsHeader title="Dryness" subtitle="Analytic" />
+            <Ai2ProvisionalBadge />
+          </Box>
 
           <Grid
             container
