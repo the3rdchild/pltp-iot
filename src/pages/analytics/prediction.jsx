@@ -1,44 +1,170 @@
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, Chip, Tooltip } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import MainCard from 'components/MainCard';
-import { AnalyticsHeader } from '../../components/analytics';
+import { AnalyticsHeader, Ai2Chart } from '../../components/analytics';
+import { useAi1aData } from '../../hooks/useAi1Data';
+import { useAi2Data } from '../../hooks/useAi2Data';
 
 // icons
 import PsychologyIcon from '@mui/icons-material/Psychology';
-import TimelineIcon from '@mui/icons-material/Timeline';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import SensorsOffIcon from '@mui/icons-material/SensorsOff';
+
+const SENSOR_URL = '/api/data/sensor/latest';
+const SENSOR_POLL_MS = 30000; // SCADA cadence is ~1 row/min, no need to poll faster
+const SENSOR_TABLE_LIMIT = 50;
+
+// Sensor Inputs table columns — labels/units kept exactly as they were before
+// this page was wired to real data (not part of the AI1/AI2 rework scope).
+// 'PF' has no backing field in sensor_data, so it always renders '—'.
+const SENSOR_COLUMNS = [
+  { header: 'Timestamp', key: 'timestamp', width: 160 },
+  { header: 'Temp °C', key: 'temperature', width: 120 },
+  { header: 'Press bar', key: 'pressure', width: 120 },
+  { header: 'Flow kg/h', key: 'flow_rate', width: 120 },
+  { header: 'Volt kV', key: 'gen_voltage_u_v', width: 120 },
+  { header: 'React MW', key: 'gen_reactive_power', width: 120 },
+  { header: 'Output MW', key: 'gen_output', width: 120 },
+  { header: 'PF', key: null, width: 120 },
+  { header: 'Freq Hz', key: 'gen_frequency', width: 120 },
+  { header: 'Speed RPM', key: 'speed_detection', width: 120 },
+  { header: 'MCV_L %', key: 'mcv_l', width: 120 },
+  { header: 'MCV_R %', key: 'mcv_r', width: 120 },
+  { header: 'TDS ppm', key: 'tds', width: 120 }
+];
+
+const fmtNum = (value, digits = 2) => {
+  if (value === null || value === undefined) return '—';
+  const n = typeof value === 'string' ? parseFloat(value) : value;
+  return Number.isNaN(n) ? '—' : n.toFixed(digits);
+};
+
+const AI2_PROVISIONAL_TOOLTIP =
+  'Kalibrasi TDS sensor→lab belum final (cakupan waktu data live masih sempit) — ' +
+  'angka ini indikatif, bukan presisi. Detail: docs/catatan_diskusi_penting.md §1.';
+
+// AI2 numbers are shown (D22 activation), but a provisional calibration must
+// never look as trustworthy as a final one -- values in-range (e.g. dryness
+// near the lab reference band) are exactly the case that's dangerous without
+// this label, since they look convincing on their own.
+function Ai2CellValue({ value, digits, status }) {
+  if (value === null || value === undefined) return '—';
+  const isProvisional = status === 'provisional';
+  const content = (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <span>{fmtNum(value, digits)}</span>
+      {isProvisional && (
+        <Chip
+          label="PROVISIONAL"
+          size="small"
+          sx={{
+            height: 16,
+            fontSize: '0.55rem',
+            fontWeight: 700,
+            letterSpacing: '0.02em',
+            backgroundColor: '#f59e0b',
+            color: '#fff',
+            '& .MuiChip-label': { px: 0.5 }
+          }}
+        />
+      )}
+    </Box>
+  );
+  return isProvisional ? (
+    <Tooltip title={AI2_PROVISIONAL_TOOLTIP} arrow>
+      {content}
+    </Tooltip>
+  ) : (
+    content
+  );
+}
+
+const getSeverityConfig = (severity) => {
+  switch ((severity || '').toLowerCase()) {
+    case 'normal':
+      return { label: 'Normal', color: '#58E58C' };
+    case 'warning':
+      return { label: 'Warning', color: '#f59e0b' };
+    case 'critical':
+      return { label: 'Critical', color: '#FF7E7E' };
+    default:
+      return { label: 'Menunggu Data', color: '#9e9e9e' };
+  }
+};
+
+// Static "not available" panel for the two AI2 summary stat cards only. AI2
+// itself is active now (D22) and both the Ai2Chart components below AND the
+// Prediction Data Table DO show its real numbers (with an explicit
+// PROVISIONAL badge, see Ai2CellValue) -- just these two top cards were left
+// out of this wiring pass. Revisit if they should also surface real values.
+function Ai2UnavailableCard({ title }) {
+  return (
+    <MainCard sx={{ height: '100%', backgroundColor: '#F5F5F5' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box
+          sx={{
+            width: 64,
+            height: 64,
+            borderRadius: '12px',
+            backgroundColor: '#bdbdbd',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            flexShrink: 0
+          }}
+        >
+          <SensorsOffIcon sx={{ fontSize: '2.5rem' }} />
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
+            {title}
+          </Typography>
+          <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5, color: 'text.secondary' }}>
+            Belum tersedia
+          </Typography>
+          <Typography variant="caption" color="textSecondary">
+            Model virtual sensor belum diaktifkan
+          </Typography>
+        </Box>
+      </Box>
+    </MainCard>
+  );
+}
 
 const AIAnalytics = () => {
-  const [ai1Data, setAi1Data] = useState([]);
-  const [ai2Data, setAi2Data] = useState([]);
-  const [tableData, setTableData] = useState([]);
-  
-  // Separate time range states for each chart
+  // AI1a (anomaly detection / current risk). Existing hook, unmodified:
+  // liveData is null when there's no row or the latest row is >10 min old
+  // (see hooks/useAi1Data.js) -- that null IS the "waiting for data" signal.
+  const { liveData: ai1aLiveData, history: ai1aHistory } = useAi1aData();
+
+  // AI2 (dryness/NCG virtual sensor) — now activated (D22), but calibration is
+  // PROVISIONAL (see docs/catatan_diskusi_penting.md §1): TDS sensor->lab quantile
+  // mapping hasn't met its data-sufficiency gate yet. Numbers ARE shown (per D22
+  // activation), but every row carries its own `status` from ai2, and the UI must
+  // never let a provisional number look as trustworthy as a final one.
+  const { liveData: ai2LiveData, history: ai2History } = useAi2Data();
+  const drynessLive = ai2LiveData?.dryness_predict != null ? parseFloat(ai2LiveData.dryness_predict) : NaN;
+  const ncgLive = ai2LiveData?.ncg_predict != null ? parseFloat(ai2LiveData.ncg_predict) : NaN;
+  // Same latest-row status used for the table caption below -- one shared
+  // signal for "is the calibration behind these AI2 numbers still provisional".
+  const ai2IsProvisional = ai2History.length > 0 && ai2History[ai2History.length - 1]?.status === 'provisional';
+
+  // Sensor Inputs table (right panel) — real sensor_data rows.
+  const [sensorRows, setSensorRows] = useState([]);
+
   const [timeRangeAI1, setTimeRangeAI1] = useState('1d');
-  const [timeRangeAI2Dryness, setTimeRangeAI2Dryness] = useState('1d');
-  const [timeRangeAI2NCG, setTimeRangeAI2NCG] = useState('1d');
-  
-  // Date range states
   const [showDatePickerAI1, setShowDatePickerAI1] = useState(false);
-  const [showDatePickerDryness, setShowDatePickerDryness] = useState(false);
-  const [showDatePickerNCG, setShowDatePickerNCG] = useState(false);
   const [dateFromAI1, setDateFromAI1] = useState('');
   const [dateToAI1, setDateToAI1] = useState('');
-  const [dateFromDryness, setDateFromDryness] = useState('');
-  const [dateToDryness, setDateToDryness] = useState('');
-  const [dateFromNCG, setDateFromNCG] = useState('');
-  const [dateToNCG, setDateToNCG] = useState('');
-  
+
   const [chartWidthAI1, setChartWidthAI1] = useState(1200);
-  const [chartWidthDryness, setChartWidthDryness] = useState(600);
-  const [chartWidthNCG, setChartWidthNCG] = useState(600);
-  
+
   const chartRefAI1 = useRef(null);
-  const chartRefDryness = useRef(null);
-  const chartRefNCG = useRef(null);
   const leftTableRef = useRef(null);
   const rightTableRef = useRef(null);
 
@@ -48,34 +174,24 @@ const AIAnalytics = () => {
       if (chartRefAI1.current) {
         setChartWidthAI1(chartRefAI1.current.offsetWidth);
       }
-      if (chartRefDryness.current) {
-        setChartWidthDryness(chartRefDryness.current.offsetWidth);
-      }
-      if (chartRefNCG.current) {
-        setChartWidthNCG(chartRefNCG.current.offsetWidth);
-      }
     };
-    
+
     updateWidth();
     window.addEventListener('resize', updateWidth);
-    
-    // Delay untuk ensure DOM ready
     setTimeout(updateWidth, 100);
-    
+
     return () => window.removeEventListener('resize', updateWidth);
   }, []);
 
-  // Sync table scroll
+  // Sync table scroll between the two Prediction Data Table panels
   useEffect(() => {
     const leftTable = leftTableRef.current;
     const rightTable = rightTableRef.current;
 
     if (!leftTable || !rightTable) return;
 
-    const syncScroll = (source, target) => {
-      return () => {
-        target.scrollTop = source.scrollTop;
-      };
+    const syncScroll = (source, target) => () => {
+      target.scrollTop = source.scrollTop;
     };
 
     const leftScrollHandler = syncScroll(leftTable, rightTable);
@@ -90,103 +206,97 @@ const AIAnalytics = () => {
     };
   }, []);
 
-  // Simulate real-time data generation
-  // Simulate real-time data generation with regression patterns
+  // Fetch latest sensor_data rows for the "Sensor Inputs" panel.
   useEffect(() => {
-    let trendValueRisk = 0; // Starting trend for risk
-    let trendValueDryness = 97.5; // Starting trend for dryness
-    let trendValueNCG = 1.5; // Starting trend for NCG
-    let trendDirection = 1; // 1 for up, -1 for down
-    
-    const generateAIData = () => {
-      const timestamp = new Date();
-      
-      // Risk trend: slowly moves up and down with small noise
-      trendValueRisk += (Math.random() - 0.3) * trendDirection * 2;
-      if (trendValueRisk > 85) trendDirection = -1;
-      if (trendValueRisk < 15) trendDirection = 1;
-      const risk = Math.max(0, Math.min(100, trendValueRisk + (Math.random() - 0.5) * 5));
-      const anomaly = risk > 70;
-      
-      const ai1Point = {
-        timestamp: timestamp.toLocaleTimeString(),
-        risk_percentage: risk,
-        risk_status: risk < 33 ? 'Low' : risk < 66 ? 'Medium' : 'High',
-        anomaly_detected: anomaly,
-        anomaly_score: Math.random() * 10
-      };
-
-      // Dryness trend: stays high with small fluctuations
-      trendValueDryness += (Math.random() - 0.5) * 0.15;
-      trendValueDryness = Math.max(95, Math.min(100, trendValueDryness));
-      const dryness = trendValueDryness + (Math.random() - 0.5) * 0.3;
-      
-      // NCG trend: slowly drifts up and down
-      trendValueNCG += (Math.random() - 0.5) * 0.08;
-      trendValueNCG = Math.max(0.5, Math.min(2.5, trendValueNCG));
-      const ncg = trendValueNCG + (Math.random() - 0.5) * 0.15;
-
-      const ai2Point = {
-        timestamp: timestamp.toLocaleTimeString(),
-        dryness_fraction: dryness,
-        ncg: ncg
-      };
-
-      // Input features for table
-      const inputData = {
-        id: Date.now(),
-        timestamp: timestamp.toLocaleString(),
-        temperature: (180 + Math.random() * 20).toFixed(2),
-        pressure: (25 + Math.random() * 5).toFixed(2),
-        flow_rate: (500 + Math.random() * 100).toFixed(2),
-        gen_voltage: (13.5 + Math.random() * 1).toFixed(2),
-        gen_reactive_power: (20 + Math.random() * 10).toFixed(2),
-        gen_output: (110 + Math.random() * 10).toFixed(2),
-        gen_power_factor: (0.85 + Math.random() * 0.1).toFixed(2),
-        gen_frequency: (49.5 + Math.random()).toFixed(2),
-        speed_detection: (3000 + Math.random() * 100).toFixed(2),
-        MCV_L: (50 + Math.random() * 30).toFixed(2),
-        MCV_R: (50 + Math.random() * 30).toFixed(2),
-        TDS: (150 + Math.random() * 50).toFixed(2),
-        ...ai1Point,
-        ...ai2Point
-      };
-
-      setAi1Data(prev => [...prev.slice(-59), ai1Point]);
-      setAi2Data(prev => [...prev.slice(-59), ai2Point]);
-      setTableData(prev => [inputData, ...prev.slice(0, 49)]);
+    let cancelled = false;
+    const fetchSensorRows = () => {
+      fetch(`${SENSOR_URL}?limit=${SENSOR_TABLE_LIMIT}`)
+        .then((r) => r.json())
+        .then((json) => {
+          if (!cancelled && json.success && json.data) {
+            setSensorRows(json.data); // already newest-first from the API
+          }
+        })
+        .catch((err) => console.error('sensor/latest fetch error:', err));
     };
 
-    generateAIData();
-    const interval = setInterval(generateAIData, 3000);
-    return () => clearInterval(interval);
+    fetchSensorRows();
+    const id = setInterval(fetchSensorRows, SENSOR_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, []);
+
+  // ai1a history keyed by exact timestamp -- ai1a.timestamp is stored as the
+  // literal sensor row timestamp its window ended on (workers/jobs_ai1.py),
+  // so this is an exact join, not an approximation. Same technique as
+  // src/pages/component-overview/history.jsx.
+  const ai1aByTimestamp = useMemo(() => {
+    const map = new Map();
+    ai1aHistory.forEach((row) => map.set(new Date(row.timestamp).getTime(), row));
+    return map;
+  }, [ai1aHistory]);
+
+  // ai2.processed_at is the same underlying sensor-window-end timestamp as
+  // ai1a.timestamp (workers/jobs_ai2.py) -- exact-timestamp join, same technique
+  // as ai1a above and src/pages/component-overview/history.jsx.
+  const ai2ByTimestamp = useMemo(() => {
+    const map = new Map();
+    ai2History.forEach((row) => map.set(new Date(row.processed_at).getTime(), row));
+    return map;
+  }, [ai2History]);
+
+  // Combined table rows: each real sensor row + its matching ai1a window / ai2
+  // prediction, if any.
+  const tableData = useMemo(
+    () =>
+      sensorRows.map((row) => ({
+        ...row,
+        ai1a: ai1aByTimestamp.get(new Date(row.timestamp).getTime()) || null,
+        ai2: ai2ByTimestamp.get(new Date(row.timestamp).getTime()) || null
+      })),
+    [sensorRows, ai1aByTimestamp, ai2ByTimestamp]
+  );
+
+  // AI1 risk chart data — real ai1a history, chronological (hook already
+  // reverses it), reshaped to the field names the existing SVG drawing code
+  // below expects.
+  const ai1ChartData = useMemo(
+    () =>
+      ai1aHistory.map((row) => ({
+        timestamp: row.timestamp,
+        risk_percentage: row.risk_percentage != null ? parseFloat(row.risk_percentage) : 0,
+        anomaly_detected: !!row.is_anomaly
+      })),
+    [ai1aHistory]
+  );
 
   // Get X-axis labels based on time range
   const getXAxisLabels = (range) => {
-    switch(range) {
+    switch (range) {
       case 'Now':
-        return Array.from({length: 60}, (_, i) => (i + 1).toString());
+        return Array.from({ length: 60 }, (_, i) => (i + 1).toString());
       case '1h':
-        return Array.from({length: 60}, (_, i) => (i + 1).toString());
+        return Array.from({ length: 60 }, (_, i) => (i + 1).toString());
       case '1d':
-        return Array.from({length: 24}, (_, i) => (i + 1).toString());
+        return Array.from({ length: 24 }, (_, i) => (i + 1).toString());
       case '7d':
-        return Array.from({length: 7}, (_, i) => `D${i + 1}`);
+        return Array.from({ length: 7 }, (_, i) => `D${i + 1}`);
       case '1m':
-        return Array.from({length: 30}, (_, i) => (i + 1).toString());
+        return Array.from({ length: 30 }, (_, i) => (i + 1).toString());
       case '1y':
         return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       case 'all':
-        return Array.from({length: 10}, (_, i) => (2015 + i).toString());
+        return Array.from({ length: 10 }, (_, i) => (2015 + i).toString());
       default:
-        return Array.from({length: 60}, (_, i) => (i + 1).toString());
+        return Array.from({ length: 60 }, (_, i) => (i + 1).toString());
     }
   };
 
   // Get time label for X-axis
   const getTimeLabel = (range) => {
-    switch(range) {
+    switch (range) {
       case 'Now':
       case '1h':
         return 'Minute';
@@ -208,38 +318,39 @@ const AIAnalytics = () => {
   // Smooth curve helper - Catmull-Rom spline
   const getCurvePoints = (points) => {
     if (points.length < 2) return '';
-    
+
     let path = `M ${points[0].x},${points[0].y}`;
-    
+
     for (let i = 0; i < points.length - 1; i++) {
       const p0 = points[Math.max(i - 1, 0)];
       const p1 = points[i];
       const p2 = points[i + 1];
       const p3 = points[Math.min(i + 2, points.length - 1)];
-      
-      // Catmull-Rom to Bezier conversion
+
       const cp1x = p1.x + (p2.x - p0.x) / 6;
       const cp1y = p1.y + (p2.y - p0.y) / 6;
       const cp2x = p2.x - (p3.x - p1.x) / 6;
       const cp2y = p2.y - (p3.y - p1.y) / 6;
-      
+
       path += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
     }
-    
+
     return path;
   };
 
   const xAxisLabelsAI1 = getXAxisLabels(timeRangeAI1);
-  const xAxisLabelsDryness = getXAxisLabels(timeRangeAI2Dryness);
-  const xAxisLabelsNCG = getXAxisLabels(timeRangeAI2NCG);
 
-  // Linear regression helper
+  // Linear regression helper — a real statistical fit over real risk% history,
+  // not a fabricated value, so this is kept.
   const getLinearRegression = (data, getValue) => {
     if (data.length < 2) return null;
-    
+
     const n = data.length;
-    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
-    
+    let sumX = 0,
+      sumY = 0,
+      sumXY = 0,
+      sumX2 = 0;
+
     data.forEach((point, i) => {
       const x = i;
       const y = getValue(point);
@@ -248,49 +359,20 @@ const AIAnalytics = () => {
       sumXY += x * y;
       sumX2 += x * x;
     });
-    
+
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
-    
+
     return { slope, intercept };
   };
-  // Stats cards data
-  const statsData = [
-    {
-      title: 'AI1 Status',
-      value: ai1Data.length > 0 ? ai1Data[ai1Data.length - 1].risk_status : 'Low',
-      subtitle: ai1Data.length > 0 ? `${ai1Data[ai1Data.length - 1].risk_percentage.toFixed(1)}% Risk` : '0% Risk',
-      icon: <PsychologyIcon sx={{ fontSize: '2.5rem' }} />,
-      bgColor: ai1Data.length > 0 && ai1Data[ai1Data.length - 1].risk_percentage > 66 ? '#FF7E7E' : '#58E58C',
-      iconColor: '#fff'
-    },
-    {
-      title: 'Anomaly Detection',
-      value: ai1Data.length > 0 && ai1Data[ai1Data.length - 1].anomaly_detected ? 'Detected' : 'Normal',
-      subtitle: ai1Data.length > 0 ? `Score: ${ai1Data[ai1Data.length - 1].anomaly_score.toFixed(2)}` : 'Score: 0',
-      icon: ai1Data.length > 0 && ai1Data[ai1Data.length - 1].anomaly_detected ? 
-        <WarningAmberIcon sx={{ fontSize: '2.5rem' }} /> : 
-        <CheckCircleIcon sx={{ fontSize: '2.5rem' }} />,
-      bgColor: ai1Data.length > 0 && ai1Data[ai1Data.length - 1].anomaly_detected ? '#9271FF' : '#53A1FF',
-      iconColor: '#fff'
-    },
-    {
-      title: 'AI2 Dryness',
-      value: ai2Data.length > 0 ? `${ai2Data[ai2Data.length - 1].dryness_fraction.toFixed(2)}%` : '0%',
-      subtitle: 'Steam Quality',
-      icon: <TimelineIcon sx={{ fontSize: '2.5rem' }} />,
-      bgColor: '#53A1FF',
-      iconColor: '#fff'
-    },
-    {
-      title: 'AI2 NCG',
-      value: ai2Data.length > 0 ? `${ai2Data[ai2Data.length - 1].ncg.toFixed(2)} wt%` : '0 wt%',
-      subtitle: 'Gas Content',
-      icon: <TimelineIcon sx={{ fontSize: '2.5rem' }} />,
-      bgColor: '#58E58C',
-      iconColor: '#fff'
-    }
-  ];
+
+  // AI1 stat card values — null means "waiting for data" (no fresh ai1a row),
+  // not zero. useAi1aData already treats rows older than 10 minutes as stale.
+  const usingAi1a = !!ai1aLiveData;
+  const riskPct = usingAi1a && ai1aLiveData.risk_percentage != null ? parseFloat(ai1aLiveData.risk_percentage) : null;
+  const severityConfig = getSeverityConfig(usingAi1a ? ai1aLiveData.severity : null);
+  const isAnomaly = usingAi1a ? !!ai1aLiveData.is_anomaly : null;
+  const anomalyScore = usingAi1a && ai1aLiveData.anomaly_score != null ? parseFloat(ai1aLiveData.anomaly_score) : null;
 
   return (
     <Box>
@@ -306,25 +388,25 @@ const AIAnalytics = () => {
                   width: 64,
                   height: 64,
                   borderRadius: '12px',
-                  backgroundColor: statsData[0].bgColor,
+                  backgroundColor: severityConfig.color,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: statsData[0].iconColor,
+                  color: '#fff',
                   flexShrink: 0
                 }}
               >
-                {statsData[0].icon}
+                {usingAi1a ? <PsychologyIcon sx={{ fontSize: '2.5rem' }} /> : <HourglassEmptyIcon sx={{ fontSize: '2.5rem' }} />}
               </Box>
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
-                  {statsData[0].title}
+                  AI1 Status
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                  {statsData[0].value}
+                  {severityConfig.label}
                 </Typography>
                 <Typography variant="caption" color="textSecondary">
-                  {statsData[0].subtitle}
+                  {riskPct != null ? `${riskPct.toFixed(1)}% Risk` : 'Menunggu window ai1a valid'}
                 </Typography>
               </Box>
             </Box>
@@ -339,25 +421,31 @@ const AIAnalytics = () => {
                   width: 64,
                   height: 64,
                   borderRadius: '12px',
-                  backgroundColor: statsData[1].bgColor,
+                  backgroundColor: isAnomaly === null ? '#9e9e9e' : isAnomaly ? '#9271FF' : '#53A1FF',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: statsData[1].iconColor,
+                  color: '#fff',
                   flexShrink: 0
                 }}
               >
-                {statsData[1].icon}
+                {isAnomaly === null ? (
+                  <HourglassEmptyIcon sx={{ fontSize: '2.5rem' }} />
+                ) : isAnomaly ? (
+                  <WarningAmberIcon sx={{ fontSize: '2.5rem' }} />
+                ) : (
+                  <CheckCircleIcon sx={{ fontSize: '2.5rem' }} />
+                )}
               </Box>
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
-                  {statsData[1].title}
+                  Anomaly Detection
                 </Typography>
                 <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                  {statsData[1].value}
+                  {isAnomaly === null ? 'Menunggu Data' : isAnomaly ? 'Detected' : 'Normal'}
                 </Typography>
                 <Typography variant="caption" color="textSecondary">
-                  {statsData[1].subtitle}
+                  {anomalyScore != null ? `Score: ${anomalyScore.toFixed(3)}` : '—'}
                 </Typography>
               </Box>
             </Box>
@@ -417,119 +505,140 @@ const AIAnalytics = () => {
                 )}
               </Box>
             </Box>
-            
+
+            {ai1ChartData.length > 1 && (
+              <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: -1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Box sx={{ width: 16, height: 2, backgroundColor: '#1976d2' }} />
+                  <Typography variant="caption" color="text.secondary">
+                    Risk % teramati
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Box sx={{ width: 16, height: 0, borderTop: '2px dashed #ff4444' }} />
+                  <Typography variant="caption" color="text.secondary">
+                    Regresi linear atas data teramati — <strong>bukan prediksi</strong>, tidak diekstrapolasi (lihat plan.md §3b: kemiringan
+                    tren risk sebagian besar artefak pergeseran level, bukan degradasi turbin)
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+
             <Box ref={chartRefAI1} sx={{ height: 420, position: 'relative', pt: 2, width: '100%' }}>
-              <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
-                {/* Y-axis label */}
-                <text
-                  x="15"
-                  y="200"
-                  fontSize="12"
-                  fill="#666"
-                  textAnchor="middle"
-                  transform="rotate(-90, 15, 200)"
-                  fontWeight="600"
+              {ai1ChartData.length === 0 ? (
+                <Box
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 1,
+                    color: 'text.secondary'
+                  }}
                 >
-                  Risk Percentage (%)
-                </text>
+                  <HourglassEmptyIcon sx={{ fontSize: '2.5rem', opacity: 0.5 }} />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Menunggu data AI1a
+                  </Typography>
+                  <Typography variant="caption" sx={{ textAlign: 'center', maxWidth: 400 }}>
+                    Belum ada window 60-menit yang valid (lihat validasi rentang waktu). Grafik akan terisi otomatis begitu data tersedia.
+                  </Typography>
+                </Box>
+              ) : (
+                <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
+                  {/* Y-axis label */}
+                  <text x="15" y="200" fontSize="12" fill="#666" textAnchor="middle" transform="rotate(-90, 15, 200)" fontWeight="600">
+                    Risk Percentage (%)
+                  </text>
 
-                {/* Grid lines */}
-                {[0, 25, 50, 75, 100].map((val, i) => (
-                  <g key={i}>
-                    <line
-                      x1="60"
-                      y1={320 - (val * 2.8)}
-                      x2={chartWidthAI1 - 40}
-                      y2={320 - (val * 2.8)}
-                      stroke="#e0e0e0"
-                      strokeWidth="1"
-                    />
-                    <text
-                      x="45"
-                      y={325 - (val * 2.8)}
-                      fontSize="11"
-                      fill="#666"
-                      textAnchor="end"
-                    >
-                      {val}%
-                    </text>
-                  </g>
-                ))}
-
-                {/* Risk threshold lines */}
-                <line x1="60" y1={320 - (66 * 2.8)} x2={chartWidthAI1 - 40} y2={320 - (66 * 2.8)} stroke="#ed6c02" strokeWidth="1" strokeDasharray="3,3" />
-                <text x="70" y={320 - (66 * 2.8) - 4} fontSize="10" fill="#ed6c02">High Risk (66%)</text>
-                
-                <line x1="60" y1={320 - (33 * 2.8)} x2={chartWidthAI1 - 40} y2={320 - (33 * 2.8)} stroke="#ffa726" strokeWidth="1" strokeDasharray="3,3" />
-                <text x="70" y={320 - (33 * 2.8) - 4} fontSize="10" fill="#ffa726">Medium Risk (33%)</text>
-
-                {/* Smooth risk line */}
-                {ai1Data.length > 1 && (
-                  <path
-                    d={getCurvePoints(ai1Data.slice(-xAxisLabelsAI1.length).map((d, i) => ({
-                      x: 60 + (i * (chartWidthAI1 - 100) / Math.max(1, xAxisLabelsAI1.length - 1)),
-                      y: 320 - (d.risk_percentage * 2.8)
-                    })))}
-                    fill="none"
-                    stroke="#1976d2"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-                )}
-                {/* Regression line - AI1 */}
-                {ai1Data.length > 1 && (() => {
-                  const slicedData = ai1Data.slice(-xAxisLabelsAI1.length);
-                  const regression = getLinearRegression(slicedData, d => d.risk_percentage);
-                  if (!regression) return null;
-                  
-                  const startY = regression.intercept;
-                  const endY = regression.intercept + regression.slope * (slicedData.length - 1);
-                  const endX = 60 + ((slicedData.length - 1) * (chartWidthAI1 - 100) / Math.max(1, xAxisLabelsAI1.length - 1));
-                  
-                  return (
-                    <line
-                      x1="60"
-                      y1={320 - (startY * 2.8)}
-                      x2={endX}
-                      y2={320 - (endY * 2.8)}
-                      stroke="#ff4444"
-                      strokeWidth="2"
-                      strokeDasharray="5,5"
-                    />
-                  );
-                })()}
-                {/* Anomaly markers */}
-                {ai1Data.slice(-xAxisLabelsAI1.length).map((d, i) => {
-                  if (!d.anomaly_detected) return null;
-                  const x = 60 + (i * (chartWidthAI1 - 100) / Math.max(1, xAxisLabelsAI1.length - 1));
-                  const y = 320 - (d.risk_percentage * 2.8);
-                  return (
+                  {/* Grid lines */}
+                  {[0, 25, 50, 75, 100].map((val, i) => (
                     <g key={i}>
-                      <circle cx={x} cy={y} r="7" fill="#ff4444" stroke="#fff" strokeWidth="2" />
-                      <text x={x} y={y - 12} fontSize="10" fill="#ff4444" textAnchor="middle" fontWeight="600">⚠</text>
+                      <line x1="60" y1={320 - val * 2.8} x2={chartWidthAI1 - 40} y2={320 - val * 2.8} stroke="#e0e0e0" strokeWidth="1" />
+                      <text x="45" y={325 - val * 2.8} fontSize="11" fill="#666" textAnchor="end">
+                        {val}%
+                      </text>
                     </g>
-                  );
-                })}
+                  ))}
 
-                {/* X-axis labels */}
-                <text x={chartWidthAI1 / 2} y="360" fontSize="12" fill="#666" textAnchor="middle" fontWeight="600">
-                  {getTimeLabel(timeRangeAI1)} (x{xAxisLabelsAI1.length})
-                </text>
+                  {/* Smooth risk line */}
+                  {ai1ChartData.length > 1 && (
+                    <path
+                      d={getCurvePoints(
+                        ai1ChartData.slice(-xAxisLabelsAI1.length).map((d, i) => ({
+                          x: 60 + (i * (chartWidthAI1 - 100)) / Math.max(1, xAxisLabelsAI1.length - 1),
+                          y: 320 - d.risk_percentage * 2.8
+                        }))
+                      )}
+                      fill="none"
+                      stroke="#1976d2"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                  )}
+                  {/* Regression line - AI1 */}
+                  {ai1ChartData.length > 1 &&
+                    (() => {
+                      const slicedData = ai1ChartData.slice(-xAxisLabelsAI1.length);
+                      const regression = getLinearRegression(slicedData, (d) => d.risk_percentage);
+                      if (!regression) return null;
 
-                {/* X-axis tick labels */}
-                {xAxisLabelsAI1.map((label, i) => {
-                  const showEvery = xAxisLabelsAI1.length > 30 ? Math.ceil(xAxisLabelsAI1.length / 12) : 
-                                    xAxisLabelsAI1.length > 12 ? Math.ceil(xAxisLabelsAI1.length / 8) : 1;
-                  if (i % showEvery !== 0 && i !== xAxisLabelsAI1.length - 1) return null;
-                  
-                  const x = 60 + (i * (chartWidthAI1 - 100) / Math.max(1, xAxisLabelsAI1.length - 1));
-                  return (
-                    <text key={i} x={x} y="380" fontSize="9" fill="#666" textAnchor="middle">
-                      {label}
-                    </text>
-                  );
-                })}
-              </svg>
+                      const startY = regression.intercept;
+                      const endY = regression.intercept + regression.slope * (slicedData.length - 1);
+                      const endX = 60 + ((slicedData.length - 1) * (chartWidthAI1 - 100)) / Math.max(1, xAxisLabelsAI1.length - 1);
+
+                      return (
+                        <line
+                          x1="60"
+                          y1={320 - startY * 2.8}
+                          x2={endX}
+                          y2={320 - endY * 2.8}
+                          stroke="#ff4444"
+                          strokeWidth="2"
+                          strokeDasharray="5,5"
+                        />
+                      );
+                    })()}
+                  {/* Anomaly markers */}
+                  {ai1ChartData.slice(-xAxisLabelsAI1.length).map((d, i) => {
+                    if (!d.anomaly_detected) return null;
+                    const x = 60 + (i * (chartWidthAI1 - 100)) / Math.max(1, xAxisLabelsAI1.length - 1);
+                    const y = 320 - d.risk_percentage * 2.8;
+                    return (
+                      <g key={i}>
+                        <circle cx={x} cy={y} r="7" fill="#ff4444" stroke="#fff" strokeWidth="2" />
+                        <text x={x} y={y - 12} fontSize="10" fill="#ff4444" textAnchor="middle" fontWeight="600">
+                          ⚠
+                        </text>
+                      </g>
+                    );
+                  })}
+
+                  {/* X-axis labels */}
+                  <text x={chartWidthAI1 / 2} y="360" fontSize="12" fill="#666" textAnchor="middle" fontWeight="600">
+                    {getTimeLabel(timeRangeAI1)} (x{xAxisLabelsAI1.length})
+                  </text>
+
+                  {/* X-axis tick labels */}
+                  {xAxisLabelsAI1.map((label, i) => {
+                    const showEvery =
+                      xAxisLabelsAI1.length > 30
+                        ? Math.ceil(xAxisLabelsAI1.length / 12)
+                        : xAxisLabelsAI1.length > 12
+                          ? Math.ceil(xAxisLabelsAI1.length / 8)
+                          : 1;
+                    if (i % showEvery !== 0 && i !== xAxisLabelsAI1.length - 1) return null;
+
+                    const x = 60 + (i * (chartWidthAI1 - 100)) / Math.max(1, xAxisLabelsAI1.length - 1);
+                    return (
+                      <text key={i} x={x} y="380" fontSize="9" fill="#666" textAnchor="middle">
+                        {label}
+                      </text>
+                    );
+                  })}
+                </svg>
+              )}
             </Box>
 
             {/* Time range buttons - Bottom Right */}
@@ -562,432 +671,93 @@ const AIAnalytics = () => {
 
         {/* 3. Horizontal Barrier */}
         <Grid size={{ xs: 12 }}>
-          <Box sx={{ 
-            height: 2, 
-            background: 'linear-gradient(90deg, transparent 0%, #2e7d32 50%, transparent 100%)',
-            my: 2 
-          }} />
+          <Box
+            sx={{
+              height: 2,
+              background: 'linear-gradient(90deg, transparent 0%, #2e7d32 50%, transparent 100%)',
+              my: 2
+            }}
+          />
         </Grid>
 
-        {/* 4. AI2 Stats Cards */}
+        {/* 4. AI2 Stats Cards — kept as "not available" here on purpose: AI2 IS
+            active (D22) and its numbers do render below (charts + data table,
+            both with the PROVISIONAL badge), but these two top stat cards were
+            out of scope for this wiring pass. Revisit if they should also show
+            real (labeled) values instead of a blanket "belum tersedia". */}
         <Grid size={{ xs: 12, md: 6 }}>
-          <MainCard sx={{ height: '100%', backgroundColor: '#F5F5F5' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box
-                sx={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: '12px',
-                  backgroundColor: statsData[2].bgColor,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: statsData[2].iconColor,
-                  flexShrink: 0
-                }}
-              >
-                {statsData[2].icon}
-              </Box>
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
-                  {statsData[2].title}
-                </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                  {statsData[2].value}
-                </Typography>
-                <Typography variant="caption" color="textSecondary">
-                  {statsData[2].subtitle}
-                </Typography>
-              </Box>
-            </Box>
-          </MainCard>
+          <Ai2UnavailableCard title="AI2 Dryness" />
         </Grid>
 
         <Grid size={{ xs: 12, md: 6 }}>
-          <MainCard sx={{ height: '100%', backgroundColor: '#F5F5F5' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Box
-                sx={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: '12px',
-                  backgroundColor: statsData[3].bgColor,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: statsData[3].iconColor,
-                  flexShrink: 0
-                }}
-              >
-                {statsData[3].icon}
-              </Box>
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mb: 0.5 }}>
-                  {statsData[3].title}
-                </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                  {statsData[3].value}
-                </Typography>
-                <Typography variant="caption" color="textSecondary">
-                  {statsData[3].subtitle}
-                </Typography>
-              </Box>
-            </Box>
-          </MainCard>
+          <Ai2UnavailableCard title="AI2 NCG" />
         </Grid>
 
-        {/* 5. AI2 Charts */}
-        {/* AI2 Chart - Dryness Fraction */}
+        {/* 5. AI2 Charts — real data (D22 activation), PROVISIONAL badge when the
+            TDS calibration behind it hasn't met its data-sufficiency gate (see
+            Ai2CellValue above for why this label can't be optional). */}
         <Grid size={{ xs: 12, lg: 6 }}>
-          <MainCard>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  AI2 - Dryness Fraction
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  Steam quality prediction
-                </Typography>
-              </Box>
-              <Box>
-                <Button
+          <Box sx={{ position: 'relative' }}>
+            {ai2IsProvisional && (
+              <Tooltip title={AI2_PROVISIONAL_TOOLTIP} arrow>
+                <Chip
+                  label="PROVISIONAL"
                   size="small"
-                  startIcon={<CalendarMonthIcon />}
-                  onClick={() => setShowDatePickerDryness(!showDatePickerDryness)}
                   sx={{
-                    textTransform: 'none',
-                    color: '#666',
-                    fontSize: '0.75rem',
-                    '&:hover': { backgroundColor: '#f5f5f5' }
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    zIndex: 1,
+                    fontWeight: 700,
+                    letterSpacing: '0.02em',
+                    backgroundColor: '#f59e0b',
+                    color: '#fff'
                   }}
-                >
-                  Custom Date Range
-                </Button>
-                {showDatePickerDryness && (
-                  <Box sx={{ display: 'flex', gap: 1, p: 1, backgroundColor: '#f5f5f5', borderRadius: 1, mt: 1 }}>
-                    <input
-                      type="date"
-                      value={dateFromDryness}
-                      onChange={(e) => setDateFromDryness(e.target.value)}
-                      style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                    />
-                    <Typography sx={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', color: '#666' }}>to</Typography>
-                    <input
-                      type="date"
-                      value={dateToDryness}
-                      onChange={(e) => setDateToDryness(e.target.value)}
-                      style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                    />
-                    <Button
-                      size="small"
-                      variant="contained"
-                      sx={{ minWidth: 'auto', px: 2, textTransform: 'none' }}
-                      onClick={() => setShowDatePickerDryness(false)}
-                    >
-                      Apply
-                    </Button>
-                  </Box>
-                )}
-              </Box>
-            </Box>
-            
-            <Box ref={chartRefDryness} sx={{ height: 350, position: 'relative', pt: 2, width: '100%' }}>
-              <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
-                {/* Y-axis label */}
-                <text
-                  x="15"
-                  y="170"
-                  fontSize="12"
-                  fill="#666"
-                  textAnchor="middle"
-                  transform="rotate(-90, 15, 170)"
-                  fontWeight="600"
-                >
-                  Dryness Fraction (%)
-                </text>
-
-                {/* Grid lines (95-100%) */}
-                {[95, 96, 97, 98, 99, 100].map((val, i) => (
-                  <g key={`dry-${i}`}>
-                    <line
-                      x1="60"
-                      y1={290 - ((val - 95) * 50)}
-                      x2={chartWidthDryness - 40}
-                      y2={290 - ((val - 95) * 50)}
-                      stroke="#e0e0e0"
-                      strokeWidth="1"
-                    />
-                    <text
-                      x="45"
-                      y={295 - ((val - 95) * 50)}
-                      fontSize="11"
-                      fill="#666"
-                      textAnchor="end"
-                    >
-                      {val}%
-                    </text>
-                  </g>
-                ))}
-
-                {/* Smooth dryness line */}
-                {ai2Data.length > 1 && (
-                  <path
-                    d={getCurvePoints(ai2Data.slice(-xAxisLabelsDryness.length).map((d, i) => ({
-                      x: 60 + (i * (chartWidthDryness - 100) / Math.max(1, xAxisLabelsDryness.length - 1)),
-                      y: 290 - ((d.dryness_fraction - 95) * 50)
-                    })))}
-                    fill="none"
-                    stroke="#2e7d32"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-                )}
-                {/* Regression line - Dryness */}
-                {ai2Data.length > 1 && (() => {
-                  const slicedData = ai2Data.slice(-xAxisLabelsDryness.length);
-                  const regression = getLinearRegression(slicedData, d => d.dryness_fraction);
-                  if (!regression) return null;
-                  
-                  const startY = regression.intercept;
-                  const endY = regression.intercept + regression.slope * (slicedData.length - 1);
-                  const endX = 60 + ((slicedData.length - 1) * (chartWidthDryness - 100) / Math.max(1, xAxisLabelsDryness.length - 1));
-                  
-                  return (
-                    <line
-                      x1="60"
-                      y1={290 - ((startY - 95) * 50)}
-                      x2={endX}
-                      y2={290 - ((endY - 95) * 50)}
-                      stroke="#ff4444"
-                      strokeWidth="2"
-                      strokeDasharray="5,5"
-                    />
-                  );
-                })()}
-
-                {/* X-axis label */}
-                <text x={chartWidthDryness / 2} y="330" fontSize="12" fill="#666" textAnchor="middle" fontWeight="600">
-                  {getTimeLabel(timeRangeAI2Dryness)} (x{xAxisLabelsDryness.length})
-                </text>
-
-                {/* X-axis tick labels */}
-                {xAxisLabelsDryness.map((label, i) => {
-                  const showEvery = xAxisLabelsDryness.length > 30 ? Math.ceil(xAxisLabelsDryness.length / 12) : 
-                                    xAxisLabelsDryness.length > 12 ? Math.ceil(xAxisLabelsDryness.length / 8) : 1;
-                  if (i % showEvery !== 0 && i !== xAxisLabelsDryness.length - 1) return null;
-                  
-                  const x = 60 + (i * (chartWidthDryness - 100) / Math.max(1, xAxisLabelsDryness.length - 1));
-                  return (
-                    <text key={i} x={x} y="350" fontSize="9" fill="#666" textAnchor="middle">
-                      {label}
-                    </text>
-                  );
-                })}
-              </svg>
-            </Box>
-
-            {/* Time range buttons - Bottom Right */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 0.5, flexWrap: 'wrap' }}>
-              {['Now', '1h', '1d', '7d', '1m', '1y', 'all'].map((range) => (
-                <Box
-                  key={range}
-                  onClick={() => setTimeRangeAI2Dryness(range)}
-                  sx={{
-                    px: 1.5,
-                    py: 0.5,
-                    borderRadius: 1,
-                    cursor: 'pointer',
-                    backgroundColor: timeRangeAI2Dryness === range ? '#2e7d32' : '#f5f5f5',
-                    color: timeRangeAI2Dryness === range ? '#fff' : '#666',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      backgroundColor: timeRangeAI2Dryness === range ? '#1b5e20' : '#e0e0e0'
-                    }
-                  }}
-                >
-                  {range === 'all' ? 'All' : range}
-                </Box>
-              ))}
-            </Box>
-          </MainCard>
+                />
+              </Tooltip>
+            )}
+            <Ai2Chart
+              title="AI2 - Dryness Fraction"
+              subtitle="Steam quality prediction"
+              metric="dryness_predict"
+              liveValue={drynessLive}
+              unit="%"
+              yAxisTitle="Dryness (%)"
+              color="#2e7d32"
+            />
+          </Box>
         </Grid>
 
-        {/* AI2 Chart - NCG Content */}
         <Grid size={{ xs: 12, lg: 6 }}>
-          <MainCard>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-              <Box>
-                <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  AI2 - NCG Content
-                </Typography>
-                <Typography variant="body2" color="textSecondary">
-                  Non-condensable gas prediction
-                </Typography>
-              </Box>
-              <Box>
-                <Button
+          <Box sx={{ position: 'relative' }}>
+            {ai2IsProvisional && (
+              <Tooltip title={AI2_PROVISIONAL_TOOLTIP} arrow>
+                <Chip
+                  label="PROVISIONAL"
                   size="small"
-                  startIcon={<CalendarMonthIcon />}
-                  onClick={() => setShowDatePickerNCG(!showDatePickerNCG)}
                   sx={{
-                    textTransform: 'none',
-                    color: '#666',
-                    fontSize: '0.75rem',
-                    '&:hover': { backgroundColor: '#f5f5f5' }
+                    position: 'absolute',
+                    top: 12,
+                    right: 12,
+                    zIndex: 1,
+                    fontWeight: 700,
+                    letterSpacing: '0.02em',
+                    backgroundColor: '#f59e0b',
+                    color: '#fff'
                   }}
-                >
-                  Custom Date Range
-                </Button>
-                {showDatePickerNCG && (
-                  <Box sx={{ display: 'flex', gap: 1, p: 1, backgroundColor: '#f5f5f5', borderRadius: 1, mt: 1 }}>
-                    <input
-                      type="date"
-                      value={dateFromNCG}
-                      onChange={(e) => setDateFromNCG(e.target.value)}
-                      style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                    />
-                    <Typography sx={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem', color: '#666' }}>to</Typography>
-                    <input
-                      type="date"
-                      value={dateToNCG}
-                      onChange={(e) => setDateToNCG(e.target.value)}
-                      style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #ddd' }}
-                    />
-                    <Button
-                      size="small"
-                      variant="contained"
-                      sx={{ minWidth: 'auto', px: 2, textTransform: 'none' }}
-                      onClick={() => setShowDatePickerNCG(false)}
-                    >
-                      Apply
-                    </Button>
-                  </Box>
-                )}
-              </Box>
-            </Box>
-            
-            <Box ref={chartRefNCG} sx={{ height: 350, position: 'relative', pt: 2, width: '100%' }}>
-              <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
-                {/* Y-axis label */}
-                <text
-                  x="15"
-                  y="170"
-                  fontSize="12"
-                  fill="#666"
-                  textAnchor="middle"
-                  transform="rotate(-90, 15, 170)"
-                  fontWeight="600"
-                >
-                  NCG Content (wt%)
-                </text>
-
-                {/* Grid lines (0-3 wt%) */}
-                {[0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0].map((val, i) => (
-                  <g key={`ncg-${i}`}>
-                    <line
-                      x1="60"
-                      y1={290 - (val * 85)}
-                      x2={chartWidthNCG - 40}
-                      y2={290 - (val * 85)}
-                      stroke="#e0e0e0"
-                      strokeWidth="1"
-                    />
-                    <text
-                      x="45"
-                      y={295 - (val * 85)}
-                      fontSize="11"
-                      fill="#666"
-                      textAnchor="end"
-                    >
-                      {val.toFixed(1)}
-                    </text>
-                  </g>
-                ))}
-
-                {/* Smooth NCG line */}
-                {ai2Data.length > 1 && (
-                  <path
-                    d={getCurvePoints(ai2Data.slice(-xAxisLabelsNCG.length).map((d, i) => ({
-                      x: 60 + (i * (chartWidthNCG - 100) / Math.max(1, xAxisLabelsNCG.length - 1)),
-                      y: 290 - (d.ncg * 85)
-                    })))}
-                    fill="none"
-                    stroke="#ed6c02"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-                )}
-                {/* Regression line - NCG */}
-                {ai2Data.length > 1 && (() => {
-                  const slicedData = ai2Data.slice(-xAxisLabelsNCG.length);
-                  const regression = getLinearRegression(slicedData, d => d.ncg);
-                  if (!regression) return null;
-                  
-                  const startY = regression.intercept;
-                  const endY = regression.intercept + regression.slope * (slicedData.length - 1);
-                  const endX = 60 + ((slicedData.length - 1) * (chartWidthNCG - 100) / Math.max(1, xAxisLabelsNCG.length - 1));
-                  
-                  return (
-                    <line
-                      x1="60"
-                      y1={290 - (startY * 85)}
-                      x2={endX}
-                      y2={290 - (endY * 85)}
-                      stroke="#ff4444"
-                      strokeWidth="2"
-                      strokeDasharray="5,5"
-                    />
-                  );
-                })()}
-                {/* X-axis label */}
-                <text x={chartWidthNCG / 2} y="330" fontSize="12" fill="#666" textAnchor="middle" fontWeight="600">
-                  {getTimeLabel(timeRangeAI2NCG)} (x{xAxisLabelsNCG.length})
-                </text>
-
-                {/* X-axis tick labels */}
-                {xAxisLabelsNCG.map((label, i) => {
-                  const showEvery = xAxisLabelsNCG.length > 30 ? Math.ceil(xAxisLabelsNCG.length / 12) : 
-                                    xAxisLabelsNCG.length > 12 ? Math.ceil(xAxisLabelsNCG.length / 8) : 1;
-                  if (i % showEvery !== 0 && i !== xAxisLabelsNCG.length - 1) return null;
-                  
-                  const x = 60 + (i * (chartWidthNCG - 100) / Math.max(1, xAxisLabelsNCG.length - 1));
-                  return (
-                    <text key={i} x={x} y="350" fontSize="9" fill="#666" textAnchor="middle">
-                      {label}
-                    </text>
-                  );
-                })}
-              </svg>
-            </Box>
-
-            {/* Time range buttons - Bottom Right */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2, gap: 0.5, flexWrap: 'wrap' }}>
-              {['Now', '1h', '1d', '7d', '1m', '1y', 'all'].map((range) => (
-                <Box
-                  key={range}
-                  onClick={() => setTimeRangeAI2NCG(range)}
-                  sx={{
-                    px: 1.5,
-                    py: 0.5,
-                    borderRadius: 1,
-                    cursor: 'pointer',
-                    backgroundColor: timeRangeAI2NCG === range ? '#2e7d32' : '#f5f5f5',
-                    color: timeRangeAI2NCG === range ? '#fff' : '#666',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      backgroundColor: timeRangeAI2NCG === range ? '#1b5e20' : '#e0e0e0'
-                    }
-                  }}
-                >
-                  {range === 'all' ? 'All' : range}
-                </Box>
-              ))}
-            </Box>
-          </MainCard>
+                />
+              </Tooltip>
+            )}
+            <Ai2Chart
+              title="AI2 - NCG Content"
+              subtitle="Non-condensable gas prediction"
+              metric="ncg_predict"
+              liveValue={ncgLive}
+              unit=" wt%"
+              yAxisTitle="NCG (wt%)"
+              color="#ed6c02"
+            />
+          </Box>
         </Grid>
 
         {/* 6. Data Table with Frozen Prediction Columns */}
@@ -1000,8 +770,19 @@ const AIAnalytics = () => {
               <Typography variant="body2" color="textSecondary">
                 Real-time sensor inputs and AI prediction results
               </Typography>
+              {ai1aHistory.length === 0 && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  Data AI1a belum tersedia — kolom Risk %/Anomaly ditampilkan sebagai &ldquo;—&rdquo;.
+                </Typography>
+              )}
+              {ai2IsProvisional && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  Kolom Dryness %/NCG wt% (AI2) berlabel <strong>PROVISIONAL</strong> — kalibrasi TDS sensor→lab belum final, angka
+                  indikatif (lihat docs/catatan_diskusi_penting.md §1).
+                </Typography>
+              )}
             </Box>
-            
+
             <Box sx={{ position: 'relative', height: 500 }}>
               {/* Scrollable container */}
               <Box
@@ -1017,7 +798,7 @@ const AIAnalytics = () => {
                 <Box
                   ref={leftTableRef}
                   sx={{
-                    width: 350,
+                    width: 420,
                     flexShrink: 0,
                     borderRight: '3px solid #1976d2',
                     backgroundColor: '#f8f9fa',
@@ -1041,7 +822,10 @@ const AIAnalytics = () => {
                         AI Predictions
                       </Typography>
                     </Box>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 0.5, p: 1, minHeight: 48 }}>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: '1.1fr 0.8fr 0.9fr 0.8fr 0.8fr', gap: 0.5, p: 1, minHeight: 48 }}>
+                      <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem', display: 'flex', alignItems: 'center' }}>
+                        Waktu (ai1a)
+                      </Typography>
                       <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem', display: 'flex', alignItems: 'center' }}>
                         Risk %
                       </Typography>
@@ -1057,42 +841,42 @@ const AIAnalytics = () => {
                     </Box>
                   </Box>
 
-                  {/* Data rows */}
-                  {tableData.map((row, idx) => (
+                  {/* Data rows — joined to ai1a by exact timestamp match; '—' when no window covers this row */}
+                  {tableData.map((row) => (
                     <Box
                       key={row.id}
                       sx={{
                         display: 'grid',
-                        gridTemplateColumns: '1fr 1fr 1fr 1fr',
+                        gridTemplateColumns: '1.1fr 0.8fr 0.9fr 0.8fr 0.8fr',
                         gap: 0.5,
                         p: 1,
                         minHeight: 40,
                         borderBottom: '1px solid #e0e0e0',
-                        backgroundColor: idx % 2 === 0 ? '#fff' : '#f8f9fa',
+                        backgroundColor: '#fff',
                         '&:hover': { backgroundColor: '#e3f2fd' }
                       }}
                     >
-                      <Typography variant="body2" sx={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
-                        {row.risk_percentage?.toFixed(1)}
+                      <Typography variant="body2" sx={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center' }}>
+                        {row.ai1a ? new Date(row.ai1a.timestamp).toLocaleTimeString('id-ID') : '—'}
                       </Typography>
                       <Typography variant="body2" sx={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
-                        {row.anomaly_detected ? '⚠️ Yes' : '✓ No'}
+                        {row.ai1a ? fmtNum(row.ai1a.risk_percentage, 1) : '—'}
                       </Typography>
                       <Typography variant="body2" sx={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
-                        {row.dryness_fraction?.toFixed(2)}
+                        {row.ai1a ? (row.ai1a.is_anomaly ? '⚠️ Yes' : '✓ No') : '—'}
                       </Typography>
-                      <Typography variant="body2" sx={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
-                        {row.ncg?.toFixed(2)}
-                      </Typography>
+                      <Box sx={{ typography: 'body2', fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
+                        <Ai2CellValue value={row.ai2?.dryness_predict} digits={2} status={row.ai2?.status} />
+                      </Box>
+                      <Box sx={{ typography: 'body2', fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
+                        <Ai2CellValue value={row.ai2?.ncg_predict} digits={2} status={row.ai2?.status} />
+                      </Box>
                     </Box>
                   ))}
                 </Box>
 
                 {/* Scrollable input columns (right) */}
-                <Box 
-                  ref={rightTableRef}
-                  sx={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}
-                >
+                <Box ref={rightTableRef} sx={{ flex: 1, overflowX: 'auto', overflowY: 'auto' }}>
                   <Box sx={{ minWidth: 'fit-content', width: 'max-content' }}>
                     {/* Header */}
                     <Box
@@ -1110,20 +894,19 @@ const AIAnalytics = () => {
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', gap: 1, p: 1, minHeight: 48 }}>
-                        {['Timestamp', 'Temp °C', 'Press bar', 'Flow kg/h', 'Volt kV', 'React MW', 'Output MW', 
-                          'PF', 'Freq Hz', 'Speed RPM', 'MCV_L %', 'MCV_R %', 'TDS ppm'].map(header => (
-                          <Box 
-                            key={header} 
-                            sx={{ 
-                              minWidth: header === 'Timestamp' ? 160 : 120,
-                              width: header === 'Timestamp' ? 160 : 'auto',
+                        {SENSOR_COLUMNS.map((col) => (
+                          <Box
+                            key={col.header}
+                            sx={{
+                              minWidth: col.width,
+                              width: col.header === 'Timestamp' ? col.width : 'auto',
                               display: 'flex',
                               alignItems: 'center',
                               px: 1
                             }}
                           >
                             <Typography variant="caption" sx={{ fontWeight: 600, fontSize: '0.7rem', whiteSpace: 'nowrap' }}>
-                              {header}
+                              {col.header}
                             </Typography>
                           </Box>
                         ))}
@@ -1144,71 +927,26 @@ const AIAnalytics = () => {
                           '&:hover': { backgroundColor: '#e3f2fd' }
                         }}
                       >
-                        <Box sx={{ minWidth: 160, width: 160, display: 'flex', alignItems: 'center', px: 1 }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            {row.timestamp}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            {row.temperature}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            {row.pressure}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            {row.flow_rate}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            {row.gen_voltage}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            {row.gen_reactive_power}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            {row.gen_output}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            {row.gen_power_factor}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            {row.gen_frequency}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            {row.speed_detection}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            {row.MCV_L}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            {row.MCV_R}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ minWidth: 120, width: 'auto', display: 'flex', alignItems: 'center', px: 1 }}>
-                          <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
-                            {row.TDS}
-                          </Typography>
-                        </Box>
+                        {SENSOR_COLUMNS.map((col) => (
+                          <Box
+                            key={col.header}
+                            sx={{
+                              minWidth: col.width,
+                              width: col.header === 'Timestamp' ? col.width : 'auto',
+                              display: 'flex',
+                              alignItems: 'center',
+                              px: 1
+                            }}
+                          >
+                            <Typography variant="body2" sx={{ fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                              {col.key === null
+                                ? '—'
+                                : col.key === 'timestamp'
+                                  ? new Date(row.timestamp).toLocaleString('id-ID')
+                                  : fmtNum(row[col.key])}
+                            </Typography>
+                          </Box>
+                        ))}
                       </Box>
                     ))}
                   </Box>

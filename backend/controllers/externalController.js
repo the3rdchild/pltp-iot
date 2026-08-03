@@ -994,6 +994,15 @@ const getAi2AggregatedStats = async (req, res) => {
 };
 
 // Get latest AI1a anomaly detection results
+//
+// FOLLOW-UP (not yet implemented): risk_percentage has no context for
+// consumers without the model's own percentile thresholds -- p90/p99 already
+// exist in AI_Pertasmart_V3/models/ai1a/metadata.json under
+// `full_history_risk_baseline` (currently p90=34.19, p99=55.27; these shift
+// on retrain, D16/D17/D20 -- never hardcode them here or on the frontend).
+// Read that file server-side and include the two values in this response
+// (e.g. `risk_thresholds: { p90, p99 }`) so the frontend can show risk% in
+// context instead of an unqualified number.
 const getAi1aData = async (req, res) => {
   try {
     const { limit = 50 } = req.query;
