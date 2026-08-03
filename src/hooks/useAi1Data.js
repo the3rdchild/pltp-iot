@@ -8,9 +8,16 @@ const AI1B_URL = '/api/external/ai1b';
 // which are the underlying data/forecast time)
 const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
 
-const isDataFresh = (row) => {
+// AI1b only runs once a day (AI1B_INTERVAL=86400 in the worker's .env), unlike
+// ai1a which runs every 60s -- reusing the 10-minute threshold here would mark
+// every valid daily forecast as stale almost immediately after it's produced.
+// 26h gives one hour of slack past the 24h cadence before flagging a genuinely
+// missed run.
+const AI1B_STALE_THRESHOLD_MS = 26 * 60 * 60 * 1000; // 26 hours
+
+const isDataFresh = (row, thresholdMs = STALE_THRESHOLD_MS) => {
   if (!row?.created_at) return false;
-  return Date.now() - new Date(row.created_at).getTime() < STALE_THRESHOLD_MS;
+  return Date.now() - new Date(row.created_at).getTime() < thresholdMs;
 };
 
 /**
@@ -65,7 +72,8 @@ export const useAi1aData = (pollInterval = 3000) => {
 
 /**
  * Hook to fetch ai1b (30-day risk forecast) from the backend.
- * - `liveData`: latest forecast row if fresh (< 10 min old, by created_at), otherwise null
+ * - `liveData`: latest forecast row if fresh (< 26h old, by created_at -- see
+ *   AI1B_STALE_THRESHOLD_MS, sized for the daily run cadence), otherwise null
  * - `history`: last 10 forecast runs in chronological order (fetched once on mount)
  * - `loading`: true until first live fetch completes
  */
@@ -92,7 +100,7 @@ export const useAi1bData = (pollInterval = 30000) => {
         .then(json => {
           if (json.success && json.data?.length > 0) {
             const row = json.data[0];
-            setLiveData(isDataFresh(row) ? row : null);
+            setLiveData(isDataFresh(row, AI1B_STALE_THRESHOLD_MS) ? row : null);
           } else {
             setLiveData(null);
           }
