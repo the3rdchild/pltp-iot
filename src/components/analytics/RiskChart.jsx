@@ -26,6 +26,18 @@ const RANGE_LABEL = {
   custom: 'Time Range: Custom'
 };
 
+// Blank out labels so at most ~`target` remain, counting BACKWARDS from the
+// newest point. Anchoring at the end guarantees the latest timestamp always
+// gets a label -- with forward anchoring the last few points went unlabeled
+// (the axis appeared to stop at e.g. 11.39 while data ran to 11.45), which
+// reads as "the chart is stale" even though the points are there.
+const thinLabels = (labels, target = 14) => {
+  if (labels.length <= target) return labels;
+  const step = Math.ceil(labels.length / target);
+  const last = labels.length - 1;
+  return labels.map((label, i) => ((last - i) % step === 0 ? label : ''));
+};
+
 const DEFAULT_LEGEND = [
   { name: 'Trend', color: '#3b82f6' },
   { name: 'Max', color: '#ef4444' },
@@ -162,7 +174,7 @@ const RiskChart = ({
       annotations: { yaxis: annotations },
       grid: { borderColor: '#eef0f4', strokeDashArray: 4, padding: { left: 12, right: 16 } },
       xaxis: {
-        categories: view.categories,
+        categories: thinLabels(view.categories),
         title: {
           text: xAxisTitle || RANGE_LABEL[range],
           style: { fontSize: '12px', color: '#8b93a7' }
@@ -170,7 +182,9 @@ const RiskChart = ({
         labels: {
           rotate: -35,
           rotateAlways: false,
-          hideOverlappingLabels: true,
+          // We blank labels ourselves (end-anchored, see thinLabels), so let
+          // those choices stand instead of having Apex hide more on top.
+          hideOverlappingLabels: false,
           style: { fontSize: '11px', colors: '#8b93a7' }
         },
         axisBorder: { show: false },

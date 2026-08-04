@@ -49,10 +49,14 @@ const TICK_TARGET_MAP = {
 // index-based thinning inside it silently does nothing and every label
 // renders on top of its neighbours. Thinning here is deterministic and
 // applies identically on first render and on every later updateOptions call.
+// Counts BACKWARDS from the newest point so the latest timestamp always keeps
+// its label; anchoring forward left the final points unlabeled, making a
+// live chart look like it had stopped updating short of the real latest row.
 const thinLabels = (labels, target) => {
   if (labels.length <= target) return labels;
   const step = Math.ceil(labels.length / target);
-  return labels.map((label, i) => (i % step === 0 ? label : ''));
+  const last = labels.length - 1;
+  return labels.map((label, i) => ((last - i) % step === 0 ? label : ''));
 };
 
 const XAXIS_LABEL_MAP = {
