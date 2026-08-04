@@ -11,13 +11,29 @@ import PropTypes from 'prop-types';
 
 const AI2_URL = '/api/external/ai2';
 
-const LIMIT_MAP = {
-  now: 60,
-  '1h': 60,
-  '1d': 200,
-  '7d': 500,
-  '1m': 1000,
-  all: 2000
+// Real calendar lookback per range button, used to build start_date/end_date
+// for GET /api/external/ai2 -- NOT a row-count limit. The previous LIMIT_MAP
+// (fixed row counts like 200 for '1d') didn't actually cover a real day at
+// ai2's ~60s cadence (200 rows is ~3.3h), so "1d" never showed a real day.
+const RANGE_DURATION_MS = {
+  now: 60 * 60 * 1000,
+  '1h': 60 * 60 * 1000,
+  '1d': 24 * 60 * 60 * 1000,
+  '7d': 7 * 24 * 60 * 60 * 1000,
+  '1m': 30 * 24 * 60 * 60 * 1000,
+  all: 5 * 365 * 24 * 60 * 60 * 1000
+};
+
+// Target number of x-axis labels to show per range -- e.g. roughly hourly
+// ticks across a 1-day window, roughly daily ticks across a 7-day window.
+const TICK_TARGET_MAP = {
+  now: 12,
+  '1h': 12,
+  '1d': 24,
+  '7d': 7,
+  '1m': 10,
+  all: 10,
+  custom: 10
 };
 
 const XAXIS_LABEL_MAP = {
@@ -149,9 +165,14 @@ const Ai2Chart = ({
   useEffect(() => {
     dbFetchedRef.current = false;
 
-    const fetchParams = isCustomRange
-      ? { start: startDate.toDate(), end: endDate.toDate() }
-      : { limit: LIMIT_MAP[timeRange] || 60 };
+    let fetchParams;
+    if (isCustomRange) {
+      fetchParams = { start: startDate.toDate(), end: endDate.toDate() };
+    } else {
+      const end = new Date();
+      const ms = RANGE_DURATION_MS[timeRange] ?? RANGE_DURATION_MS['1d'];
+      fetchParams = { start: new Date(end.getTime() - ms), end };
+    }
 
     fetchHistory(fetchParams).then(result => {
       if (!result) return;
@@ -239,21 +260,27 @@ const Ai2Chart = ({
       markers: { size: 0, hover: { size: 5 } },
       xaxis: {
         categories,
-        // tickAmount + hideOverlappingLabels let ApexCharts pick which labels
-        // to show against the CURRENT category count on every update. The
-        // previous approach (a custom formatter thinning by index % N) closed
-        // over `categories.length` captured only at chart-creation time --
-        // once real data replaced the initial placeholder array via
-        // updateChartDirect's updateOptions call, that captured length went
-        // stale and the thinning ratio broke, letting far too many labels
-        // through and crowding them together.
-        tickAmount: 10,
         labels: {
           show: true,
           rotate: -45,
           trim: true,
           hideOverlappingLabels: true,
-          style: { colors: '#86868b', fontSize: '11px' }
+          style: { colors: '#86868b', fontSize: '11px' },
+          // Thin to ~TICK_TARGET_MAP[activeRange] labels. Reads the LIVE
+          // category count from opts.w.globals rather than closing over the
+          // `categories` array captured when this options object was built
+          // (that array is only the placeholder/previous-range data at
+          // creation time -- real data arrives later via updateChartDirect's
+          // partial updateOptions call, which doesn't redefine this
+          // formatter, so a closured length goes stale immediately).
+          formatter: function (value, _timestamp, opts) {
+            const total = opts?.w?.globals?.labels?.length ?? 0;
+            const target = TICK_TARGET_MAP[activeRange] ?? 10;
+            if (total <= target) return value;
+            const step = Math.ceil(total / target);
+            const idx = opts?.dataPointIndex ?? -1;
+            return idx >= 0 && idx % step === 0 ? value : '';
+          }
         },
         axisBorder: { show: false },
         axisTicks: { show: false },
