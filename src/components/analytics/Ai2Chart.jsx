@@ -36,6 +36,21 @@ const TICK_TARGET_MAP = {
   custom: 10
 };
 
+// Blank out the labels between ticks, keeping the array length (and so the
+// data alignment) intact.
+//
+// This is done to the categories array rather than inside
+// xaxis.labels.formatter on purpose: the formatter's third argument is NOT a
+// plain index across ApexCharts versions (it's an opts object), so
+// index-based thinning inside it silently does nothing and every label
+// renders on top of its neighbours. Thinning here is deterministic and
+// applies identically on first render and on every later updateOptions call.
+const thinLabels = (labels, target) => {
+  if (labels.length <= target) return labels;
+  const step = Math.ceil(labels.length / target);
+  return labels.map((label, i) => (i % step === 0 ? label : ''));
+};
+
 const XAXIS_LABEL_MAP = {
   now:    'Real-time',
   '1h':   'Time Range: 1h',
@@ -188,7 +203,10 @@ const Ai2Chart = ({
   const updateChartDirect = useCallback(() => {
     if (!chartInstanceRef.current) return;
     const activeRange = isCustomRange ? 'custom' : timeRange;
-    const categories = timestampsRef.current.map(ts => formatTimestamp(ts, activeRange));
+    const categories = thinLabels(
+      timestampsRef.current.map(ts => formatTimestamp(ts, activeRange)),
+      TICK_TARGET_MAP[activeRange] ?? 10
+    );
     const vals = dataRef.current.filter(v => v != null);
     const { min: minY, max: maxY } = computeYRange(vals, yAxisMin, yAxisMax);
 
@@ -229,10 +247,12 @@ const Ai2Chart = ({
 
     const activeRange = isCustomRange ? 'custom' : timeRange;
     const initialData = chartData.length > 0 ? chartData : Array(60).fill(null);
-    const categories =
+    const categories = thinLabels(
       timestamps.length > 0
         ? timestamps.map(ts => formatTimestamp(ts, activeRange))
-        : Array.from({ length: initialData.length }, (_, i) => `${i + 1}`);
+        : Array.from({ length: initialData.length }, (_, i) => `${i + 1}`),
+      TICK_TARGET_MAP[activeRange] ?? 10
+    );
 
     const vals = initialData.filter(v => v != null);
     const { min: minY, max: maxY } = computeYRange(vals, yAxisMin, yAxisMax);
@@ -260,27 +280,14 @@ const Ai2Chart = ({
       markers: { size: 0, hover: { size: 5 } },
       xaxis: {
         categories,
+        // Label thinning happens in thinLabels() on the categories array
+        // itself, not here -- see the comment on that helper.
         labels: {
           show: true,
-          rotate: -45,
-          trim: true,
+          rotate: 0,
+          trim: false,
           hideOverlappingLabels: true,
-          style: { colors: '#86868b', fontSize: '11px' },
-          // Thin to ~TICK_TARGET_MAP[activeRange] labels. Reads the LIVE
-          // category count from opts.w.globals rather than closing over the
-          // `categories` array captured when this options object was built
-          // (that array is only the placeholder/previous-range data at
-          // creation time -- real data arrives later via updateChartDirect's
-          // partial updateOptions call, which doesn't redefine this
-          // formatter, so a closured length goes stale immediately).
-          formatter: function (value, _timestamp, opts) {
-            const total = opts?.w?.globals?.labels?.length ?? 0;
-            const target = TICK_TARGET_MAP[activeRange] ?? 10;
-            if (total <= target) return value;
-            const step = Math.ceil(total / target);
-            const idx = opts?.dataPointIndex ?? -1;
-            return idx >= 0 && idx % step === 0 ? value : '';
-          }
+          style: { colors: '#86868b', fontSize: '11px' }
         },
         axisBorder: { show: false },
         axisTicks: { show: false },
