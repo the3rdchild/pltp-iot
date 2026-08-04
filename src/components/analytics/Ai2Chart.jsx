@@ -15,6 +15,10 @@ const AI2_URL = '/api/external/ai2';
 // for GET /api/external/ai2 -- NOT a row-count limit. The previous LIMIT_MAP
 // (fixed row counts like 200 for '1d') didn't actually cover a real day at
 // ai2's ~60s cadence (200 rows is ~3.3h), so "1d" never showed a real day.
+// ai2 writes about one row per minute, so refetching twice a minute keeps
+// the non-'now' ranges current without hammering the endpoint.
+const AI2_POLL_MS = 30000;
+
 const RANGE_DURATION_MS = {
   now: 60 * 60 * 1000,
   '1h': 60 * 60 * 1000,
@@ -176,27 +180,39 @@ const Ai2Chart = ({
     }
   }, [metric]);
 
-  // Fetch on mount, range change, or custom range apply
+  // Fetch on mount, range change, or custom range apply -- then keep polling.
+  // Without the interval these ranges only ever showed the rows that existed
+  // when the range was picked, so a page refresh was the only way to see
+  // newer ones. 'now' is excluded because the live-value append below already
+  // keeps it current, and re-seeding underneath that would fight with it.
   useEffect(() => {
     dbFetchedRef.current = false;
 
-    let fetchParams;
-    if (isCustomRange) {
-      fetchParams = { start: startDate.toDate(), end: endDate.toDate() };
-    } else {
-      const end = new Date();
-      const ms = RANGE_DURATION_MS[timeRange] ?? RANGE_DURATION_MS['1d'];
-      fetchParams = { start: new Date(end.getTime() - ms), end };
-    }
+    const load = () => {
+      let fetchParams;
+      if (isCustomRange) {
+        fetchParams = { start: startDate.toDate(), end: endDate.toDate() };
+      } else {
+        const end = new Date();
+        const ms = RANGE_DURATION_MS[timeRange] ?? RANGE_DURATION_MS['1d'];
+        fetchParams = { start: new Date(end.getTime() - ms), end };
+      }
 
-    fetchHistory(fetchParams).then(result => {
-      if (!result) return;
-      dataRef.current = result.values.slice();
-      timestampsRef.current = result.timestamps.slice();
-      setChartData(result.values);
-      setTimestamps(result.timestamps);
-      dbFetchedRef.current = true;
-    });
+      fetchHistory(fetchParams).then(result => {
+        if (!result) return;
+        dataRef.current = result.values.slice();
+        timestampsRef.current = result.timestamps.slice();
+        setChartData(result.values);
+        setTimestamps(result.timestamps);
+        dbFetchedRef.current = true;
+      });
+    };
+
+    load();
+    if (timeRange === 'now' && !isCustomRange) return undefined;
+
+    const id = setInterval(load, AI2_POLL_MS);
+    return () => clearInterval(id);
   }, [timeRange, isCustomRange, startDate, endDate, fetchHistory]);
 
   // Direct chart update (bypasses React state cycle — like PTFChart's updateChartSeries)

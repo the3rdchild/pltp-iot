@@ -51,6 +51,10 @@ const AI1A_RANGE_MS = {
   // 'all' has no fixed duration -- handled separately below.
 };
 
+// ai1a writes about one row per minute, so refetching the chart window twice
+// a minute keeps it current without hammering the endpoint.
+const AI1A_CHART_POLL_MS = 30000;
+
 // Hoisted so the chart effect does not see a new array identity every render.
 const FORECAST_LEGEND = [
   { name: 'Forecast', color: '#9271FF' },
@@ -187,30 +191,40 @@ const AIAnalytics = () => {
     let cancelled = false;
     const { range, custom } = ai1aSelection;
 
-    let startIso;
-    let endIso;
-    if (range === 'custom' && custom?.from && custom?.to) {
-      startIso = new Date(custom.from).toISOString();
-      endIso = new Date(new Date(custom.to).getTime() + 24 * 60 * 60 * 1000).toISOString();
-    } else {
-      const end = new Date();
-      const ms = range === 'all' ? 5 * 365 * 24 * 60 * 60 * 1000 : (AI1A_RANGE_MS[range] ?? AI1A_RANGE_MS['1d']);
-      startIso = new Date(end.getTime() - ms).toISOString();
-      endIso = end.toISOString();
-    }
+    // Re-runs on an interval, not just on range change: ai1a appends a row a
+    // minute, and without this the chart only ever showed the rows that
+    // existed when the range was picked (a page refresh was the only way to
+    // see newer ones). For relative ranges the window slides with each poll,
+    // so "last 24h" stays literally the last 24 hours.
+    const fetchRange = () => {
+      let startIso;
+      let endIso;
+      if (range === 'custom' && custom?.from && custom?.to) {
+        startIso = new Date(custom.from).toISOString();
+        endIso = new Date(new Date(custom.to).getTime() + 24 * 60 * 60 * 1000).toISOString();
+      } else {
+        const end = new Date();
+        const ms = range === 'all' ? 5 * 365 * 24 * 60 * 60 * 1000 : (AI1A_RANGE_MS[range] ?? AI1A_RANGE_MS['1d']);
+        startIso = new Date(end.getTime() - ms).toISOString();
+        endIso = end.toISOString();
+      }
 
-    fetch(`/api/external/ai1a?start_date=${encodeURIComponent(startIso)}&end_date=${encodeURIComponent(endIso)}`)
-      .then((r) => r.json())
-      .then((json) => {
-        if (cancelled) return;
-        if (json.success && Array.isArray(json.data)) {
-          setAi1aRangeRows([...json.data].reverse());
-        }
-      })
-      .catch((err) => console.error('ai1a range fetch error:', err));
+      fetch(`/api/external/ai1a?start_date=${encodeURIComponent(startIso)}&end_date=${encodeURIComponent(endIso)}`)
+        .then((r) => r.json())
+        .then((json) => {
+          if (cancelled) return;
+          if (json.success && Array.isArray(json.data)) {
+            setAi1aRangeRows([...json.data].reverse());
+          }
+        })
+        .catch((err) => console.error('ai1a range fetch error:', err));
+    };
 
+    fetchRange();
+    const id = setInterval(fetchRange, AI1A_CHART_POLL_MS);
     return () => {
       cancelled = true;
+      clearInterval(id);
     };
   }, [ai1aSelection]);
 
