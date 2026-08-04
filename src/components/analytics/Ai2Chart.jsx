@@ -340,7 +340,16 @@ const Ai2Chart = ({
       tooltip: {
         enabled: true,
         theme: 'light',
-        x: { show: true },
+        // Format from timestampsRef rather than letting Apex read the
+        // categories array: that array has blanks where labels were thinned
+        // out, so hovering a thinned point otherwise showed no time at all.
+        x: {
+          show: true,
+          formatter: (val, opts) => {
+            const ts = timestampsRef.current[opts?.dataPointIndex];
+            return ts ? formatTimestamp(ts, activeRange) : (val ?? '');
+          }
+        },
         y: { formatter: v => (v != null ? v.toFixed(decimals) + unit : '') },
         marker: { show: true }
       },

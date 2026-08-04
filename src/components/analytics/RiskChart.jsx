@@ -203,6 +203,13 @@ const RiskChart = ({
       },
       tooltip: {
         theme: 'light',
+        // Resolve the heading from the UNTHINNED labels: the categories array
+        // above has blanks where labels were thinned out, and Apex reuses that
+        // same array for the tooltip title -- so without this, hovering any
+        // point whose axis label was thinned showed a tooltip with no time.
+        x: {
+          formatter: (val, opts) => view.categories[opts?.dataPointIndex] ?? val ?? ''
+        },
         y: { formatter: (v) => (v === null || v === undefined ? '-' : `${v.toFixed(2)}%`) }
       },
       noData: { text: emptyMessage, style: { color: '#8b93a7', fontSize: '13px' } }
