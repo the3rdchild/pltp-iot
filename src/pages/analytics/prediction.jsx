@@ -36,6 +36,21 @@ const SENSOR_COLUMNS = [
   { header: 'TDS ppm', key: 'tds', width: 110 }
 ];
 
+// Lookback duration per range button, for the AI1a observed-risk chart. Used
+// to build start_date/end_date for GET /api/external/ai1a instead of relying
+// on whatever useAi1aData's fixed 60-row history happens to contain -- ai1a
+// runs every 60s, so 60 rows is only ~1h, meaning every button used to render
+// the exact same slice regardless of which range was selected.
+const AI1A_RANGE_MS = {
+  now: 60 * 60 * 1000,
+  '1h': 60 * 60 * 1000,
+  '1d': 24 * 60 * 60 * 1000,
+  '7d': 7 * 24 * 60 * 60 * 1000,
+  '1m': 30 * 24 * 60 * 60 * 1000,
+  '1y': 365 * 24 * 60 * 60 * 1000
+  // 'all' has no fixed duration -- handled separately below.
+};
+
 // Hoisted so the chart effect does not see a new array identity every render.
 const FORECAST_LEGEND = [
   { name: 'Forecast', color: '#9271FF' },
@@ -155,16 +170,55 @@ const AIAnalytics = () => {
     };
   }, []);
 
-  /* --- AI1a: observed risk history ------------------------------- */
+  /* --- AI1a: observed risk history --------------------------------
+   * Fetched per-range (via start_date/end_date) instead of slicing
+   * useAi1aData's fixed 60-row history -- see AI1A_RANGE_MS above. */
+
+  const [ai1aSelection, setAi1aSelection] = useState({ range: '1d', custom: null });
+  const [ai1aRangeRows, setAi1aRangeRows] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const { range, custom } = ai1aSelection;
+
+    let startIso;
+    let endIso;
+    if (range === 'custom' && custom?.from && custom?.to) {
+      startIso = new Date(custom.from).toISOString();
+      endIso = new Date(new Date(custom.to).getTime() + 24 * 60 * 60 * 1000).toISOString();
+    } else {
+      const end = new Date();
+      const ms = range === 'all' ? 5 * 365 * 24 * 60 * 60 * 1000 : (AI1A_RANGE_MS[range] ?? AI1A_RANGE_MS['1d']);
+      startIso = new Date(end.getTime() - ms).toISOString();
+      endIso = end.toISOString();
+    }
+
+    fetch(`/api/external/ai1a?start_date=${encodeURIComponent(startIso)}&end_date=${encodeURIComponent(endIso)}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (cancelled) return;
+        if (json.success && Array.isArray(json.data)) {
+          setAi1aRangeRows([...json.data].reverse());
+        }
+      })
+      .catch((err) => console.error('ai1a range fetch error:', err));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [ai1aSelection]);
 
   const ai1aChart = useMemo(() => {
-    const rows = (ai1aHistory || []).filter((r) => toNum(r.risk_percentage) !== null);
+    // Before the first range fetch resolves, fall back to useAi1aData's
+    // history so the chart isn't empty on initial load.
+    const source = ai1aRangeRows ?? ai1aHistory ?? [];
+    const rows = source.filter((r) => toNum(r.risk_percentage) !== null);
     return {
       series: rows.map((r) => toNum(r.risk_percentage)),
       categories: rows.map((r) => fmtClock(r.timestamp)),
       timestamps: rows.map((r) => r.timestamp)
     };
-  }, [ai1aHistory]);
+  }, [ai1aRangeRows, ai1aHistory]);
 
   const currentRisk = toNum(ai1aLive?.risk_percentage);
   const isAnomaly = ai1aLive ? ai1aLive.is_anomaly === true || ai1aLive.is_anomaly === 't' : null;
@@ -275,17 +329,11 @@ const AIAnalytics = () => {
           categories={ai1aChart.categories}
           timestamps={ai1aChart.timestamps}
           showRangeSelector
+          onRangeChange={(range, custom) => setAi1aSelection({ range, custom: custom ?? null })}
           color="#3b82f6"
           chartType="area"
           yAxisMax={100}
           emptyMessage="Belum ada window yang valid"
-          footnote={
-            <>
-              Ini <strong>bukan prediksi</strong>: setiap titik adalah risk percentage yang sudah terjadi pada window
-              tersebut, bukan proyeksi ke depan. Kemiringan tren di grafik ini sebagian besar artefak pergeseran level
-              data, bukan degradasi turbin (plan.md §3b) - untuk proyeksi ke depan, lihat grafik Risk Forecast di bawah.
-            </>
-          }
         />
       </Box>
 

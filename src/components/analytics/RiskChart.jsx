@@ -59,7 +59,8 @@ const RiskChart = ({
   height = 340,
   emptyMessage = 'Belum ada data',
   footnote,
-  yAxisMax
+  yAxisMax,
+  onRangeChange
 }) => {
   const containerRef = useRef(null);
   const chartRef = useRef(null);
@@ -70,9 +71,14 @@ const RiskChart = ({
   const [dateTo, setDateTo] = useState('');
 
   // Slice the incoming series down to the selected window. Done here rather
-  // than in the page so both charts share one definition of "last 24h".
+  // than in the page so both charts share one definition of "last 24h" --
+  // UNLESS the caller passed onRangeChange, in which case the caller owns
+  // fetching the right window itself (see prediction.jsx for ai1a: the old
+  // client-side-only slicing here couldn't show more than whatever the
+  // parent had already fetched once, so every range button rendered the same
+  // ~1h of data regardless of which was selected).
   const view = useMemo(() => {
-    if (!showRangeSelector || !timestamps || timestamps.length !== series.length) {
+    if (onRangeChange || !showRangeSelector || !timestamps || timestamps.length !== series.length) {
       return { series, categories };
     }
 
@@ -97,7 +103,7 @@ const RiskChart = ({
 
     const idx = series.map((_, i) => i).filter(keep);
     return { series: idx.map((i) => series[i]), categories: idx.map((i) => categories[i]) };
-  }, [series, categories, timestamps, range, dateFrom, dateTo, showRangeSelector]);
+  }, [series, categories, timestamps, range, dateFrom, dateTo, showRangeSelector, onRangeChange]);
 
   const stats = useMemo(() => {
     const nums = view.series.filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
@@ -256,7 +262,10 @@ const RiskChart = ({
             {TIME_RANGES.map((r) => (
               <Button
                 key={r.value}
-                onClick={() => setRange(r.value)}
+                onClick={() => {
+                  setRange(r.value);
+                  onRangeChange?.(r.value);
+                }}
                 variant={range === r.value ? 'contained' : 'outlined'}
                 sx={{ color: range === r.value ? '#fff' : 'text.secondary', borderColor: '#e0e0e0' }}
               >
@@ -301,6 +310,7 @@ const RiskChart = ({
             onClick={() => {
               setRange('custom');
               setAnchorEl(null);
+              onRangeChange?.('custom', { from: dateFrom, to: dateTo });
             }}
           >
             Terapkan
@@ -333,7 +343,8 @@ RiskChart.propTypes = {
   height: PropTypes.number,
   emptyMessage: PropTypes.string,
   footnote: PropTypes.node,
-  yAxisMax: PropTypes.number
+  yAxisMax: PropTypes.number,
+  onRangeChange: PropTypes.func
 };
 
 export default RiskChart;

@@ -1005,17 +1005,28 @@ const getAi2AggregatedStats = async (req, res) => {
 // context instead of an unqualified number.
 const getAi1aData = async (req, res) => {
   try {
-    const { limit = 50 } = req.query;
+    const { limit = 50, start_date, end_date } = req.query;
 
-    const sql = `
+    let sql = `
       SELECT timestamp, model_version, anomaly_score, is_anomaly,
              risk_percentage, risk_label, severity, created_at
       FROM ai1a
-      ORDER BY timestamp DESC
-      LIMIT $1
+      WHERE 1=1
     `;
+    const params = [];
 
-    const result = await query(sql, [parseInt(limit)]);
+    if (start_date && end_date) {
+      params.push(start_date);
+      sql += ` AND timestamp >= $${params.length}`;
+      params.push(end_date);
+      sql += ` AND timestamp <= $${params.length}`;
+      sql += ` ORDER BY timestamp DESC`;
+    } else {
+      params.push(parseInt(limit));
+      sql += ` ORDER BY timestamp DESC LIMIT $${params.length}`;
+    }
+
+    const result = await query(sql, params);
 
     res.json({
       success: true,
