@@ -239,15 +239,21 @@ const Ai2Chart = ({
       markers: { size: 0, hover: { size: 5 } },
       xaxis: {
         categories,
+        // tickAmount + hideOverlappingLabels let ApexCharts pick which labels
+        // to show against the CURRENT category count on every update. The
+        // previous approach (a custom formatter thinning by index % N) closed
+        // over `categories.length` captured only at chart-creation time --
+        // once real data replaced the initial placeholder array via
+        // updateChartDirect's updateOptions call, that captured length went
+        // stale and the thinning ratio broke, letting far too many labels
+        // through and crowding them together.
+        tickAmount: 10,
         labels: {
           show: true,
-          rotate: 0,
-          style: { colors: '#86868b', fontSize: '11px' },
-          formatter: function (value, _ts, index) {
-            const total = categories.length;
-            if (total <= 20 || index % Math.ceil(total / 10) === 0) return value;
-            return '';
-          }
+          rotate: -45,
+          trim: true,
+          hideOverlappingLabels: true,
+          style: { colors: '#86868b', fontSize: '11px' }
         },
         axisBorder: { show: false },
         axisTicks: { show: false },
