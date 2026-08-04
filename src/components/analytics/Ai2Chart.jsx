@@ -226,12 +226,15 @@ const Ai2Chart = ({
     const vals = dataRef.current.filter(v => v != null);
     const { min: minY, max: maxY } = computeYRange(vals, yAxisMin, yAxisMax);
 
+    // redrawPaths true so the x-axis labels actually follow the new
+    // categories -- with it false the axis stays frozen at the values from
+    // chart creation while the series underneath keeps moving.
     chartInstanceRef.current.updateOptions(
       {
         xaxis: { categories, title: { text: XAXIS_LABEL_MAP[activeRange] ?? activeRange } },
         yaxis: { min: minY, max: maxY }
       },
-      false,
+      true,
       false
     );
     chartInstanceRef.current.updateSeries([{ name: yAxisTitle, data: dataRef.current }], true);

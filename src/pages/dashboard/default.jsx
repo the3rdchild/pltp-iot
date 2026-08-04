@@ -10,12 +10,11 @@ import { RiSpeedUpFill } from "react-icons/ri";
 import { TbCircuitResistor } from "react-icons/tb";
 
 import { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Real data API hook - test-aware (uses mock data in /test environment)
 import { useLiveData } from '../../hooks/useTestAwareLiveData';
 import { useAi2Data } from '../../hooks/useAi2Data';
-import { useAi1aData, useAi1bData } from '../../hooks/useAi1Data';
+import { useAi1aData } from '../../hooks/useAi1Data';
 import { useLocation } from 'react-router-dom';
 
 // project imports - Individual Cards
@@ -648,40 +647,6 @@ function DesktopLayout({
   );
 }
 
-// ==============================|| AI1b 30-DAY RISK FORECAST ||============================== //
-function Ai1bForecastCard({ liveData }) {
-  const forecastData = liveData
-    ? Array.from({ length: 30 }, (_, i) => ({
-        day: i + 1,
-        risk: parseFloat(liveData[`day_${i + 1}_risk`])
-      })).filter((d) => !Number.isNaN(d.risk))
-    : [];
-
-  return (
-    <Box sx={{ width: '100%', p: 2, pt: 0 }}>
-      <MainCard title={<Typography variant="h5">Prakiraan Risiko 30 Hari (AI1b)</Typography>}>
-        {liveData && forecastData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={forecastData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="day" label={{ value: 'Hari ke-', position: 'insideBottom', offset: -5 }} stroke="#64748b" />
-              <YAxis domain={[0, 100]} label={{ value: 'Risiko (%)', angle: -90, position: 'insideLeft' }} stroke="#64748b" />
-              <Tooltip formatter={(value) => `${value.toFixed(1)}%`} labelFormatter={(day) => `Hari ke-${day}`} />
-              <Line type="monotone" dataKey="risk" stroke="#2563eb" strokeWidth={2} dot={{ r: 2 }} activeDot={{ r: 5 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        ) : (
-          <Box sx={{ py: 4, textAlign: 'center' }}>
-            <Typography variant="body2" color="text.secondary">
-              Data prakiraan 30 hari (AI1b) belum tersedia atau sudah basi.
-            </Typography>
-          </Box>
-        )}
-      </MainCard>
-    </Box>
-  );
-}
-
 // ==============================|| MAIN DASHBOARD - RESPONSIVE ||============================== //
 const DASHBOARD_CONFIG = {
   baseWidth: 1400,
@@ -706,9 +671,9 @@ export default function DashboardDefault() {
   // AI2 predictions for dryness and NCG
   const { liveData: ai2LiveData } = useAi2Data();
 
-  // AI1a current risk status + AI1b 30-day forecast
+  // AI1a current risk status. The AI1b 30-day forecast lives on /prediction,
+  // not here.
   const { liveData: ai1aLiveData } = useAi1aData();
-  const { liveData: ai1bLiveData } = useAi1bData();
 
   // Calculate scale for desktop layout only
   useEffect(() => {
@@ -906,9 +871,7 @@ export default function DashboardDefault() {
             DASHBOARD_CONFIG={DASHBOARD_CONFIG}
           />
         )}
-        {isMobile && <Ai1bForecastCard liveData={ai1bLiveData} />}
       </Box>
-      {!isMobile && <Ai1bForecastCard liveData={ai1bLiveData} />}
     </>
   );
 }

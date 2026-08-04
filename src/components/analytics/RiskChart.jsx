@@ -223,6 +223,12 @@ const RiskChart = ({
   useEffect(() => {
     if (!chartRef.current) return;
     const opts = buildOptions();
+    // redrawPaths MUST be true: the x-axis categories change as new rows
+    // arrive, and skipping the redraw leaves the axis labels frozen at
+    // whatever they were when the chart was created (the series moved but
+    // the timestamps only refreshed on a page reload). animate stays false
+    // -- that's the part that keeps polls from looking janky; a redraw is
+    // far cheaper than the destroy/re-render this replaced.
     chartRef.current.updateOptions(
       {
         annotations: opts.annotations,
@@ -231,7 +237,7 @@ const RiskChart = ({
         yaxis: opts.yaxis,
         noData: opts.noData
       },
-      false,
+      true,
       false
     );
     chartRef.current.updateSeries(opts.series, false);
