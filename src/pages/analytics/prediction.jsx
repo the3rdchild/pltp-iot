@@ -1,6 +1,6 @@
 import { Box, Typography, Chip, Tooltip } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import MainCard from 'components/MainCard';
 import { AnalyticsHeader, RiskChart } from '../../components/analytics';
 import { useAi1aData, useAi1bData } from '../../hooks/useAi1Data';
@@ -177,6 +177,12 @@ const AIAnalytics = () => {
   const [ai1aSelection, setAi1aSelection] = useState({ range: '1d', custom: null });
   const [ai1aRangeRows, setAi1aRangeRows] = useState(null);
 
+  // Stable identity: passing an inline arrow here re-triggered RiskChart's
+  // memos on every 3s poll re-render, which rebuilt the chart (flicker).
+  const handleAi1aRangeChange = useCallback((range, custom) => {
+    setAi1aSelection({ range, custom: custom ?? null });
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     const { range, custom } = ai1aSelection;
@@ -329,7 +335,7 @@ const AIAnalytics = () => {
           categories={ai1aChart.categories}
           timestamps={ai1aChart.timestamps}
           showRangeSelector
-          onRangeChange={(range, custom) => setAi1aSelection({ range, custom: custom ?? null })}
+          onRangeChange={handleAi1aRangeChange}
           color="#3b82f6"
           chartType="area"
           yAxisMax={100}

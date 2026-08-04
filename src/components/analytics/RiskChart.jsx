@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ApexCharts from 'apexcharts';
 import { Box, Typography, Chip, Button, ButtonGroup, Popover, TextField } from '@mui/material';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -70,15 +70,21 @@ const RiskChart = ({
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
 
+  // Depend on a stable boolean, never on the callback identity: callers pass
+  // onRangeChange as an inline arrow, so a new function arrives on every
+  // parent render. Depending on it here made `view` recompute constantly,
+  // which (combined with ai1a's 3s poll) rebuilt the chart several times a
+  // minute and showed up as flicker.
+  const callerOwnsRange = Boolean(onRangeChange);
+
   // Slice the incoming series down to the selected window. Done here rather
   // than in the page so both charts share one definition of "last 24h" --
-  // UNLESS the caller passed onRangeChange, in which case the caller owns
-  // fetching the right window itself (see prediction.jsx for ai1a: the old
-  // client-side-only slicing here couldn't show more than whatever the
-  // parent had already fetched once, so every range button rendered the same
-  // ~1h of data regardless of which was selected).
+  // UNLESS the caller owns range fetching itself (see prediction.jsx for
+  // ai1a: the old client-side-only slicing here couldn't show more than
+  // whatever the parent had already fetched once, so every range button
+  // rendered the same ~1h of data regardless of which was selected).
   const view = useMemo(() => {
-    if (onRangeChange || !showRangeSelector || !timestamps || timestamps.length !== series.length) {
+    if (callerOwnsRange || !showRangeSelector || !timestamps || timestamps.length !== series.length) {
       return { series, categories };
     }
 
@@ -103,7 +109,7 @@ const RiskChart = ({
 
     const idx = series.map((_, i) => i).filter(keep);
     return { series: idx.map((i) => series[i]), categories: idx.map((i) => categories[i]) };
-  }, [series, categories, timestamps, range, dateFrom, dateTo, showRangeSelector, onRangeChange]);
+  }, [series, categories, timestamps, range, dateFrom, dateTo, showRangeSelector, callerOwnsRange]);
 
   const stats = useMemo(() => {
     const nums = view.series.filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
@@ -115,9 +121,7 @@ const RiskChart = ({
     };
   }, [view.series]);
 
-  useEffect(() => {
-    if (!containerRef.current) return undefined;
-
+  const buildOptions = useCallback(() => {
     const legendColor = (name) => legendItems.find((l) => l.name === name)?.color;
     const guide = (value, name) =>
       value === undefined || value === null
@@ -133,7 +137,7 @@ const RiskChart = ({
       ? [guide(stats.max, 'Max'), guide(stats.avg, 'Average'), guide(stats.min, 'Min')].filter(Boolean)
       : [];
 
-    const options = {
+    return {
       chart: {
         type: chartType,
         height,
@@ -189,17 +193,49 @@ const RiskChart = ({
       },
       noData: { text: emptyMessage, style: { color: '#8b93a7', fontSize: '13px' } }
     };
+  }, [view, stats, color, chartType, height, xAxisTitle, emptyMessage, range, legendItems, yAxisMax]);
 
-    chartRef.current = new ApexCharts(containerRef.current, options);
-    chartRef.current.render();
+  // Held in a ref so chart CREATION doesn't depend on the options identity --
+  // otherwise every data change would re-run the create effect.
+  const buildOptionsRef = useRef(buildOptions);
+  useEffect(() => {
+    buildOptionsRef.current = buildOptions;
+  });
 
+  // Create the chart once, and only rebuild it for structural changes.
+  // Previously this effect also depended on `view`/`stats`, so every ai1a
+  // poll (every 3s) destroyed and re-rendered the whole chart -- that full
+  // teardown is what showed up as flicker, on the timer and on range change.
+  useEffect(() => {
+    if (!containerRef.current) return undefined;
+    const chart = new ApexCharts(containerRef.current, buildOptionsRef.current());
+    chart.render();
+    chartRef.current = chart;
     return () => {
-      chartRef.current?.destroy();
+      chart.destroy();
       chartRef.current = null;
     };
-    // Rebuilding on every change is cheap here: both series are small
-    // (<= 60 observed rows, exactly 30 forecast points) and refresh slowly.
-  }, [view, stats, color, chartType, height, xAxisTitle, emptyMessage, range, legendItems, yAxisMax]);
+  }, [chartType, height]);
+
+  // Data/axis/annotation changes update the existing instance in place.
+  // animate=false: re-animating on every 3s poll reads as jank, and the
+  // values barely move between polls anyway.
+  useEffect(() => {
+    if (!chartRef.current) return;
+    const opts = buildOptions();
+    chartRef.current.updateOptions(
+      {
+        annotations: opts.annotations,
+        colors: opts.colors,
+        xaxis: opts.xaxis,
+        yaxis: opts.yaxis,
+        noData: opts.noData
+      },
+      false,
+      false
+    );
+    chartRef.current.updateSeries(opts.series, false);
+  }, [buildOptions]);
 
   const open = Boolean(anchorEl);
 
