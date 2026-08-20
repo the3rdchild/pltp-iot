@@ -48,6 +48,11 @@ const RealTimeDataChart = ({
   const chartInstanceRef = useRef(null);
   const updateIntervalRef = useRef(null);
   const dbFetchedRef = useRef(false);
+  // Width of the sliding window in 'now' mode. Taken from the seed fetch
+  // rather than hardcoded: /api/data/chart/:metric returns 300 points per
+  // series, so a fixed 60 here would visibly snap the chart down to a fifth of
+  // its length the instant the first live value landed.
+  const nowBufferRef = useRef(60);
 
   const fetchChartFromAPI = useCallback(async (range) => {
     try {
@@ -144,6 +149,7 @@ const RealTimeDataChart = ({
         if (result && result.values.length > 0) {
           setChartData(result.values);
           setApiTimestamps(result.timestamps);
+          nowBufferRef.current = Math.max(result.values.length, 60);
           dbFetchedRef.current = true;
         }
       });
@@ -195,8 +201,9 @@ const RealTimeDataChart = ({
     if (liveValue == null) return;
 
     const now = new Date().toISOString();
-    setChartData(prev => [...prev.slice(-59), liveValue]);
-    setApiTimestamps(prev => [...prev.slice(-59), now]);
+    const keep = nowBufferRef.current;
+    setChartData(prev => [...prev.slice(-(keep - 1)), liveValue]);
+    setApiTimestamps(prev => [...prev.slice(-(keep - 1)), now]);
   }, [liveValue, timeRange, fetchFromApi, isTestEnvironment]);
 
   // Calculate statistics

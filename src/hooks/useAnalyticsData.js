@@ -9,16 +9,24 @@ import { getLiveMetric, getChartData, getStatsTable } from '../utils/api';
  * @param {string} chartRange - Chart time range (1h, 1d, 7d, 1m, all)
  * @param {object} tableOptions - Table options {limit, offset}
  * @param {number} refreshInterval - Refresh interval in ms (default: 3000)
+ * @param {object} include - Which of the three payloads to actually fetch.
+ *        Every one of them is re-requested on each refresh tick, so a caller
+ *        that only reads `liveData` (e.g. the TDS page, whose chart fetches its
+ *        own data) would otherwise re-run a full chart aggregation and a
+ *        `COUNT(*)` over sensor_data every 3 seconds and discard both results.
  * @returns {object} { liveData, chartData, tableData, loading, error, refetch }
  *
  * @example
  * const { liveData, chartData, tableData, loading } = useAnalyticsData('tds', '1d', { limit: 10 });
+ * // live value only -- no chart/table round-trips:
+ * const { liveData } = useAnalyticsData('tds', '1d', undefined, 3000, { chart: false, table: false });
  */
 export const useAnalyticsData = (
   metric,
   chartRange = '1d',
   tableOptions = { limit: 10, offset: 0 },
-  refreshInterval = 3000
+  refreshInterval = 3000,
+  include = { live: true, chart: true, table: true }
 ) => {
   const [liveData, setLiveData] = useState(null);
   const [chartData, setChartData] = useState(null);
@@ -26,6 +34,12 @@ export const useAnalyticsData = (
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+
+  // Read off `include` here rather than inside the callback so the memo can
+  // depend on plain booleans instead of a fresh object literal each render.
+  const wantLive = include?.live !== false;
+  const wantChart = include?.chart !== false;
+  const wantTable = include?.table !== false;
 
   const fetchAllData = useCallback(async () => {
     if (!metric) return;
@@ -36,16 +50,16 @@ export const useAnalyticsData = (
         setLoading(true);
       }
 
-      // Fetch all data in parallel
+      // Fetch the requested payloads in parallel
       const [liveResponse, chartResponse, tableResponse] = await Promise.all([
-        getLiveMetric(metric),
-        getChartData(metric, chartRange),
-        getStatsTable(metric, tableOptions)
+        wantLive ? getLiveMetric(metric) : null,
+        wantChart ? getChartData(metric, chartRange) : null,
+        wantTable ? getStatsTable(metric, tableOptions) : null
       ]);
 
-      setLiveData(liveResponse.data);
-      setChartData(chartResponse.data);
-      setTableData(tableResponse.data);
+      if (liveResponse) setLiveData(liveResponse.data);
+      if (chartResponse) setChartData(chartResponse.data);
+      if (tableResponse) setTableData(tableResponse.data);
       setError(null);
 
       if (isFirstLoad) {
@@ -59,7 +73,7 @@ export const useAnalyticsData = (
         setLoading(false);
       }
     }
-  }, [metric, chartRange, JSON.stringify(tableOptions), isFirstLoad]);
+  }, [metric, chartRange, JSON.stringify(tableOptions), isFirstLoad, wantLive, wantChart, wantTable]);
 
   useEffect(() => {
     fetchAllData();

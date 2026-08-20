@@ -901,10 +901,115 @@ const receiveAi2Data = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// Server-side downsampling for the chart endpoints
+// ---------------------------------------------------------------------------
+// ai1a and ai2 both write about one row per minute, so a "1 month" window is
+// ~43k rows and "all" is unbounded -- every one of them shipped to the browser
+// and then thrown away to draw a chart a few hundred pixels wide. Callers that
+// want a chart now pass ?points=N alongside start_date/end_date and get N
+// time-buckets back instead of raw rows.
+//
+// Opt-in on purpose: without ?points= the response shape is byte-for-byte what
+// it was, so the live gauges (?limit=1), the AI workers and the Postman
+// collection are unaffected.
+//
+// Each bucket carries min/avg/max rather than just avg: these pages exist to
+// spot anomalies, and a one-minute spike inside a 12-hour bucket disappears
+// entirely if you only keep the mean.
+const MAX_BUCKET_POINTS = 2000;
+
+const resolveBucketing = (points, startDate, endDate) => {
+  if (points === undefined || points === null || points === '') return null;
+
+  const requested = parseInt(points, 10);
+  if (!Number.isFinite(requested) || requested < 1) return null;
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+
+  const spanSeconds = (end.getTime() - start.getTime()) / 1000;
+  if (spanSeconds <= 0) return null;
+
+  const capped = Math.min(requested, MAX_BUCKET_POINTS);
+
+  return {
+    points: capped,
+    startEpoch: Math.floor(start.getTime() / 1000),
+    // Floor of 1s: a window narrower than the requested point count would
+    // otherwise generate sub-second buckets, i.e. more rows out than in.
+    bucketSeconds: Math.max(Math.ceil(spanSeconds / capped), 1)
+  };
+};
+
+// Bucket boundaries are anchored to start_date, not to the epoch, so a
+// relative window ("last 24h") keeps its newest bucket flush with `end`
+// instead of ending on a partial bucket that dips as it fills.
+//
+// startEpoch/bucketSeconds are interpolated rather than bound: both are
+// integers produced by Math.floor/Math.ceil over validated finite numbers, and
+// inlining them keeps the expression readable -- same approach as
+// getDirectMetricChartData in liveDataController.
+const bucketExpr = (column, { startEpoch, bucketSeconds }) =>
+  `TO_TIMESTAMP(FLOOR((EXTRACT(EPOCH FROM ${column}) - ${startEpoch}) / ${bucketSeconds}) * ${bucketSeconds} + ${startEpoch})`;
+
 // Get latest AI2 predictions
 const getAi2Data = async (req, res) => {
   try {
-    const { limit = 50, status, start_date, end_date } = req.query;
+    const { limit = 50, status, start_date, end_date, points } = req.query;
+
+    // Bucketed (chart) path -- see resolveBucketing above.
+    const bucketing = (start_date && end_date)
+      ? resolveBucketing(points, start_date, end_date)
+      : null;
+
+    if (bucketing) {
+      const bucket = bucketExpr('processed_at', bucketing);
+      const bucketParams = [start_date, end_date];
+      let statusFilter = '';
+
+      if (status) {
+        bucketParams.push(status);
+        statusFilter = ` AND status = $${bucketParams.length}`;
+      }
+
+      // Column names match the raw shape (dryness_predict, ncg_predict) so the
+      // chart can read either response without branching; the _min/_max pairs
+      // are additive.
+      const bucketSql = `
+        SELECT
+          ${bucket}                                AS processed_at,
+          AVG(dryness_predict)                     AS dryness_predict,
+          MIN(dryness_predict)                     AS dryness_predict_min,
+          MAX(dryness_predict)                     AS dryness_predict_max,
+          AVG(ncg_predict)                         AS ncg_predict,
+          MIN(ncg_predict)                         AS ncg_predict_min,
+          MAX(ncg_predict)                         AS ncg_predict_max,
+          AVG(dryness_confidence)                  AS dryness_confidence,
+          AVG(ncg_confidence)                      AS ncg_confidence,
+          MODE() WITHIN GROUP (ORDER BY status)    AS status,
+          BOOL_OR(status IS DISTINCT FROM 'normal') AS has_anomaly,
+          MAX(model_name)                          AS model_name,
+          MAX(processed_at)                        AS bucket_last_at,
+          MAX(created_at)                          AS created_at,
+          COUNT(*)::int                            AS data_points
+        FROM ai2
+        WHERE processed_at >= $1 AND processed_at <= $2${statusFilter}
+        GROUP BY 1
+        ORDER BY 1 DESC
+      `;
+
+      const bucketResult = await query(bucketSql, bucketParams);
+
+      return res.json({
+        success: true,
+        data: bucketResult.rows,
+        count: bucketResult.rows.length,
+        sampled: true,
+        bucket_seconds: bucketing.bucketSeconds
+      });
+    }
 
     let sql = `SELECT * FROM ai2 WHERE 1=1`;
     const params = [];
@@ -1005,7 +1110,52 @@ const getAi2AggregatedStats = async (req, res) => {
 // context instead of an unqualified number.
 const getAi1aData = async (req, res) => {
   try {
-    const { limit = 50, start_date, end_date } = req.query;
+    const { limit = 50, start_date, end_date, points } = req.query;
+
+    // Bucketed (chart) path -- see resolveBucketing above.
+    const bucketing = (start_date && end_date)
+      ? resolveBucketing(points, start_date, end_date)
+      : null;
+
+    if (bucketing) {
+      const bucket = bucketExpr('timestamp', bucketing);
+
+      // is_anomaly is cast rather than used bare so the aggregate works
+      // whether the column is a real boolean or the 't'/'f' text the frontend
+      // also guards against (see prediction.jsx).
+      const bucketSql = `
+        SELECT
+          ${bucket}                                     AS timestamp,
+          AVG(risk_percentage)                          AS risk_percentage,
+          MIN(risk_percentage)                          AS risk_percentage_min,
+          MAX(risk_percentage)                          AS risk_percentage_max,
+          AVG(anomaly_score)                            AS anomaly_score,
+          MIN(anomaly_score)                            AS anomaly_score_min,
+          MAX(anomaly_score)                            AS anomaly_score_max,
+          BOOL_OR(is_anomaly::boolean)                  AS is_anomaly,
+          COUNT(*) FILTER (WHERE is_anomaly::boolean)::int AS anomaly_count,
+          MODE() WITHIN GROUP (ORDER BY risk_label)     AS risk_label,
+          MODE() WITHIN GROUP (ORDER BY severity)       AS severity,
+          MAX(model_version)                            AS model_version,
+          MAX(timestamp)                                AS bucket_last_at,
+          MAX(created_at)                               AS created_at,
+          COUNT(*)::int                                 AS data_points
+        FROM ai1a
+        WHERE timestamp >= $1 AND timestamp <= $2
+        GROUP BY 1
+        ORDER BY 1 DESC
+      `;
+
+      const bucketResult = await query(bucketSql, [start_date, end_date]);
+
+      return res.json({
+        success: true,
+        data: bucketResult.rows,
+        count: bucketResult.rows.length,
+        sampled: true,
+        bucket_seconds: bucketing.bucketSeconds
+      });
+    }
 
     let sql = `
       SELECT timestamp, model_version, anomaly_score, is_anomaly,

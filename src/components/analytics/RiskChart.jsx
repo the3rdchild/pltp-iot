@@ -72,6 +72,7 @@ const RiskChart = ({
   emptyMessage = 'Belum ada data',
   footnote,
   yAxisMax,
+  seriesExtremes = null,
   onRangeChange
 }) => {
   const containerRef = useRef(null);
@@ -123,15 +124,21 @@ const RiskChart = ({
     return { series: idx.map((i) => series[i]), categories: idx.map((i) => categories[i]) };
   }, [series, categories, timestamps, range, dateFrom, dateTo, showRangeSelector, callerOwnsRange]);
 
+  // The Max/Min guide lines have to reflect the real readings, not the plotted
+  // ones. When the caller hands us downsampled buckets the series is per-bucket
+  // averages, so deriving max/min from it would quietly under-report both --
+  // seriesExtremes lets the caller supply the true values from the buckets'
+  // own min/max columns.
   const stats = useMemo(() => {
     const nums = view.series.filter((v) => v !== null && v !== undefined && !Number.isNaN(v));
     if (nums.length === 0) return null;
+    const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
     return {
-      max: Math.max(...nums),
-      min: Math.min(...nums),
-      avg: nums.reduce((a, b) => a + b, 0) / nums.length
+      max: seriesExtremes?.max ?? Math.max(...nums),
+      min: seriesExtremes?.min ?? Math.min(...nums),
+      avg
     };
-  }, [view.series]);
+  }, [view.series, seriesExtremes]);
 
   const buildOptions = useCallback(() => {
     const legendColor = (name) => legendItems.find((l) => l.name === name)?.color;
@@ -407,6 +414,9 @@ RiskChart.propTypes = {
   emptyMessage: PropTypes.string,
   footnote: PropTypes.node,
   yAxisMax: PropTypes.number,
+  // { min, max } from the underlying raw readings, for when `series` is
+  // downsampled bucket averages.
+  seriesExtremes: PropTypes.shape({ min: PropTypes.number, max: PropTypes.number }),
   onRangeChange: PropTypes.func
 };
 

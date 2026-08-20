@@ -119,13 +119,14 @@ export const useAnalyticsData = (
   metric,
   chartRange = '1d',
   tableOptions = { limit: 10, offset: 0 },
-  refreshInterval = 3000
+  refreshInterval = 3000,
+  include = { live: true, chart: true, table: true }
 ) => {
   const location = useLocation();
   const isTestEnvironment = location.pathname.startsWith('/test');
 
   // Get real data hook
-  const realData = useRealAnalyticsData(metric, chartRange, tableOptions, refreshInterval);
+  const realData = useRealAnalyticsData(metric, chartRange, tableOptions, refreshInterval, include);
 
   // Get test data if in test environment
   const testDataContext = isTestEnvironment ? useTestData() : null;

@@ -30,6 +30,11 @@ const PTFChart = ({
   const flowRef = useRef([]);
   const timestampsRef = useRef([]);
   const dbFetchedRef = useRef(false);
+  // Width of the sliding window in 'now' mode. Taken from the seed fetch
+  // rather than hardcoded: /api/data/chart/:metric returns 300 points per
+  // series, so a fixed 60 here would visibly snap the chart down to a fifth of
+  // its length the instant the first live value landed.
+  const nowBufferRef = useRef(60);
 
   const [timeRange, setTimeRange] = useState('now');
   const [pressureData, setPressureData] = useState([]);
@@ -136,6 +141,7 @@ const PTFChart = ({
           setTemperatureData(result.temperature);
           setFlowData(result.flow);
           setTimestamps(result.timestamps);
+          nowBufferRef.current = Math.max(result.pressure.length, 60);
           dbFetchedRef.current = true;
         }
       };
@@ -227,7 +233,7 @@ const PTFChart = ({
 
     if (pVal == null && tVal == null && fVal == null) return;
 
-    const keep = 60;
+    const keep = nowBufferRef.current;
     const now = new Date().toISOString();
 
     const nextP = [...pressureRef.current.slice(-(keep - 1)), pVal ?? pressureRef.current[pressureRef.current.length - 1]];

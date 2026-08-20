@@ -55,6 +55,18 @@ const AI1A_RANGE_MS = {
 // a minute keeps it current without hammering the endpoint.
 const AI1A_CHART_POLL_MS = 30000;
 
+// Buckets requested from /api/external/ai1a for every range except 'now'.
+// Without this the endpoint returned one row per minute across the whole
+// window -- ~43k rows for '1m', five years' worth for 'all' -- which the chart
+// then compressed into a few hundred pixels anyway. The server now returns
+// this many min/avg/max buckets instead. 'now' still reads raw rows: that mode
+// is the live data viewer.
+//
+// Sized to the chart's pixel width (~2-4 CSS px per point) rather than to a
+// round number. Because each bucket carries min/avg/max, asking for more of
+// them only narrows them — resolution improves, nothing is smoothed away.
+const AI1A_CHART_POINTS = 300;
+
 // Hoisted so the chart effect does not see a new array identity every render.
 const FORECAST_LEGEND = [
   { name: 'Forecast', color: '#9271FF' },
@@ -209,7 +221,11 @@ const AIAnalytics = () => {
         endIso = end.toISOString();
       }
 
-      fetch(`/api/external/ai1a?start_date=${encodeURIComponent(startIso)}&end_date=${encodeURIComponent(endIso)}`)
+      const pointsParam = range === 'now' ? '' : `&points=${AI1A_CHART_POINTS}`;
+
+      fetch(
+        `/api/external/ai1a?start_date=${encodeURIComponent(startIso)}&end_date=${encodeURIComponent(endIso)}${pointsParam}`
+      )
         .then((r) => r.json())
         .then((json) => {
           if (cancelled) return;
@@ -233,10 +249,19 @@ const AIAnalytics = () => {
     // history so the chart isn't empty on initial load.
     const source = ai1aRangeRows ?? ai1aHistory ?? [];
     const rows = source.filter((r) => toNum(r.risk_percentage) !== null);
+
+    // On a bucketed response each row also carries the bucket's true extremes.
+    // Collect them so RiskChart's Max/Min guide lines stay honest instead of
+    // reading the highest and lowest bucket AVERAGE.
+    const lows = rows.map((r) => toNum(r.risk_percentage_min)).filter((v) => v !== null);
+    const highs = rows.map((r) => toNum(r.risk_percentage_max)).filter((v) => v !== null);
+
     return {
       series: rows.map((r) => toNum(r.risk_percentage)),
       categories: rows.map((r) => fmtClock(r.timestamp)),
-      timestamps: rows.map((r) => r.timestamp)
+      timestamps: rows.map((r) => r.timestamp),
+      extremes:
+        lows.length > 0 && highs.length > 0 ? { min: Math.min(...lows), max: Math.max(...highs) } : null
     };
   }, [ai1aRangeRows, ai1aHistory]);
 
@@ -348,6 +373,7 @@ const AIAnalytics = () => {
           series={ai1aChart.series}
           categories={ai1aChart.categories}
           timestamps={ai1aChart.timestamps}
+          seriesExtremes={ai1aChart.extremes}
           showRangeSelector
           onRangeChange={handleAi1aRangeChange}
           color="#3b82f6"

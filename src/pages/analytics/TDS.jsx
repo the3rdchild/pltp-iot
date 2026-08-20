@@ -31,7 +31,15 @@ const TDS = () => {
     const [timeRange] = useState('1d');
     const limitData = getLimitData();
 
-    const { liveData, loading } = useAnalyticsData('tds', timeRange);
+    // Live value only. The chart below (RealTimeDataChart) fetches its own
+    // series and the statistics table has its own hook, so asking for chart +
+    // table here just re-ran a chart aggregation and a COUNT(*) over
+    // sensor_data every 3 seconds for results nothing on this page reads.
+    const { liveData, loading } = useAnalyticsData('tds', timeRange, undefined, 3000, {
+        live: true,
+        chart: false,
+        table: false
+    });
 
     const tdsValue = liveData?.value;
     const changePct = liveData?.change_pct;

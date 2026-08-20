@@ -16,6 +16,40 @@ const VALID_METRICS = [
 const AI2_METRIC_COL = { dryness: 'dryness_predict', ncg: 'ncg_predict' };
 
 /**
+ * Points returned per chart series.
+ *
+ * sensor_data lands roughly once a second, so even a 1h window is ~3600 raw
+ * readings — far denser than any screen. 300 keeps the response small while
+ * giving about one point per 2-4 CSS pixels on a full-width chart; the 60 this
+ * used to return was coarser than the display could actually resolve. Raising
+ * it does not blur the sampling: buckets get 5x NARROWER, and each one still
+ * carries min/avg/max so short spikes survive either way.
+ *
+ * Query cost is driven by the rows scanned (the window), not by the number of
+ * buckets emitted, so 300 costs the database essentially the same as 60.
+ */
+const CHART_POINTS = 300;
+
+// Seconds covered by each fixed range. Bucket width is derived from these so
+// the two can never drift out of sync — every span here divides evenly by
+// CHART_POINTS (12s / 288s / 2016s / 8640s buckets).
+const RANGE_SPAN_SECONDS = {
+  '1h': 60 * 60,
+  '1d': 24 * 60 * 60,
+  '7d': 7 * 24 * 60 * 60,
+  '1m': 30 * 24 * 60 * 60
+};
+
+const RANGE_CONFIG = {
+  '1h': { interval: '1 hour', bucketSeconds: RANGE_SPAN_SECONDS['1h'] / CHART_POINTS, points: CHART_POINTS },
+  '1d': { interval: '1 day', bucketSeconds: RANGE_SPAN_SECONDS['1d'] / CHART_POINTS, points: CHART_POINTS },
+  '7d': { interval: '7 days', bucketSeconds: RANGE_SPAN_SECONDS['7d'] / CHART_POINTS, points: CHART_POINTS },
+  '1m': { interval: '30 days', bucketSeconds: RANGE_SPAN_SECONDS['1m'] / CHART_POINTS, points: CHART_POINTS },
+  // 'all' has no fixed span — bucket width is computed from the data itself.
+  all: { interval: null, bucketSeconds: null, points: CHART_POINTS }
+};
+
+/**
  * GET /api/data/live
  * Get all live metrics for dashboard
  */
@@ -192,16 +226,7 @@ const getChartData = async (req, res) => {
     // Handle calculated metrics (current, voltage)
     const isCalculatedMetric = ['current', 'voltage'].includes(metric);
 
-    // Define range configurations (all target 60 data points)
-    const rangeConfig = {
-      '1h': { interval: '1 hour', bucketSeconds: 60, points: 60 },         // 1-min buckets
-      '1d': { interval: '1 day', bucketSeconds: 1440, points: 60 },        // 24-min buckets
-      '7d': { interval: '7 days', bucketSeconds: 10080, points: 60 },      // 2.8h buckets
-      '1m': { interval: '30 days', bucketSeconds: 43200, points: 60 },     // 12h buckets
-      'all': { interval: null, bucketSeconds: null, points: 60 }           // dynamic
-    };
-
-    const config = rangeConfig[range];
+    const config = RANGE_CONFIG[range];
     if (!config) {
       return res.status(400).json({
         success: false,

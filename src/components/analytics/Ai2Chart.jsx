@@ -19,6 +19,26 @@ const AI2_URL = '/api/external/ai2';
 // the non-'now' ranges current without hammering the endpoint.
 const AI2_POLL_MS = 30000;
 
+// Number of buckets requested from the API for every range except 'now'.
+// ai2 writes ~1 row/min, so '1m' used to pull ~43k raw rows (and 'all' pulled
+// five years of them) for a chart a few hundred pixels wide -- that download
+// plus the ApexCharts render is what made these pages crawl. The server now
+// aggregates the window into this many min/avg/max buckets instead.
+//
+// 'now' is deliberately excluded: that mode is the live data viewer and still
+// reads raw rows, exactly as before.
+//
+// 300 rather than 60: the limit that matters is the chart's pixel width, not a
+// round number. At ~2-4 CSS pixels per point a full-width chart resolves about
+// this many, and since every bucket carries min/avg/max, more buckets only ever
+// means narrower ones — the sampling gets sharper, not blurrier. Still a ~144x
+// cut against the 43k raw rows a '1m' window used to ship.
+const CHART_POINTS = 300;
+
+// Floor for the sliding buffer in 'now' mode. The seed decides the real size
+// (see nowBufferRef); this only matters when the seed came back short.
+const NOW_BUFFER_MIN = 60;
+
 const RANGE_DURATION_MS = {
   now: 60 * 60 * 1000,
   '1h': 60 * 60 * 1000,
@@ -78,6 +98,15 @@ const TIME_RANGES = [
   { value: 'all', label: 'All' }
 ];
 
+// Every value the y-axis has to fit: the plotted averages plus, on bucketed
+// ranges, the true per-bucket extremes. Without the extremes a spike that only
+// survives in max_value would be clipped outside the plot area.
+const axisSpread = (values, mins, maxs) => [
+  ...values.filter(v => v != null),
+  ...mins.filter(v => v != null),
+  ...maxs.filter(v => v != null)
+];
+
 // Given the observed data range, returns the y-axis [min, max] to render.
 // With no fixed baseline (yAxisMin/yAxisMax undefined), pads 1% around the
 // observed data like before. With a baseline given, the axis sticks to
@@ -124,7 +153,15 @@ const Ai2Chart = ({
   const chartInstanceRef = useRef(null);
   const dataRef = useRef([]);
   const timestampsRef = useRef([]);
+  // Per-bucket extremes, aligned index-for-index with dataRef. All null on the
+  // raw ('now') path, where each point already IS a single reading.
+  const minsRef = useRef([]);
+  const maxsRef = useRef([]);
   const dbFetchedRef = useRef(false);
+  // Width of the sliding window in 'now' mode. Sized from whatever the seed
+  // fetch returned rather than hardcoded, so the series never snaps to a
+  // shorter length the moment the first live value arrives.
+  const nowBufferRef = useRef(NOW_BUFFER_MIN);
 
   const [timeRange, setTimeRange] = useState('now');
   const [chartData, setChartData] = useState([]);
@@ -154,7 +191,7 @@ const Ai2Chart = ({
   }, []);
 
   // Fetch historical data — limit-based or date-range-based
-  const fetchHistory = useCallback(async ({ limit, start, end } = {}) => {
+  const fetchHistory = useCallback(async ({ limit, start, end, points } = {}) => {
     setApiLoading(true);
     try {
       let url;
@@ -162,6 +199,8 @@ const Ai2Chart = ({
         const s = encodeURIComponent(start.toISOString());
         const e = encodeURIComponent(end.toISOString());
         url = `${AI2_URL}?start_date=${s}&end_date=${e}`;
+        // Omitted for 'now', which keeps the raw-row response.
+        if (points) url += `&points=${points}`;
       } else {
         url = `${AI2_URL}?limit=${limit ?? 60}`;
       }
@@ -170,9 +209,13 @@ const Ai2Chart = ({
       const json = await res.json();
       if (json.success && json.data) {
         const rows = [...json.data].reverse(); // newest-first from DB → chronological
+        const num = (v) => (v != null ? parseFloat(v) : null);
         return {
-          values: rows.map(r => (r[metric] != null ? parseFloat(r[metric]) : null)),
-          timestamps: rows.map(r => r.processed_at)
+          values: rows.map(r => num(r[metric])),
+          timestamps: rows.map(r => r.processed_at),
+          // Present only on the bucketed response; null on the raw path.
+          mins: rows.map(r => num(r[`${metric}_min`])),
+          maxs: rows.map(r => num(r[`${metric}_max`]))
         };
       }
       return null;
@@ -195,17 +238,24 @@ const Ai2Chart = ({
     const load = () => {
       let fetchParams;
       if (isCustomRange) {
-        fetchParams = { start: startDate.toDate(), end: endDate.toDate() };
+        fetchParams = { start: startDate.toDate(), end: endDate.toDate(), points: CHART_POINTS };
       } else {
         const end = new Date();
         const ms = RANGE_DURATION_MS[timeRange] ?? RANGE_DURATION_MS['1d'];
-        fetchParams = { start: new Date(end.getTime() - ms), end };
+        fetchParams = {
+          start: new Date(end.getTime() - ms),
+          end,
+          points: timeRange === 'now' ? undefined : CHART_POINTS
+        };
       }
 
       fetchHistory(fetchParams).then(result => {
         if (!result) return;
         dataRef.current = result.values.slice();
         timestampsRef.current = result.timestamps.slice();
+        minsRef.current = result.mins.slice();
+        maxsRef.current = result.maxs.slice();
+        nowBufferRef.current = Math.max(result.values.length, NOW_BUFFER_MIN);
         setChartData(result.values);
         setTimestamps(result.timestamps);
         dbFetchedRef.current = true;
@@ -227,7 +277,7 @@ const Ai2Chart = ({
       timestampsRef.current.map(ts => formatTimestamp(ts, activeRange)),
       TICK_TARGET_MAP[activeRange] ?? 10
     );
-    const vals = dataRef.current.filter(v => v != null);
+    const vals = axisSpread(dataRef.current, minsRef.current, maxsRef.current);
     const { min: minY, max: maxY } = computeYRange(vals, yAxisMin, yAxisMax);
 
     // redrawPaths true so the x-axis labels actually follow the new
@@ -250,10 +300,14 @@ const Ai2Chart = ({
     if (!dbFetchedRef.current) return;
     if (liveValue == null) return;
 
-    const keep = 60;
+    const keep = nowBufferRef.current;
     const now = new Date().toISOString();
     dataRef.current = [...dataRef.current.slice(-(keep - 1)), liveValue];
     timestampsRef.current = [...timestampsRef.current.slice(-(keep - 1)), now];
+    // A live reading is its own min and max; pushing null keeps the arrays the
+    // same length as dataRef so index lookups in the tooltip stay valid.
+    minsRef.current = [...minsRef.current.slice(-(keep - 1)), null];
+    maxsRef.current = [...maxsRef.current.slice(-(keep - 1)), null];
 
     updateChartDirect();
   }, [liveValue, timeRange, isCustomRange, updateChartDirect]);
@@ -277,7 +331,7 @@ const Ai2Chart = ({
       TICK_TARGET_MAP[activeRange] ?? 10
     );
 
-    const vals = initialData.filter(v => v != null);
+    const vals = axisSpread(initialData, minsRef.current, maxsRef.current);
     const { min: minY, max: maxY } = computeYRange(vals, yAxisMin, yAxisMax);
 
     const options = {
@@ -350,7 +404,20 @@ const Ai2Chart = ({
             return ts ? formatTimestamp(ts, activeRange) : (val ?? '');
           }
         },
-        y: { formatter: v => (v != null ? v.toFixed(decimals) + unit : '') },
+        // On bucketed ranges the line is the bucket average, so the tooltip
+        // also reports the bucket's true min-max -- otherwise a short spike
+        // inside a wide bucket would be invisible anywhere on the page.
+        y: {
+          formatter: (v, opts) => {
+            if (v == null) return '';
+            const label = v.toFixed(decimals) + unit;
+            const i = opts?.dataPointIndex;
+            const lo = minsRef.current[i];
+            const hi = maxsRef.current[i];
+            if (lo == null || hi == null) return label;
+            return `${label}  (min ${lo.toFixed(decimals)}${unit} · max ${hi.toFixed(decimals)}${unit})`;
+          }
+        },
         marker: { show: true }
       },
       legend: { show: false }
