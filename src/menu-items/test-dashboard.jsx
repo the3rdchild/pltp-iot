@@ -106,21 +106,24 @@ const testDashboard = {
           id: 'test-dataInput',
           title: 'Manual Data Input',
           type: 'item',
-          url: '/test/dataInput',
+          url: '/test/admin/dataInput',
+          protected: true,
           icon: icons.EditOutlined,
         },
         {
           id: 'test-configuration',
           title: 'Configuration',
           type: 'item',
-          url: '/test/configuration',
+          url: '/test/admin/configuration',
+          protected: true,
           icon: icons.FundViewOutlined,
         },
         {
           id: 'test-calibration',
           title: 'Calibration',
           type: 'item',
-          url: '/test/calibration',
+          url: '/test/admin/calibration',
+          protected: true,
           icon: icons.SlidersOutlined,
         }
       ]

@@ -855,6 +855,11 @@ const saveMetricLimits = async (req, res) => {
   try {
     const { limits } = req.body;
 
+    // Route guarantees this (authenticateToken + requireRole('admin')), so a
+    // missing id would mean the middleware chain changed underneath us --
+    // record null rather than inventing an attribution.
+    const actorId = req.user?.userId ?? null;
+
     if (!limits || typeof limits !== 'object') {
       return res.status(400).json({ success: false, message: 'limits object is required' });
     }
@@ -864,8 +869,9 @@ const saveMetricLimits = async (req, res) => {
     for (const [metricKey, config] of Object.entries(limits)) {
       const sql = `
         INSERT INTO metric_limits (metric_key, display_name, unit, min_value, max_value,
-          warning_low, warning_high, abnormal_low, abnormal_high, ideal_low, ideal_high, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+          warning_low, warning_high, abnormal_low, abnormal_high, ideal_low, ideal_high,
+          updated_by, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
         ON CONFLICT (metric_key) DO UPDATE SET
           display_name = EXCLUDED.display_name,
           unit = EXCLUDED.unit,
@@ -877,6 +883,7 @@ const saveMetricLimits = async (req, res) => {
           abnormal_high = EXCLUDED.abnormal_high,
           ideal_low = EXCLUDED.ideal_low,
           ideal_high = EXCLUDED.ideal_high,
+          updated_by = EXCLUDED.updated_by,
           updated_at = NOW()
       `;
 
@@ -891,7 +898,8 @@ const saveMetricLimits = async (req, res) => {
         config.abnormalLow !== undefined ? config.abnormalLow : null,
         config.abnormalHigh !== undefined ? config.abnormalHigh : null,
         config.idealLow !== undefined ? config.idealLow : null,
-        config.idealHigh !== undefined ? config.idealHigh : null
+        config.idealHigh !== undefined ? config.idealHigh : null,
+        actorId
       ]);
 
       upserted++;

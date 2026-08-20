@@ -96,21 +96,24 @@ const dashboard = {
           id: 'dataInput',
           title: 'Manual Data Input',
           type: 'item',
-          url: '/dataInput',
+          url: '/admin/dataInput',
+          protected: true,
           icon: icons.EditOutlined,
         },
         {
           id: 'configuration',
           title: 'Configuration',
           type: 'item',
-          url: '/configuration',
+          url: '/admin/configuration',
+          protected: true,
           icon: icons.FundViewOutlined,
         },
         {
           id: 'calibration',
           title: 'Calibration',
           type: 'item',
-          url: '/calibration',
+          url: '/admin/calibration',
+          protected: true,
           icon: icons.SlidersOutlined,
         }
       ]

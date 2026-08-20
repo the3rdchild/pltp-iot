@@ -72,15 +72,34 @@ const ConfigurationSettings = () => {
         limitsPayload[key] = config;
       }
 
-      try {
-        const apiBaseURL = apiConfig.baseURL || '/api';
-        await fetch(`${apiBaseURL}/data/metric-limits`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ limits: limitsPayload })
-        });
-      } catch (syncError) {
-        console.warn('Failed to sync limits to backend:', syncError);
+      const apiBaseURL = apiConfig.baseURL || '/api';
+      // POST /data/metric-limits is admin-only, so the session token has to
+      // travel with the request. Raw fetch rather than the shared axios client
+      // because the base URL is configurable from the API Config tab right next
+      // to this one, so the header is attached by hand.
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${apiBaseURL}/data/metric-limits`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ limits: limitsPayload })
+      });
+
+      // fetch only rejects on network failure -- a 401/403/500 arrives as a
+      // perfectly resolved promise. Without this check the old code reported
+      // "saved successfully" for every server-side rejection, which is the
+      // worst outcome available: the backend keeps alarming on the previous
+      // thresholds while the operator believes the new ones are live.
+      if (!response.ok) {
+        const detail = await response.json().catch(() => null);
+        throw new Error(
+          detail?.message ||
+            (response.status === 401 || response.status === 403
+              ? 'Sesi habis atau akun ini bukan admin — login ulang sebagai admin.'
+              : `Server rejected the update (HTTP ${response.status})`)
+        );
       }
 
       setSnackbar({
@@ -91,7 +110,7 @@ const ConfigurationSettings = () => {
     } catch (error) {
       setSnackbar({
         open: true,
-        message: 'Failed to save limit settings',
+        message: `Saved locally, but syncing to the server failed: ${error.message}`,
         severity: 'error'
       });
     }

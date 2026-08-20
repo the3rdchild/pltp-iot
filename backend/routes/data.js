@@ -20,7 +20,7 @@ const {
   getStatsData,
   getAggregatedStatsData
 } = require('../controllers/liveDataController');
-const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const { authenticateToken, optionalAuth, requireRole } = require('../middleware/auth');
 
 // GET /api/data/sensor/latest - Get latest sensor data
 router.get('/sensor/latest', optionalAuth, getLatestSensorData);
@@ -37,8 +37,8 @@ router.get('/ml/latest', optionalAuth, getLatestMLPredictions);
 // GET /api/data/field - Get field data
 router.get('/field', optionalAuth, getFieldData);
 
-// POST /api/data/field - Create field data (requires authentication)
-router.post('/field', authenticateToken, createFieldData);
+// POST /api/data/field - Create field data (admin only)
+router.post('/field', authenticateToken, requireRole('admin'), createFieldData);
 
 // GET /api/data/dashboard/stats - Get dashboard statistics
 router.get('/dashboard/stats', optionalAuth, getDashboardStats);
@@ -71,7 +71,12 @@ router.get('/anomaly-counts/:metric', optionalAuth, getAnomalyCounts);
 // GET /api/data/metric-limits - Get all metric limits
 router.get('/metric-limits', optionalAuth, getMetricLimits);
 
-// POST /api/data/metric-limits - Save/sync metric limits from frontend
-router.post('/metric-limits', optionalAuth, saveMetricLimits);
+// POST /api/data/metric-limits - Save/sync metric limits from frontend (admin only)
+//
+// Was optionalAuth, which accepts an absent token -- i.e. anyone who could
+// reach the API could rewrite every alarm threshold in the database with a
+// single curl. The <ProtectedRoute> around /configuration only ever hid the
+// form; it never guarded this endpoint.
+router.post('/metric-limits', authenticateToken, requireRole('admin'), saveMetricLimits);
 
 module.exports = router;
