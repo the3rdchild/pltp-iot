@@ -1,5 +1,6 @@
 -- ============================================================================
--- DDL untuk tabel ai1a / ai1b / ai2 di VPS (10.9.40.17 / pertasmart_db)
+-- DDL untuk tabel ai1a / ai1b / ai2 / ai1a_direction_annotation di VPS
+-- (10.9.40.17 / pertasmart_db)
 -- ============================================================================
 -- Disalin dari struktur AKTUAL di VPS (DBeaver "Generate SQL > DDL", bukan
 -- dari AI_Pertasmart_V3/scripts/init_db.sql — ada perbedaan, lihat catatan
@@ -17,6 +18,18 @@
 --     AI_Pertasmart_V3 masih stub dan sengaja TIDAK dijadwalkan, jadi bagian
 --     ai2 di file ini belum diuji lewat INSERT nyata di simulasi. Disertakan
 --     untuk kelengkapan referensi saja.
+--   - ai1a_direction_annotation: layer TAMBAHAN dibangun terpisah di sisi AI
+--     (repo AI_Pertasmart_V3), murni additive di atas ai1a/ai1a_shadow.
+--     Skema di bawah disalin dari deskripsi tim AI, BELUM diverifikasi
+--     independen lewat DBeaver DDL seperti tabel lain di file ini. Backfill
+--     historis masih berjalan di VPS (background); tick live sudah
+--     teranotasi real-time. Diekspos lewat backend pltp-iot (GET
+--     /api/external/ai1a/direction, default source_table='ai1a' karena
+--     AI1a-70 belum di-cutover — produksi masih model 65-fitur).
+--     ⚠️ 11 dari 14 parameter driver (drivers_json) masih hipotesis riset
+--     AI, belum divalidasi ahli PLTP/Pertamina (hanya TDS yang dikonfirmasi
+--     manusia) — lihat disclaimer di response endpoint sebelum ditampilkan
+--     ke UI/operator.
 --
 -- AMAN DIULANG (idempotent):
 --   - Semua CREATE TABLE / CREATE INDEX pakai IF NOT EXISTS.
@@ -61,6 +74,22 @@ CREATE TABLE IF NOT EXISTS public.ai1a (
 	created_at timestamptz DEFAULT now() NOT NULL,
 	CONSTRAINT ai1a_pkey PRIMARY KEY (id)
 );
+
+-- ── ai1a_direction_annotation — anotasi arah proses (menguntungkan/merugikan)
+-- di atas ai1a/ai1a_shadow, lihat catatan status pengujian di atas ──────────
+CREATE TABLE IF NOT EXISTS public.ai1a_direction_annotation (
+	id bigserial NOT NULL,
+	source_table varchar(20) NOT NULL,
+	source_id bigint NOT NULL,
+	model_version varchar(50) NULL,
+	direction_flag varchar(40) NOT NULL,
+	drivers_json jsonb NULL,
+	config_version varchar(50) NULL,
+	created_at timestamptz DEFAULT now() NOT NULL,
+	CONSTRAINT ai1a_direction_annotation_pkey PRIMARY KEY (id),
+	CONSTRAINT ai1a_direction_annotation_source_uniq UNIQUE (source_table, source_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ai1a_direction_annotation_source ON public.ai1a_direction_annotation USING btree (source_table, source_id);
 
 -- ── ai1b — prakiraan risiko 30 hari ke depan ─────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.ai1b (

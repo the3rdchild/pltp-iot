@@ -14,6 +14,7 @@ const {
   getAi2Data,
   getAi2AggregatedStats,
   getAi1aData,
+  getAi1aDirectionAnnotations,
   getAi1bData
 } = require('../controllers/externalController');
 
@@ -58,6 +59,12 @@ router.post('/ai2', receiveAi2Data);
 
 // GET /api/external/ai1a - Get latest AI1a anomaly detection results
 router.get('/ai1a', getAi1aData);
+
+// GET /api/external/ai1a/direction - Get AI1a results annotated with process
+// direction (favorable/unfavorable), joined from ai1a_direction_annotation.
+// Defaults to source_table=ai1a (production); see controller for the
+// disclaimer requirement on 11 of 14 driver parameters being unvalidated.
+router.get('/ai1a/direction', getAi1aDirectionAnnotations);
 
 // GET /api/external/ai1b - Get latest AI1b 30-day risk forecasts
 router.get('/ai1b', getAi1bData);
