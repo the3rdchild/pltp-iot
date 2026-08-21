@@ -26,6 +26,13 @@
 --     teranotasi real-time. Diekspos lewat backend pltp-iot (GET
 --     /api/external/ai1a/direction, default source_table='ai1a' karena
 --     AI1a-70 belum di-cutover — produksi masih model 65-fitur).
+--     ⚠️ Kolom adjusted_risk_percentage/adjusted_is_anomaly/adjusted_severity
+--     di bawah sedang dikerjakan Agent 9/10 (sesi AI, paralel) — BELUM
+--     dikonfirmasi ada di VPS per commit ini. GET /api/external/ai1a sekarang
+--     LEFT JOIN ke kolom-kolom ini (fallback ke ai1a asli kalau NULL), jadi
+--     JANGAN deploy backend/routes/external.js versi ini ke VPS sebelum
+--     dikonfirmasi kolom-kolom tsb sudah ada — kalau belum, query akan error
+--     (undefined column), bukan cuma fallback kosong.
 --
 -- AMAN DIULANG (idempotent):
 --   - Semua CREATE TABLE / CREATE INDEX pakai IF NOT EXISTS.
@@ -73,6 +80,11 @@ CREATE TABLE IF NOT EXISTS public.ai1a (
 
 -- ── ai1a_direction_annotation — anotasi arah proses (menguntungkan/merugikan)
 -- di atas ai1a/ai1a_shadow, lihat catatan status pengujian di atas ──────────
+-- adjusted_risk_percentage/adjusted_is_anomaly/adjusted_severity: ditambahkan
+-- oleh Agent 9/10 (belum dikonfirmasi live di VPS, lihat catatan status di
+-- atas). Tipe di bawah MENGASUMSIKAN sama dengan kolom asli ai1a yang
+-- dipetakan (risk_percentage/is_anomaly/severity) -- verifikasi ulang begitu
+-- migrasi Agent 9/10 sudah jalan.
 CREATE TABLE IF NOT EXISTS public.ai1a_direction_annotation (
 	id bigserial NOT NULL,
 	source_table varchar(20) NOT NULL,
@@ -81,6 +93,9 @@ CREATE TABLE IF NOT EXISTS public.ai1a_direction_annotation (
 	direction_flag varchar(40) NOT NULL,
 	drivers_json jsonb NULL,
 	config_version varchar(50) NULL,
+	adjusted_risk_percentage numeric(5, 2) NULL,
+	adjusted_is_anomaly bool NULL,
+	adjusted_severity varchar(20) NULL,
 	created_at timestamptz DEFAULT now() NOT NULL,
 	CONSTRAINT ai1a_direction_annotation_pkey PRIMARY KEY (id),
 	CONSTRAINT ai1a_direction_annotation_source_uniq UNIQUE (source_table, source_id)
