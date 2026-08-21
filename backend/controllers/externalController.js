@@ -1100,6 +1100,26 @@ const getAi2AggregatedStats = async (req, res) => {
 
 // Get latest AI1a anomaly detection results
 //
+// risk_percentage / is_anomaly / severity are the DIRECTION-CORRECTED values
+// where available: LEFT JOINed from ai1a_direction_annotation's
+// adjusted_risk_percentage / adjusted_is_anomaly / adjusted_severity columns,
+// falling back to ai1a's own raw columns when a row hasn't been annotated
+// yet (backfill/live lag) -- see ai1a_direction_annotation in
+// docs/vps_ai_tables.sql. When an annotation row exists but no correction
+// was recommended, the AI side writes the adjusted_* columns as identical
+// copies of the raw values, so a straight COALESCE (fallback on NULL only)
+// is correct here without checking score_adjustment_recommended.
+// anomaly_score and risk_label are NOT corrected by this layer and stay raw.
+//
+// The uncorrected raw values plus the annotation itself (direction_flag,
+// drivers_json) remain available via GET /api/external/ai1a/direction.
+//
+// Response shape/field names are unchanged, but this is NOT a
+// label-neutral change: src/pages/analytics/prediction.jsx labels these
+// values as raw/observed ("Risk Teramati Sekarang", "Nilai observed,
+// bukan prediksi", badge "OBSERVED"). Do not deploy this without the
+// matching FE relabel -- see docs/working_notes.md.
+//
 // FOLLOW-UP (not yet implemented): risk_percentage has no context for
 // consumers without the model's own percentile thresholds -- p90/p99 already
 // exist in AI_Pertasmart_V3/models/ai1a/metadata.json under
@@ -1118,7 +1138,7 @@ const getAi1aData = async (req, res) => {
       : null;
 
     if (bucketing) {
-      const bucket = bucketExpr('timestamp', bucketing);
+      const bucket = bucketExpr('a.timestamp', bucketing);
 
       // is_anomaly is cast rather than used bare so the aggregate works
       // whether the column is a real boolean or the 't'/'f' text the frontend
@@ -1126,22 +1146,24 @@ const getAi1aData = async (req, res) => {
       const bucketSql = `
         SELECT
           ${bucket}                                     AS timestamp,
-          AVG(risk_percentage)                          AS risk_percentage,
-          MIN(risk_percentage)                          AS risk_percentage_min,
-          MAX(risk_percentage)                          AS risk_percentage_max,
-          AVG(anomaly_score)                            AS anomaly_score,
-          MIN(anomaly_score)                            AS anomaly_score_min,
-          MAX(anomaly_score)                            AS anomaly_score_max,
-          BOOL_OR(is_anomaly::boolean)                  AS is_anomaly,
-          COUNT(*) FILTER (WHERE is_anomaly::boolean)::int AS anomaly_count,
-          MODE() WITHIN GROUP (ORDER BY risk_label)     AS risk_label,
-          MODE() WITHIN GROUP (ORDER BY severity)       AS severity,
-          MAX(model_version)                            AS model_version,
-          MAX(timestamp)                                AS bucket_last_at,
-          MAX(created_at)                               AS created_at,
+          AVG(COALESCE(d.adjusted_risk_percentage, a.risk_percentage))     AS risk_percentage,
+          MIN(COALESCE(d.adjusted_risk_percentage, a.risk_percentage))     AS risk_percentage_min,
+          MAX(COALESCE(d.adjusted_risk_percentage, a.risk_percentage))     AS risk_percentage_max,
+          AVG(a.anomaly_score)                          AS anomaly_score,
+          MIN(a.anomaly_score)                          AS anomaly_score_min,
+          MAX(a.anomaly_score)                          AS anomaly_score_max,
+          BOOL_OR(COALESCE(d.adjusted_is_anomaly::boolean, a.is_anomaly::boolean))  AS is_anomaly,
+          COUNT(*) FILTER (WHERE COALESCE(d.adjusted_is_anomaly::boolean, a.is_anomaly::boolean))::int AS anomaly_count,
+          MODE() WITHIN GROUP (ORDER BY a.risk_label)   AS risk_label,
+          MODE() WITHIN GROUP (ORDER BY COALESCE(d.adjusted_severity, a.severity)) AS severity,
+          MAX(a.model_version)                          AS model_version,
+          MAX(a.timestamp)                              AS bucket_last_at,
+          MAX(a.created_at)                             AS created_at,
           COUNT(*)::int                                 AS data_points
-        FROM ai1a
-        WHERE timestamp >= $1 AND timestamp <= $2
+        FROM ai1a a
+        LEFT JOIN ai1a_direction_annotation d
+          ON d.source_table = 'ai1a' AND d.source_id = a.id
+        WHERE a.timestamp >= $1 AND a.timestamp <= $2
         GROUP BY 1
         ORDER BY 1 DESC
       `;
@@ -1158,22 +1180,28 @@ const getAi1aData = async (req, res) => {
     }
 
     let sql = `
-      SELECT timestamp, model_version, anomaly_score, is_anomaly,
-             risk_percentage, risk_label, severity, created_at
-      FROM ai1a
+      SELECT a.timestamp, a.model_version, a.anomaly_score,
+             COALESCE(d.adjusted_is_anomaly::boolean, a.is_anomaly::boolean) AS is_anomaly,
+             COALESCE(d.adjusted_risk_percentage, a.risk_percentage) AS risk_percentage,
+             a.risk_label,
+             COALESCE(d.adjusted_severity, a.severity) AS severity,
+             a.created_at
+      FROM ai1a a
+      LEFT JOIN ai1a_direction_annotation d
+        ON d.source_table = 'ai1a' AND d.source_id = a.id
       WHERE 1=1
     `;
     const params = [];
 
     if (start_date && end_date) {
       params.push(start_date);
-      sql += ` AND timestamp >= $${params.length}`;
+      sql += ` AND a.timestamp >= $${params.length}`;
       params.push(end_date);
-      sql += ` AND timestamp <= $${params.length}`;
-      sql += ` ORDER BY timestamp DESC`;
+      sql += ` AND a.timestamp <= $${params.length}`;
+      sql += ` ORDER BY a.timestamp DESC`;
     } else {
       params.push(parseInt(limit));
-      sql += ` ORDER BY timestamp DESC LIMIT $${params.length}`;
+      sql += ` ORDER BY a.timestamp DESC LIMIT $${params.length}`;
     }
 
     const result = await query(sql, params);
