@@ -1209,18 +1209,7 @@ const getAi1aData = async (req, res) => {
 // cut over yet -- production is still on the 65-feature model. 'ai1a_shadow'
 // is internal shadow/testing data (includes both 65- and 70-feature runs),
 // not what's shown to users today; pass it explicitly to inspect it.
-//
-// ⚠️ 11 of the 14 driver parameters behind direction_flag/drivers_json are
-// still AI research hypotheses, NOT confirmed by a PLTP/Pertamina expert
-// (only TDS has human confirmation). The `disclaimer` field below must be
-// surfaced to the operator (badge/tooltip) wherever this data is shown --
-// do not present direction_flag/drivers_json as validated fact.
 const AI1A_DIRECTION_SOURCE_TABLES = ['ai1a', 'ai1a_shadow'];
-const AI1A_DIRECTION_DISCLAIMER =
-  'direction_flag dan drivers_json berdasarkan riset awal AI -- 11 dari 14 ' +
-  'parameter driver belum divalidasi oleh ahli PLTP/Pertamina (hanya TDS ' +
-  'yang sudah dikonfirmasi manusia). Jangan ditampilkan sebagai fakta yang ' +
-  'sudah tervalidasi penuh.';
 
 const getAi1aDirectionAnnotations = async (req, res) => {
   try {
@@ -1277,7 +1266,6 @@ const getAi1aDirectionAnnotations = async (req, res) => {
     res.json({
       success: true,
       source_table,
-      disclaimer: AI1A_DIRECTION_DISCLAIMER,
       data: result.rows,
       count: result.rows.length
     });

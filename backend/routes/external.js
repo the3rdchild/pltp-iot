@@ -62,8 +62,7 @@ router.get('/ai1a', getAi1aData);
 
 // GET /api/external/ai1a/direction - Get AI1a results annotated with process
 // direction (favorable/unfavorable), joined from ai1a_direction_annotation.
-// Defaults to source_table=ai1a (production); see controller for the
-// disclaimer requirement on 11 of 14 driver parameters being unvalidated.
+// Defaults to source_table=ai1a (production).
 router.get('/ai1a/direction', getAi1aDirectionAnnotations);
 
 // GET /api/external/ai1b - Get latest AI1b 30-day risk forecasts
