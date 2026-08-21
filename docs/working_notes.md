@@ -27,12 +27,11 @@ bad. New table `ai1a_direction_annotation`, schema in
   return direction-*corrected* `risk_percentage`/`is_anomaly`/`severity`
   (LEFT JOIN to `ai1a_direction_annotation`, COALESCE fallback to the raw
   `ai1a` columns when a row isn't annotated yet). Field names/response
-  shape are unchanged, so no frontend change is needed. This deliberately
-  reverses the original "purely additive, don't touch existing behavior"
-  scope — confirmed directly with the user on 2026-08-21, since this
-  endpoint feeds what real PLTP Kamojang operators see as current risk
-  (dashboard risk card, prediction page's Observed Risk History chart,
-  the AI1a history table).
+  shape are unchanged. This deliberately reverses the original "purely
+  additive, don't touch existing behavior" scope — confirmed directly with
+  the user on 2026-08-21, since this endpoint feeds what real PLTP
+  Kamojang operators see as current risk (dashboard risk card, prediction
+  page's Observed Risk History chart, the AI1a history table).
   - **BLOCKED on deploy**: depends on
     `ai1a_direction_annotation.adjusted_risk_percentage` /
     `adjusted_is_anomaly` / `adjusted_severity`, being added by a parallel
@@ -41,6 +40,20 @@ bad. New table `ai1a_direction_annotation`, schema in
     fails outright (undefined column) rather than degrading gracefully —
     do not merge/deploy until the AI_Pertasmart_V3 master session confirms
     the columns are live.
+  - **FE relabeling required, also blocking deploy**: the "no frontend
+    change needed" claim above was wrong — caught by the "PERTASMART FE/BE
+    deployment ke VPS" session on 2026-08-21. The API shape doesn't
+    change, but `src/pages/analytics/prediction.jsx` labels the values
+    this endpoint returns as raw/observed (`title="Risk Teramati
+    Sekarang"`, subtitle `"Nilai observed, bukan prediksi"`,
+    `title="Observed Risk History"`, `badge="OBSERVED"`) — once the values
+    are direction-corrected, those labels become false. This is the same
+    class of mislabeling that refactor `9305770` fixed in the other
+    direction (chart titled "prediction" that was actually observed data).
+    User decided 2026-08-21: keep the in-place overwrite, but the FE
+    relabeling must ship in the same deploy, not after — the deploy
+    session owns that FE work. **Do not deploy the BE change without the
+    FE relabel landing together.**
 
 **Deploy mechanics:** the VPS deploy is a single `git pull origin main`
 against one combined FE+BE folder — merging either PR above also pulls in

@@ -1114,6 +1114,12 @@ const getAi2AggregatedStats = async (req, res) => {
 // The uncorrected raw values plus the annotation itself (direction_flag,
 // drivers_json) remain available via GET /api/external/ai1a/direction.
 //
+// Response shape/field names are unchanged, but this is NOT a
+// label-neutral change: src/pages/analytics/prediction.jsx labels these
+// values as raw/observed ("Risk Teramati Sekarang", "Nilai observed,
+// bukan prediksi", badge "OBSERVED"). Do not deploy this without the
+// matching FE relabel -- see docs/working_notes.md.
+//
 // FOLLOW-UP (not yet implemented): risk_percentage has no context for
 // consumers without the model's own percentile thresholds -- p90/p99 already
 // exist in AI_Pertasmart_V3/models/ai1a/metadata.json under
