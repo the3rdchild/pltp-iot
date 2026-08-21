@@ -1194,6 +1194,92 @@ const getAi1aData = async (req, res) => {
   }
 };
 
+// Get AI1a anomaly detection results annotated with process direction
+// (kemungkinan_menguntungkan / kemungkinan_merugikan / campuran / ...) from
+// ai1a_direction_annotation, a layer built separately on the AI side that
+// flags whether an anomaly is likely GOOD or BAD for the process -- AI1a
+// itself (Isolation Forest) is a pure statistical detector with no notion
+// of which direction is favorable (e.g. falling TDS gets flagged "anomaly"
+// even though it's process-favorable).
+//
+// Purely additive: does not read from or alter ai1a/ai1a_shadow rows, only
+// joins alongside them via (source_table, source_id).
+//
+// Defaults to source_table='ai1a' (production) because AI1a-70 has not been
+// cut over yet -- production is still on the 65-feature model. 'ai1a_shadow'
+// is internal shadow/testing data (includes both 65- and 70-feature runs),
+// not what's shown to users today; pass it explicitly to inspect it.
+const AI1A_DIRECTION_SOURCE_TABLES = ['ai1a', 'ai1a_shadow'];
+
+const getAi1aDirectionAnnotations = async (req, res) => {
+  try {
+    const {
+      limit = 50,
+      start_date,
+      end_date,
+      direction_flag,
+      source_table = 'ai1a'
+    } = req.query;
+
+    if (!AI1A_DIRECTION_SOURCE_TABLES.includes(source_table)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid source_table. Valid: ${AI1A_DIRECTION_SOURCE_TABLES.join(', ')}`
+      });
+    }
+
+    // source_table is whitelisted above -- Postgres can't parameterize an
+    // identifier, so it's safe to interpolate directly into FROM here.
+    let sql = `
+      SELECT
+        a.id, a.timestamp, a.model_version AS ai1a_model_version,
+        a.anomaly_score, a.is_anomaly, a.risk_percentage, a.risk_label,
+        a.severity,
+        d.direction_flag, d.drivers_json,
+        d.model_version AS annotation_model_version,
+        d.config_version, d.created_at AS annotation_created_at
+      FROM ${source_table} a
+      JOIN ai1a_direction_annotation d
+        ON d.source_table = $1 AND d.source_id = a.id
+      WHERE 1=1
+    `;
+    const params = [source_table];
+
+    if (direction_flag) {
+      params.push(direction_flag);
+      sql += ` AND d.direction_flag = $${params.length}`;
+    }
+
+    if (start_date && end_date) {
+      params.push(start_date);
+      sql += ` AND a.timestamp >= $${params.length}`;
+      params.push(end_date);
+      sql += ` AND a.timestamp <= $${params.length}`;
+      sql += ` ORDER BY a.timestamp DESC`;
+    } else {
+      params.push(parseInt(limit));
+      sql += ` ORDER BY a.timestamp DESC LIMIT $${params.length}`;
+    }
+
+    const result = await query(sql, params);
+
+    res.json({
+      success: true,
+      source_table,
+      data: result.rows,
+      count: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching AI1a direction annotations:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch AI1a direction annotations',
+      error: error.message
+    });
+  }
+};
+
 // Get latest AI1b 30-day risk forecasts
 const getAi1bData = async (req, res) => {
   try {
@@ -1245,5 +1331,6 @@ module.exports = {
   getAi2Data,
   getAi2AggregatedStats,
   getAi1aData,
+  getAi1aDirectionAnnotations,
   getAi1bData
 };
