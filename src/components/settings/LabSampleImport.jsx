@@ -25,6 +25,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DeleteIcon from '@mui/icons-material/Delete';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { parseLabCsv } from '../../utils/labCsv';
+import { formatStoredTimestamp as formatSampledAt } from '../../utils/labOverlay';
 import { importLabSamples, getLabSamples, deleteLabSample } from '../../utils/api';
 
 const PREVIEW_LIMIT = 10;
@@ -42,15 +43,6 @@ const METRIC_COLUMNS = [
 ];
 
 const formatNumber = (v) => (v === null || v === undefined ? '-' : v);
-
-const formatSampledAt = (value) => {
-  if (!value) return '-';
-  // Date-only values (YYYY-MM-DD) are shown as-is; full timestamps are
-  // rendered in the local timezone.
-  if (!String(value).includes('T')) return value;
-  const d = new Date(value);
-  return isNaN(d.getTime()) ? value : d.toLocaleString('id-ID');
-};
 
 export default function LabSampleImport() {
   const fileInputRef = useRef(null);
