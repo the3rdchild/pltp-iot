@@ -36,7 +36,7 @@ const SENSOR_COLUMNS = [
   { header: 'TDS ppm', key: 'tds', width: 110 }
 ];
 
-// Lookback duration per range button, for the AI1a observed-risk chart. Used
+// Lookback duration per range button, for the AI1a risk-history chart. Used
 // to build start_date/end_date for GET /api/external/ai1a instead of relying
 // on whatever useAi1aData's fixed 60-row history happens to contain -- ai1a
 // runs every 60s, so 60 rows is only ~1h, meaning every button used to render
@@ -186,9 +186,16 @@ const AIAnalytics = () => {
     };
   }, []);
 
-  /* --- AI1a: observed risk history --------------------------------
+  /* --- AI1a: direction-adjusted risk history -----------------------
    * Fetched per-range (via start_date/end_date) instead of slicing
-   * useAi1aData's fixed 60-row history -- see AI1A_RANGE_MS above. */
+   * useAi1aData's fixed 60-row history -- see AI1A_RANGE_MS above.
+   *
+   * NOTE: risk_percentage/is_anomaly/severity from GET /api/external/ai1a are
+   * direction-CORRECTED, not raw readings (the endpoint LEFT JOINs
+   * ai1a_direction_annotation and falls back to the raw ai1a values only where
+   * a row is unannotated). The labels on this page must never call these
+   * "observed"/"teramati" -- that was true before the correction landed and is
+   * the reason this page's wording was reworked. */
 
   const [ai1aSelection, setAi1aSelection] = useState({ range: '1d', custom: null });
   const [ai1aRangeRows, setAi1aRangeRows] = useState(null);
@@ -336,8 +343,8 @@ const AIAnalytics = () => {
 
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <StatTile
-            title="Risk Teramati Sekarang"
-            subtitle={ai1aLive?.risk_label ? `Label: ${ai1aLive.risk_label}` : 'Nilai observed, bukan prediksi'}
+            title="Risk Sekarang (Terkoreksi)"
+            subtitle={ai1aLive?.risk_label ? `Label: ${ai1aLive.risk_label}` : 'Sudah dikoreksi arah proses, bukan nilai mentah'}
             value={currentRisk === null ? null : fmtNum(currentRisk, 1)}
             unit="%"
             icon={<SpeedIcon sx={{ fontSize: '1.8rem' }} />}
@@ -363,13 +370,13 @@ const AIAnalytics = () => {
         </Grid>
       </Grid>
 
-      {/* ---------------- chart 1: AI1a observed ---------------- */}
+      {/* ---------------- chart 1: AI1a direction-adjusted ---------------- */}
       <Box sx={{ mb: 3 }}>
         <RiskChart
-          title="Observed Risk History"
-          subtitle="Risk percentage yang teramati per window waktu - hasil anomaly detection"
-          badge="OBSERVED"
-          badgeColor="info"
+          title="Adjusted Risk History"
+          subtitle="Risk percentage per window waktu dari anomaly detection, sudah dikoreksi arah proses - bukan angka mentah"
+          badge="ADJUSTED"
+          badgeColor="warning"
           series={ai1aChart.series}
           categories={ai1aChart.categories}
           timestamps={ai1aChart.timestamps}
