@@ -296,6 +296,7 @@ const TDS = () => {
                 unit="ppm"
                 fetchFromApi={true}
                 liveValue={tdsValue}
+                labMetric="tds"
               />
             </Grid>
 

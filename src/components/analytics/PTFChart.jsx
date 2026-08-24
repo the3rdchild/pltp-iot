@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import ApexCharts from 'apexcharts';
 import { Box, Typography, Button, ButtonGroup, Popover } from '@mui/material';
@@ -9,9 +9,16 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import dayjs from 'dayjs';
 import MainCard from '../MainCard';
 import PropTypes from 'prop-types';
-import { getChartData } from '../../utils/api';
+import { getChartData, getLabComparison } from '../../utils/api';
+import { alignLabSamplesToTimestamps } from '../../utils/labOverlay';
 import { generateRealTimeChartData } from '../../data/simulasi';
 import { generateAIData } from '../../data/chartData';
+
+// Lab comparison overlay series (ground-truth lab samples, markers only)
+const LAB_PRESSURE_NAME = 'Lab Pressure (barg)';
+const LAB_TEMPERATURE_NAME = 'Lab Temperature (°C)';
+const LAB_PRESSURE_COLOR = '#1e3a8a';
+const LAB_TEMPERATURE_COLOR = '#9a3412';
 
 const PTFChart = ({
   title = 'PTF Real Time Data',
@@ -46,6 +53,8 @@ const PTFChart = ({
   const [startDate, setStartDate] = useState(dayjs().subtract(1, 'year'));
   const [endDate, setEndDate] = useState(dayjs());
   const [isCustomRange, setIsCustomRange] = useState(false);
+  const [labPressureSamples, setLabPressureSamples] = useState([]);
+  const [labTemperatureSamples, setLabTemperatureSamples] = useState([]);
 
   const timeRanges = [
     { value: 'now', label: 'Now' },
@@ -109,6 +118,45 @@ const PTFChart = ({
       setApiLoading(false);
     }
   }, []);
+
+  // Fetch lab comparison samples once (production only); overlaid as markers
+  // aligned to the chart's sampling-time buckets on non-'now' ranges.
+  useEffect(() => {
+    if (isTestEnvironment) return;
+    let cancelled = false;
+    const fetchLabSamples = async () => {
+      try {
+        const [pRes, tRes] = await Promise.all([
+          getLabComparison('pressure'),
+          getLabComparison('temperature')
+        ]);
+        if (cancelled) return;
+        setLabPressureSamples(pRes?.data?.samples || []);
+        setLabTemperatureSamples(tRes?.data?.samples || []);
+      } catch (err) {
+        console.error('Error fetching lab comparison data:', err);
+      }
+    };
+    fetchLabSamples();
+    return () => { cancelled = true; };
+  }, [isTestEnvironment]);
+
+  // Lab overlay is only meaningful for historical ranges; 'now' mode is a
+  // live sliding window with no lab data, so it keeps exactly 3 series.
+  const labOverlayEnabled = !isTestEnvironment && timeRange !== 'now';
+
+  const labPressureData = useMemo(
+    () => (labOverlayEnabled && timestamps.length > 0
+      ? alignLabSamplesToTimestamps(timestamps, labPressureSamples)
+      : []),
+    [labOverlayEnabled, timestamps, labPressureSamples]
+  );
+  const labTemperatureData = useMemo(
+    () => (labOverlayEnabled && timestamps.length > 0
+      ? alignLabSamplesToTimestamps(timestamps, labTemperatureSamples)
+      : []),
+    [labOverlayEnabled, timestamps, labTemperatureSamples]
+  );
 
   // Fetch data based on time range change
   useEffect(() => {
@@ -301,12 +349,18 @@ const PTFChart = ({
       ? timestamps.map(ts => formatTimestamp(ts, timeRange))
       : Array.from({ length: initialPressure.length }, (_, i) => `${i + 1}`);
 
-    const pressureMin = Math.min(...initialPressure.filter(v => v != null));
-    const pressureMax = Math.max(...initialPressure.filter(v => v != null));
-    const tempMin = Math.min(...initialTemp.filter(v => v != null));
-    const tempMax = Math.max(...initialTemp.filter(v => v != null));
-    const flowMin = Math.min(...initialFlow.filter(v => v != null));
-    const flowMax = Math.max(...initialFlow.filter(v => v != null));
+    const labP = labOverlayEnabled ? labPressureData : [];
+    const labT = labOverlayEnabled ? labTemperatureData : [];
+
+    const pressureVals = [...initialPressure.filter(v => v != null), ...labP.filter(v => v != null)];
+    const tempVals = [...initialTemp.filter(v => v != null), ...labT.filter(v => v != null)];
+    const flowVals = initialFlow.filter(v => v != null);
+    const pressureMin = pressureVals.length ? Math.min(...pressureVals) : 0;
+    const pressureMax = pressureVals.length ? Math.max(...pressureVals) : 0;
+    const tempMin = tempVals.length ? Math.min(...tempVals) : 0;
+    const tempMax = tempVals.length ? Math.max(...tempVals) : 0;
+    const flowMin = flowVals.length ? Math.min(...flowVals) : 0;
+    const flowMax = flowVals.length ? Math.max(...flowVals) : 0;
 
     const options = {
       chart: {
@@ -323,20 +377,31 @@ const PTFChart = ({
       series: [
         { name: 'Pressure (barg)', data: initialPressure },
         { name: 'Temperature (\u00b0C)', data: initialTemp },
-        { name: 'Flow (t/h)', data: initialFlow }
+        { name: 'Flow (t/h)', data: initialFlow },
+        // Lab samples: markers only (stroke width 0), bound to the same y-axes
+        ...(labOverlayEnabled
+          ? [
+              { name: LAB_PRESSURE_NAME, data: labP },
+              { name: LAB_TEMPERATURE_NAME, data: labT }
+            ]
+          : [])
       ],
       stroke: {
         curve: 'smooth',
-        width: 2,
-        colors: ['#3b82f6', '#ef4444', '#22c55e']
+        width: labOverlayEnabled ? [2, 2, 2, 0, 0] : 2,
+        colors: labOverlayEnabled
+          ? ['#3b82f6', '#ef4444', '#22c55e', LAB_PRESSURE_COLOR, LAB_TEMPERATURE_COLOR]
+          : ['#3b82f6', '#ef4444', '#22c55e']
       },
       fill: {
         type: 'gradient',
         gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 90, 100] },
-        colors: ['#3b82f6', '#ef4444', '#22c55e']
+        colors: labOverlayEnabled
+          ? ['#3b82f6', '#ef4444', '#22c55e', LAB_PRESSURE_COLOR, LAB_TEMPERATURE_COLOR]
+          : ['#3b82f6', '#ef4444', '#22c55e']
       },
       dataLabels: { enabled: false },
-      markers: { size: 0, hover: { size: 5 } },
+      markers: { size: labOverlayEnabled ? [0, 0, 0, 6, 6] : 0, hover: { size: 5 } },
       xaxis: {
         categories,
         labels: {
@@ -358,7 +423,7 @@ const PTFChart = ({
       },
       yaxis: [
         {
-          seriesName: 'Pressure (barg)',
+          seriesName: labOverlayEnabled ? ['Pressure (barg)', LAB_PRESSURE_NAME] : 'Pressure (barg)',
           min: Math.floor(pressureMin * 0.95),
           max: Math.ceil(pressureMax * 1.05),
           labels: {
@@ -368,7 +433,7 @@ const PTFChart = ({
           title: { text: 'Pressure (barg)', style: { color: '#3b82f6', fontSize: '12px', fontWeight: 400 } }
         },
         {
-          seriesName: 'Temperature (\u00b0C)',
+          seriesName: labOverlayEnabled ? ['Temperature (\u00b0C)', LAB_TEMPERATURE_NAME] : 'Temperature (\u00b0C)',
           min: Math.floor(tempMin * 0.95),
           max: Math.ceil(tempMax * 1.05),
           labels: {
@@ -403,10 +468,11 @@ const PTFChart = ({
         intersect: false,
         x: { show: true },
         y: {
-          formatter: (value, { seriesIndex }) => {
+          formatter: (value, { seriesIndex, w }) => {
             if (!value) return '';
-            if (seriesIndex === 0) return value.toFixed(1) + ' barg';
-            if (seriesIndex === 1) return value.toFixed(1) + ' \u00b0C';
+            const seriesName = w?.globals?.seriesNames?.[seriesIndex] || '';
+            if (seriesName.includes('Pressure')) return value.toFixed(1) + ' barg';
+            if (seriesName.includes('Temperature')) return value.toFixed(1) + ' \u00b0C';
             return value.toFixed(1) + ' t/h';
           }
         },
@@ -450,25 +516,28 @@ const PTFChart = ({
       ? timestamps.map(ts => formatTimestamp(ts, timeRange))
       : Array.from({ length: pressureData.length }, (_, i) => `${i + 1}`);
 
-    // Calculate dynamic ranges
-    const pressureMin = Math.min(...pressureData.filter(v => v != null));
-    const pressureMax = Math.max(...pressureData.filter(v => v != null));
-    const tempMin = Math.min(...temperatureData.filter(v => v != null));
-    const tempMax = Math.max(...temperatureData.filter(v => v != null));
-    const flowMin = Math.min(...flowData.filter(v => v != null));
-    const flowMax = Math.max(...flowData.filter(v => v != null));
+    // Calculate dynamic ranges (lab values included so markers aren't clipped)
+    const pressureVals = [...pressureData.filter(v => v != null), ...labPressureData.filter(v => v != null)];
+    const tempVals = [...temperatureData.filter(v => v != null), ...labTemperatureData.filter(v => v != null)];
+    const flowVals = flowData.filter(v => v != null);
+    const pressureMin = pressureVals.length ? Math.min(...pressureVals) : 0;
+    const pressureMax = pressureVals.length ? Math.max(...pressureVals) : 0;
+    const tempMin = tempVals.length ? Math.min(...tempVals) : 0;
+    const tempMax = tempVals.length ? Math.max(...tempVals) : 0;
+    const flowMin = flowVals.length ? Math.min(...flowVals) : 0;
+    const flowMax = flowVals.length ? Math.max(...flowVals) : 0;
 
     // Smooth update: update series and axis without destroying chart
     chartInstanceRef.current.updateOptions({
       xaxis: { categories },
       yaxis: [
         {
-          seriesName: 'Pressure (barg)',
+          seriesName: labOverlayEnabled ? ['Pressure (barg)', LAB_PRESSURE_NAME] : 'Pressure (barg)',
           min: Math.floor(pressureMin * 0.95),
           max: Math.ceil(pressureMax * 1.05)
         },
         {
-          seriesName: 'Temperature (\u00b0C)',
+          seriesName: labOverlayEnabled ? ['Temperature (\u00b0C)', LAB_TEMPERATURE_NAME] : 'Temperature (\u00b0C)',
           min: Math.floor(tempMin * 0.95),
           max: Math.ceil(tempMax * 1.05)
         },
@@ -484,9 +553,15 @@ const PTFChart = ({
     chartInstanceRef.current.updateSeries([
       { name: 'Pressure (barg)', data: pressureData },
       { name: 'Temperature (\u00b0C)', data: temperatureData },
-      { name: 'Flow (t/h)', data: flowData }
+      { name: 'Flow (t/h)', data: flowData },
+      ...(labOverlayEnabled
+        ? [
+            { name: LAB_PRESSURE_NAME, data: labPressureData },
+            { name: LAB_TEMPERATURE_NAME, data: labTemperatureData }
+          ]
+        : [])
     ], true); // animate: true for smooth transition
-  }, [pressureData, temperatureData, flowData, timestamps, timeRange, formatTimestamp]);
+  }, [pressureData, temperatureData, flowData, timestamps, timeRange, formatTimestamp, labOverlayEnabled, labPressureData, labTemperatureData]);
 
   const handleTimeRangeChange = (newRange) => {
     setTimeRange(newRange);
@@ -526,6 +601,18 @@ const PTFChart = ({
             <Box sx={{ width: 15, height: 15, borderRadius: '10%', backgroundColor: '#22c55e' }} />
             <Typography variant="caption" color="textSecondary">Flow</Typography>
           </Box>
+          {labOverlayEnabled && (
+            <>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Box sx={{ width: 15, height: 15, borderRadius: '10%', backgroundColor: LAB_PRESSURE_COLOR }} />
+                <Typography variant="caption" color="textSecondary">Lab Pressure</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Box sx={{ width: 15, height: 15, borderRadius: '10%', backgroundColor: LAB_TEMPERATURE_COLOR }} />
+                <Typography variant="caption" color="textSecondary">Lab Temperature</Typography>
+              </Box>
+            </>
+          )}
         </Box>
 
         <Box sx={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>

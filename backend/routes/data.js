@@ -20,6 +20,13 @@ const {
   getStatsData,
   getAggregatedStatsData
 } = require('../controllers/liveDataController');
+const {
+  getLabSamples,
+  createLabSample,
+  importLabSamples,
+  getLabComparison,
+  deleteLabSample
+} = require('../controllers/labSampleController');
 const { authenticateToken, optionalAuth, requireRole } = require('../middleware/auth');
 
 // GET /api/data/sensor/latest - Get latest sensor data
@@ -78,5 +85,28 @@ router.get('/metric-limits', optionalAuth, getMetricLimits);
 // single curl. The <ProtectedRoute> around /configuration only ever hid the
 // form; it never guarded this endpoint.
 router.post('/metric-limits', authenticateToken, requireRole('admin'), saveMetricLimits);
+
+// ==================== LAB SAMPLE ROUTES ====================
+// Laboratory readings from /admin/dataInput -- typed in one at a time or
+// imported from CSV. Reads are open like the rest of the dashboard data;
+// writes are admin-only, same as the other privileged endpoints.
+
+// GET /api/data/lab-samples - List lab samples (newest first)
+router.get('/lab-samples', optionalAuth, getLabSamples);
+
+// GET /api/data/lab-samples/comparison - Lab reading vs sensor/AI at sampling time
+//
+// Registered before the ':id' route below would ever be added, so 'comparison'
+// is never swallowed as an id.
+router.get('/lab-samples/comparison', optionalAuth, getLabComparison);
+
+// POST /api/data/lab-samples - Save one reading from the manual form
+router.post('/lab-samples', authenticateToken, requireRole('admin'), createLabSample);
+
+// POST /api/data/lab-samples/import - Bulk import parsed CSV rows
+router.post('/lab-samples/import', authenticateToken, requireRole('admin'), importLabSamples);
+
+// DELETE /api/data/lab-samples/:id - Remove a reading
+router.delete('/lab-samples/:id', authenticateToken, requireRole('admin'), deleteLabSample);
 
 module.exports = router;

@@ -13,7 +13,11 @@ import { generateRealTimeChartData } from '../../data/simulasi';
 import { generateAIData, generateFieldData } from '../../data/chartData';
 import { useTestData } from '../../contexts/TestDataContext';
 import { useChartReferenceConfig } from '../../hooks/useChartReferenceConfig';
-import { getChartData } from '../../utils/api';
+import { getChartData, getLabComparison } from '../../utils/api';
+import { alignLabSamplesToTimestamps } from '../../utils/labOverlay';
+
+// Lab comparison overlay color (markers only, opt-in via labMetric)
+const LAB_SERIES_COLOR = '#f59e0b';
 
 const RealTimeDataChart = ({
   title = 'Real Time Data',
@@ -35,7 +39,8 @@ const RealTimeDataChart = ({
   },
   showComparison = false, // Show AI vs Field comparison (only for dryness/ncg on 1y+ ranges)
   fetchFromApi = false,  // Fetch real data from API instead of simulation
-  liveValue = null       // Current live value to append in 'now' mode (requires fetchFromApi=true)
+  liveValue = null,      // Current live value to append in 'now' mode (requires fetchFromApi=true)
+  labMetric = null       // Opt-in: overlay lab samples for this metric as markers (requires fetchFromApi=true)
 }) => {
   const location = useLocation();
   const isTestEnvironment = location.pathname.startsWith('/test');
@@ -78,6 +83,33 @@ const RealTimeDataChart = ({
   const [endDate, setEndDate] = useState(dayjs());
   const [isCustomRange, setIsCustomRange] = useState(false);
   const [showComparisonData, setShowComparisonData] = useState(false);
+  const [labSamples, setLabSamples] = useState([]);
+
+  // Fetch lab comparison samples for the overlay (opt-in via labMetric).
+  // Refetches whenever the chart refetches for a new range.
+  useEffect(() => {
+    if (!labMetric || isTestEnvironment || !fetchFromApi || timeRange === 'now') return;
+    let cancelled = false;
+    getLabComparison(labMetric)
+      .then((res) => {
+        if (!cancelled) setLabSamples(res?.data?.samples || []);
+      })
+      .catch((err) => console.error(`Error fetching lab comparison for ${labMetric}:`, err));
+    return () => { cancelled = true; };
+  }, [labMetric, timeRange, isCustomRange, startDate, endDate, isTestEnvironment, fetchFromApi]);
+
+  // Lab overlay only where real API timestamps exist (standard fetched
+  // ranges). 'now' mode is live-append based and '1y'/'all'/custom use
+  // generated data without matching real timestamps, so those are skipped.
+  const labOverlayEnabled = Boolean(
+    labMetric && !isTestEnvironment && fetchFromApi &&
+    !isCustomRange && ['1h', '1d', '7d', '1m'].includes(timeRange) &&
+    apiTimestamps.length > 0
+  );
+  const labChartData = useMemo(
+    () => (labOverlayEnabled ? alignLabSamplesToTimestamps(apiTimestamps, labSamples) : null),
+    [labOverlayEnabled, apiTimestamps, labSamples]
+  );
 
   // Helper function to generate test chart data from TestDataContext
   const generateTestChartData = (metric, range, previousData = []) => {
@@ -308,6 +340,11 @@ const RealTimeDataChart = ({
     const minValue = metricConfig.enabled ? metricConfig.min : (stats.minValue || 0);
     const avgValue = metricConfig.enabled ? metricConfig.avg : (stats.avgValue || 50);
 
+    // Include lab overlay values so markers aren't clipped by the axis range
+    const labVals = labChartData ? labChartData.filter(v => v != null) : [];
+    const effMaxValue = labVals.length ? Math.max(maxValue, ...labVals) : maxValue;
+    const effMinValue = labVals.length ? Math.min(minValue, ...labVals) : minValue;
+
     const initialData = showComparisonData
       ? (fieldData.length > 0 ? fieldData : Array(60).fill(0))
       : (chartData.length > 0 ? chartData : Array(60).fill(0));
@@ -350,9 +387,16 @@ const RealTimeDataChart = ({
           { name: 'Field Data', data: fieldData.length > 0 ? fieldData : Array(60).fill(0) },
           { name: 'AI Data', data: aiData.length > 0 ? aiData : Array(60).fill(0) }
         ]
-      : [{ name: yAxisTitle, data: chartData.length > 0 ? chartData : Array(60).fill(0) }];
+      : [
+          { name: yAxisTitle, data: chartData.length > 0 ? chartData : Array(60).fill(0) },
+          // Lab samples: markers only (stroke width 0), same y-axis
+          ...(labChartData ? [{ name: `Lab ${yAxisTitle}`, data: labChartData }] : [])
+        ];
 
-    const colors = showComparisonData ? ['#53A1FF', '#8b5cf6'] : ['#3b82f6'];
+    const colors = showComparisonData
+      ? ['#53A1FF', '#8b5cf6']
+      : (labChartData ? ['#3b82f6', LAB_SERIES_COLOR] : ['#3b82f6']);
+    const hasLabSeries = !showComparisonData && Boolean(labChartData);
 
     const options = {
       chart: {
@@ -372,7 +416,7 @@ const RealTimeDataChart = ({
       series: series,
       stroke: {
         curve: 'smooth',
-        width: 2,
+        width: hasLabSeries ? [2, 0] : 2,
         colors: colors
       },
       fill: {
@@ -387,7 +431,7 @@ const RealTimeDataChart = ({
       },
       dataLabels: { enabled: false },
       markers: {
-        size: 0,
+        size: hasLabSeries ? [0, 6] : 0,
         hover: { size: 5 }
       },
       xaxis: {
@@ -436,8 +480,8 @@ const RealTimeDataChart = ({
             fontWeight: 400
           }
         },
-        min: minValue ? Math.floor(minValue * 0.99) : undefined,
-        max: maxValue ? Math.ceil(maxValue * 1.01) : undefined
+        min: effMinValue ? Math.floor(effMinValue * 0.99) : undefined,
+        max: effMaxValue ? Math.ceil(effMaxValue * 1.01) : undefined
       },
       grid: {
         borderColor: '#f1f1f1',
@@ -485,7 +529,7 @@ const RealTimeDataChart = ({
         chartInstanceRef.current = null;
       }
     };
-  }, [timeRange, showComparisonData, unit, yAxisTitle, computedXAxisTitle, thresholds, chartRefConfig, dataType, apiTimestamps]);
+  }, [timeRange, showComparisonData, unit, yAxisTitle, computedXAxisTitle, thresholds, chartRefConfig, dataType, apiTimestamps, labChartData]);
 
   // Update chart data without re-rendering (for smooth updates)
   useEffect(() => {
@@ -501,6 +545,12 @@ const RealTimeDataChart = ({
     const maxValue = metricConfig.enabled ? metricConfig.max : stats.maxValue;
     const minValue = metricConfig.enabled ? metricConfig.min : stats.minValue;
     const avgValue = metricConfig.enabled ? metricConfig.avg : stats.avgValue;
+
+    // Include lab overlay values so markers aren't clipped by the axis range
+    const labVals = labChartData ? labChartData.filter(v => v != null) : [];
+    const rangeVals = [maxValue, minValue, ...labVals].filter(v => v != null);
+    const effMaxValue = rangeVals.length ? Math.max(...rangeVals) : undefined;
+    const effMinValue = rangeVals.length ? Math.min(...rangeVals) : undefined;
 
     const annotations = [];
     if (thresholds.showMax && maxValue) {
@@ -536,7 +586,10 @@ const RealTimeDataChart = ({
           { name: 'Field Data', data: fieldData },
           { name: 'AI Data', data: aiData }
         ]
-      : [{ name: yAxisTitle, data: chartData }];
+      : [
+          { name: yAxisTitle, data: chartData },
+          ...(labChartData ? [{ name: `Lab ${yAxisTitle}`, data: labChartData }] : [])
+        ];
 
     const updatedCategories = apiTimestamps.length > 0
       ? apiTimestamps.map(ts => formatTS(ts))
@@ -546,14 +599,14 @@ const RealTimeDataChart = ({
       series: series,
       ...(updatedCategories ? { xaxis: { categories: updatedCategories } } : {}),
       yaxis: {
-        min: minValue ? Math.floor(minValue * 0.99) : undefined,
-        max: maxValue ? Math.ceil(maxValue * 1.01) : undefined
+        min: effMinValue ? Math.floor(effMinValue * 0.99) : undefined,
+        max: effMaxValue ? Math.ceil(effMaxValue * 1.01) : undefined
       },
       annotations: {
         yaxis: annotations
       }
     }, false, timeRange === 'now' && !showComparisonData);
-  }, [chartData, aiData, fieldData, stats, showComparisonData, timeRange, yAxisTitle, thresholds, chartRefConfig, dataType, apiTimestamps]);
+  }, [chartData, aiData, fieldData, stats, showComparisonData, timeRange, yAxisTitle, thresholds, chartRefConfig, dataType, apiTimestamps, labChartData]);
 
   const handleTimeRangeChange = (newRange) => {
     setTimeRange(newRange);
@@ -668,7 +721,7 @@ const RealTimeDataChart = ({
             </Box>
           </>
         ) : (
-          legendItems.map((item) => (
+          [...legendItems, ...(labChartData ? [{ name: `Lab ${yAxisTitle}`, color: LAB_SERIES_COLOR }] : [])].map((item) => (
             <Box key={item.name} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
               <Box sx={{ width: 15, height: 15, borderRadius: '10%', backgroundColor: item.color }} />
               <Typography variant="caption" color="textSecondary">
@@ -755,7 +808,8 @@ RealTimeDataChart.propTypes = {
   }),
   showComparison: PropTypes.bool,
   fetchFromApi: PropTypes.bool,
-  liveValue: PropTypes.number
+  liveValue: PropTypes.number,
+  labMetric: PropTypes.oneOf(['pressure', 'temperature', 'flow_rate', 'tds', 'dryness', 'ncg'])
 };
 
 export default RealTimeDataChart;

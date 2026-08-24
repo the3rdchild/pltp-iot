@@ -172,6 +172,85 @@ export const getAggregatedStats = async (metric) => {
   }
 };
 
+// ==================== LAB SAMPLE APIs ====================
+
+/**
+ * Get stored lab samples
+ * @param {object} params - { limit, offset, start_date, end_date }
+ */
+export const getLabSamples = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/data/lab-samples', { params });
+    return response;
+  } catch (error) {
+    console.error('Error fetching lab samples:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create or update one lab sample
+ * @param {object} sample - { sampled_at, pressure, temperature, flow_rate, tds, dryness, ncg, notes? }
+ */
+export const createLabSample = async (sample) => {
+  try {
+    const response = await apiClient.post('/data/lab-samples', sample);
+    return response;
+  } catch (error) {
+    console.error('Error creating lab sample:', error);
+    throw error;
+  }
+};
+
+/**
+ * Bulk import lab samples from a parsed CSV
+ * @param {Array} rows - array of sample objects (same shape as createLabSample)
+ * @param {string} sourceFile - original CSV filename
+ */
+export const importLabSamples = async (rows, sourceFile) => {
+  try {
+    const response = await apiClient.post('/data/lab-samples/import', {
+      rows,
+      source_file: sourceFile
+    });
+    return response;
+  } catch (error) {
+    console.error('Error importing lab samples:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete one lab sample by id
+ * @param {number|string} id
+ */
+export const deleteLabSample = async (id) => {
+  try {
+    const response = await apiClient.delete(`/data/lab-samples/${id}`);
+    return response;
+  } catch (error) {
+    console.error(`Error deleting lab sample ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Get lab-vs-sensor comparison series for a metric
+ * @param {string} metric - pressure|temperature|flow_rate|tds|dryness|ncg
+ * @param {object} params - extra query params
+ */
+export const getLabComparison = async (metric, params = {}) => {
+  try {
+    const response = await apiClient.get('/data/lab-samples/comparison', {
+      params: { metric, ...params }
+    });
+    return response;
+  } catch (error) {
+    console.error(`Error fetching lab comparison for ${metric}:`, error);
+    throw error;
+  }
+};
+
 // ==================== PAGE-SPECIFIC APIs ====================
 
 /**
@@ -309,6 +388,11 @@ export default {
   getChartData,
   getStatsTable,
   getAggregatedStats,
+  getLabSamples,
+  createLabSample,
+  importLabSamples,
+  deleteLabSample,
+  getLabComparison,
   getTDSPageData,
   getPressurePageData,
   getTemperaturePageData,
