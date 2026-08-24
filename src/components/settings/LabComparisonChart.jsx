@@ -7,7 +7,6 @@ import Button from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
-import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -34,11 +33,15 @@ import { formatStoredTimestamp } from '../../utils/labOverlay';
 // flow_rate is absent because the lab CSV carries no flow column, and dryness
 // because that reading is no longer recorded. Offering either would mean a
 // picker button that always resolves to an empty chart.
+//
+// `axis` groups the metrics onto shared y-axes in the combined view: only
+// temperature (~165 °C) sits far from the others (all under 7.5), so two axes
+// are enough. Four would clutter both edges of the plot for no extra clarity.
 const METRICS = [
-  { key: 'pressure', label: 'Pressure', unit: 'barg', decimals: 2 },
-  { key: 'temperature', label: 'Temperature', unit: '°C', decimals: 1 },
-  { key: 'tds', label: 'TDS', unit: 'ppm', decimals: 2 },
-  { key: 'ncg', label: 'NCG', unit: '%', decimals: 2 }
+  { key: 'pressure', label: 'Pressure', unit: 'barg', decimals: 2, axis: 'low', color: '#9271FF' },
+  { key: 'temperature', label: 'Temperature', unit: '°C', decimals: 1, axis: 'high', color: '#ef4444' },
+  { key: 'tds', label: 'TDS', unit: 'ppm', decimals: 2, axis: 'low', color: '#22c55e' },
+  { key: 'ncg', label: 'NCG', unit: '%', decimals: 2, axis: 'low', color: '#f59e0b' }
 ];
 
 const ALL = 'all';
@@ -61,14 +64,22 @@ const referenceLabel = (comparedAgainst) => {
   return comparedAgainst.startsWith('ai2.') ? 'Prediksi AI' : 'Sensor (rata-rata)';
 };
 
-/** Fetch the lab-vs-reference series for one metric. */
-const useLabComparison = (metricKey) => {
+/**
+ * Fetch the lab-vs-reference series for one metric.
+ *
+ * `enabled` keeps the single-metric view down to one request: all four hooks
+ * are mounted (hook order has to stay fixed) but only the ones the current view
+ * actually needs go to the network.
+ */
+const useLabComparison = (metricKey, enabled = true) => {
   const [samples, setSamples] = useState([]);
   const [comparedAgainst, setComparedAgainst] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!enabled) return undefined;
+
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -93,12 +104,12 @@ const useLabComparison = (metricKey) => {
     return () => {
       cancelled = true;
     };
-  }, [metricKey]);
+  }, [metricKey, enabled]);
 
   return { samples, comparedAgainst, loading, error };
 };
 
-/** Window the newest N samples and derive everything the UI shows from them. */
+/** Window the newest N samples and derive everything the single view shows. */
 const useComparisonView = (samples, showAll) => {
   // The API returns samples oldest-first, so the newest window is the tail.
   const visible = useMemo(
@@ -129,11 +140,78 @@ const useComparisonView = (samples, showAll) => {
 };
 
 /**
- * The ApexCharts instance. Created once and updated in place — rebuilding on
- * every data change makes the card visibly flash, which is what the analytics
- * charts in this project already had to be fixed for.
+ * Line up all four metrics on one shared time axis.
+ *
+ * They cannot simply be zipped together: the comparison endpoint drops rows
+ * where its own metric is null, so a sample missing TDS is absent from the TDS
+ * response while still present in the other three. Indexing by position would
+ * then shift that series by one and silently plot every later reading against
+ * the wrong date. Keying on sampled_at is what keeps them honest.
  */
-function ComparisonChart({ metricConfig, view, comparedAgainst, height, showLegend }) {
+const useCombinedView = (datasets, showAll) => {
+  return useMemo(() => {
+    const times = [...new Set(datasets.flatMap((d) => d.samples.map((s) => s.sampled_at)))].sort();
+    const windowed = showAll ? times : times.slice(-DEFAULT_VISIBLE);
+    const position = new Map(windowed.map((t, i) => [t, i]));
+
+    const series = datasets.map((dataset) => {
+      const values = new Array(windowed.length).fill(null);
+      dataset.samples.forEach((sample) => {
+        const at = position.get(sample.sampled_at);
+        if (at !== undefined && sample.lab_value !== null) values[at] = Number(sample.lab_value);
+      });
+      return values;
+    });
+
+    return {
+      categories: windowed.map((t) => formatStoredTimestamp(t, { short: true })),
+      series,
+      total: times.length,
+      shown: windowed.length
+    };
+  }, [datasets, showAll]);
+};
+
+/** Shared chart chrome, so the two views cannot drift apart visually. */
+const baseChartOptions = (height, showLegend) => ({
+  chart: {
+    type: 'line',
+    height,
+    fontFamily: 'inherit',
+    toolbar: { show: false },
+    zoom: { enabled: false },
+    animations: { enabled: false }
+  },
+  stroke: { curve: 'straight', width: 2.5 },
+  // Markers stay on top of the line: lab sampling is roughly monthly, and the
+  // markers are what show where an actual measurement exists rather than a
+  // segment drawn between two of them.
+  markers: { size: 5, strokeWidth: 0, hover: { size: 8 } },
+  dataLabels: { enabled: false },
+  legend: { show: showLegend, position: 'top', horizontalAlign: 'right', markers: { radius: 4 } },
+  grid: { borderColor: '#eef0f4', strokeDashArray: 4, padding: { left: 12, right: 16 } },
+  xaxis: {
+    categories: [],
+    labels: { rotate: -40, rotateAlways: false, style: { fontSize: '11px', colors: '#8b93a7' } },
+    axisBorder: { show: false },
+    axisTicks: { show: false },
+    tooltip: { enabled: false }
+  },
+  tooltip: { shared: true, intersect: false },
+  noData: { text: 'Belum ada data lab', style: { color: '#8b93a7' } }
+});
+
+const axisLabelStyle = { colors: '#8b93a7', fontSize: '11px' };
+const axisTitleStyle = { fontSize: '12px', color: '#8b93a7' };
+
+/**
+ * One metric: the lab reading against its reference series.
+ *
+ * Created once and updated in place — rebuilding on every data change makes the
+ * card visibly flash, which is what the analytics charts in this project
+ * already had to be fixed for.
+ */
+function ComparisonChart({ metricConfig, view, comparedAgainst }) {
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
 
@@ -141,51 +219,22 @@ function ComparisonChart({ metricConfig, view, comparedAgainst, height, showLege
     if (!chartRef.current) return undefined;
 
     const chart = new ApexCharts(chartRef.current, {
-      chart: {
-        type: 'line',
-        height,
-        fontFamily: 'inherit',
-        toolbar: { show: false },
-        zoom: { enabled: false },
-        animations: { enabled: false }
-      },
-      // Per-series types rather than one line chart with a zero-width stroke.
-      // The zero-width trick relied on `markers.size` and `stroke.width` being
-      // read as per-series arrays, and when that collapsed the lab series drew
-      // neither a line nor a marker and vanished entirely. An explicit
-      // 'scatter' renders its points regardless of stroke settings, which is
-      // also the honest shape for the data: lab readings are discrete
-      // measurements, not samples of a continuous signal.
+      ...baseChartOptions(360, true),
       series: [
-        { name: 'Lab', type: 'scatter', data: [] },
-        { name: 'Pembanding', type: 'line', data: [] }
+        { name: 'Lab', data: [] },
+        { name: 'Pembanding', data: [] }
       ],
       colors: [LAB_COLOR, REF_COLOR],
-      stroke: { curve: 'straight', width: 2.5 },
-      // Scalar, so there is no per-series array left to collapse.
-      markers: { size: 5, strokeWidth: 0, hover: { size: 8 } },
-      dataLabels: { enabled: false },
-      legend: { show: showLegend, position: 'top', horizontalAlign: 'right', markers: { radius: 4 } },
-      grid: { borderColor: '#eef0f4', strokeDashArray: 4, padding: { left: 12, right: 16 } },
-      xaxis: {
-        categories: [],
-        labels: { rotate: -40, rotateAlways: false, style: { fontSize: '11px', colors: '#8b93a7' } },
-        axisBorder: { show: false },
-        axisTicks: { show: false },
-        tooltip: { enabled: false }
-      },
       yaxis: {
         forceNiceScale: true,
         labels: {
-          style: { colors: '#8b93a7', fontSize: '11px' },
+          style: axisLabelStyle,
           // Without an explicit formatter the axis prints the raw float, so a
           // tick at 7.5 rendered as "7.500000000000000".
           formatter: (v) => (v === null || v === undefined ? '' : Number(v).toFixed(2))
         },
-        title: { text: '', style: { fontSize: '12px', color: '#8b93a7' } }
-      },
-      tooltip: { shared: true, intersect: false },
-      noData: { text: 'Belum ada data lab', style: { color: '#8b93a7' } }
+        title: { text: '', style: axisTitleStyle }
+      }
     });
 
     chart.render();
@@ -195,10 +244,7 @@ function ComparisonChart({ metricConfig, view, comparedAgainst, height, showLege
       chart.destroy();
       chartInstanceRef.current = null;
     };
-    // Height and legend are structural rather than data: they only change when
-    // switching between the single-metric and grid layouts, which is exactly
-    // when a fresh instance is wanted anyway.
-  }, [height, showLegend]);
+  }, []);
 
   useEffect(() => {
     const chart = chartInstanceRef.current;
@@ -213,13 +259,10 @@ function ComparisonChart({ metricConfig, view, comparedAgainst, height, showLege
         yaxis: {
           forceNiceScale: true,
           labels: {
-            style: { colors: '#8b93a7', fontSize: '11px' },
+            style: axisLabelStyle,
             formatter: (v) => (v === null || v === undefined ? '' : Number(v).toFixed(metricConfig.decimals))
           },
-          title: {
-            text: `${metricConfig.label} (${metricConfig.unit})`,
-            style: { fontSize: '12px', color: '#8b93a7' }
-          }
+          title: { text: `${metricConfig.label} (${metricConfig.unit})`, style: axisTitleStyle }
         },
         tooltip: {
           y: {
@@ -236,12 +279,9 @@ function ComparisonChart({ metricConfig, view, comparedAgainst, height, showLege
       false
     );
 
-    // `type` has to be repeated here -- updateSeries replaces the series
-    // objects outright, and dropping it would send both series back to the
-    // chart-level 'line' type.
     chart.updateSeries([
-      { name: 'Lab', type: 'scatter', data: view.lab },
-      { name: referenceLabel(comparedAgainst), type: 'line', data: view.reference }
+      { name: 'Lab', data: view.lab },
+      { name: referenceLabel(comparedAgainst), data: view.reference }
     ]);
   }, [view, metricConfig, comparedAgainst]);
 
@@ -249,56 +289,78 @@ function ComparisonChart({ metricConfig, view, comparedAgainst, height, showLege
 }
 
 /**
- * One metric inside the "All" grid: its own fetch, its own chart, its own
- * caption. Each panel loads independently, so a slow or failing metric cannot
- * blank out the other three.
+ * All four lab metrics on one chart.
+ *
+ * Two y-axes rather than one: temperature runs around 165 °C while the other
+ * three sit under 7.5, so a single shared scale would press all of them flat
+ * along the bottom. Pressure, TDS and NCG share the left axis; temperature gets
+ * the right one to itself.
  */
-function MetricPanel({ metricConfig, showAll }) {
-  const { samples, comparedAgainst, loading, error } = useLabComparison(metricConfig.key);
-  const { view } = useComparisonView(samples, showAll);
+function CombinedLabChart({ combined }) {
+  const chartRef = useRef(null);
+  const chartInstanceRef = useRef(null);
 
-  return (
-    <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2, height: '100%' }}>
-      <Stack direction="row" sx={{ alignItems: 'baseline', justifyContent: 'space-between', mb: 0.5 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-          {metricConfig.label} <Typography component="span" variant="caption" color="text.secondary">({metricConfig.unit})</Typography>
-        </Typography>
-        <Typography variant="caption" color={view.matched > 0 ? 'text.secondary' : 'warning.main'}>
-          {loading ? 'memuat…' : `${view.matched}/${view.matched + view.unmatched} punya pembanding`}
-        </Typography>
-      </Stack>
+  // Index of the series that owns each axis. Apex shares an axis between series
+  // by repeating the owner's `seriesName` and hiding the duplicate entries.
+  const lowOwner = METRICS.find((m) => m.axis === 'low');
+  const highOwner = METRICS.find((m) => m.axis === 'high');
 
-      {error ? (
-        <Alert severity="error" sx={{ mt: 1 }}>
-          {error}
-        </Alert>
-      ) : (
-        <Box sx={{ position: 'relative', minHeight: 220 }}>
-          {loading && (
-            <Box
-              sx={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 2
-              }}
-            >
-              <CircularProgress size={22} />
-            </Box>
-          )}
-          <ComparisonChart
-            metricConfig={metricConfig}
-            view={view}
-            comparedAgainst={comparedAgainst}
-            height={220}
-            showLegend={false}
-          />
-        </Box>
-      )}
-    </Box>
-  );
+  useEffect(() => {
+    if (!chartRef.current) return undefined;
+
+    const yaxis = METRICS.map((m) => {
+      const owner = m.axis === 'high' ? highOwner : lowOwner;
+      const isOwner = owner.key === m.key;
+      return {
+        seriesName: owner.label,
+        opposite: m.axis === 'high',
+        show: isOwner,
+        forceNiceScale: true,
+        labels: {
+          style: axisLabelStyle,
+          formatter: (v) => (v === null || v === undefined ? '' : Number(v).toFixed(owner.decimals))
+        },
+        title: {
+          text: isOwner ? (m.axis === 'high' ? `${m.label} (${m.unit})` : 'Pressure (barg) · TDS (ppm) · NCG (%)') : '',
+          style: axisTitleStyle
+        }
+      };
+    });
+
+    const chart = new ApexCharts(chartRef.current, {
+      ...baseChartOptions(400, true),
+      series: METRICS.map((m) => ({ name: m.label, data: [] })),
+      colors: METRICS.map((m) => m.color),
+      yaxis,
+      tooltip: {
+        shared: true,
+        intersect: false,
+        // Per-series units: a shared tooltip would otherwise label every value
+        // with the same unit and quietly misreport three of the four.
+        y: METRICS.map((m) => ({
+          formatter: (v) => (v === null || v === undefined ? 'tidak ada data' : `${v.toFixed(m.decimals)} ${m.unit}`)
+        }))
+      }
+    });
+
+    chart.render();
+    chartInstanceRef.current = chart;
+
+    return () => {
+      chart.destroy();
+      chartInstanceRef.current = null;
+    };
+  }, [lowOwner, highOwner]);
+
+  useEffect(() => {
+    const chart = chartInstanceRef.current;
+    if (!chart) return;
+
+    chart.updateOptions({ xaxis: { categories: combined.categories } }, true, false);
+    chart.updateSeries(METRICS.map((m, i) => ({ name: m.label, data: combined.series[i] ?? [] })));
+  }, [combined]);
+
+  return <div ref={chartRef} />;
 }
 
 export default function LabComparisonChart() {
@@ -308,16 +370,34 @@ export default function LabComparisonChart() {
   const isAll = metric === ALL;
   const active = METRICS.find((m) => m.key === metric) ?? METRICS[0];
 
-  // In grid mode each panel fetches for itself; this one still runs so the
-  // shared sample-count control has a total to work from. Hooks cannot be
-  // called conditionally, so it stays mounted either way.
-  const { samples, comparedAgainst, loading, error } = useLabComparison(isAll ? METRICS[0].key : metric);
-  const { visible, view } = useComparisonView(samples, showAll);
+  // Four fixed hook calls rather than a loop: hook order has to be identical on
+  // every render, and `enabled` keeps the single-metric view to one request.
+  const pressure = useLabComparison('pressure', isAll || metric === 'pressure');
+  const temperature = useLabComparison('temperature', isAll || metric === 'temperature');
+  const tds = useLabComparison('tds', isAll || metric === 'tds');
+  const ncg = useLabComparison('ncg', isAll || metric === 'ncg');
+
+  const byKey = { pressure, temperature, tds, ncg };
+  const activeData = byKey[isAll ? 'pressure' : metric] ?? pressure;
+
+  const datasets = useMemo(
+    () => METRICS.map((m) => ({ key: m.key, samples: byKey[m.key].samples })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pressure.samples, temperature.samples, tds.samples, ncg.samples]
+  );
+
+  const { visible, view } = useComparisonView(activeData.samples, showAll);
+  const combined = useCombinedView(datasets, showAll);
+
+  const combinedLoading = isAll && [pressure, temperature, tds, ncg].some((d) => d.loading);
+  const combinedError = isAll && [pressure, temperature, tds, ncg].find((d) => d.error)?.error;
 
   // Newest first in the table, matching every other listing in this project.
   const rows = useMemo(() => [...visible].reverse(), [visible]);
 
-  const totalSamples = samples.length;
+  const totalSamples = isAll ? combined.total : activeData.samples.length;
+  const loading = isAll ? combinedLoading : activeData.loading;
+  const error = isAll ? combinedError : activeData.error;
 
   return (
     <MainCard>
@@ -327,8 +407,11 @@ export default function LabComparisonChart() {
             Perbandingan Lab vs Sensor
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Nilai lab dibandingkan dengan rata-rata pembacaan pada waktu sampling yang sama
-            {!isAll && comparedAgainst ? ` — sumber: ${comparedAgainst}` : ''}
+            {isAll
+              ? 'Seluruh metrik lab pada satu sumbu waktu — temperature memakai sumbu kanan'
+              : `Nilai lab dibandingkan dengan rata-rata pembacaan pada waktu sampling yang sama${
+                  activeData.comparedAgainst ? ` — sumber: ${activeData.comparedAgainst}` : ''
+                }`}
           </Typography>
         </Box>
 
@@ -355,156 +438,137 @@ export default function LabComparisonChart() {
         </ButtonGroup>
       </Stack>
 
-      {/* The window applies to every panel in grid mode too, so this control
-          sits above the layout switch rather than inside either branch. */}
-      {totalSamples > DEFAULT_VISIBLE && (
-        <Stack direction="row" sx={{ gap: 1, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-          <Chip
-            size="small"
-            label={showAll ? `${totalSamples} sampel lab` : `Menampilkan ${DEFAULT_VISIBLE} dari ${totalSamples} sampel`}
-          />
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Stack direction="row" sx={{ gap: 1, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+        {!loading && !error && totalSamples > 0 && (
+          <>
+            {isAll ? (
+              <Chip size="small" label={`${combined.shown} tanggal sampling`} />
+            ) : (
+              <>
+                {/* Counts describe the window on screen, not the whole table — a
+                    chip reading "43 sampel" beside a chart showing fewer would
+                    make the average next to it look wrong. */}
+                <Chip
+                  size="small"
+                  color={view.matched > 0 ? 'success' : 'default'}
+                  variant="outlined"
+                  label={`${view.matched} punya pembanding`}
+                />
+                {view.unmatched > 0 && (
+                  <Chip size="small" color="warning" variant="outlined" label={`${view.unmatched} tanpa data pembanding`} />
+                )}
+                {view.meanAbsDelta !== null && (
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    label={`Rata-rata selisih ${view.meanAbsDelta.toFixed(active.decimals)} ${active.unit}`}
+                  />
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {totalSamples > DEFAULT_VISIBLE && (
           <Button size="small" variant="text" onClick={() => setShowAll((v) => !v)} sx={{ textTransform: 'none' }}>
             {showAll ? `Tampilkan ${DEFAULT_VISIBLE} terakhir` : `Tampilkan semua (${totalSamples})`}
           </Button>
-        </Stack>
+        )}
+      </Stack>
+
+      {!isAll && view.unmatched > 0 && view.matched === 0 && !loading && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Tidak ada satu pun sampel yang punya data pembanding. Biasanya ini berarti riwayat{' '}
+          {activeData.comparedAgainst?.startsWith('ai2.') ? 'prediksi AI' : 'sensor'} belum mencakup
+          tanggal-tanggal sampling tersebut.
+        </Alert>
       )}
 
-      {isAll ? (
-        <Grid container spacing={2}>
-          {METRICS.map((m) => (
-            <Grid key={m.key} size={{ xs: 12, md: 6 }}>
-              {/* Four separate charts rather than four series on one: temperature
-                  sits around 165 °C while NCG sits around 0.25 %, so a shared
-                  axis would flatten three of the four into a line along the
-                  bottom and show nothing useful about any of them. */}
-              <MetricPanel metricConfig={m} showAll={showAll} />
-            </Grid>
-          ))}
-        </Grid>
-      ) : (
-        <>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-
-          {!loading && !error && totalSamples > 0 && (
-            <Stack direction="row" sx={{ gap: 1, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-              {/* Counts describe the window on screen, not the whole table — a
-                  chip reading "43 sampel" beside a chart showing fewer would
-                  make the average next to it look wrong. */}
-              <Chip
-                size="small"
-                color={view.matched > 0 ? 'success' : 'default'}
-                variant="outlined"
-                label={`${view.matched} punya pembanding`}
-              />
-              {view.unmatched > 0 && (
-                <Chip size="small" color="warning" variant="outlined" label={`${view.unmatched} tanpa data pembanding`} />
-              )}
-              {view.meanAbsDelta !== null && (
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  label={`Rata-rata selisih ${view.meanAbsDelta.toFixed(active.decimals)} ${active.unit}`}
-                />
-              )}
-            </Stack>
-          )}
-
-          {view.unmatched > 0 && view.matched === 0 && !loading && (
-            <Alert severity="info" sx={{ mb: 2 }}>
-              Tidak ada satu pun sampel yang punya data pembanding. Biasanya ini berarti riwayat{' '}
-              {comparedAgainst?.startsWith('ai2.') ? 'prediksi AI' : 'sensor'} belum mencakup tanggal-tanggal
-              sampling tersebut.
-            </Alert>
-          )}
-
-          <Box sx={{ position: 'relative', minHeight: 360 }}>
-            {loading && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  zIndex: 2
-                }}
-              >
-                <CircularProgress size={28} />
-              </Box>
-            )}
-            <ComparisonChart
-              metricConfig={active}
-              view={view}
-              comparedAgainst={comparedAgainst}
-              height={360}
-              showLegend
-            />
+      <Box sx={{ position: 'relative', minHeight: isAll ? 400 : 360 }}>
+        {loading && (
+          <Box
+            sx={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 2
+            }}
+          >
+            <CircularProgress size={28} />
           </Box>
+        )}
+        {isAll ? (
+          <CombinedLabChart combined={combined} />
+        ) : (
+          <ComparisonChart metricConfig={active} view={view} comparedAgainst={activeData.comparedAgainst} />
+        )}
+      </Box>
 
-          {rows.length > 0 && (
-            <Box sx={{ mt: 3 }}>
-              <Typography variant="h6" sx={{ mb: 1 }}>
-                Selisih per Sampel
-              </Typography>
-              <TableContainer sx={{ maxHeight: 360, overflowX: 'auto' }}>
-                <Table size="small" stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Tanggal Sampling</TableCell>
-                      <TableCell align="right">Lab ({active.unit})</TableCell>
-                      <TableCell align="right">{referenceLabel(comparedAgainst)}</TableCell>
-                      <TableCell align="right">Selisih</TableCell>
-                      <TableCell align="right">Titik Data</TableCell>
+      {!isAll && rows.length > 0 && (
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Selisih per Sampel
+          </Typography>
+          <TableContainer sx={{ maxHeight: 360, overflowX: 'auto' }}>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Tanggal Sampling</TableCell>
+                  <TableCell align="right">Lab ({active.unit})</TableCell>
+                  <TableCell align="right">{referenceLabel(activeData.comparedAgainst)}</TableCell>
+                  <TableCell align="right">Selisih</TableCell>
+                  <TableCell align="right">Titik Data</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map((row) => {
+                  const hasRef = row.comparison_avg !== null && row.comparison_avg !== undefined;
+                  const diff = row.difference;
+                  return (
+                    <TableRow key={row.id} hover>
+                      <TableCell>{formatStoredTimestamp(row.sampled_at)}</TableCell>
+                      <TableCell align="right">
+                        {row.lab_value === null ? '-' : Number(row.lab_value).toFixed(active.decimals)}
+                      </TableCell>
+                      <TableCell align="right">
+                        {hasRef ? Number(row.comparison_avg).toFixed(active.decimals) : '-'}
+                      </TableCell>
+                      <TableCell
+                        align="right"
+                        sx={{
+                          color:
+                            diff === null || diff === undefined
+                              ? 'text.disabled'
+                              : diff > 0
+                                ? 'error.main'
+                                : 'success.main'
+                        }}
+                      >
+                        {diff === null || diff === undefined
+                          ? '-'
+                          : `${diff > 0 ? '+' : ''}${Number(diff).toFixed(active.decimals)}`}
+                      </TableCell>
+                      {/* How many readings backed the average — a comparison
+                          resting on 3 rows deserves less trust than one resting
+                          on 8000, and that is invisible from the value alone. */}
+                      <TableCell align="right" sx={{ color: row.comparison_points ? 'text.secondary' : 'warning.main' }}>
+                        {row.comparison_points ?? 0}
+                      </TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {rows.map((row) => {
-                      const hasRef = row.comparison_avg !== null && row.comparison_avg !== undefined;
-                      const diff = row.difference;
-                      return (
-                        <TableRow key={row.id} hover>
-                          <TableCell>{formatStoredTimestamp(row.sampled_at)}</TableCell>
-                          <TableCell align="right">
-                            {row.lab_value === null ? '-' : Number(row.lab_value).toFixed(active.decimals)}
-                          </TableCell>
-                          <TableCell align="right">
-                            {hasRef ? Number(row.comparison_avg).toFixed(active.decimals) : '-'}
-                          </TableCell>
-                          <TableCell
-                            align="right"
-                            sx={{
-                              color:
-                                diff === null || diff === undefined
-                                  ? 'text.disabled'
-                                  : diff > 0
-                                    ? 'error.main'
-                                    : 'success.main'
-                            }}
-                          >
-                            {diff === null || diff === undefined
-                              ? '-'
-                              : `${diff > 0 ? '+' : ''}${Number(diff).toFixed(active.decimals)}`}
-                          </TableCell>
-                          {/* How many readings backed the average — a comparison
-                              resting on 3 rows deserves less trust than one
-                              resting on 8000, and that is invisible from the
-                              value alone. */}
-                          <TableCell align="right" sx={{ color: row.comparison_points ? 'text.secondary' : 'warning.main' }}>
-                            {row.comparison_points ?? 0}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Box>
-          )}
-        </>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
       )}
     </MainCard>
   );
