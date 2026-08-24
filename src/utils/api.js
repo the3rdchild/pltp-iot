@@ -190,7 +190,7 @@ export const getLabSamples = async (params = {}) => {
 
 /**
  * Create or update one lab sample
- * @param {object} sample - { sampled_at, pressure, temperature, flow_rate, tds, dryness, ncg, notes? }
+ * @param {object} sample - { sampled_at, result_at?, pressure, temperature, flow_rate, tds, dryness, ncg, notes? }
  */
 export const createLabSample = async (sample) => {
   try {

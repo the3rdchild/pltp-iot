@@ -40,24 +40,76 @@ const toNumberOrNull = (value) => {
 };
 
 /**
- * Accepts either a full timestamp or a date-only value, and reports which it
- * was. That flag decides the comparison window later, so it has to be derived
- * here where the original string is still visible -- once stored, midnight from
- * a date-only value is indistinguishable from a sample truly taken at 00:00.
+ * result_at is a plain DATE: no clock, no timezone. Accepts 'YYYY-MM-DD' (what
+ * the date inputs send) or a full ISO string, of which only the date part is
+ * kept. Empty means "no result date"; anything non-empty that cannot be parsed
+ * throws, so the caller reports it instead of silently storing a wrong date.
  */
+const normalizeResultDate = (value) => {
+  if (value === null || value === undefined || value === '') return null;
+  const raw = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`Invalid result_at: ${JSON.stringify(value)}`);
+  }
+  return parsed.toISOString().slice(0, 10);
+};
+
+/**
+ * Accepts a wall-clock sampling time and reports whether it carried a clock.
+ * That flag decides the comparison window later, so it has to be derived here
+ * while the original string is still visible -- once stored, midnight from a
+ * date-only value is indistinguishable from a sample truly taken at 00:00.
+ *
+ * Wall clock, deliberately, and never routed through `new Date()`.
+ * sampled_at is `timestamp without time zone`, and everything it is compared
+ * against stores wall-clock digits too: parseHoneywellTimestamp pins the PIMS
+ * reading's own clock face with a literal 'Z', so sensor_data holds local
+ * readings. Parsing '2022-01-05T09:30:00' with `new Date()` would interpret it
+ * in the server's zone and re-emit it as UTC, storing 02:30 for a sample taken
+ * at 09:30 -- a seven-hour miss against a fifteen-minute comparison window,
+ * which fails silently as "no sensor data that day". Reading the digits out
+ * directly keeps 09:30 meaning 09:30.
+ */
+const SAMPLED_AT_PATTERN = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?$/;
+
 const parseSampledAt = (value) => {
   if (!value) return null;
 
   const raw = String(value).trim();
   if (!raw) return null;
 
-  // ISO-ish date with no time component
-  const dateOnlyIso = /^\d{4}-\d{2}-\d{2}$/.test(raw);
+  // An explicit zone is refused rather than guessed at. Converting it would
+  // mean assuming which zone the rest of the data is in, and getting that
+  // wrong is exactly the silent failure this function exists to prevent.
+  if (/[Zz]$/.test(raw) || /[+-]\d{2}:?\d{2}$/.test(raw)) {
+    throw new Error(
+      `sampled_at must be a wall-clock time without a timezone offset, got ${JSON.stringify(raw)}`
+    );
+  }
 
-  const parsed = new Date(raw);
-  if (Number.isNaN(parsed.getTime())) return null;
+  const match = raw.match(SAMPLED_AT_PATTERN);
+  if (!match) return null;
 
-  return { date: parsed, dateOnly: dateOnlyIso };
+  const [, year, month, day, hour, minute, second] = match;
+
+  // Reject impossible calendar dates (31 February and friends) without letting
+  // Date's timezone handling anywhere near the value.
+  const probe = new Date(Date.UTC(+year, +month - 1, +day));
+  if (probe.getUTCFullYear() !== +year || probe.getUTCMonth() !== +month - 1 || probe.getUTCDate() !== +day) {
+    return null;
+  }
+  if (hour !== undefined && (+hour > 23 || +minute > 59 || (second !== undefined && +second > 59))) {
+    return null;
+  }
+
+  const dateOnly = hour === undefined;
+  const time = dateOnly ? '00:00:00' : `${hour}:${minute}:${second ?? '00'}`;
+
+  // Handed to Postgres as a plain string; a `timestamp without time zone`
+  // column stores these digits verbatim.
+  return { value: `${year}-${month}-${day} ${time}`, dateOnly };
 };
 
 /**
@@ -67,6 +119,12 @@ const parseSampledAt = (value) => {
 const getLabSamples = async (req, res) => {
   try {
     const { limit = 100, offset = 0, start_date, end_date } = req.query;
+
+    // Clamped rather than passed through: an unbounded ?limit would hand back
+    // the whole table, and a non-numeric one reached Postgres as `LIMIT NaN`
+    // and came back as a 500.
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 100, 1), 1000);
+    const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
 
     let sql = `
       SELECT l.*, u.name AS created_by_name
@@ -86,7 +144,7 @@ const getLabSamples = async (req, res) => {
     }
 
     sql += ' ORDER BY l.sampled_at DESC';
-    params.push(parseInt(limit), parseInt(offset));
+    params.push(safeLimit, safeOffset);
     sql += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
 
     const result = await query(sql, params);
@@ -109,44 +167,56 @@ const getLabSamples = async (req, res) => {
  * validate identically -- a CSV row and a typed row are the same thing and must
  * not be able to drift apart.
  */
+// Columns written on every upsert, in the order their values are supplied.
+// The metric columns come from LAB_METRICS rather than a second hand-written
+// list: the values are built by mapping over that same array, so a column list
+// maintained separately could fall out of step with it and load pressure into
+// temperature -- a corruption with no error attached to it. One list, one
+// order, no way for them to disagree.
+const UPSERT_COLUMNS = [
+  'sampled_at',
+  'sampled_at_is_date_only',
+  'result_at',
+  ...LAB_METRICS,
+  'notes',
+  'source',
+  'source_file',
+  'created_by'
+];
+
+// Everything except the conflict key gets overwritten on re-import.
+const UPSERT_ASSIGNMENTS = UPSERT_COLUMNS.filter((c) => c !== 'sampled_at')
+  .map((c) => `${c} = EXCLUDED.${c}`)
+  .join(',\n       ');
+
+const UPSERT_SQL = `
+  INSERT INTO lab_samples (${UPSERT_COLUMNS.join(', ')}, updated_at)
+  VALUES (${UPSERT_COLUMNS.map((_, i) => `$${i + 1}`).join(', ')}, NOW())
+  ON CONFLICT (sampled_at) DO UPDATE SET
+       ${UPSERT_ASSIGNMENTS},
+       updated_at = NOW()
+  RETURNING id, (xmax = 0) AS inserted
+`;
+
 const upsertSample = async (sample, { source, sourceFile, userId }) => {
   const parsed = parseSampledAt(sample.sampled_at);
   if (!parsed) throw new Error(`Invalid or missing sampled_at: ${JSON.stringify(sample.sampled_at)}`);
 
   const values = LAB_METRICS.map((m) => toNumberOrNull(sample[m]));
   if (values.every((v) => v === null)) {
-    throw new Error(`Row for ${parsed.date.toISOString()} has no numeric readings at all`);
+    throw new Error(`Row for ${parsed.value} has no numeric readings at all`);
   }
 
-  const result = await query(
-    `INSERT INTO lab_samples
-       (sampled_at, sampled_at_is_date_only, pressure, temperature, flow_rate,
-        tds, dryness, ncg, notes, source, source_file, created_by, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
-     ON CONFLICT (sampled_at) DO UPDATE SET
-       sampled_at_is_date_only = EXCLUDED.sampled_at_is_date_only,
-       pressure    = EXCLUDED.pressure,
-       temperature = EXCLUDED.temperature,
-       flow_rate   = EXCLUDED.flow_rate,
-       tds         = EXCLUDED.tds,
-       dryness     = EXCLUDED.dryness,
-       ncg         = EXCLUDED.ncg,
-       notes       = EXCLUDED.notes,
-       source      = EXCLUDED.source,
-       source_file = EXCLUDED.source_file,
-       created_by  = EXCLUDED.created_by,
-       updated_at  = NOW()
-     RETURNING id, (xmax = 0) AS inserted`,
-    [
-      parsed.date.toISOString(),
-      parsed.dateOnly,
-      ...values,
-      sample.notes || null,
-      source,
-      sourceFile || null,
-      userId
-    ]
-  );
+  const result = await query(UPSERT_SQL, [
+    parsed.value,
+    parsed.dateOnly,
+    normalizeResultDate(sample.result_at),
+    ...values,
+    sample.notes || null,
+    source,
+    sourceFile || null,
+    userId
+  ]);
 
   return result.rows[0];
 };
@@ -180,6 +250,10 @@ const createLabSample = async (req, res) => {
 /**
  * POST /api/data/lab-samples/import
  * Body: { rows: [...], source_file?: string }
+ *
+ * Each row may carry result_at ('YYYY-MM-DD'). Rows without one came from a
+ * CSV that has no result column; the browser fills the fallback date picked
+ * in the import UI before sending.
  *
  * Rows arrive already parsed by the browser, which is also what drives the
  * preview the user confirms before importing. They are re-validated here

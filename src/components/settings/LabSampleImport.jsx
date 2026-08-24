@@ -6,6 +6,7 @@ import {
   CardContent,
   Typography,
   Button,
+  TextField,
   Alert,
   Chip,
   Stack,
@@ -29,12 +30,14 @@ import { importLabSamples, getLabSamples, deleteLabSample } from '../../utils/ap
 const PREVIEW_LIMIT = 10;
 const ERROR_PREVIEW_LIMIT = 10;
 
+// Dryness is deliberately not listed: the workflow no longer records it, so it
+// stays out of the preview and the stored table (the DB column remains for
+// historical rows, just in case).
 const METRIC_COLUMNS = [
   { key: 'pressure', label: 'Pressure' },
   { key: 'temperature', label: 'Temperature' },
   { key: 'flow_rate', label: 'Flow' },
   { key: 'tds', label: 'TDS' },
-  { key: 'dryness', label: 'Dryness' },
   { key: 'ncg', label: 'NCG' }
 ];
 
@@ -54,6 +57,9 @@ export default function LabSampleImport() {
 
   // CSV import state
   const [fileName, setFileName] = useState('');
+  // Fallback result date ('YYYY-MM-DD') applied to every row that carries no
+  // result_date of its own in the CSV.
+  const [resultDate, setResultDate] = useState('');
   const [parsed, setParsed] = useState(null); // { rows, errors, mapped, ignored }
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null); // { severity, message, errors }
@@ -103,8 +109,12 @@ export default function LabSampleImport() {
     setImporting(true);
     setImportResult(null);
     try {
-      // Strip parser-internal fields before sending
-      const rows = parsed.rows.map(({ _dateOnly, _line, ...row }) => row);
+      // Strip parser-internal fields before sending. Rows without a result
+      // date of their own fall back to the single date picked above.
+      const rows = parsed.rows.map(({ _dateOnly, _line, ...row }) => ({
+        ...row,
+        result_at: row.result_at ?? (resultDate || null)
+      }));
       const res = await importLabSamples(rows, fileName);
       const summary = res?.data;
       const message = summary
@@ -148,7 +158,8 @@ export default function LabSampleImport() {
         <Box mb={3}>
           <Typography variant="h6">Import CSV Data Lab</Typography>
           <Typography variant="body2" color="text.secondary">
-            Import data sampling lab dari file CSV (kolom: date, pressure, temperature, dryness, ncg, tds)
+            Import data sampling lab dari file CSV (kolom: date, pressure, temperature, ncg, tds;
+            kolom result_date opsional — dryness diabaikan)
           </Typography>
         </Box>
 
@@ -167,6 +178,16 @@ export default function LabSampleImport() {
               onChange={handleFileChange}
             />
           </Button>
+          <TextField
+            size="small"
+            type="date"
+            label="Tanggal Result"
+            value={resultDate}
+            onChange={(e) => setResultDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            helperText="Fallback baris tanpa result_date"
+            sx={{ minWidth: 200 }}
+          />
           {fileName && (
             <Typography variant="body2" color="text.secondary">{fileName}</Typography>
           )}
@@ -193,6 +214,7 @@ export default function LabSampleImport() {
                   <TableHead>
                     <TableRow>
                       <TableCell>Tanggal</TableCell>
+                      <TableCell>Tgl Result</TableCell>
                       {METRIC_COLUMNS.map((col) => (
                         <TableCell key={col.key} align="right">{col.label}</TableCell>
                       ))}
@@ -202,6 +224,7 @@ export default function LabSampleImport() {
                     {parsed.rows.slice(0, PREVIEW_LIMIT).map((row) => (
                       <TableRow key={row._line}>
                         <TableCell>{formatSampledAt(row.sampled_at)}</TableCell>
+                        <TableCell>{row.result_at || resultDate || '-'}</TableCell>
                         {METRIC_COLUMNS.map((col) => (
                           <TableCell key={col.key} align="right">{formatNumber(row[col.key])}</TableCell>
                         ))}
@@ -297,6 +320,7 @@ export default function LabSampleImport() {
               <TableHead>
                 <TableRow>
                   <TableCell>Tanggal Sampling</TableCell>
+                  <TableCell>Tgl Result</TableCell>
                   {METRIC_COLUMNS.map((col) => (
                     <TableCell key={col.key} align="right">{col.label}</TableCell>
                   ))}
@@ -308,6 +332,7 @@ export default function LabSampleImport() {
                 {samples.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell>{formatSampledAt(row.sampled_at)}</TableCell>
+                    <TableCell>{row.result_at || '-'}</TableCell>
                     {METRIC_COLUMNS.map((col) => (
                       <TableCell key={col.key} align="right">{formatNumber(row[col.key])}</TableCell>
                     ))}

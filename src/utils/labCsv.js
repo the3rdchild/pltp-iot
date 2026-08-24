@@ -10,15 +10,18 @@
 // of spellings map to each field rather than demanding one exact header.
 const COLUMN_ALIASES = {
   sampled_at: ['date', 'tanggal', 'tgl', 'sample_date', 'sampled_at', 'tanggal_sampling', 'tgl_sample'],
+  result_at: ['result_date', 'result', 'tanggal_result', 'tgl_result', 'tanggal_hasil', 'tgl_hasil'],
   pressure: ['pressure', 'tekanan', 'p', 'press'],
   temperature: ['temperature', 'temperatur', 'suhu', 'temp', 't'],
   flow_rate: ['flow_rate', 'flow', 'laju', 'debit'],
   tds: ['tds'],
-  dryness: ['dryness', 'dryness_fraction', 'kekeringan'],
   ncg: ['ncg']
 };
 
-const NUMERIC_FIELDS = ['pressure', 'temperature', 'flow_rate', 'tds', 'dryness', 'ncg'];
+// 'dryness' is deliberately absent: the workflow no longer records it, so a
+// dryness header in a CSV resolves to no field and surfaces as "diabaikan" in
+// the preview instead of being stored. The DB column stays for old rows.
+const NUMERIC_FIELDS = ['pressure', 'temperature', 'flow_rate', 'tds', 'ncg'];
 
 const normaliseHeader = (header) => header.trim().toLowerCase().replace(/[\s\-.]+/g, '_').replace(/[()]/g, '');
 
@@ -127,8 +130,14 @@ export const parseSampleDate = (raw) => {
   const ss = time[3] ? parseInt(time[3], 10) : 0;
   if (hh > 23 || mm > 59 || ss > 59) return { value: dateOnly, dateOnly: true };
 
-  const stamp = new Date(year, month - 1, day, hh, mm, ss);
-  return { value: stamp.toISOString(), dateOnly: false };
+  // Wall clock, deliberately -- see the note in the manual form. Going through
+  // Date.toISOString() would shift the value by the browser's UTC offset before
+  // it ever reached the API, and the API now rejects zone-bearing input rather
+  // than guess at it.
+  return {
+    value: `${year}-${pad(month)}-${pad(day)}T${pad(hh)}:${pad(mm)}:${pad(ss)}`,
+    dateOnly: false
+  };
 };
 
 /** Accepts `1,23` as well as `1.23` — Indonesian exports use either. */
@@ -205,7 +214,32 @@ export const parseLabCsv = (text) => {
       continue;
     }
 
-    const row = { sampled_at: date.value, _dateOnly: date.dateOnly, _line: lineNumber };
+    // Optional per-row result date. An empty cell means "none" (the UI
+    // fallback applies at import time); an unparsable cell is a row error,
+    // consistent with how the sampling date is treated.
+    let resultAt = null;
+    if (index.result_at !== undefined) {
+      const rawResult = (cells[index.result_at] ?? '').trim();
+      if (rawResult) {
+        const parsedResult = parseSampleDate(rawResult);
+        if (!parsedResult) {
+          result.errors.push({
+            line: lineNumber,
+            message: `Tanggal result tidak terbaca: "${rawResult}"`
+          });
+          continue;
+        }
+        // The result is a report date -- drop any clock time that rode along.
+        resultAt = parsedResult.dateOnly ? parsedResult.value : parsedResult.value.slice(0, 10);
+      }
+    }
+
+    const row = {
+      sampled_at: date.value,
+      result_at: resultAt,
+      _dateOnly: date.dateOnly,
+      _line: lineNumber
+    };
     let hasValue = false;
 
     NUMERIC_FIELDS.forEach((field) => {

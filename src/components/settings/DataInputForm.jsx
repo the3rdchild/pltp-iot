@@ -74,8 +74,8 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
     temperature: '',
     flow: '',
     tds: '',
-    dryness: '',
     ncg: '',
+    resultDate: '',
     dateObj: null,
     customDateStr: ''
   });
@@ -123,16 +123,22 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
     }
 
     const payload = {
-      sampled_at: form.dateObj.toISOString(),
+      // Wall clock, not toISOString(). The API stores sampled_at as a naive
+      // timestamp and compares it against sensor_data, which also holds
+      // wall-clock readings. Converting to UTC here would file a 09:30 sample
+      // under 02:30 in Jakarta and the comparison window -- fifteen minutes
+      // wide -- would quietly find nothing. toDatetimeLocalValue already
+      // formats the local components, which is exactly what is wanted.
+      sampled_at: toDatetimeLocalValue(form.dateObj),
+      result_at: form.resultDate || null,
       pressure: parseNumber(form.pressure),
       temperature: parseNumber(form.temperature),
       flow_rate: parseNumber(form.flow),
       tds: parseNumber(form.tds),
-      dryness: parseNumber(form.dryness),
       ncg: parseNumber(form.ncg)
     };
 
-    const hasValue = ['pressure', 'temperature', 'flow_rate', 'tds', 'dryness', 'ncg']
+    const hasValue = ['pressure', 'temperature', 'flow_rate', 'tds', 'ncg']
       .some((key) => payload[key] !== null);
     if (!hasValue) {
       setFeedback({ severity: 'error', message: 'Isi minimal satu nilai pengukuran' });
@@ -155,8 +161,8 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
         temperature: '',
         flow: '',
         tds: '',
-        dryness: '',
-        ncg: ''
+        ncg: '',
+        resultDate: ''
       }));
     } catch (error) {
       setFeedback({
@@ -197,10 +203,6 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
             <TextField fullWidth size="small" variant="outlined" label="NCG" name="ncg" value={form.ncg} onChange={handleNumberChange} />
           </Grid>
 
-          <Grid size={{ xs: 12, md: 2}}>
-            <TextField fullWidth size="small" variant="outlined" label="Dryness (%)" name="dryness" value={form.dryness} onChange={handleNumberChange} />
-          </Grid>
-
           <Grid size={{ xs:12, md: 12}} />
 
           {feedback && (
@@ -223,7 +225,19 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
               InputLabelProps={{ shrink: true }} 
               sx={{ minWidth: 260 }} 
               inputProps={{ step: 1 }} 
-              helperText="YYYY-MM-DD HH:MM:SS" />
+              helperText="Waktu ambil sample" />
+
+              <TextField
+                size="small"
+                type="date"
+                label="Tanggal Result"
+                name="resultDate"
+                value={form.resultDate}
+                onChange={(e) => setForm((p) => ({ ...p, resultDate: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
+                helperText="Tanggal hasil lab (opsional)"
+                sx={{ minWidth: 200 }}
+              />
 
               <TextField 
               size="small" 
