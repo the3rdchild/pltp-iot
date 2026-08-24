@@ -251,6 +251,23 @@ export const getLabComparison = async (metric, params = {}) => {
   }
 };
 
+/**
+ * Ask the backend to pull the newest readings from Honeywell into sensor_data.
+ *
+ * Used as a fallback when a live window comes back empty. The endpoint is
+ * throttled server-side and may answer `throttled: true` without contacting
+ * PIMS — that is a normal outcome, not a failure.
+ */
+export const syncHoneywellLiveData = async () => {
+  try {
+    const response = await apiClient.post('/honeywell/sync-live');
+    return response.data;
+  } catch (error) {
+    console.error('Error syncing Honeywell live data:', error);
+    throw error;
+  }
+};
+
 // ==================== PAGE-SPECIFIC APIs ====================
 
 /**
@@ -388,6 +405,7 @@ export default {
   getChartData,
   getStatsTable,
   getAggregatedStats,
+  syncHoneywellLiveData,
   getLabSamples,
   createLabSample,
   importLabSamples,

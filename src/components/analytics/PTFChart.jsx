@@ -9,10 +9,62 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import dayjs from 'dayjs';
 import MainCard from '../MainCard';
 import PropTypes from 'prop-types';
-import { getChartData, getLabComparison } from '../../utils/api';
+import { getChartData, getLabComparison, syncHoneywellLiveData } from '../../utils/api';
 import { alignLabSamplesToTimestamps } from '../../utils/labOverlay';
 import { generateRealTimeChartData } from '../../data/simulasi';
 import { generateAIData } from '../../data/chartData';
+
+// Points kept on screen in 'now' mode. The 1h seed arrives at 12-second
+// resolution (300 buckets), and only the newest slice of it is wanted here:
+// 60 points is about the last twelve minutes, which is the span a real-time
+// view is actually about. The live append then slides this same window.
+const NOW_WINDOW_POINTS = 60;
+
+// One definition of the three y-axes, used at creation AND on every update.
+//
+// It has to be shared: updateOptions replaces the `yaxis` branch wholesale, so
+// the two update sites used to send bare {seriesName, min, max} objects and
+// silently dropped the label formatters set at creation -- which is why the
+// axes rendered raw floats like "175.000000" with no unit.
+const buildYAxes = ({ labOverlayEnabled, pressure, temperature, flow }) => {
+  const axis = (seriesName, unit, color, range, opposite = false) => ({
+    seriesName,
+    ...(opposite && { opposite: true }),
+    min: range.min,
+    max: range.max,
+    labels: {
+      style: { colors: '#86868b', fontSize: '11px' },
+      formatter: (v) => (v === null || v === undefined ? '' : `${v.toFixed(0)} ${unit}`)
+    },
+    title: { text: `${seriesName}`, style: { color, fontSize: '12px', fontWeight: 400 } }
+  });
+
+  return [
+    axis(
+      labOverlayEnabled ? ['Pressure (barg)', LAB_PRESSURE_NAME] : 'Pressure (barg)',
+      'barg',
+      '#3b82f6',
+      pressure
+    ),
+    axis(
+      labOverlayEnabled ? ['Temperature (\u00b0C)', LAB_TEMPERATURE_NAME] : 'Temperature (\u00b0C)',
+      '\u00b0C',
+      '#ef4444',
+      temperature
+    ),
+    axis('Flow (t/h)', 't/h', '#22c55e', flow, true)
+  ];
+};
+
+// Padded range for one axis. Empty input yields a neutral 0-1 window rather
+// than the Infinity that Math.min of an empty array produces.
+const paddedRange = (values) => {
+  const nums = values.filter((v) => v !== null && v !== undefined && Number.isFinite(v));
+  if (nums.length === 0) return { min: 0, max: 1 };
+  const lo = Math.min(...nums);
+  const hi = Math.max(...nums);
+  return { min: Math.floor(lo * 0.95), max: Math.ceil(hi * 1.05) };
+};
 
 // Lab comparison overlay series (ground-truth lab samples, markers only)
 const LAB_PRESSURE_NAME = 'Lab Pressure (barg)';
@@ -41,7 +93,11 @@ const PTFChart = ({
   // rather than hardcoded: /api/data/chart/:metric returns 300 points per
   // series, so a fixed 60 here would visibly snap the chart down to a fifth of
   // its length the instant the first live value landed.
-  const nowBufferRef = useRef(60);
+  const nowBufferRef = useRef(NOW_WINDOW_POINTS);
+  // Whether the seeded history has been handed to the chart yet. Distinct from
+  // dbFetchedRef (the fetch finished) and from the ref being non-empty (the
+  // placeholder makes it non-empty immediately).
+  const nowSeedAppliedRef = useRef(false);
 
   const [timeRange, setTimeRange] = useState('now');
   const [pressureData, setPressureData] = useState([]);
@@ -166,6 +222,7 @@ const PTFChart = ({
       updateIntervalRef.current = null;
     }
     dbFetchedRef.current = false;
+    nowSeedAppliedRef.current = false;
 
     if (timeRange === 'now') {
       // "Now" mode: fetch latest DB data once, then update with live values
@@ -183,13 +240,34 @@ const PTFChart = ({
         }
 
         // Production: fetch last 1h data from DB as initial seed
-        const result = await fetchChartFromAPI('1h');
-        if (result) {
-          setPressureData(result.pressure);
-          setTemperatureData(result.temperature);
-          setFlowData(result.flow);
-          setTimestamps(result.timestamps);
-          nowBufferRef.current = Math.max(result.pressure.length, 60);
+        let result = await fetchChartFromAPI('1h');
+
+        // Nothing in the database for the last hour. Ask the backend to pull
+        // the newest readings straight from Honeywell, then try once more.
+        //
+        // Only ever attempted once per range selection: the sync endpoint is
+        // throttled server-side, and a genuinely idle plant would otherwise
+        // turn every page view into a retry loop. If it still comes back
+        // empty, an empty chart is the honest answer.
+        if (!result || result.pressure.length === 0) {
+          try {
+            await syncHoneywellLiveData();
+            result = await fetchChartFromAPI('1h');
+          } catch (err) {
+            console.error('Honeywell fallback sync failed:', err);
+          }
+        }
+
+        if (result && result.pressure.length > 0) {
+          // Newest slice only. The endpoint returns 300 buckets for an hour;
+          // keeping all of them would leave the live append needing hundreds of
+          // ticks to work through the history before the window truly moved.
+          const tail = (arr) => arr.slice(-NOW_WINDOW_POINTS);
+          setPressureData(tail(result.pressure));
+          setTemperatureData(tail(result.temperature));
+          setFlowData(tail(result.flow));
+          setTimestamps(tail(result.timestamps));
+          nowBufferRef.current = NOW_WINDOW_POINTS;
           dbFetchedRef.current = true;
         }
       };
@@ -320,11 +398,13 @@ const PTFChart = ({
     ], true);
 
     chartInstanceRef.current.updateOptions({
-      yaxis: [
-        { seriesName: 'Pressure (barg)', min: Math.floor(pMin * 0.95), max: Math.ceil(pMax * 1.05) },
-        { seriesName: 'Temperature (\u00b0C)', min: Math.floor(tMin * 0.95), max: Math.ceil(tMax * 1.05) },
-        { seriesName: 'Flow (t/h)', opposite: true, min: Math.floor(fMin * 0.95), max: Math.ceil(fMax * 1.05) }
-      ]
+      yaxis: buildYAxes({
+        // 'now' never carries the lab overlay, and this path only runs there.
+        labOverlayEnabled: false,
+        pressure: paddedRange(pressureRef.current),
+        temperature: paddedRange(tempRef.current),
+        flow: paddedRange(flowRef.current)
+      })
     }, false, false);
   }, []);
 
@@ -421,39 +501,12 @@ const PTFChart = ({
           style: { color: '#86868b', fontSize: '12px', fontWeight: 400 }
         }
       },
-      yaxis: [
-        {
-          seriesName: labOverlayEnabled ? ['Pressure (barg)', LAB_PRESSURE_NAME] : 'Pressure (barg)',
-          min: Math.floor(pressureMin * 0.95),
-          max: Math.ceil(pressureMax * 1.05),
-          labels: {
-            style: { colors: '#86868b', fontSize: '11px' },
-            formatter: (v) => v ? v.toFixed(0) + ' barg' : ''
-          },
-          title: { text: 'Pressure (barg)', style: { color: '#3b82f6', fontSize: '12px', fontWeight: 400 } }
-        },
-        {
-          seriesName: labOverlayEnabled ? ['Temperature (\u00b0C)', LAB_TEMPERATURE_NAME] : 'Temperature (\u00b0C)',
-          min: Math.floor(tempMin * 0.95),
-          max: Math.ceil(tempMax * 1.05),
-          labels: {
-            style: { colors: '#86868b', fontSize: '11px' },
-            formatter: (v) => v ? v.toFixed(0) + ' \u00b0C' : ''
-          },
-          title: { text: 'Temperature (\u00b0C)', style: { color: '#ef4444', fontSize: '12px', fontWeight: 400 } }
-        },
-        {
-          seriesName: 'Flow (t/h)',
-          opposite: true,
-          min: Math.floor(flowMin * 0.95),
-          max: Math.ceil(flowMax * 1.05),
-          labels: {
-            style: { colors: '#86868b', fontSize: '11px' },
-            formatter: (v) => v ? v.toFixed(0) + ' t/h' : ''
-          },
-          title: { text: 'Flow (t/h)', style: { color: '#22c55e', fontSize: '12px', fontWeight: 400 } }
-        }
-      ],
+      yaxis: buildYAxes({
+        labOverlayEnabled,
+        pressure: { min: Math.floor(pressureMin * 0.95), max: Math.ceil(pressureMax * 1.05) },
+        temperature: { min: Math.floor(tempMin * 0.95), max: Math.ceil(tempMax * 1.05) },
+        flow: { min: Math.floor(flowMin * 0.95), max: Math.ceil(flowMax * 1.05) }
+      }),
       grid: {
         borderColor: '#f1f1f1',
         strokeDashArray: 0,
@@ -502,8 +555,17 @@ const PTFChart = ({
     if (!chartInstanceRef.current) return;
     if (pressureData.length === 0 || temperatureData.length === 0 || flowData.length === 0) return;
 
-    // For "now" mode: only update on initial data load, then live updates take over
-    if (timeRange === 'now' && dbFetchedRef.current && pressureRef.current.length > 0) return;
+    // For "now" mode the seed must land exactly once, and live updates own the
+    // series from then on.
+    //
+    // This used to test `pressureRef.current.length > 0`, which was already
+    // true before the seed arrived: the chart is created up front with a
+    // placeholder array and line 'pressureRef.current = initialPressure' copies
+    // it straight into the ref. Combined with dbFetchedRef -- set by the seed
+    // fetch itself -- the guard fired on the very update meant to apply the
+    // seed, so the fetched hour was discarded and the chart kept the
+    // placeholder, filling in one live value at a time from the right.
+    if (timeRange === 'now' && nowSeedAppliedRef.current) return;
 
     // Update refs
     pressureRef.current = pressureData.slice();
@@ -530,25 +592,16 @@ const PTFChart = ({
     // Smooth update: update series and axis without destroying chart
     chartInstanceRef.current.updateOptions({
       xaxis: { categories },
-      yaxis: [
-        {
-          seriesName: labOverlayEnabled ? ['Pressure (barg)', LAB_PRESSURE_NAME] : 'Pressure (barg)',
-          min: Math.floor(pressureMin * 0.95),
-          max: Math.ceil(pressureMax * 1.05)
-        },
-        {
-          seriesName: labOverlayEnabled ? ['Temperature (\u00b0C)', LAB_TEMPERATURE_NAME] : 'Temperature (\u00b0C)',
-          min: Math.floor(tempMin * 0.95),
-          max: Math.ceil(tempMax * 1.05)
-        },
-        {
-          seriesName: 'Flow (t/h)',
-          opposite: true,
-          min: Math.floor(flowMin * 0.95),
-          max: Math.ceil(flowMax * 1.05)
-        }
-      ]
+      yaxis: buildYAxes({
+        labOverlayEnabled,
+        pressure: paddedRange(pressureVals),
+        temperature: paddedRange(tempVals),
+        flow: paddedRange(flowVals)
+      })
     }, false, false);
+
+    // From here the seed is on screen; live appends own the series after this.
+    if (timeRange === 'now') nowSeedAppliedRef.current = true;
 
     chartInstanceRef.current.updateSeries([
       { name: 'Pressure (barg)', data: pressureData },

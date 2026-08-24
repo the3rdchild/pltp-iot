@@ -7,18 +7,62 @@ const {
   formatToHoneywellTimestamp
 } = require('../services/honeywellService');
 
+// Minimum gap between two syncs, across all callers.
+//
+// Every call reaches out to the production PIMS, so this endpoint must not be
+// usable as an amplifier: without a floor, a handful of open dashboards each
+// finding an empty window would fan out into a burst of PIMS requests for data
+// that has not changed. fetchAndStoreLiveData pulls the last five minutes, so
+// syncing more often than this cannot surface anything new anyway.
+const SYNC_MIN_INTERVAL_MS = parseInt(process.env.HONEYWELL_SYNC_MIN_INTERVAL_MS, 10) || 30000;
+
+// Process-local, deliberately. It throttles this instance, which is what
+// protects PIMS from this instance; a shared limiter across replicas would need
+// coordination that is not worth it for a fallback path.
+let lastSyncAt = 0;
+let inFlightSync = null;
+
 /**
  * POST /api/honeywell/sync-live
- * Fetch latest data from Honeywell and store in database
+ * Fetch latest data from Honeywell and store in database.
+ *
+ * Doubles as the fallback the dashboard uses when the database has no recent
+ * readings -- see the 'now' seed in PTFChart. Requires a signed-in session:
+ * it both spends production PIMS capacity and writes to sensor_data.
  */
 const syncLiveData = async (req, res) => {
   try {
+    const sinceLast = Date.now() - lastSyncAt;
+
+    if (sinceLast < SYNC_MIN_INTERVAL_MS && !inFlightSync) {
+      // Not an error: the caller asked for fresh data and fresh data is what is
+      // already there. Reported so the client can tell this apart from a sync
+      // that genuinely ran and found nothing.
+      return res.json({
+        success: true,
+        throttled: true,
+        message: 'Sync skipped: a sync ran recently',
+        data: { retry_after_ms: SYNC_MIN_INTERVAL_MS - sinceLast }
+      });
+    }
+
     console.log('Starting Honeywell live data sync...');
 
-    const result = await fetchAndStoreLiveData();
+    // Concurrent callers share one upstream request rather than each opening
+    // their own -- the whole point is to spare PIMS, and they all want the
+    // same five-minute window.
+    if (!inFlightSync) {
+      inFlightSync = fetchAndStoreLiveData().finally(() => {
+        lastSyncAt = Date.now();
+        inFlightSync = null;
+      });
+    }
+
+    const result = await inFlightSync;
 
     res.json({
       success: true,
+      throttled: false,
       message: 'Live data synced successfully',
       data: result
     });
