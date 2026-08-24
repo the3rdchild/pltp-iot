@@ -43,6 +43,13 @@ const METRICS = [
 const LAB_COLOR = '#9271FF';
 const REF_COLOR = '#3b82f6';
 
+// Sampling runs roughly monthly, so twelve points is about the last year --
+// enough to show a seasonal pattern while leaving the x-axis labels readable.
+// Nothing is discarded: "Tampilkan semua" reveals the rest on demand. Lab
+// readings are individual measurements, so hiding some is a display choice,
+// never an aggregation.
+const DEFAULT_VISIBLE = 100;
+
 // Human name for the series the lab value is being checked against. The API
 // reports it as `table.column`; spelling it out keeps the legend honest about
 // the fact that NCG is compared to a prediction, not to a sensor.
@@ -60,6 +67,7 @@ export default function LabComparisonChart() {
   const [comparedAgainst, setComparedAgainst] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showAll, setShowAll] = useState(false);
 
   const active = METRICS.find((m) => m.key === metric) ?? METRICS[0];
 
@@ -82,26 +90,32 @@ export default function LabComparisonChart() {
     load(metric);
   }, [metric, load]);
 
+  // The API returns samples oldest-first, so the newest window is the tail.
+  const visible = useMemo(
+    () => (showAll ? samples : samples.slice(-DEFAULT_VISIBLE)),
+    [samples, showAll]
+  );
+
   const view = useMemo(() => {
-    const categories = samples.map((s) => formatStoredTimestamp(s.sampled_at, { short: true }));
-    const lab = samples.map((s) => (s.lab_value === null ? null : Number(s.lab_value)));
-    const reference = samples.map((s) => (s.comparison_avg === null ? null : Number(s.comparison_avg)));
+    const categories = visible.map((s) => formatStoredTimestamp(s.sampled_at, { short: true }));
+    const lab = visible.map((s) => (s.lab_value === null ? null : Number(s.lab_value)));
+    const reference = visible.map((s) => (s.comparison_avg === null ? null : Number(s.comparison_avg)));
 
     // Samples whose window caught no sensor rows at all. Counted rather than
     // hidden: an empty comparison line usually means the sensor history simply
     // does not reach back to that sampling date, and that is worth saying out
     // loud instead of leaving as a mysterious gap.
-    const unmatched = samples.filter((s) => s.comparison_avg === null).length;
+    const unmatched = visible.filter((s) => s.comparison_avg === null).length;
 
-    const deltas = samples
+    const deltas = visible
       .filter((s) => s.difference !== null && s.difference !== undefined)
       .map((s) => Math.abs(Number(s.difference)));
     const meanAbsDelta = deltas.length
       ? deltas.reduce((sum, d) => sum + d, 0) / deltas.length
       : null;
 
-    return { categories, lab, reference, unmatched, matched: samples.length - unmatched, meanAbsDelta };
-  }, [samples]);
+    return { categories, lab, reference, unmatched, matched: visible.length - unmatched, meanAbsDelta };
+  }, [visible]);
 
   // Create once, then update in place. Rebuilding the instance on every data
   // change makes the card visibly flash, which is what the analytics charts in
@@ -118,16 +132,21 @@ export default function LabComparisonChart() {
         zoom: { enabled: false },
         animations: { enabled: false }
       },
+      // Per-series types rather than one line chart with a zero-width stroke.
+      // The zero-width trick relied on `markers.size` and `stroke.width` being
+      // read as per-series arrays, and when that collapsed the lab series drew
+      // neither a line nor a marker and vanished entirely. An explicit
+      // 'scatter' renders its points regardless of stroke settings, which is
+      // also the honest shape for the data: lab readings are discrete
+      // measurements, not samples of a continuous signal.
       series: [
-        { name: 'Lab', data: [] },
-        { name: 'Pembanding', data: [] }
+        { name: 'Lab', type: 'scatter', data: [] },
+        { name: 'Pembanding', type: 'line', data: [] }
       ],
       colors: [LAB_COLOR, REF_COLOR],
-      stroke: { curve: 'straight', width: [0, 2.5], dashArray: [0, 0] },
-      // Lab readings are discrete measurements, not a continuous signal —
-      // drawing them as markers on a line of width 0 says "these are the points
-      // we actually have" rather than implying values in between.
-      markers: { size: [6, 0], strokeWidth: 0, hover: { size: 8 } },
+      stroke: { curve: 'straight', width: 2.5 },
+      // Scalar, so there is no per-series array left to collapse.
+      markers: { size: 5, strokeWidth: 0, hover: { size: 8 } },
       dataLabels: { enabled: false },
       legend: { show: true, position: 'top', horizontalAlign: 'right', markers: { radius: 4 } },
       grid: { borderColor: '#eef0f4', strokeDashArray: 4, padding: { left: 12, right: 16 } },
@@ -140,7 +159,12 @@ export default function LabComparisonChart() {
       },
       yaxis: {
         forceNiceScale: true,
-        labels: { style: { colors: '#8b93a7', fontSize: '11px' } },
+        labels: {
+          style: { colors: '#8b93a7', fontSize: '11px' },
+          // Without an explicit formatter the axis prints the raw float, so a
+          // tick at 7.5 rendered as "7.500000000000000".
+          formatter: (v) => (v === null || v === undefined ? '' : Number(v).toFixed(2))
+        },
         title: { text: '', style: { fontSize: '12px', color: '#8b93a7' } }
       },
       tooltip: { shared: true, intersect: false },
@@ -164,7 +188,20 @@ export default function LabComparisonChart() {
     chart.updateOptions(
       {
         xaxis: { categories: view.categories },
-        yaxis: { title: { text: `${active.label} (${active.unit})` } },
+        // The complete yaxis object, not just the title: updateOptions replaces
+        // this branch wholesale, so sending only `title` dropped the label
+        // styling and formatter set at creation.
+        yaxis: {
+          forceNiceScale: true,
+          labels: {
+            style: { colors: '#8b93a7', fontSize: '11px' },
+            formatter: (v) => (v === null || v === undefined ? '' : Number(v).toFixed(active.decimals))
+          },
+          title: {
+            text: `${active.label} (${active.unit})`,
+            style: { fontSize: '12px', color: '#8b93a7' }
+          }
+        },
         tooltip: {
           y: {
             formatter: (v) => (v === null || v === undefined ? 'tidak ada data' : `${v.toFixed(active.decimals)} ${active.unit}`)
@@ -177,13 +214,17 @@ export default function LabComparisonChart() {
       false
     );
 
+    // `type` has to be repeated here -- updateSeries replaces the series
+    // objects outright, and dropping it would send both series back to the
+    // chart-level 'line' type.
     chart.updateSeries([
-      { name: 'Lab', data: view.lab },
-      { name: referenceLabel(comparedAgainst), data: view.reference }
+      { name: 'Lab', type: 'scatter', data: view.lab },
+      { name: referenceLabel(comparedAgainst), type: 'line', data: view.reference }
     ]);
   }, [view, active, comparedAgainst]);
 
-  const rows = useMemo(() => [...samples].reverse(), [samples]);
+  // Newest first in the table, matching every other listing in this project.
+  const rows = useMemo(() => [...visible].reverse(), [visible]);
 
   return (
     <MainCard>
@@ -228,8 +269,18 @@ export default function LabComparisonChart() {
       )}
 
       {!loading && !error && samples.length > 0 && (
-        <Stack direction="row" sx={{ gap: 1, mb: 2, flexWrap: 'wrap' }}>
-          <Chip size="small" label={`${samples.length} sampel lab`} />
+        <Stack direction="row" sx={{ gap: 1, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* Every count below describes the window on screen, not the whole
+              table -- a chip reading "43 sampel" beside a chart showing 12
+              would make the averages beside it look wrong. */}
+          <Chip
+            size="small"
+            label={
+              showAll
+                ? `${samples.length} sampel lab`
+                : `Menampilkan ${visible.length} dari ${samples.length} sampel`
+            }
+          />
           <Chip
             size="small"
             color={view.matched > 0 ? 'success' : 'default'}
@@ -250,6 +301,12 @@ export default function LabComparisonChart() {
               variant="outlined"
               label={`Rata-rata selisih ${view.meanAbsDelta.toFixed(active.decimals)} ${active.unit}`}
             />
+          )}
+
+          {samples.length > DEFAULT_VISIBLE && (
+            <Button size="small" variant="text" onClick={() => setShowAll((v) => !v)} sx={{ textTransform: 'none' }}>
+              {showAll ? `Tampilkan ${DEFAULT_VISIBLE} terakhir` : `Tampilkan semua (${samples.length})`}
+            </Button>
           )}
         </Stack>
       )}
