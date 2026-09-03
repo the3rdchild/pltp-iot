@@ -432,23 +432,28 @@ const RealTimeDataChart = ({
     const overlayColors = [];
     const overlayStrokeWidth = [];
     const overlayDashArray = [];
-    const overlayFillOpacity = [];
     const overlayMarkerSize = [];
 
     if (labChartData) {
-      overlaySeries.push({ name: `Lab ${yAxisTitle}`, data: labChartData });
+      // type: 'line' on the series entry (not a fill.opacity/type array) is
+      // what actually suppresses the area fill for this series in a combo
+      // chart. A gradient fill's visible alpha comes from
+      // gradient.opacityFrom/opacityTo, which apply to every series alike and
+      // aren't arrayed -- an earlier fill.opacity: [1, 0] attempt here had no
+      // effect for that reason. It only looked right for lab (sparse, mostly
+      // null -- nothing to fill) until a dense series (prediction) exposed it
+      // as a solid block.
+      overlaySeries.push({ name: `Lab ${yAxisTitle}`, type: 'line', data: labChartData });
       overlayColors.push(LAB_SERIES_COLOR);
       overlayStrokeWidth.push(0);
       overlayDashArray.push(0);
-      overlayFillOpacity.push(0);
       overlayMarkerSize.push(6);
     }
     if (predictionDataType) {
-      overlaySeries.push({ name: predictionName, data: predictionData });
+      overlaySeries.push({ name: predictionName, type: 'line', data: predictionData });
       overlayColors.push(PREDICTION_STROKE_COLOR);
       overlayStrokeWidth.push(2);
       overlayDashArray.push(6);
-      overlayFillOpacity.push(0);
       overlayMarkerSize.push(0);
     }
     const hasOverlay = !showComparisonData && overlaySeries.length > 0;
@@ -459,7 +464,7 @@ const RealTimeDataChart = ({
           { name: 'AI Data', data: aiData.length > 0 ? aiData : Array(60).fill(0) }
         ]
       : [
-          { name: yAxisTitle, data: chartData.length > 0 ? chartData : Array(60).fill(0) },
+          { name: yAxisTitle, type: 'area', data: chartData.length > 0 ? chartData : Array(60).fill(0) },
           ...overlaySeries
         ];
 
@@ -490,6 +495,9 @@ const RealTimeDataChart = ({
         colors: colors
       },
       fill: {
+        // Only ever paints the primary series -- overlay entries are
+        // type: 'line' above, which combo charts never fill regardless of
+        // this config.
         type: 'gradient',
         gradient: {
           shadeIntensity: 1,
@@ -497,7 +505,6 @@ const RealTimeDataChart = ({
           opacityTo: 0.05,
           stops: [0, 90, 100]
         },
-        opacity: hasOverlay ? [1, ...overlayFillOpacity] : undefined,
         colors: colors
       },
       dataLabels: { enabled: false },
@@ -659,9 +666,12 @@ const RealTimeDataChart = ({
           { name: 'AI Data', data: aiData }
         ]
       : [
-          { name: yAxisTitle, data: chartData },
-          ...(labChartData ? [{ name: `Lab ${yAxisTitle}`, data: labChartData }] : []),
-          ...(predictionDataType ? [{ name: predictionName, data: predictionData }] : [])
+          { name: yAxisTitle, type: 'area', data: chartData },
+          // type: 'line' suppresses the area fill for these overlays -- see
+          // the matching comment in the chart-init effect above for why the
+          // fill.opacity array alone isn't enough for a gradient fill.
+          ...(labChartData ? [{ name: `Lab ${yAxisTitle}`, type: 'line', data: labChartData }] : []),
+          ...(predictionDataType ? [{ name: predictionName, type: 'line', data: predictionData }] : [])
         ];
 
     const updatedCategories = apiTimestamps.length > 0
