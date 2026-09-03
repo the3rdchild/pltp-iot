@@ -44,6 +44,16 @@ const TDS = () => {
     const tdsValue = liveData?.value;
     const changePct = liveData?.change_pct;
 
+    // Live predicted TDS (ai2-tds-30d nowcast), overlaid on the same chart as
+    // the sensor below. Same hook/pattern as tdsValue above -- 'tds_predicted'
+    // is just another metric key, resolved server-side to the ai2_tds table.
+    const { liveData: predictedLiveData } = useAnalyticsData('tds_predicted', timeRange, undefined, 3000, {
+        live: true,
+        chart: false,
+        table: false
+    });
+    const tdsPredictedValue = predictedLiveData?.value;
+
     // Real-time statistics tracking
     const tdsStats = useMetricStats('tds', tdsValue);
 
@@ -297,6 +307,9 @@ const TDS = () => {
                 fetchFromApi={true}
                 liveValue={tdsValue}
                 labMetric="tds"
+                predictionDataType="tds_predicted"
+                predictionLiveValue={tdsPredictedValue}
+                predictionName="Prediksi TDS (AI2)"
               />
             </Grid>
 
