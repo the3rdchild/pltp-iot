@@ -9,11 +9,17 @@ const VALID_METRICS = [
   'tds', 'pressure', 'temperature', 'flow_rate', 'flow',
   'gen_output', 'active_power', 'voltage', 'gen_reactive_power', 'reactive_power',
   'speed_detection', 'speed', 'current', 'gen_power_factor', 'gen_frequency',
-  'dryness', 'ncg'
+  'dryness', 'ncg', 'tds_predicted'
 ];
 
 // AI2 metrics — stored in ai2 table, not sensor_data
 const AI2_METRIC_COL = { dryness: 'dryness_predict', ncg: 'ncg_predict' };
+
+// AI2 TDS nowcast (ai2-tds-30d) — its own table `ai2_tds`, kept separate from
+// AI2_METRIC_COL/`ai2` per D19/D20 (new table is safe, an existing column
+// already consumed by the dashboard is not). Migration for `ai2_tds` has not
+// run yet as of this writing — see scripts/init_ai2_tds.sql in AI_Pertasmart_V3.
+const AI2_TDS_METRIC_COL = { tds_predicted: 'tds_predict' };
 
 /**
  * Points returned per chart series.
@@ -70,12 +76,32 @@ const getLiveData = async (req, res) => {
     const rawData = result.rows[0];
     const processedData = processSensorData(rawData);
 
+    // Latest AI2 TDS nowcast, if any. Isolated try/catch: ai2_tds is a new
+    // table whose migration hasn't run yet (per contract with Agent 20), and
+    // this endpoint feeds the whole dashboard — a missing/empty table here
+    // must degrade to `tds_predicted: null`, not break every other metric.
+    let tdsPredictedRow = null;
+    try {
+      const predResult = await query(
+        `SELECT tds_predict, processed_at FROM ai2_tds ORDER BY processed_at DESC LIMIT 1`
+      );
+      tdsPredictedRow = predResult.rows[0] || null;
+    } catch (predError) {
+      console.error('ai2_tds not available yet (expected before migration):', predError.message);
+    }
+
     // Build response with all metrics and their anomaly status
     const metrics = {
       tds: {
         value: processedData.tds,
         unit: 'ppm',
         ...getMetricAnomalyStatus('tds', processedData.tds)
+      },
+      tds_predicted: {
+        value: tdsPredictedRow?.tds_predict != null ? parseFloat(tdsPredictedRow.tds_predict) : null,
+        unit: 'ppm',
+        status: 'normal',
+        details: null
       },
       pressure: {
         value: processedData.pressure,
@@ -167,6 +193,33 @@ const getLiveMetric = async (req, res) => {
       });
     }
 
+    // AI2 TDS nowcast — its own table, not sensor_data
+    if (AI2_TDS_METRIC_COL[metric]) {
+      const col = AI2_TDS_METRIC_COL[metric];
+      const predResult = await query(
+        `SELECT ${col} AS value, processed_at AS timestamp FROM ai2_tds ORDER BY processed_at DESC LIMIT 1`
+      );
+
+      if (predResult.rows.length === 0) {
+        return res.json({
+          success: true,
+          data: null,
+          message: 'No prediction data available'
+        });
+      }
+
+      const row = predResult.rows[0];
+      return res.json({
+        success: true,
+        data: {
+          metric,
+          value: row.value !== null ? parseFloat(row.value) : null,
+          timestamp: row.timestamp,
+          device_id: 'ai2_tds'
+        }
+      });
+    }
+
     const result = await query(
       `SELECT * FROM sensor_data ORDER BY timestamp DESC LIMIT 1`
     );
@@ -236,7 +289,10 @@ const getChartData = async (req, res) => {
 
     let chartData;
 
-    if (isCalculatedMetric) {
+    if (AI2_TDS_METRIC_COL[metric]) {
+      // AI2 TDS nowcast — bucketed from its own table, not sensor_data
+      chartData = await getAi2TdsChartData(AI2_TDS_METRIC_COL[metric], config);
+    } else if (isCalculatedMetric) {
       // For calculated metrics, fetch raw data and calculate
       chartData = await getCalculatedMetricChartData(metric, config);
     } else {
@@ -325,6 +381,73 @@ const getDirectMetricChartData = async (column, config) => {
         COUNT(*) AS data_points
       FROM sensor_data s, range_start r
       WHERE s.timestamp >= NOW() - INTERVAL '${interval}'
+        AND s.${column} IS NOT NULL
+      GROUP BY 1, r.start_epoch
+      ORDER BY bucket ASC
+      LIMIT ${points}
+    `;
+  }
+
+  const result = await query(sql);
+
+  return result.rows.map(row => ({
+    timestamp: row.bucket,
+    min: row.min_value !== null ? parseFloat(parseFloat(row.min_value).toFixed(2)) : null,
+    avg: row.avg_value !== null ? parseFloat(parseFloat(row.avg_value).toFixed(2)) : null,
+    max: row.max_value !== null ? parseFloat(parseFloat(row.max_value).toFixed(2)) : null,
+    data_points: parseInt(row.data_points)
+  }));
+};
+
+/**
+ * Chart data for AI2 TDS nowcast metrics (ai2_tds table).
+ * Mirrors getDirectMetricChartData's epoch bucketing exactly, just sourced
+ * from ai2_tds/processed_at instead of sensor_data/timestamp, so the two
+ * series line up on the same bucket grid when overlaid on one chart.
+ */
+const getAi2TdsChartData = async (column, config) => {
+  const { interval, bucketSeconds, points } = config;
+
+  let sql;
+
+  if (interval === null) {
+    sql = `
+      WITH data_span AS (
+        SELECT
+          EXTRACT(EPOCH FROM MIN(processed_at)) AS min_epoch,
+          EXTRACT(EPOCH FROM MAX(processed_at)) AS max_epoch
+        FROM ai2_tds
+        WHERE ${column} IS NOT NULL
+      ),
+      bucket_size AS (
+        SELECT GREATEST((max_epoch - min_epoch) / ${points}, 1) AS bs, min_epoch
+        FROM data_span
+      )
+      SELECT
+        TO_TIMESTAMP(FLOOR((EXTRACT(EPOCH FROM s.processed_at) - b.min_epoch) / b.bs) * b.bs + b.min_epoch) AS bucket,
+        MIN(s.${column}) AS min_value,
+        AVG(s.${column}) AS avg_value,
+        MAX(s.${column}) AS max_value,
+        COUNT(*) AS data_points
+      FROM ai2_tds s, bucket_size b
+      WHERE s.${column} IS NOT NULL
+      GROUP BY 1, b.bs, b.min_epoch
+      ORDER BY bucket ASC
+      LIMIT ${points}
+    `;
+  } else {
+    sql = `
+      WITH range_start AS (
+        SELECT EXTRACT(EPOCH FROM NOW() - INTERVAL '${interval}') AS start_epoch
+      )
+      SELECT
+        TO_TIMESTAMP(FLOOR((EXTRACT(EPOCH FROM s.processed_at) - r.start_epoch) / ${bucketSeconds}) * ${bucketSeconds} + r.start_epoch) AS bucket,
+        MIN(s.${column}) AS min_value,
+        AVG(s.${column}) AS avg_value,
+        MAX(s.${column}) AS max_value,
+        COUNT(*) AS data_points
+      FROM ai2_tds s, range_start r
+      WHERE s.processed_at >= NOW() - INTERVAL '${interval}'
         AND s.${column} IS NOT NULL
       GROUP BY 1, r.start_epoch
       ORDER BY bucket ASC
