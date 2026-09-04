@@ -119,12 +119,19 @@ export const getDashboardStats = async () => {
  * Get chart data for a metric
  * @param {string} metric - metric name
  * @param {string} range - time range (1h, 1d, 7d, 1m, all)
+ * @param {string} [endTime] - optional ISO instant to anchor the bucket
+ *        window to, instead of the server's own NOW(). Pass the SAME value
+ *        for two metrics you intend to overlay on one chart (e.g. a sensor
+ *        + its prediction) so both come back on identical bucket
+ *        boundaries -- otherwise two separate requests each anchor
+ *        independently, and at narrow bucket widths (short ranges) that
+ *        drift is enough to visibly misalign the two series.
  */
-export const getChartData = async (metric, range = '1d') => {
+export const getChartData = async (metric, range = '1d', endTime) => {
   try {
     const url = buildURL(apiConfig.endpoints.analytics.chartData, { metric });
     const response = await apiClient.get(url, {
-      params: { range }
+      params: { range, ...(endTime ? { end_time: endTime } : {}) }
     });
     return response;
   } catch (error) {
