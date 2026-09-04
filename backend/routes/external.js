@@ -57,7 +57,9 @@ router.get('/ai2/stats', getAi2AggregatedStats);
 // POST /api/external/ai2 - Receive AI2 predictions (dryness & NCG)
 router.post('/ai2', receiveAi2Data);
 
-// GET /api/external/ai1a - Get latest AI1a anomaly detection results
+// GET /api/external/ai1a - Get latest AI1a anomaly detection results.
+// Accepts source_table=ai1a (default, production) | ai1a_shadow (deliberate
+// override -- see AI1A_SOURCE_TABLES in externalController.js).
 router.get('/ai1a', getAi1aData);
 
 // GET /api/external/ai1a/direction - Get AI1a results annotated with process
