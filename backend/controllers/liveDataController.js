@@ -261,12 +261,12 @@ const getLiveMetric = async (req, res) => {
 /**
  * GET /api/data/chart/:metric
  * Get chart data with time range aggregation
- * Query params: range (1h, 1d, 7d, 1m, all)
+ * Query params: range (1h, 1d, 7d, 1m, all), end_time (optional ISO string)
  */
 const getChartData = async (req, res) => {
   try {
     const { metric } = req.params;
-    const { range = '1d' } = req.query;
+    const { range = '1d', end_time } = req.query;
 
     // Validate metric
     if (!VALID_METRICS.includes(metric)) {
@@ -287,18 +287,40 @@ const getChartData = async (req, res) => {
       });
     }
 
+    // Anchor the bucket grid to an explicit instant instead of each query's
+    // own NOW() -- lets a caller fetch two metrics (e.g. sensor tds +
+    // ai2_tds tds_predicted, overlaid on one chart) against the IDENTICAL
+    // window/bucket boundaries by passing the same end_time to both calls.
+    // Without this, two back-to-back requests each anchor to their own
+    // NOW(), and at narrow bucket widths (12s at range=1h) that few hundred
+    // ms-to-seconds of drift between requests is enough to shift a value
+    // into a different bucket on each series -- this is what caused the
+    // TDS prediction overlay to disappear at 'now'/'1h' while working fine
+    // at wider ranges (2026-09-04, see PROJECT_NOTES.md). Defaults to NOW()
+    // when omitted -- fully backward compatible for every other caller.
+    let anchor = new Date();
+    if (end_time) {
+      anchor = new Date(end_time);
+      if (Number.isNaN(anchor.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid end_time -- must be a parseable date/ISO string'
+        });
+      }
+    }
+
     let chartData;
 
     if (AI2_TDS_METRIC_COL[metric]) {
       // AI2 TDS nowcast — bucketed from its own table, not sensor_data
-      chartData = await getAi2TdsChartData(AI2_TDS_METRIC_COL[metric], config);
+      chartData = await getAi2TdsChartData(AI2_TDS_METRIC_COL[metric], config, anchor);
     } else if (isCalculatedMetric) {
       // For calculated metrics, fetch raw data and calculate
       chartData = await getCalculatedMetricChartData(metric, config);
     } else {
       // For direct DB columns, use SQL aggregation
       const dbColumn = getDbColumnForMetric(metric);
-      chartData = await getDirectMetricChartData(dbColumn, config);
+      chartData = await getDirectMetricChartData(dbColumn, config, anchor);
     }
 
     // Get limit info for the metric
@@ -335,8 +357,12 @@ const getChartData = async (req, res) => {
 /**
  * Get chart data for direct database column metrics
  * Uses epoch-based bucketing for consistent 60-point output
+ *
+ * @param {Date} anchor - instant the fixed-interval window ends at (see
+ *        getChartData). Ignored for the "all" branch, which anchors to the
+ *        data's own span instead -- not part of the bug this was added for.
  */
-const getDirectMetricChartData = async (column, config) => {
+const getDirectMetricChartData = async (column, config, anchor) => {
   const { interval, bucketSeconds, points } = config;
 
   let sql;
@@ -368,10 +394,15 @@ const getDirectMetricChartData = async (column, config) => {
       LIMIT ${points}
     `;
   } else {
-    // Fixed interval range: use epoch-based bucketing
+    // Fixed interval range: use epoch-based bucketing, anchored to the
+    // caller-supplied instant (not each query's own NOW()) -- see the
+    // comment on `anchor` in getChartData for why. The explicit upper bound
+    // (`<= $1`) is new too: previously the window was open-ended on top, so
+    // two sequential requests could each catch a slightly different set of
+    // just-arrived rows even before considering bucket drift.
     sql = `
       WITH range_start AS (
-        SELECT EXTRACT(EPOCH FROM NOW() - INTERVAL '${interval}') AS start_epoch
+        SELECT EXTRACT(EPOCH FROM $1::timestamptz - INTERVAL '${interval}') AS start_epoch
       )
       SELECT
         TO_TIMESTAMP(FLOOR((EXTRACT(EPOCH FROM s.timestamp) - r.start_epoch) / ${bucketSeconds}) * ${bucketSeconds} + r.start_epoch) AS bucket,
@@ -380,7 +411,8 @@ const getDirectMetricChartData = async (column, config) => {
         MAX(s.${column}) AS max_value,
         COUNT(*) AS data_points
       FROM sensor_data s, range_start r
-      WHERE s.timestamp >= NOW() - INTERVAL '${interval}'
+      WHERE s.timestamp >= $1::timestamptz - INTERVAL '${interval}'
+        AND s.timestamp <= $1::timestamptz
         AND s.${column} IS NOT NULL
       GROUP BY 1, r.start_epoch
       ORDER BY bucket ASC
@@ -388,7 +420,7 @@ const getDirectMetricChartData = async (column, config) => {
     `;
   }
 
-  const result = await query(sql);
+  const result = await query(sql, interval === null ? [] : [anchor]);
 
   return result.rows.map(row => ({
     timestamp: row.bucket,
@@ -403,9 +435,12 @@ const getDirectMetricChartData = async (column, config) => {
  * Chart data for AI2 TDS nowcast metrics (ai2_tds table).
  * Mirrors getDirectMetricChartData's epoch bucketing exactly, just sourced
  * from ai2_tds/processed_at instead of sensor_data/timestamp, so the two
- * series line up on the same bucket grid when overlaid on one chart.
+ * series line up on the same bucket grid when overlaid on one chart --
+ * that alignment REQUIRES both queries to share the same `anchor` (see
+ * getChartData / getDirectMetricChartData); each defaulting to its own
+ * NOW() independently is what broke the overlay at narrow bucket widths.
  */
-const getAi2TdsChartData = async (column, config) => {
+const getAi2TdsChartData = async (column, config, anchor) => {
   const { interval, bucketSeconds, points } = config;
 
   let sql;
@@ -438,7 +473,7 @@ const getAi2TdsChartData = async (column, config) => {
   } else {
     sql = `
       WITH range_start AS (
-        SELECT EXTRACT(EPOCH FROM NOW() - INTERVAL '${interval}') AS start_epoch
+        SELECT EXTRACT(EPOCH FROM $1::timestamptz - INTERVAL '${interval}') AS start_epoch
       )
       SELECT
         TO_TIMESTAMP(FLOOR((EXTRACT(EPOCH FROM s.processed_at) - r.start_epoch) / ${bucketSeconds}) * ${bucketSeconds} + r.start_epoch) AS bucket,
@@ -447,7 +482,8 @@ const getAi2TdsChartData = async (column, config) => {
         MAX(s.${column}) AS max_value,
         COUNT(*) AS data_points
       FROM ai2_tds s, range_start r
-      WHERE s.processed_at >= NOW() - INTERVAL '${interval}'
+      WHERE s.processed_at >= $1::timestamptz - INTERVAL '${interval}'
+        AND s.processed_at <= $1::timestamptz
         AND s.${column} IS NOT NULL
       GROUP BY 1, r.start_epoch
       ORDER BY bucket ASC
@@ -455,7 +491,7 @@ const getAi2TdsChartData = async (column, config) => {
     `;
   }
 
-  const result = await query(sql);
+  const result = await query(sql, interval === null ? [] : [anchor]);
 
   return result.rows.map(row => ({
     timestamp: row.bucket,

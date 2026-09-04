@@ -68,9 +68,9 @@ const RealTimeDataChart = ({
   // its length the instant the first live value landed.
   const nowBufferRef = useRef(60);
 
-  const fetchMetricFromAPI = useCallback(async (metric, range) => {
+  const fetchMetricFromAPI = useCallback(async (metric, range, endTime) => {
     try {
-      const res = await getChartData(metric, range);
+      const res = await getChartData(metric, range, endTime);
       const chart = res?.data?.chart || [];
       return {
         values: chart.map(p => p.avg ?? p.value ?? 0),
@@ -83,7 +83,7 @@ const RealTimeDataChart = ({
   }, []);
 
   const fetchChartFromAPI = useCallback(
-    (range) => fetchMetricFromAPI(dataType, range),
+    (range, endTime) => fetchMetricFromAPI(dataType, range, endTime),
     [dataType, fetchMetricFromAPI]
   );
 
@@ -194,26 +194,39 @@ const RealTimeDataChart = ({
       setApiTimestamps([]);
       setShowComparisonData(false);
       const rangeToFetch = timeRange === 'now' ? '1h' : timeRange;
-      fetchChartFromAPI(rangeToFetch).then(result => {
+
+      // Both fetches share ONE anchor instant and run in parallel (not
+      // sequential .then()-chained) so the sensor and prediction bucket
+      // grids come back on IDENTICAL boundaries -- see the `anchor`/
+      // `end_time` comments in backend/controllers/liveDataController.js.
+      // Without this, two independently-anchored requests drift against
+      // each other, and at narrow bucket widths (12s at range=1h) that was
+      // enough to make the prediction overlay vanish at 'now'/'1h' while
+      // still working at wider ranges (found 2026-09-04).
+      const endTime = new Date().toISOString();
+
+      Promise.all([
+        fetchChartFromAPI(rangeToFetch, endTime),
+        predictionDataType ? fetchMetricFromAPI(predictionDataType, rangeToFetch, endTime) : Promise.resolve(null)
+      ]).then(([result, predResult]) => {
         if (result && result.values.length > 0) {
           setChartData(result.values);
           setApiTimestamps(result.timestamps);
           nowBufferRef.current = Math.max(result.values.length, 60);
           dbFetchedRef.current = true;
 
-          // Prediction overlay is bucketed independently (its own table), so
-          // its timestamps rarely line up 1:1 with the sensor's -- align it
-          // onto the sensor's bucket grid with the same nearest-timestamp
-          // logic already used for the lab overlay, rather than assuming
-          // equal array lengths.
+          // ai2_tds writes far less densely than sensor_data, so its bucket
+          // set is typically a SUBSET of the sensor's -- align onto the
+          // sensor's full grid (nulls where a bucket has no prediction row)
+          // rather than assuming equal array lengths. Now that both share
+          // the same anchor, this is an exact-boundary match in practice,
+          // not a fuzzy nearest-timestamp guess.
           if (predictionDataType) {
-            fetchMetricFromAPI(predictionDataType, rangeToFetch).then(predResult => {
-              const samples = (predResult?.values || []).map((v, i) => ({
-                sampled_at: predResult.timestamps[i],
-                lab_value: v
-              }));
-              setPredictionData(alignLabSamplesToTimestamps(result.timestamps, samples));
-            });
+            const samples = (predResult?.values || []).map((v, i) => ({
+              sampled_at: predResult.timestamps[i],
+              lab_value: v
+            }));
+            setPredictionData(alignLabSamplesToTimestamps(result.timestamps, samples));
           }
         } else if (predictionDataType) {
           setPredictionData([]);
