@@ -1144,6 +1144,21 @@ const getAi2AggregatedStats = async (req, res) => {
 // assuming this is safe to extend further (e.g. to other pages/endpoints).
 const AI1A_SOURCE_TABLES = ['ai1a', 'ai1a_shadow'];
 
+// ai1a_shadow carries rows from however many shadow models VPS env
+// AI1A_SHADOW_DIRS lists (currently 'ai1a_70' AND 'ai1a_bootstrap65' run
+// every tick, both INSERT into this one table -- see workers/jobs_ai1.py),
+// distinguished only by model_version =
+// f"AI1a_v3.0_{model_dir.name}_{trained_date}" (_derive_ai1a_model_version).
+// The Produksi/Shadow 70 toggle means the 70-feature/has-TDS variant
+// specifically ('ai1a_70'), so every read of ai1a_shadow below MUST filter
+// to it -- found live in production 2026-09-04 (PR #5 shipped without this
+// filter): the bucketed path AVG()/MODE()s risk_percentage/severity across
+// two unrelated models, and the raw path returns an arbitrary interleaving
+// of both. Prefix match (not exact model_version) so this survives a
+// retrain, same approach as AI1A_SHADOW_FORECAST_PREFIX /
+// _latest_forecast_trend_shadow in jobs_ai1.py.
+const AI1A_SHADOW_MODEL_VERSION_PREFIX = 'AI1a_v3.0_ai1a_70_';
+
 const getAi1aData = async (req, res) => {
   try {
     const { limit = 50, start_date, end_date, points, source_table = 'ai1a' } = req.query;
@@ -1170,6 +1185,15 @@ const getAi1aData = async (req, res) => {
       // source_table is whitelisted above -- Postgres can't parameterize an
       // identifier, so it's safe to interpolate directly into FROM here
       // (same approach as getAi1aDirectionAnnotations below).
+      const bucketParams = [start_date, end_date];
+      let shadowFilterSql = '';
+      if (source_table === 'ai1a_shadow') {
+        bucketParams.push(`${AI1A_SHADOW_MODEL_VERSION_PREFIX}%`);
+        shadowFilterSql = ` AND a.model_version LIKE $${bucketParams.length}`;
+      }
+      bucketParams.push(source_table);
+      const joinParamIndex = bucketParams.length;
+
       const bucketSql = `
         SELECT
           ${bucket}                                     AS timestamp,
@@ -1189,13 +1213,13 @@ const getAi1aData = async (req, res) => {
           COUNT(*)::int                                 AS data_points
         FROM ${source_table} a
         LEFT JOIN ai1a_direction_annotation d
-          ON d.source_table = $3 AND d.source_id = a.id
-        WHERE a.timestamp >= $1 AND a.timestamp <= $2
+          ON d.source_table = $${joinParamIndex} AND d.source_id = a.id
+        WHERE a.timestamp >= $1 AND a.timestamp <= $2${shadowFilterSql}
         GROUP BY 1
         ORDER BY 1 DESC
       `;
 
-      const bucketResult = await query(bucketSql, [start_date, end_date, source_table]);
+      const bucketResult = await query(bucketSql, bucketParams);
 
       return res.json({
         success: true,
@@ -1220,6 +1244,11 @@ const getAi1aData = async (req, res) => {
       WHERE 1=1
     `;
     const params = [source_table];
+
+    if (source_table === 'ai1a_shadow') {
+      params.push(`${AI1A_SHADOW_MODEL_VERSION_PREFIX}%`);
+      sql += ` AND a.model_version LIKE $${params.length}`;
+    }
 
     if (start_date && end_date) {
       params.push(start_date);
@@ -1300,6 +1329,13 @@ const getAi1aDirectionAnnotations = async (req, res) => {
       WHERE 1=1
     `;
     const params = [source_table];
+
+    // Same fix as getAi1aData above -- ai1a_shadow mixes multiple model
+    // variants, see AI1A_SHADOW_MODEL_VERSION_PREFIX.
+    if (source_table === 'ai1a_shadow') {
+      params.push(`${AI1A_SHADOW_MODEL_VERSION_PREFIX}%`);
+      sql += ` AND a.model_version LIKE $${params.length}`;
+    }
 
     if (direction_flag) {
       params.push(direction_flag);
