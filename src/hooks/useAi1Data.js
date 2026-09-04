@@ -25,14 +25,19 @@ const isDataFresh = (row, thresholdMs = STALE_THRESHOLD_MS) => {
  * - `liveData`: latest single row if fresh (< 10 min old, by created_at), otherwise null
  * - `history`: last 60 rows in chronological order (fetched once on mount)
  * - `loading`: true until first live fetch completes
+ *
+ * @param {number} pollInterval
+ * @param {string} sourceTable - 'ai1a' (default, production) or 'ai1a_shadow'
+ *        -- see AI1A_SOURCE_TABLES in backend/controllers/externalController.js
+ *        for why 'ai1a_shadow' is readable here at all.
  */
-export const useAi1aData = (pollInterval = 3000) => {
+export const useAi1aData = (pollInterval = 3000, sourceTable = 'ai1a') => {
   const [liveData, setLiveData] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${AI1A_URL}?limit=60`)
+    fetch(`${AI1A_URL}?limit=60&source_table=${sourceTable}`)
       .then(r => r.json())
       .then(json => {
         if (json.success && json.data) {
@@ -40,11 +45,15 @@ export const useAi1aData = (pollInterval = 3000) => {
         }
       })
       .catch(err => console.error('ai1a history fetch error:', err));
-  }, []);
+  }, [sourceTable]);
 
   useEffect(() => {
+    // Switching variant should not show the other variant's stale live tile
+    // while the first poll of the new one is in flight.
+    setLoading(true);
+
     const poll = () => {
-      fetch(`${AI1A_URL}?limit=1`)
+      fetch(`${AI1A_URL}?limit=1&source_table=${sourceTable}`)
         .then(r => r.json())
         .then(json => {
           if (json.success && json.data?.length > 0) {
@@ -65,7 +74,7 @@ export const useAi1aData = (pollInterval = 3000) => {
     poll();
     const id = setInterval(poll, pollInterval);
     return () => clearInterval(id);
-  }, [pollInterval]);
+  }, [pollInterval, sourceTable]);
 
   return { liveData, history, loading };
 };

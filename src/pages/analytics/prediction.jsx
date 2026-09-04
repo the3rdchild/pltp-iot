@@ -1,4 +1,4 @@
-import { Box, Typography, Chip, Tooltip } from '@mui/material';
+import { Box, Typography, Chip, Tooltip, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import MainCard from 'components/MainCard';
@@ -159,9 +159,18 @@ function StatTile({ title, subtitle, value, unit, icon, accent, chip, chipColor 
  * ------------------------------------------------------------------ */
 
 const AIAnalytics = () => {
+  // Which ai1a source table drives every AI1a tile/chart/table below --
+  // 'ai1a' (production, 65-feature) or 'ai1a_shadow' (comparison run,
+  // 70-feature/has TDS). See AI1A_SOURCE_TABLES in
+  // backend/controllers/externalController.js for why 'ai1a_shadow' is
+  // readable through this page at all. FE-only state, not persisted --
+  // no existing convention in this codebase for persisting a view toggle
+  // like this, and the toggle resetting to Produksi on reload is fine.
+  const [ai1aVariant, setAi1aVariant] = useState('ai1a');
+
   // liveData is null whenever the newest row is older than 10 minutes
   // (see hooks/useAi1Data.js) -- that null IS the "waiting for data" signal.
-  const { liveData: ai1aLive, history: ai1aHistory, loading: ai1aLoading } = useAi1aData();
+  const { liveData: ai1aLive, history: ai1aHistory, loading: ai1aLoading } = useAi1aData(3000, ai1aVariant);
   const { liveData: ai1bLive, loading: ai1bLoading } = useAi1bData();
 
   const [sensorRows, setSensorRows] = useState([]);
@@ -210,6 +219,11 @@ const AIAnalytics = () => {
     let cancelled = false;
     const { range, custom } = ai1aSelection;
 
+    // Clear the previous variant's rows immediately on switch so the chart
+    // falls back to (also-refetching) history rather than flashing the old
+    // variant's data under the new variant's toggle position.
+    setAi1aRangeRows(null);
+
     // Re-runs on an interval, not just on range change: ai1a appends a row a
     // minute, and without this the chart only ever showed the rows that
     // existed when the range was picked (a page refresh was the only way to
@@ -231,7 +245,7 @@ const AIAnalytics = () => {
       const pointsParam = range === 'now' ? '' : `&points=${AI1A_CHART_POINTS}`;
 
       fetch(
-        `/api/external/ai1a?start_date=${encodeURIComponent(startIso)}&end_date=${encodeURIComponent(endIso)}${pointsParam}`
+        `/api/external/ai1a?start_date=${encodeURIComponent(startIso)}&end_date=${encodeURIComponent(endIso)}${pointsParam}&source_table=${ai1aVariant}`
       )
         .then((r) => r.json())
         .then((json) => {
@@ -249,7 +263,7 @@ const AIAnalytics = () => {
       cancelled = true;
       clearInterval(id);
     };
-  }, [ai1aSelection]);
+  }, [ai1aSelection, ai1aVariant]);
 
   const ai1aChart = useMemo(() => {
     // Before the first range fetch resolves, fall back to useAi1aData's
@@ -313,7 +327,19 @@ const AIAnalytics = () => {
 
   return (
     <Box>
-      <AnalyticsHeader title="Risk Analytics" subtitle="Anomaly Detection & Risk Forecast" />
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 1.5 }}>
+        <AnalyticsHeader title="Risk Analytics" subtitle="Anomaly Detection & Risk Forecast" />
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={ai1aVariant}
+          onChange={(_e, next) => { if (next) setAi1aVariant(next); }}
+          sx={{ mb: 1 }}
+        >
+          <ToggleButton value="ai1a" sx={{ textTransform: 'none', px: 2 }}>Produksi</ToggleButton>
+          <ToggleButton value="ai1a_shadow" sx={{ textTransform: 'none', px: 2 }}>Shadow 70</ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
 
       {/* ---------------- status tiles ---------------- */}
       <Grid container spacing={3} sx={{ mb: 3 }}>

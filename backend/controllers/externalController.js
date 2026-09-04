@@ -1128,9 +1128,32 @@ const getAi2AggregatedStats = async (req, res) => {
 // Read that file server-side and include the two values in this response
 // (e.g. `risk_thresholds: { p90, p99 }`) so the frontend can show risk% in
 // context instead of an unqualified number.
+//
+// Which raw table (and matching ai1a_direction_annotation.source_table) to
+// read from -- 'ai1a' (production, 65-feature/13-param, no TDS) or
+// 'ai1a_shadow' (comparison run, 70-feature/14-param, has TDS).
+//
+// DELIBERATE EXCEPTION, read before touching this: AI_Pertasmart_V3/scripts/
+// init_shadow_tables.sql says outright "FE/BE TIDAK PERNAH diarahkan ke
+// tabel ini ... bukan sumber apa pun yang ditampilkan ke pengguna akhir" --
+// ai1a_shadow was designed to never reach an end user. Exposing it through
+// this endpoint (and the Produksi/Shadow 70 toggle on
+// src/pages/analytics/prediction.jsx that calls it) is a deliberate override
+// of that rule, confirmed by the user via the master session (2026-09-04),
+// not an oversight. If that confirmation is ever in doubt, ask before
+// assuming this is safe to extend further (e.g. to other pages/endpoints).
+const AI1A_SOURCE_TABLES = ['ai1a', 'ai1a_shadow'];
+
 const getAi1aData = async (req, res) => {
   try {
-    const { limit = 50, start_date, end_date, points } = req.query;
+    const { limit = 50, start_date, end_date, points, source_table = 'ai1a' } = req.query;
+
+    if (!AI1A_SOURCE_TABLES.includes(source_table)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid source_table. Valid: ${AI1A_SOURCE_TABLES.join(', ')}`
+      });
+    }
 
     // Bucketed (chart) path -- see resolveBucketing above.
     const bucketing = (start_date && end_date)
@@ -1143,6 +1166,10 @@ const getAi1aData = async (req, res) => {
       // is_anomaly is cast rather than used bare so the aggregate works
       // whether the column is a real boolean or the 't'/'f' text the frontend
       // also guards against (see prediction.jsx).
+      //
+      // source_table is whitelisted above -- Postgres can't parameterize an
+      // identifier, so it's safe to interpolate directly into FROM here
+      // (same approach as getAi1aDirectionAnnotations below).
       const bucketSql = `
         SELECT
           ${bucket}                                     AS timestamp,
@@ -1160,18 +1187,19 @@ const getAi1aData = async (req, res) => {
           MAX(a.timestamp)                              AS bucket_last_at,
           MAX(a.created_at)                             AS created_at,
           COUNT(*)::int                                 AS data_points
-        FROM ai1a a
+        FROM ${source_table} a
         LEFT JOIN ai1a_direction_annotation d
-          ON d.source_table = 'ai1a' AND d.source_id = a.id
+          ON d.source_table = $3 AND d.source_id = a.id
         WHERE a.timestamp >= $1 AND a.timestamp <= $2
         GROUP BY 1
         ORDER BY 1 DESC
       `;
 
-      const bucketResult = await query(bucketSql, [start_date, end_date]);
+      const bucketResult = await query(bucketSql, [start_date, end_date, source_table]);
 
       return res.json({
         success: true,
+        source_table,
         data: bucketResult.rows,
         count: bucketResult.rows.length,
         sampled: true,
@@ -1186,12 +1214,12 @@ const getAi1aData = async (req, res) => {
              a.risk_label,
              COALESCE(d.adjusted_severity, a.severity) AS severity,
              a.created_at
-      FROM ai1a a
+      FROM ${source_table} a
       LEFT JOIN ai1a_direction_annotation d
-        ON d.source_table = 'ai1a' AND d.source_id = a.id
+        ON d.source_table = $1 AND d.source_id = a.id
       WHERE 1=1
     `;
-    const params = [];
+    const params = [source_table];
 
     if (start_date && end_date) {
       params.push(start_date);
@@ -1208,6 +1236,7 @@ const getAi1aData = async (req, res) => {
 
     res.json({
       success: true,
+      source_table,
       data: result.rows,
       count: result.rows.length
     });
@@ -1234,10 +1263,9 @@ const getAi1aData = async (req, res) => {
 // joins alongside them via (source_table, source_id).
 //
 // Defaults to source_table='ai1a' (production) because AI1a-70 has not been
-// cut over yet -- production is still on the 65-feature model. 'ai1a_shadow'
-// is internal shadow/testing data (includes both 65- and 70-feature runs),
-// not what's shown to users today; pass it explicitly to inspect it.
-const AI1A_DIRECTION_SOURCE_TABLES = ['ai1a', 'ai1a_shadow'];
+// cut over yet -- production is still on the 65-feature model. See
+// AI1A_SOURCE_TABLES above getAi1aData for why 'ai1a_shadow' is readable
+// here at all (deliberate, confirmed override of init_shadow_tables.sql).
 
 const getAi1aDirectionAnnotations = async (req, res) => {
   try {
@@ -1249,10 +1277,10 @@ const getAi1aDirectionAnnotations = async (req, res) => {
       source_table = 'ai1a'
     } = req.query;
 
-    if (!AI1A_DIRECTION_SOURCE_TABLES.includes(source_table)) {
+    if (!AI1A_SOURCE_TABLES.includes(source_table)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid source_table. Valid: ${AI1A_DIRECTION_SOURCE_TABLES.join(', ')}`
+        message: `Invalid source_table. Valid: ${AI1A_SOURCE_TABLES.join(', ')}`
       });
     }
 
