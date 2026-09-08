@@ -44,15 +44,10 @@ const TDS = () => {
     const tdsValue = liveData?.value;
     const changePct = liveData?.change_pct;
 
-    // Live predicted TDS (ai2-tds-30d nowcast), overlaid on the same chart as
-    // the sensor below. Same hook/pattern as tdsValue above -- 'tds_predicted'
-    // is just another metric key, resolved server-side to the ai2_tds table.
-    const { liveData: predictedLiveData } = useAnalyticsData('tds_predicted', timeRange, undefined, 3000, {
-        live: true,
-        chart: false,
-        table: false
-    });
-    const tdsPredictedValue = predictedLiveData?.value;
+    // No live poll for the AI2 TDS nowcast: the prediction overlay is drawn
+    // only on the fetched ranges (1h/1d/7d/1m), which pull their own series
+    // inside RealTimeDataChart. 'now' shows the raw sensor alone, so a 3s
+    // /live/tds_predicted poll here would have no reader.
 
     // Real-time statistics tracking
     const tdsStats = useMetricStats('tds', tdsValue);
@@ -308,7 +303,6 @@ const TDS = () => {
                 liveValue={tdsValue}
                 labMetric="tds"
                 predictionDataType="tds_predicted"
-                predictionLiveValue={tdsPredictedValue}
                 predictionName="Prediksi TDS (AI2)"
               />
             </Grid>

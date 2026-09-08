@@ -14,7 +14,7 @@ import { generateAIData, generateFieldData } from '../../data/chartData';
 import { useTestData } from '../../contexts/TestDataContext';
 import { useChartReferenceConfig } from '../../hooks/useChartReferenceConfig';
 import { getChartData, getLabComparison } from '../../utils/api';
-import { alignLabSamplesToTimestamps } from '../../utils/labOverlay';
+import { alignLabSamplesToTimestamps, alignPredictionToTimestamps } from '../../utils/labOverlay';
 
 // Lab comparison overlay color (markers only, opt-in via labMetric)
 const LAB_SERIES_COLOR = '#f59e0b';
@@ -47,8 +47,7 @@ const RealTimeDataChart = ({
   fetchFromApi = false,  // Fetch real data from API instead of simulation
   liveValue = null,      // Current live value to append in 'now' mode (requires fetchFromApi=true)
   labMetric = null,      // Opt-in: overlay lab samples for this metric as markers (requires fetchFromApi=true)
-  predictionDataType = null,   // Opt-in: overlay a live model prediction (e.g. 'tds_predicted') as a dashed line, same y-axis
-  predictionLiveValue = null,  // Current live predicted value to append in 'now' mode (requires predictionDataType)
+  predictionDataType = null,   // Opt-in: overlay a model prediction (e.g. 'tds_predicted') as a dashed line, same y-axis. Fetched ranges only -- never in 'now'.
   predictionName = 'Prediksi' // Legend label for the prediction series
 }) => {
   const location = useLocation();
@@ -126,6 +125,15 @@ const RealTimeDataChart = ({
   const labChartData = useMemo(
     () => (labOverlayEnabled ? alignLabSamplesToTimestamps(apiTimestamps, labSamples) : null),
     [labOverlayEnabled, apiTimestamps, labSamples]
+  );
+
+  // The prediction overlay is a FETCHED series, so it only exists on the
+  // ranges that fetch: 'now' is a live sliding window and '1y'/'all'/custom
+  // run on generated data. Kept out of 'now' by request -- that view is meant
+  // to show the raw sensor alone.
+  const predictionEnabled = Boolean(
+    predictionDataType && !isTestEnvironment && fetchFromApi &&
+    !isCustomRange && ['1h', '1d', '7d', '1m'].includes(timeRange)
   );
 
   // Helper function to generate test chart data from TestDataContext
@@ -207,7 +215,7 @@ const RealTimeDataChart = ({
 
       Promise.all([
         fetchChartFromAPI(rangeToFetch, endTime),
-        predictionDataType ? fetchMetricFromAPI(predictionDataType, rangeToFetch, endTime) : Promise.resolve(null)
+        predictionEnabled ? fetchMetricFromAPI(predictionDataType, rangeToFetch, endTime) : Promise.resolve(null)
       ]).then(([result, predResult]) => {
         if (result && result.values.length > 0) {
           setChartData(result.values);
@@ -216,19 +224,21 @@ const RealTimeDataChart = ({
           dbFetchedRef.current = true;
 
           // ai2_tds writes far less densely than sensor_data, so its bucket
-          // set is typically a SUBSET of the sensor's -- align onto the
-          // sensor's full grid (nulls where a bucket has no prediction row)
-          // rather than assuming equal array lengths. Now that both share
-          // the same anchor, this is an exact-boundary match in practice,
-          // not a fuzzy nearest-timestamp guess.
-          if (predictionDataType) {
+          // set is typically a SUBSET of the sensor's. Both share the same
+          // anchor, so the buckets it does fill land exactly on the sensor's
+          // grid; alignPredictionToTimestamps holds each value across the
+          // buckets in between so the dashed line stays drawable -- padding
+          // with nulls made it vanish at 1h (see labOverlay.js).
+          if (predictionEnabled) {
             const samples = (predResult?.values || []).map((v, i) => ({
               sampled_at: predResult.timestamps[i],
               lab_value: v
             }));
-            setPredictionData(alignLabSamplesToTimestamps(result.timestamps, samples));
+            setPredictionData(alignPredictionToTimestamps(result.timestamps, samples));
+          } else {
+            setPredictionData([]);
           }
-        } else if (predictionDataType) {
+        } else {
           setPredictionData([]);
         }
       });
@@ -242,8 +252,12 @@ const RealTimeDataChart = ({
       }
       setChartData(initialData);
       setShowComparisonData(false);
+      // '1y'/'all'/custom and the test env run on generated data with no real
+      // timestamps -- a prediction array left over from the previous range
+      // would be stale AND the wrong length.
+      setPredictionData([]);
     }
-  }, [timeRange, dataType, isCustomRange, startDate, endDate, shouldShowComparison, isTestEnvironment, testDataContext, fetchFromApi, fetchChartFromAPI, predictionDataType, fetchMetricFromAPI]);
+  }, [timeRange, dataType, isCustomRange, startDate, endDate, shouldShowComparison, isTestEnvironment, testDataContext, fetchFromApi, fetchChartFromAPI, predictionDataType, predictionEnabled, fetchMetricFromAPI]);
 
   // Real-time updates for 'Now' mode only
   useEffect(() => {
@@ -283,13 +297,7 @@ const RealTimeDataChart = ({
     const keep = nowBufferRef.current;
     setChartData(prev => [...prev.slice(-(keep - 1)), liveValue]);
     setApiTimestamps(prev => [...prev.slice(-(keep - 1)), now]);
-
-    // Pushed in the same tick as the sensor point (not re-aligned by
-    // timestamp) so predictionData always stays exactly as long as chartData.
-    if (predictionDataType) {
-      setPredictionData(prev => [...prev.slice(-(keep - 1)), predictionLiveValue ?? null]);
-    }
-  }, [liveValue, timeRange, fetchFromApi, isTestEnvironment, predictionDataType, predictionLiveValue]);
+  }, [liveValue, timeRange, fetchFromApi, isTestEnvironment]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -396,7 +404,7 @@ const RealTimeDataChart = ({
     // Include overlay values (lab + prediction) so they aren't clipped by the axis range
     const overlayVals = [
       ...(labChartData ? labChartData.filter(v => v != null) : []),
-      ...(predictionDataType ? predictionData.filter(v => v != null) : [])
+      ...(predictionEnabled ? predictionData.filter(v => v != null) : [])
     ];
     const effMaxValue = overlayVals.length ? Math.max(maxValue, ...overlayVals) : maxValue;
     const effMinValue = overlayVals.length ? Math.min(minValue, ...overlayVals) : minValue;
@@ -456,7 +464,7 @@ const RealTimeDataChart = ({
       overlayFillOpacity.push(0);
       overlayMarkerSize.push(6);
     }
-    if (predictionDataType) {
+    if (predictionEnabled) {
       overlaySeries.push({ name: predictionName, data: predictionData });
       overlayColors.push(PREDICTION_STROKE_COLOR);
       overlayStrokeWidth.push(2);
@@ -613,7 +621,7 @@ const RealTimeDataChart = ({
         chartInstanceRef.current = null;
       }
     };
-  }, [timeRange, showComparisonData, unit, yAxisTitle, computedXAxisTitle, thresholds, chartRefConfig, dataType, apiTimestamps, labChartData, predictionDataType, predictionData, predictionName]);
+  }, [timeRange, showComparisonData, unit, yAxisTitle, computedXAxisTitle, thresholds, chartRefConfig, dataType, apiTimestamps, labChartData, predictionEnabled, predictionData, predictionName]);
 
   // Update chart data without re-rendering (for smooth updates)
   useEffect(() => {
@@ -632,7 +640,7 @@ const RealTimeDataChart = ({
 
     // Include overlay values (lab + prediction) so they aren't clipped by the axis range
     const labVals = labChartData ? labChartData.filter(v => v != null) : [];
-    const predictionVals = predictionDataType ? predictionData.filter(v => v != null) : [];
+    const predictionVals = predictionEnabled ? predictionData.filter(v => v != null) : [];
     const rangeVals = [maxValue, minValue, ...labVals, ...predictionVals].filter(v => v != null);
     const effMaxValue = rangeVals.length ? Math.max(...rangeVals) : undefined;
     const effMinValue = rangeVals.length ? Math.min(...rangeVals) : undefined;
@@ -674,7 +682,7 @@ const RealTimeDataChart = ({
       : [
           { name: yAxisTitle, data: chartData },
           ...(labChartData ? [{ name: `Lab ${yAxisTitle}`, data: labChartData }] : []),
-          ...(predictionDataType ? [{ name: predictionName, data: predictionData }] : [])
+          ...(predictionEnabled ? [{ name: predictionName, data: predictionData }] : [])
         ];
 
     const updatedCategories = apiTimestamps.length > 0
@@ -692,7 +700,7 @@ const RealTimeDataChart = ({
         yaxis: annotations
       }
     }, false, timeRange === 'now' && !showComparisonData);
-  }, [chartData, aiData, fieldData, stats, showComparisonData, timeRange, yAxisTitle, thresholds, chartRefConfig, dataType, apiTimestamps, labChartData, predictionDataType, predictionData, predictionName]);
+  }, [chartData, aiData, fieldData, stats, showComparisonData, timeRange, yAxisTitle, thresholds, chartRefConfig, dataType, apiTimestamps, labChartData, predictionEnabled, predictionData, predictionName]);
 
   const handleTimeRangeChange = (newRange) => {
     setTimeRange(newRange);
@@ -810,7 +818,7 @@ const RealTimeDataChart = ({
           [
             ...legendItems,
             ...(labChartData ? [{ name: `Lab ${yAxisTitle}`, color: LAB_SERIES_COLOR }] : []),
-            ...(predictionDataType ? [{ name: predictionName, color: PREDICTION_SERIES_COLOR }] : [])
+            ...(predictionEnabled ? [{ name: predictionName, color: PREDICTION_SERIES_COLOR }] : [])
           ].map((item) => (
             <Box key={item.name} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
               <Box sx={{ width: 15, height: 15, borderRadius: '10%', backgroundColor: item.color }} />
@@ -901,7 +909,6 @@ RealTimeDataChart.propTypes = {
   liveValue: PropTypes.number,
   labMetric: PropTypes.oneOf(['pressure', 'temperature', 'flow_rate', 'tds', 'dryness', 'ncg']),
   predictionDataType: PropTypes.oneOf(['tds_predicted']),
-  predictionLiveValue: PropTypes.number,
   predictionName: PropTypes.string
 };
 
