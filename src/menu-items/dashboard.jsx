@@ -9,7 +9,8 @@ import {
   EditOutlined,
   SlidersOutlined,
   FundViewOutlined,
-  LogoutOutlined
+  LogoutOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons';
 import TimelineIcon from '@mui/icons-material/Timeline';
 
@@ -25,7 +26,8 @@ const icons = {
   SlidersOutlined,
   FundViewOutlined,
   LogoutOutlined,
-  TimelineIcon
+  TimelineIcon,
+  ThunderboltOutlined
 };
 
 // ==============================|| MENU ITEMS - DASHBOARD ||============================== //
@@ -76,6 +78,13 @@ const dashboard = {
           type: 'item',
           url: '/ptf',
           icon: icons.DashboardOutlined,
+        },
+        {
+          id: 'power',
+          title: 'Power',
+          type: 'item',
+          url: '/power',
+          icon: icons.ThunderboltOutlined,
         },
         {
           id: 'prediction',

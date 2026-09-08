@@ -16,6 +16,7 @@ import Dryness from 'pages/analytics/dryness';
 import NCG from 'pages/analytics/NCG';
 import TDS from 'pages/analytics/TDS';
 import PTF from 'pages/analytics/ptf'
+import Power from 'pages/analytics/power'
 import Prediction from 'pages/analytics/prediction'
 //settings pages
 import DataInput from 'pages/settings/dataInput'
@@ -129,6 +130,16 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <PTF />
+      }
+    ]
+  },
+  {
+    path: '/power',
+    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
+    children: [
+      {
+        index: true,
+        element: <Power />
       }
     ]
   },
