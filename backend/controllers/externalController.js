@@ -1409,6 +1409,52 @@ const getAi1bData = async (req, res) => {
   }
 };
 
+// Get the latest failure-forecast projection (turbine State-of-Health /
+// remaining-life curve, linear + weibull_cox models side by side).
+//
+// Written by a separate AI-side job (workers/jobs_failure_forecast.py,
+// ~60s cadence) straight from ai1a_shadow -- see
+// docs/failure_forecast_contract_for_beFE.md for the full contract. This
+// replaces the old ai1b-based "Risk Forecast - 30 Hari ke Depan" chart on
+// prediction.jsx: the AI side pivoted from a 30-day risk forecast to a
+// yearly-horizon degradation projection (dosen's "like a phone battery"
+// framing), see CATATAN_KERJA_LAPORAN.md "SCOPE: Pivot 'predict failure'..."
+// (12 Sep 2026).
+//
+// failure_forecast_projection is REPLACEd whole on every job run (no
+// history accumulation), so "the current projection" is always every row
+// sharing the latest generated_at -- no source_table toggle or model-version
+// filter needed here, unlike getAi1aData (the AI side already filtered
+// before writing this table).
+const getFailureForecastData = async (req, res) => {
+  try {
+    const sql = `
+      SELECT model, projection_date, failure_pct, today_failure_pct,
+             eta_date, risk_ref, overhaul_active_since, generated_at
+      FROM failure_forecast_projection
+      WHERE generated_at = (SELECT MAX(generated_at) FROM failure_forecast_projection)
+      ORDER BY model, projection_date
+    `;
+    const result = await query(sql);
+
+    if (result.rows.length === 0) {
+      return res.status(503).json({
+        success: false,
+        message: 'failure_forecast_projection is empty -- worker may not have run yet'
+      });
+    }
+
+    res.json({ success: true, data: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('❌ Error fetching failure forecast data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch failure forecast data',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   fetchHoneywellData,
   receiveExternalData,
@@ -1424,5 +1470,6 @@ module.exports = {
   getAi2AggregatedStats,
   getAi1aData,
   getAi1aDirectionAnnotations,
-  getAi1bData
+  getAi1bData,
+  getFailureForecastData
 };

@@ -15,7 +15,8 @@ const {
   getAi2AggregatedStats,
   getAi1aData,
   getAi1aDirectionAnnotations,
-  getAi1bData
+  getAi1bData,
+  getFailureForecastData
 } = require('../controllers/externalController');
 
 // Import API Key authentication middleware
@@ -69,6 +70,11 @@ router.get('/ai1a/direction', getAi1aDirectionAnnotations);
 
 // GET /api/external/ai1b - Get latest AI1b 30-day risk forecasts
 router.get('/ai1b', getAi1bData);
+
+// GET /api/external/failure-forecast - Get latest failure-forecast projection
+// (turbine State-of-Health curve, linear + weibull_cox side by side). See
+// docs/failure_forecast_contract_for_beFE.md.
+router.get('/failure-forecast', getFailureForecastData);
 
 // Testing endpoints - protected with API Key for security
 router.post('/test', validateApiKey, testConnection); // Test connection and insert sample data

@@ -7,4 +7,5 @@ export { default as PTFChart } from './PTFChart';
 export { default as PowerChart } from './PowerChart';
 export { default as Ai2Chart } from './Ai2Chart';
 export { default as RiskChart } from './RiskChart';
+export { default as FailureForecastChart, MODEL_LABELS as FAILURE_FORECAST_MODEL_LABELS } from './FailureForecastChart';
 export { default as Ai2ProvisionalBadge, AI2_PROVISIONAL_TOOLTIP } from './Ai2ProvisionalBadge';

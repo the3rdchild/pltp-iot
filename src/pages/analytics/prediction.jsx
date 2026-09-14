@@ -2,8 +2,9 @@ import { Box, Typography, Chip, Tooltip, ToggleButtonGroup, ToggleButton } from 
 import Grid from '@mui/material/Grid';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import MainCard from 'components/MainCard';
-import { AnalyticsHeader, RiskChart } from '../../components/analytics';
-import { useAi1aData, useAi1bData } from '../../hooks/useAi1Data';
+import { AnalyticsHeader, RiskChart, FailureForecastChart, FAILURE_FORECAST_MODEL_LABELS } from '../../components/analytics';
+import { useAi1aData } from '../../hooks/useAi1Data';
+import { useFailureForecastData } from '../../hooks/useFailureForecastData';
 
 // icons
 import PsychologyIcon from '@mui/icons-material/Psychology';
@@ -11,7 +12,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SensorsOffIcon from '@mui/icons-material/SensorsOff';
 import SpeedIcon from '@mui/icons-material/Speed';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 
 const SENSOR_URL = '/api/data/sensor/latest';
 const SENSOR_POLL_MS = 30000; // SCADA cadence is ~1 row/min, no need to poll faster
@@ -67,14 +68,6 @@ const AI1A_CHART_POLL_MS = 30000;
 // them only narrows them — resolution improves, nothing is smoothed away.
 const AI1A_CHART_POINTS = 300;
 
-// Hoisted so the chart effect does not see a new array identity every render.
-const FORECAST_LEGEND = [
-  { name: 'Forecast', color: '#9271FF' },
-  { name: 'Max', color: '#ef4444' },
-  { name: 'Average', color: '#9ca3af' },
-  { name: 'Min', color: '#22c55e' }
-];
-
 const fmtNum = (value, digits = 2) => {
   if (value === null || value === undefined) return '-';
   const n = typeof value === 'string' ? parseFloat(value) : value;
@@ -95,10 +88,10 @@ const fmtClock = (ts) => {
     : d.toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 };
 
-const fmtDay = (ts) => {
+const fmtDateFull = (ts) => {
   if (!ts) return '-';
   const d = new Date(ts);
-  return Number.isNaN(d.getTime()) ? '-' : d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+  return Number.isNaN(d.getTime()) ? '-' : d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
 /* ------------------------------------------------------------------ *
@@ -171,7 +164,7 @@ const AIAnalytics = () => {
   // liveData is null whenever the newest row is older than 10 minutes
   // (see hooks/useAi1Data.js) -- that null IS the "waiting for data" signal.
   const { liveData: ai1aLive, history: ai1aHistory, loading: ai1aLoading } = useAi1aData(3000, ai1aVariant);
-  const { liveData: ai1bLive, loading: ai1bLoading } = useAi1bData();
+  const { rows: failureForecastRows, loading: failureForecastLoading } = useFailureForecastData();
 
   const [sensorRows, setSensorRows] = useState([]);
 
@@ -289,37 +282,31 @@ const AIAnalytics = () => {
   const currentRisk = toNum(ai1aLive?.risk_percentage);
   const isAnomaly = ai1aLive ? ai1aLive.is_anomaly === true || ai1aLive.is_anomaly === 't' : null;
 
-  /* --- AI1b: 30-day forecast ------------------------------------- */
+  /* --- Failure forecast: turbine State-of-Health projection ------- */
 
-  const ai1bChart = useMemo(() => {
-    if (!ai1bLive) return { series: [], categories: [], peak: null, peakDay: null };
-    const series = [];
-    const categories = [];
-    const base = ai1bLive.generated_at ? new Date(ai1bLive.generated_at) : null;
-
-    for (let d = 1; d <= 30; d += 1) {
-      const v = toNum(ai1bLive[`day_${d}_risk`]);
-      series.push(v);
-      if (base && !Number.isNaN(base.getTime())) {
-        const day = new Date(base.getTime());
-        day.setDate(day.getDate() + d);
-        categories.push(`D+${d} · ${fmtDay(day)}`);
-      } else {
-        categories.push(`D+${d}`);
-      }
-    }
-
-    let peak = null;
-    let peakDay = null;
-    series.forEach((v, i) => {
-      if (v !== null && (peak === null || v > peak)) {
-        peak = v;
-        peakDay = i + 1;
-      }
+  // Summary for the stat tile above: the anchor (today) row per model plus
+  // whichever model's ETA comes soonest. rows arrive ordered by
+  // (model, projection_date) server-side, so the first row seen per model
+  // is that model's anchor point.
+  const failureForecastSummary = useMemo(() => {
+    const anchors = [];
+    const seen = new Set();
+    failureForecastRows.forEach((r) => {
+      if (seen.has(r.model)) return;
+      seen.add(r.model);
+      anchors.push({ model: r.model, health: 100 - toNum(r.today_failure_pct), etaDate: r.eta_date });
     });
 
-    return { series, categories, peak, peakDay };
-  }, [ai1bLive]);
+    const worst = anchors.reduce(
+      (min, a) => (a.health !== null && (min === null || a.health < min.health) ? a : min),
+      null
+    );
+    const soonestEta = anchors
+      .filter((a) => a.etaDate)
+      .reduce((min, a) => (min === null || new Date(a.etaDate) < new Date(min.etaDate) ? a : min), null);
+
+    return { worstHealth: worst?.health ?? null, soonestEta: soonestEta?.etaDate ?? null, soonestModel: soonestEta?.model ?? null };
+  }, [failureForecastRows]);
 
   /* --- render ----------------------------------------------------- */
 
@@ -380,17 +367,19 @@ const AIAnalytics = () => {
 
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <StatTile
-            title="Puncak Risk Forecast"
+            title="State of Health Turbin"
             subtitle={
-              ai1bLoading
-                ? 'Memuat forecast...'
-                : ai1bChart.peakDay
-                  ? `Tertinggi di ${ai1bChart.peakDay} hari ke depan dari 30 hari ke depan`
-                  : 'Forecast belum tersedia'
+              failureForecastLoading
+                ? 'Memuat proyeksi...'
+                : failureForecastSummary.soonestEta
+                  ? `ETA overhaul terdekat: ${fmtDateFull(failureForecastSummary.soonestEta)} (${
+                      FAILURE_FORECAST_MODEL_LABELS[failureForecastSummary.soonestModel] || failureForecastSummary.soonestModel
+                    })`
+                  : 'Belum tercapai dalam horizon proyeksi'
             }
-            value={ai1bChart.peak === null ? null : fmtNum(ai1bChart.peak, 1)}
+            value={failureForecastSummary.worstHealth === null ? null : fmtNum(failureForecastSummary.worstHealth, 1)}
             unit="%"
-            icon={<TrendingUpIcon sx={{ fontSize: '1.8rem' }} />}
+            icon={<HealthAndSafetyIcon sx={{ fontSize: '1.8rem' }} />}
             accent="#9271FF"
           />
         </Grid>
@@ -416,32 +405,9 @@ const AIAnalytics = () => {
         />
       </Box>
 
-      {/* ---------------- chart 2: AI1b forecast ---------------- */}
+      {/* ---------------- chart 2: failure forecast (State of Health) ---------------- */}
       <Box sx={{ mb: 3 }}>
-        <RiskChart
-          title="Risk Forecast - 30 Hari ke Depan"
-          subtitle={
-            ai1bLive?.generated_at
-              ? `Forecast dibuat ${fmtClock(ai1bLive.generated_at)}${ai1bLive.model_version ? ` · model ${ai1bLive.model_version}` : ''}`
-              : 'Proyeksi risk harian ke depan dari model AI'
-          }
-          badge="FORECAST"
-          badgeColor="secondary"
-          series={ai1bChart.series}
-          categories={ai1bChart.categories}
-          legendItems={FORECAST_LEGEND}
-          color="#9271FF"
-          chartType="line"
-          yAxisMax={100}
-          xAxisTitle="Hari ke depan (D+1 ... D+30)"
-          emptyMessage="Forecast belum tersedia / run terakhir sudah stale"
-          footnote={
-            <>
-              Setiap titik adalah <strong>prediksi</strong> risk percentage untuk hari ke-N setelah forecast dibuat.
-              Nilai diambil dari run forecast terbaru, satu titik per hari.
-            </>
-          }
-        />
+        <FailureForecastChart rows={failureForecastRows} loading={failureForecastLoading} />
       </Box>
 
       {/* ---------------- tables ---------------- */}
