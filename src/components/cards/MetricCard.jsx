@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types';
 import { Box, Typography, Link } from '@mui/material';
 import BoltIcon from '@mui/icons-material/Bolt';
+import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
 import MainCard from 'components/MainCard';
 
 const getStatusColor = (status) => {
@@ -49,7 +50,17 @@ export default function MetricCard({ label, value, unit, status, linkTo, titleCo
       <Box>
         {/* Label - Top */}
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: titleStyles.justifyContent, mb: 1 }}>
-        <Typography sx={{ ...titleStyles, fontSize: '1.35rem' }}>{label}</Typography>        </Box>
+          {linkTo ? (
+            <Link href={linkTo} underline="hover" color="inherit">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography sx={{ ...titleStyles, fontSize: '1.35rem' }}>{label}</Typography>
+                <ArrowOutwardIcon sx={{ fontSize: '.8rem', color: 'text.secondary' }} />
+              </Box>
+            </Link>
+          ) : (
+            <Typography sx={{ ...titleStyles, fontSize: '1.35rem' }}>{label}</Typography>
+          )}
+        </Box>
 
         {/* Value + Icon Layout */}
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
