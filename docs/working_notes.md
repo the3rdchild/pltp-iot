@@ -119,3 +119,32 @@ the AI side's "Master Session" (`ai-pertasmart-v3`).
 - **Not yet deployed** — master session said deploy is deliberately deferred
   (coordinating with a separate VPS-access task), do not push/deploy this
   without checking with them first that the timing still holds.
+
+## Frontend — NCG chart y-axis auto-fit (2026-09-15)
+
+Bug flagged by the AI side's "Master Session" (dosen feedback): "NCG Real
+Time Data (AI)" on `/dashboard/ncg` had its y-axis hardcoded to `-1..1 wt%`
+(`Ai2Chart` `yAxisMin`/`yAxisMax` in `NCG.jsx`) — ~5x wider than NCG's real
+~0.2–0.3wt% fluctuation, so the line rendered as flat.
+
+- **Fix**: removed the fixed baseline from `NCG.jsx` (falls through to
+  `Ai2Chart`'s auto-scale path) rather than hardcoding a new fixed range —
+  per the master session's own recommendation, so a future drift in NCG's
+  range (AI2 retrain, plant condition change) doesn't silently clip data
+  outside a number nobody remembers to update.
+- That auto-scale path itself had a latent bug for small-magnitude metrics:
+  `computeYRange` floored/ceiled a ±1% pad to the nearest **whole number**
+  — fine for a 0–100 metric, but that rounds anything under ~1 straight to
+  a `[0, 1]` axis, i.e. exactly as flat as the bug being fixed. Replaced
+  with `niceAxisBounds` (`Ai2Chart.jsx`) — classic nice-numbers algorithm,
+  pads+snaps to a tick step derived from the data's own span (verified via
+  a standalone script: 0.20–0.28wt% → axis 0.18–0.30 step 0.02; a flat
+  single reading still gets a sane small window, not `[0,1]`).
+- `dryness.jsx`/`prediction.jsx`'s fixed-baseline charts are unaffected —
+  only the no-baseline path changed, and NCG is the only current caller of
+  it (confirmed via grep before changing shared code).
+- Verified: `vite build` + `eslint` clean. **Not visually checked against
+  live data** (would need an authenticated dev-server session) — worth a
+  quick look on `/dashboard/ncg` once deployed.
+- Pushed `main` (`25d5b60`). Deploy bundled with tomorrow's batch per the
+  master session (reset button + this + their other pending VPS work).
