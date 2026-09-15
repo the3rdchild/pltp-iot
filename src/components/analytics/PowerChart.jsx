@@ -27,22 +27,23 @@ const SPEED_COLOR = '#22c55e';
 // branch wholesale, so update sites must resend the full axis objects or the
 // label formatters are silently dropped.
 const buildYAxes = ({ activePower, reactivePower, speed }) => {
-  const axis = (seriesName, unit, color, range, opposite = false) => ({
+  const axis = (seriesName, color, range, opposite = false) => ({
     seriesName,
     ...(opposite && { opposite: true }),
     min: range.min,
     max: range.max,
     labels: {
       style: { colors: '#86868b', fontSize: '11px' },
-      formatter: (v) => (v === null || v === undefined ? '' : `${v.toFixed(0)} ${unit}`)
+      // Unit lives in the axis title, so tick labels carry the number only
+      formatter: (v) => (v === null || v === undefined ? '' : v.toFixed(0))
     },
     title: { text: `${seriesName}`, style: { color, fontSize: '12px', fontWeight: 400 } }
   });
 
   return [
-    axis('Active Power (MW)', 'MW', ACTIVE_POWER_COLOR, activePower),
-    axis('Reactive Power (MVAR)', 'MVAR', REACTIVE_POWER_COLOR, reactivePower),
-    axis('S.T Speed (RPM)', 'RPM', SPEED_COLOR, speed, true)
+    axis('Active Power (MW)', ACTIVE_POWER_COLOR, activePower),
+    axis('Reactive Power (MVAR)', REACTIVE_POWER_COLOR, reactivePower),
+    axis('S.T Speed (RPM)', SPEED_COLOR, speed, true)
   ];
 };
 

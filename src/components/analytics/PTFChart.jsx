@@ -28,14 +28,15 @@ const NOW_WINDOW_POINTS = 60;
 // silently dropped the label formatters set at creation -- which is why the
 // axes rendered raw floats like "175.000000" with no unit.
 const buildYAxes = ({ labOverlayEnabled, pressure, temperature, flow }) => {
-  const axis = (seriesName, unit, color, range, opposite = false) => ({
+  const axis = (seriesName, color, range, opposite = false) => ({
     seriesName,
     ...(opposite && { opposite: true }),
     min: range.min,
     max: range.max,
     labels: {
       style: { colors: '#86868b', fontSize: '11px' },
-      formatter: (v) => (v === null || v === undefined ? '' : `${v.toFixed(0)} ${unit}`)
+      // Unit lives in the axis title, so tick labels carry the number only
+      formatter: (v) => (v === null || v === undefined ? '' : v.toFixed(0))
     },
     title: { text: `${seriesName}`, style: { color, fontSize: '12px', fontWeight: 400 } }
   });
@@ -43,17 +44,15 @@ const buildYAxes = ({ labOverlayEnabled, pressure, temperature, flow }) => {
   return [
     axis(
       labOverlayEnabled ? ['Pressure (barg)', LAB_PRESSURE_NAME] : 'Pressure (barg)',
-      'barg',
       '#3b82f6',
       pressure
     ),
     axis(
       labOverlayEnabled ? ['Temperature (\u00b0C)', LAB_TEMPERATURE_NAME] : 'Temperature (\u00b0C)',
-      '\u00b0C',
       '#ef4444',
       temperature
     ),
-    axis('Flow (t/h)', 't/h', '#22c55e', flow, true)
+    axis('Flow (t/h)', '#22c55e', flow, true)
   ];
 };
 
