@@ -746,7 +746,7 @@ const CaraKerjaPLTP = () => {
     <footer className="footer">
       <div className="container">
         <div className="footer-bottom">
-          <p>&copy; 2024 SMART System - PT. Pertamina & UNPAD. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} SMART System - PT. Pertamina & UNPAD. All rights reserved.</p>
         </div>
       </div>
     </footer>

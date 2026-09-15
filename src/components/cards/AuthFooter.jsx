@@ -14,7 +14,7 @@ export default function AuthFooter() {
         sx={{ gap: 2, justifyContent: 'center', textAlign: 'center' }}
       >
         <Typography variant="subtitle2" color="secondary">
-          © 2025 SMART (System Monitoring Analysis Real Time). All Rights Reserved.
+          © {new Date().getFullYear()} SMART (System Monitoring Analysis Real Time). All Rights Reserved.
         </Typography>
       </Stack>
     </Container>

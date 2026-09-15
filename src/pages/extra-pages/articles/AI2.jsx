@@ -1643,7 +1643,7 @@ model.load_state_dict(torch.load('best_model.pth'))`}</pre>
     <footer className="footer">
       <div className="container">
         <div className="footer-bottom">
-          <p>&copy; 2025 PertaSmart System - PT. Pertamina Geothermal Energy & Universitas Padjadjaran. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} PertaSmart System - PT. Pertamina Geothermal Energy & Universitas Padjadjaran. All rights reserved.</p>
         </div>
       </div>
     </footer>
