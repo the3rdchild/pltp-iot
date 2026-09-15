@@ -210,38 +210,41 @@ const PTF = () => {
         },
         {
             title: 'Minimum',
-            value: formatValueWithUnit(flowStats.min24h, 't/h'),
+            value: formatValueWithUnit(flowStats.min24h, ''),
+            hoverUnit: 't/h',
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
             iconColor: '#fff',
             additionalData: [
-                { value: formatValueWithUnit(flowStats.min12h, 't/h'), timeLabel: '12 Jam terakhir' },
-                { value: formatValueWithUnit(flowStats.min24h, 't/h'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(flowStats.min7d, 't/h'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(flowStats.min12h, ''), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(flowStats.min24h, ''), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(flowStats.min7d, ''), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Average',
-            value: formatValueWithUnit(flowStats.avg24h, 't/h'),
+            value: formatValueWithUnit(flowStats.avg24h, ''),
+            hoverUnit: 't/h',
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
             iconColor: '#fff',
             additionalData: [
-                { value: formatValueWithUnit(flowStats.avg12h, 't/h'), timeLabel: '12 Jam terakhir' },
-                { value: formatValueWithUnit(flowStats.avg24h, 't/h'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(flowStats.avg7d, 't/h'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(flowStats.avg12h, ''), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(flowStats.avg24h, ''), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(flowStats.avg7d, ''), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Maximum',
-            value: formatValueWithUnit(flowStats.max24h, 't/h'),
+            value: formatValueWithUnit(flowStats.max24h, ''),
+            hoverUnit: 't/h',
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
             iconColor: '#fff',
             additionalData: [
-                { value: formatValueWithUnit(flowStats.max12h, 't/h'), timeLabel: '12 Jam terakhir' },
-                { value: formatValueWithUnit(flowStats.max24h, 't/h'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(flowStats.max7d, 't/h'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(flowStats.max12h, ''), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(flowStats.max24h, ''), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(flowStats.max7d, ''), timeLabel: '1 minggu terakhir' }
             ]
         }
     ];
@@ -309,6 +312,7 @@ const PTF = () => {
                             title={card.title}
                             value={card.value}
                             unit={card.unit}
+                            hoverUnit={card.hoverUnit}
                             icon={card.icon}
                             iconBgColor={card.iconBgColor}
                             iconColor={card.iconColor}
@@ -376,6 +380,7 @@ const PTF = () => {
                             title={card.title}
                             value={card.value}
                             unit={card.unit}
+                            hoverUnit={card.hoverUnit}
                             icon={card.icon}
                             iconBgColor={card.iconBgColor}
                             iconColor={card.iconColor}
@@ -443,6 +448,7 @@ const PTF = () => {
                             title={card.title}
                             value={card.value}
                             unit={card.unit}
+                            hoverUnit={card.hoverUnit}
                             icon={card.icon}
                             iconBgColor={card.iconBgColor}
                             iconColor={card.iconColor}

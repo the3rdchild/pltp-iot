@@ -70,7 +70,11 @@ const Power = () => {
   const stSpeedAnomalies = useAnomalyCounts('speed_detection', stSpeed);
 
   // Card data builder — identical layout to ptf.jsx's card arrays
-  const buildCardData = (stats, anomalies, unit) => [
+  // unitOnHover: hide the unit in the collapsed card and show it only on hover (for wide units)
+  const buildCardData = (stats, anomalies, unit, unitOnHover = false) => {
+    const valueUnit = unitOnHover ? '' : unit;
+    const hoverUnit = unitOnHover ? unit : undefined;
+    return [
     {
       title: 'Anomali Status',
       value: anomalies.last24h,
@@ -86,44 +90,48 @@ const Power = () => {
     },
     {
       title: 'Minimum',
-      value: formatValueWithUnit(stats.min24h, unit),
+      value: formatValueWithUnit(stats.min24h, valueUnit),
+      hoverUnit,
       icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
       iconBgColor: '#FF7E7E',
       iconColor: '#fff',
       additionalData: [
-        { value: formatValueWithUnit(stats.min12h, unit), timeLabel: '12 Jam terakhir' },
-        { value: formatValueWithUnit(stats.min24h, unit), timeLabel: '1 hari terakhir' },
-        { value: formatValueWithUnit(stats.min7d, unit), timeLabel: '1 minggu terakhir' }
+        { value: formatValueWithUnit(stats.min12h, valueUnit), timeLabel: '12 Jam terakhir' },
+        { value: formatValueWithUnit(stats.min24h, valueUnit), timeLabel: '1 hari terakhir' },
+        { value: formatValueWithUnit(stats.min7d, valueUnit), timeLabel: '1 minggu terakhir' }
       ]
     },
     {
       title: 'Average',
-      value: formatValueWithUnit(stats.avg24h, unit),
+      value: formatValueWithUnit(stats.avg24h, valueUnit),
+      hoverUnit,
       icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
       iconBgColor: '#53A1FF',
       iconColor: '#fff',
       additionalData: [
-        { value: formatValueWithUnit(stats.avg12h, unit), timeLabel: '12 Jam terakhir' },
-        { value: formatValueWithUnit(stats.avg24h, unit), timeLabel: '1 hari terakhir' },
-        { value: formatValueWithUnit(stats.avg7d, unit), timeLabel: '1 minggu terakhir' }
+        { value: formatValueWithUnit(stats.avg12h, valueUnit), timeLabel: '12 Jam terakhir' },
+        { value: formatValueWithUnit(stats.avg24h, valueUnit), timeLabel: '1 hari terakhir' },
+        { value: formatValueWithUnit(stats.avg7d, valueUnit), timeLabel: '1 minggu terakhir' }
       ]
     },
     {
       title: 'Maximum',
-      value: formatValueWithUnit(stats.max24h, unit),
+      value: formatValueWithUnit(stats.max24h, valueUnit),
+      hoverUnit,
       icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
       iconBgColor: '#58E58C',
       iconColor: '#fff',
       additionalData: [
-        { value: formatValueWithUnit(stats.max12h, unit), timeLabel: '12 Jam terakhir' },
-        { value: formatValueWithUnit(stats.max24h, unit), timeLabel: '1 hari terakhir' },
-        { value: formatValueWithUnit(stats.max7d, unit), timeLabel: '1 minggu terakhir' }
+        { value: formatValueWithUnit(stats.max12h, valueUnit), timeLabel: '12 Jam terakhir' },
+        { value: formatValueWithUnit(stats.max24h, valueUnit), timeLabel: '1 hari terakhir' },
+        { value: formatValueWithUnit(stats.max7d, valueUnit), timeLabel: '1 minggu terakhir' }
       ]
     }
   ];
+  };
 
   const activePowerCardData = buildCardData(activePowerStats, activePowerAnomalies, 'MW');
-  const reactivePowerCardData = buildCardData(reactivePowerStats, reactivePowerAnomalies, 'MVAR');
+  const reactivePowerCardData = buildCardData(reactivePowerStats, reactivePowerAnomalies, 'MVAR', true);
   const stSpeedCardData = buildCardData(stSpeedStats, stSpeedAnomalies, 'RPM');
 
   // One row config per parameter — the gauge + 4 StatCards render identically
@@ -224,6 +232,7 @@ const Power = () => {
                   title={card.title}
                   value={card.value}
                   unit={card.unit}
+                  hoverUnit={card.hoverUnit}
                   icon={card.icon}
                   iconBgColor={card.iconBgColor}
                   iconColor={card.iconColor}
