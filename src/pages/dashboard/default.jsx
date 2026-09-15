@@ -212,7 +212,7 @@ function MobileLayout({
             value={activePower}
             unit={limitData.gen_output?.unit || 'MW'}
             status={getPowerStatus(activePower, 'gen_output')}
-            linkTo="#"
+            linkTo="/power"
             titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
             icon={BoltIcon}
             iconConfig={{ size: 32, color: '#ef4444' }}
@@ -226,7 +226,7 @@ function MobileLayout({
             value={reactivePower}
             unit={limitData.reactive_power?.unit || 'MVAR'}
             status={getPowerStatus(reactivePower, 'reactive_power')}
-            linkTo="#"
+            linkTo="/power"
             titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
             icon={FaBolt}
             iconConfig={{ size: 20, color: '#8b5cf6' }}
@@ -240,7 +240,7 @@ function MobileLayout({
             value={voltage}
             unit={limitData.voltage?.unit || 'kV'}
             status={getPowerStatus(voltage, 'voltage')}
-            linkTo="#"
+            linkTo="/power"
             titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
             icon={OfflineBoltIcon}
             iconConfig={{ size: 28, color: '#f59e0b' }}
@@ -254,7 +254,7 @@ function MobileLayout({
             value={stSpeed}
             unit={limitData.speed_detection?.unit || 'RPM'}
             status={getPowerStatus(stSpeed, 'speed_detection')}
-            linkTo="#"
+            linkTo="/power"
             titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
             icon={RiSpeedUpFill}
             iconConfig={{ size: 28, color: '#22c55e' }}
@@ -269,7 +269,7 @@ function MobileLayout({
           value={current}
           unit={limitData.current?.unit || 'A'}
           status={getPowerStatus(current, 'current')}
-          linkTo="#"
+          linkTo="/power"
           titleConfig={TITLE_CONFIG}
           icon={TbCircuitResistor}
           iconConfig={{ size: 32, color: '#3b82f6' }}
@@ -575,7 +575,7 @@ function DesktopLayout({
               value={activePower}
               unit={limitData.gen_output?.unit || 'MW'}
               status={getPowerStatus(activePower, 'gen_output')}
-              linkTo="#"
+              linkTo="/power"
               titleConfig={TITLE_CONFIG}
               icon={BoltIcon}
               iconConfig={{ size: 39, color: '#ef4444' }}
@@ -590,7 +590,7 @@ function DesktopLayout({
               value={voltage}
               unit={limitData.voltage?.unit || 'kV'}
               status={getPowerStatus(voltage, 'voltage')}
-              linkTo="#"
+              linkTo="/power"
               titleConfig={TITLE_CONFIG}
               icon={OfflineBoltIcon}
               iconConfig={{ size: 32, color: '#f59e0b' }}
@@ -605,7 +605,7 @@ function DesktopLayout({
               value={current}
               unit={limitData.current?.unit || 'A'}
               status={getPowerStatus(current, 'current')}
-              linkTo="#"
+              linkTo="/power"
               titleConfig={TITLE_CONFIG}
               icon={TbCircuitResistor}
               iconConfig={{ size: 32, color: '#3b82f6' }}
@@ -620,7 +620,7 @@ function DesktopLayout({
               value={reactivePower}
               unit={limitData.reactive_power?.unit || 'MVAR'}
               status={getPowerStatus(reactivePower, 'reactive_power')}
-              linkTo="#"
+              linkTo="/power"
               titleConfig={TITLE_CONFIG}
               icon={FaBolt}
               iconConfig={{ size: 25, color: '#8b5cf6' }}
@@ -635,7 +635,7 @@ function DesktopLayout({
               value={stSpeed}
               unit={limitData.speed_detection?.unit || 'RPM'}
               status={getPowerStatus(stSpeed, 'speed_detection')}
-              linkTo="#"
+              linkTo="/power"
               titleConfig={TITLE_CONFIG}
               icon={RiSpeedUpFill}
               iconConfig={{ size: 32, color: '#22c55e' }}
