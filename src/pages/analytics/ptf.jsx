@@ -104,38 +104,41 @@ const PTF = () => {
         },
         {
             title: 'Minimum',
-            value: formatValueWithUnit(pressureStats.min24h, 'barg'),
+            value: formatValueWithUnit(pressureStats.min24h, ''),
+            hoverUnit: 'barg',
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
             iconColor: '#fff',
             additionalData: [
-                { value: formatValueWithUnit(pressureStats.min12h, 'barg'), timeLabel: '12 Jam terakhir' },
-                { value: formatValueWithUnit(pressureStats.min24h, 'barg'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(pressureStats.min7d, 'barg'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(pressureStats.min12h, ''), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(pressureStats.min24h, ''), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(pressureStats.min7d, ''), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Average',
-            value: formatValueWithUnit(pressureStats.avg24h, 'barg'),
+            value: formatValueWithUnit(pressureStats.avg24h, ''),
+            hoverUnit: 'barg',
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
             iconColor: '#fff',
             additionalData: [
-                { value: formatValueWithUnit(pressureStats.avg12h, 'barg'), timeLabel: '12 Jam terakhir' },
-                { value: formatValueWithUnit(pressureStats.avg24h, 'barg'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(pressureStats.avg7d, 'barg'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(pressureStats.avg12h, ''), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(pressureStats.avg24h, ''), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(pressureStats.avg7d, ''), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Maximum',
-            value: formatValueWithUnit(pressureStats.max24h, 'barg'),
+            value: formatValueWithUnit(pressureStats.max24h, ''),
+            hoverUnit: 'barg',
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
             iconColor: '#fff',
             additionalData: [
-                { value: formatValueWithUnit(pressureStats.max12h, 'barg'), timeLabel: '12 Jam terakhir' },
-                { value: formatValueWithUnit(pressureStats.max24h, 'barg'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(pressureStats.max7d, 'barg'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(pressureStats.max12h, ''), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(pressureStats.max24h, ''), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(pressureStats.max7d, ''), timeLabel: '1 minggu terakhir' }
             ]
         }
     ];
