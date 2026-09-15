@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import pertaminaLogo from '../../assets/images/pertamina1x1.svg';
-import unpadLogo from '../../assets/images/Logo-Unpad.svg';
+import unpadLogo from '../../assets/images/logo-unpad1.png';
 import pertasmartLogo from '../../assets/images/Pertasmart4x1.svg';
 import heroImage from '../../assets/images/landing_page_image.jpg';
 import engineerImage from '../../assets/images/landing_page_image_2.png';
@@ -28,6 +28,49 @@ L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
+
+const researchTeam = [
+  {
+    institution: 'PT. Pertamina (Persero)',
+    logo: LogoPertamina,
+    logoClassName: 'team-group-logo-pertamina',
+    members: [
+      { name: 'Ali Sundja', role: 'VP Technology Innovation Upstream and Low Carbon' },
+      { name: 'Wahyu Firmansyah', role: 'Project Leader' },
+      { name: 'Hary Koestono', role: 'Anggota' },
+      { name: 'Bambang Mujihardi', role: 'Anggota' },
+      { name: 'Taufiq', role: 'Anggota' },
+      { name: 'Lukman Nulhakim', role: 'Anggota' },
+      { name: 'Adrian Tawakal', role: 'Anggota' }
+    ]
+  },
+  {
+    institution: 'Universitas Padjadjaran',
+    logo: unpadLogo,
+    logoClassName: 'team-group-logo-unpad',
+    members: [
+      { name: 'Ir. Agus Trisanto, M.T., Ph.D.', role: 'Project Leader' },
+      { name: 'Prof. Dr. Eng. Darmawan Hidayat, S.Si., M.T.', role: 'Anggota' },
+      { name: 'Dr. Mohammad Taufik', role: 'Anggota' },
+      { name: 'Ir. Muhammad Rasyid Ramdhani, M.T.', role: 'Anggota' },
+      { name: 'Ir. Septian Ari Kurniawan, S.T., M.T.', role: 'Anggota' },
+      { name: 'Allyn Pramudya Sulaeman, M.T., Ph.D.', role: 'Anggota' },
+      { name: 'Naufal Kholis Arrahman', role: 'Anggota' },
+      { name: 'Ivan Antony', role: 'Anggota' },
+      { name: 'Raditya Ahmad Arfandi', role: 'Anggota' },
+      { name: 'Raden Mas Ahmad Rafi Nur Arief', role: 'Anggota' }
+    ]
+  }
+];
+
+// Initials from the bare name: drop trailing degrees (after the comma) and prefix titles (words ending in ".")
+const getInitials = (name) => {
+  const words = name
+    .split(',')[0]
+    .split(' ')
+    .filter((word) => word && !word.endsWith('.'));
+  return (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')).toUpperCase();
+};
 
 const Home = () => {
   const [activeUnit, setActiveUnit] = useState(null);
@@ -186,6 +229,7 @@ const Home = () => {
           <a href="#pltp-works" className="sidebar-link">Cara Kerja PLTP</a>
           <a href="#sampling" className="sidebar-link">Teknik Pengambilan Sampel</a>
           <a href="#ai-monitoring" className="sidebar-link">Sistem Monitoring & Analisis AI</a>
+          <a href="#research-team" className="sidebar-link">Tim Riset</a>
           <a href="#collaboration" className="sidebar-link">Kolaborasi & Kerja Sama</a>
         </div>
       </div>
@@ -707,6 +751,43 @@ const Home = () => {
                 </a>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Research Team Section */}
+      <section id="research-team" className="team-section">
+        <div className="container">
+          <div className="team-header">
+            <span className="team-badge">Anggota Tim Riset</span>
+            <h2 className="section-title">
+              Pengembangan <em>Online Steam Quality-Purity Monitoring Smart System</em> di Lapangan Geotermal
+            </h2>
+          </div>
+
+          <div className="team-grid">
+            {researchTeam.map((group) => (
+              <div key={group.institution} className="team-group">
+                <div className="team-group-header">
+                  <div className="team-group-logo-container">
+                    <img src={group.logo} alt={group.institution} className={`team-group-logo ${group.logoClassName}`} />
+                  </div>
+                  <h3 className="team-group-name">{group.institution}</h3>
+                </div>
+
+                <ul className="team-list">
+                  {group.members.map((member) => (
+                    <li key={member.name} className="team-member">
+                      <span className="team-avatar">{getInitials(member.name)}</span>
+                      <div className="team-member-info">
+                        <span className="team-member-name">{member.name}</span>
+                        <span className={`team-role ${member.role === 'Anggota' ? '' : 'team-role-highlight'}`}>{member.role}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -1791,6 +1872,155 @@ const Home = () => {
           transform: translateX(4px);
         }
 
+        /* Research Team Section */
+        .team-section {
+          padding: 80px 0;
+          background: #f8f9fa;
+        }
+
+        .team-header {
+          text-align: center;
+          margin-bottom: 48px;
+        }
+
+        .team-badge {
+          display: inline-block;
+          background: rgba(37, 99, 235, 0.1);
+          color: #2563eb;
+          padding: 8px 20px;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-bottom: 16px;
+        }
+
+        .team-header .section-title {
+          max-width: 900px;
+          margin: 0 auto;
+          line-height: 1.3;
+        }
+
+        .team-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 32px;
+          align-items: start;
+        }
+
+        .team-group {
+          background: #ffffff;
+          border: 1px solid #e9ecef;
+          border-radius: 16px;
+          padding: 32px;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+        }
+
+        .team-group-header {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding-bottom: 24px;
+          margin-bottom: 16px;
+          border-bottom: 1px solid #e9ecef;
+        }
+
+        .team-group-logo-container {
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .team-group-logo {
+          display: block;
+          width: auto;
+          object-fit: contain;
+        }
+
+        /* Per-logo size — adjust each height independently */
+        .team-group-logo-pertamina {
+          height: 64px;
+        }
+
+        .team-group-logo-unpad {
+          height: 75px;
+        }
+
+        .team-group-name {
+          font-size: 1.25rem;
+          font-weight: 700;
+          color: #1a2642;
+          margin: 0;
+        }
+
+        .team-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+
+        .team-member {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 12px;
+          border-radius: 12px;
+          transition: background 0.2s ease;
+        }
+
+        .team-member:hover {
+          background: #f8f9fa;
+        }
+
+        .team-avatar {
+          width: 44px;
+          height: 44px;
+          flex-shrink: 0;
+          border-radius: 50%;
+          background: #1a2642;
+          color: #ffffff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.875rem;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+        }
+
+        .team-member-info {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+          min-width: 0;
+        }
+
+        .team-member-name {
+          font-size: 1rem;
+          font-weight: 600;
+          color: #1a1a1a;
+          line-height: 1.4;
+        }
+
+        .team-role {
+          display: inline-block;
+          background: #e9ecef;
+          color: #495057;
+          padding: 2px 10px;
+          border-radius: 6px;
+          font-size: 0.75rem;
+          font-weight: 500;
+          line-height: 1.5;
+        }
+
+        .team-role-highlight {
+          background: rgba(37, 99, 235, 0.1);
+          color: #1e40af;
+          font-weight: 600;
+        }
+
         /* Collaboration Section */
         .collaboration-section {
           padding: 80px 0;
@@ -2070,6 +2300,23 @@ const Home = () => {
 
           .collaboration-header .section-title {
             font-size: 2rem;
+          }
+
+          .team-section {
+            padding: 56px 0;
+          }
+
+          .team-grid {
+            grid-template-columns: 1fr;
+            gap: 24px;
+          }
+
+          .team-group {
+            padding: 20px 16px;
+          }
+
+          .team-member {
+            padding: 10px 8px;
           }
 
           .partners-grid {
