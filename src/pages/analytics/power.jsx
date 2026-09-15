@@ -150,6 +150,8 @@ const Power = () => {
     {
       key: 'st-speed',
       label: 'S.T Speed',
+      // RPM values are 4 digits wide and collide with the in-gauge unit, so show it in the title
+      unitInTitle: true,
       value: stSpeed,
       changePct: stSpeedChangePct,
       limit: limitData.speed_detection,
@@ -176,7 +178,7 @@ const Power = () => {
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography variant="subtitle1" color="textSecondary">
-                    {row.label}
+                    {row.unitInTitle ? `${row.label} (${row.limit.unit})` : row.label}
                   </Typography>
                   <Box
                     sx={{
@@ -200,7 +202,7 @@ const Power = () => {
                     value={row.value}
                     min={row.limit.min}
                     max={row.limit.max}
-                    unit={row.limit.unit}
+                    unit={row.unitInTitle ? '' : row.limit.unit}
                     abnormalLow={row.limit.abnormalLow}
                     warningLow={row.limit.warningLow}
                     idealLow={row.limit.idealLow}
