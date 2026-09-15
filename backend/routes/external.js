@@ -17,11 +17,15 @@ const {
   getAi1aDirectionAnnotations,
   getAi1bData,
   getFailureForecastData,
-  getFailureForecastHistory
+  getFailureForecastHistory,
+  getFailureForecastOverhaulEvents,
+  createFailureForecastOverhaulEvent,
+  undoFailureForecastOverhaulEvent
 } = require('../controllers/externalController');
 
 // Import API Key authentication middleware
 const { validateApiKey } = require('../middleware/apiKeyAuth');
+const { authenticateToken, requireRole } = require('../middleware/auth');
 const { getLatestMLPredictions } = require('../controllers/dataController');
 
 // POST /api/external/honeywell - Fetch and store data from Honeywell PIMS
@@ -82,6 +86,21 @@ router.get('/failure-forecast', getFailureForecastData);
 // shape as /failure-forecast, joins onto it at today_failure_pct. See
 // docs/failure_forecast_contract_for_beFE.md.
 router.get('/failure-forecast/history', getFailureForecastHistory);
+
+// GET /api/external/failure-forecast/overhaul - Get the full overhaul-event
+// log (soft-delete only). Read-only/public, same as the two routes above.
+router.get('/failure-forecast/overhaul', getFailureForecastOverhaulEvents);
+
+// POST /api/external/failure-forecast/overhaul-reset - Record a completed
+// major overhaul/Turn Around (resets the SoH anchor). Admin-only: this is a
+// real, permanently-logged event, not a cosmetic UI action. See
+// getFailureForecastOverhaulEvents/createFailureForecastOverhaulEvent in
+// externalController.js for the full contract.
+router.post('/failure-forecast/overhaul-reset', authenticateToken, requireRole('admin'), createFailureForecastOverhaulEvent);
+
+// POST /api/external/failure-forecast/overhaul-undo - Soft-delete (undo) the
+// most recently recorded active overhaul event. Admin-only, same as above.
+router.post('/failure-forecast/overhaul-undo', authenticateToken, requireRole('admin'), undoFailureForecastOverhaulEvent);
 
 // Testing endpoints - protected with API Key for security
 router.post('/test', validateApiKey, testConnection); // Test connection and insert sample data

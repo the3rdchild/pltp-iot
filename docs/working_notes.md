@@ -67,3 +67,55 @@ the actual deploy commands — don't improvise deploy steps here.
 "AI_Pertasmart_V3 master session"; deploy commands are prepared by the
 "PERTASMART FE/BE deployment ke VPS" session and held until PR
 review/merge per the master session's instruction.
+
+## Backend/Frontend — Failure-forecast SoH: history curve + overhaul reset
+
+Driven by cross-session handoffs from the AI side (`AI_Pertasmart_V3`
+repo) — full data contract in their `docs/failure_forecast_contract_for_beFE.md`
+(not tracked in this repo's git, relayed via chat).
+
+**Shipped 2026-09-15, pushed `main`, deployed VPS (commit `53f136f`):**
+- `GET /api/external/failure-forecast/history` (`getFailureForecastHistory`)
+  — historical SoH curve, COD 2015-06-29 → today, joins onto the existing
+  `GET /api/external/failure-forecast` projection at the anchor point via
+  the `segment` column (`'nominal'`/`'observed'`), never a date comparison.
+- `FailureForecastChart.jsx` draws both as one line per model: solid
+  historis + dashed proyeksi, connected at the join point, with a "Hari
+  ini" annotation. New hook `useFailureForecastHistory.js` (separate file
+  from `useFailureForecastData.js` — one hook, one endpoint).
+- Deploy: `git pull` fast-forward, `pm2 restart Pertasmart-api`, `npm run
+  build`, verified via `SSH BE FE Agent` session (curl + `pm2 list`
+  before/after, HTTP 200 on `/` and `/prediction`).
+
+**Shipped 2026-09-15, same day, not yet deployed to VPS:** admin-only
+"Catat Overhaul Selesai (Reset SoH)" control, per a follow-up handoff from
+the AI side's "Master Session" (`ai-pertasmart-v3`).
+
+- `failure_forecast_overhaul_event` (schema owned by `AI_Pertasmart_V3`,
+  already live on the shared VPS Postgres) — `id`, `created_at` (this IS
+  the effective overhaul date, not an insert timestamp — confirmed against
+  their `overhaul_event.py`), `undone_at` (soft-delete only, never
+  hard-deleted). No "recorded by" column exists in the shared schema — who
+  pressed the button is only in this server's console log, not persisted;
+  flagged rather than silently fixed by altering a table the AI worker also
+  reads.
+- New endpoints in `externalController.js`/`external.js`: `GET
+  /api/external/failure-forecast/overhaul` (public read, list + derive
+  "active event" client-side), `POST .../overhaul-reset` and `POST
+  .../overhaul-undo` (both `authenticateToken` + `requireRole('admin')`).
+  **INSERTs directly into the AI-side's table** (recommended design from
+  their handoff) rather than proxying to their internal port-8600 tool —
+  that tool's password is never read/stored/forwarded here.
+- FE: `OverhaulResetControl.jsx` (new file, single responsibility — separate
+  from `FailureForecastChart.jsx`), rendered under the SoH chart on
+  `/prediction`. Status/history visible to any signed-in viewer; reset/undo
+  buttons admin-only (`getCurrentUser().role`, UX guard only — the backend
+  role check is the real gate). Reset dialog lets the operator pick a
+  **manual past date** (default today, min COD, max today) — per
+  `argumen_horizon_forecast_kegagalan.md` §11.5, deliberately NOT an
+  automatic/fixed-cycle reset; a "~4 tahun, rentang 2–6 tahun" note is shown
+  as pure context, never a validation rule or a blocker.
+- Verified locally: `vite build` + `eslint` clean (no new errors/warnings).
+- **Not yet deployed** — master session said deploy is deliberately deferred
+  (coordinating with a separate VPS-access task), do not push/deploy this
+  without checking with them first that the timing still holds.

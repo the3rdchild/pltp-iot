@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { query } = require('../config/database');
 const axios = require('axios');
+const crypto = require('crypto');
 
 // Load and parse the tag name mapping from environment variables
 const HONEYWELL_TAGNAME_MAPPING = JSON.parse(process.env.HONEYWELL_TAGNAME_MAPPING || '{}');
@@ -1517,6 +1518,143 @@ const getFailureForecastHistory = async (req, res) => {
   }
 };
 
+// An overhaul can't predate commercial operation -- see
+// argumen_horizon_forecast_kegagalan.md §7.4/§11.5 (AI_Pertasmart_V3 repo):
+// reset is only for a major overhaul/Turn Around AFTER it has actually
+// finished, never a scheduled/future one.
+const OVERHAUL_COD_DATE = new Date('2015-06-29T00:00:00Z');
+
+// Get the full overhaul-event log (failure_forecast_overhaul_event --
+// soft-delete only, see docs/failure_forecast_contract_for_beFE.md §3).
+// Read-only and unauthenticated like every other GET in this file: the FE
+// derives "is there an active event" from the newest row with
+// undone_at IS NULL, so there's no separate /status endpoint to keep in
+// sync with this one.
+const getFailureForecastOverhaulEvents = async (req, res) => {
+  try {
+    const sql = `
+      SELECT id, created_at, undone_at
+      FROM failure_forecast_overhaul_event
+      ORDER BY created_at DESC
+    `;
+    const result = await query(sql);
+    res.json({ success: true, data: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('❌ Error fetching failure forecast overhaul events:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch failure forecast overhaul events',
+      error: error.message
+    });
+  }
+};
+
+// Record a completed major overhaul/Turn Around. The next
+// jobs_failure_forecast.py run (~60s) picks this up as the new SoH anchor --
+// nothing to trigger on our side.
+//
+// INSERTs directly into the AI-side's Postgres table (same DB already used
+// for failure_forecast_projection/history) rather than proxying to the
+// AI-side's own port-8600 tool -- that tool is internal/password-gated for a
+// different purpose (design confirmed via cross-session handoff from the
+// "Master Session" ai-pertasmart-v3, 2026-09-15). Auth here is this repo's
+// own admin gate (authenticateToken + requireRole('admin'), see
+// backend/routes/external.js), never the AI-side password -- that password
+// is never read, stored, or forwarded by this file.
+//
+// `created_at` IS the effective overhaul date, not a mere insert timestamp
+// (confirmed against AI_Pertasmart_V3/simulator/failure-forecast/backend/app
+// /overhaul_event.py -- effective_anchor_epoch reads created_at as the age-
+// reset point). The AI side's own tool always uses "now"; letting the
+// operator pick a past date here is a pltp-iot-side addition per the
+// dosen's calibration request (argumen_horizon_forecast_kegagalan.md §11.5
+// point 1: default is a MANUAL date, not an automatic/fixed cycle).
+//
+// Known gap: the shared table (schema owned by AI_Pertasmart_V3) has no
+// "recorded by" column, so who pressed the button isn't persisted to the
+// DB -- only logged to this server's console. Flagged, not silently
+// worked around by altering a table another team's worker also reads.
+const createFailureForecastOverhaulEvent = async (req, res) => {
+  try {
+    const { effective_date } = req.body;
+
+    const effectiveAt = effective_date ? new Date(effective_date) : new Date();
+    if (Number.isNaN(effectiveAt.getTime())) {
+      return res.status(400).json({ success: false, message: 'effective_date is not a valid date' });
+    }
+    if (effectiveAt < OVERHAUL_COD_DATE) {
+      return res.status(400).json({
+        success: false,
+        message: `effective_date can't be before commercial operation date (${OVERHAUL_COD_DATE.toISOString().slice(0, 10)})`
+      });
+    }
+    // Small forward tolerance for clock skew -- not a loophole for
+    // "scheduled" overhauls. Reset is only for ones already completed.
+    if (effectiveAt.getTime() > Date.now() + 5 * 60 * 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'effective_date is in the future -- only record an overhaul after it has actually finished'
+      });
+    }
+
+    const id = crypto.randomUUID().replace(/-/g, '');
+    await query('INSERT INTO failure_forecast_overhaul_event (id, created_at, undone_at) VALUES ($1, $2, NULL)', [
+      id,
+      effectiveAt.toISOString()
+    ]);
+
+    console.log(
+      `✅ Overhaul event recorded by user ${req.user?.userId ?? 'unknown'}: id=${id} effective_at=${effectiveAt.toISOString()}`
+    );
+
+    res.status(201).json({ success: true, data: { id, created_at: effectiveAt.toISOString(), undone_at: null } });
+  } catch (error) {
+    console.error('❌ Error recording failure forecast overhaul event:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to record overhaul event',
+      error: error.message
+    });
+  }
+};
+
+// Undo the most recently recorded ACTIVE overhaul event -- soft-delete only
+// (sets undone_at, never DELETEs the row, per the shared table's own soft-
+// delete contract). Targets only the single newest active row, matching how
+// the AI-side worker itself picks the anchor when more than one is briefly
+// active (overhaul_event.py::latest_active) -- an older active row left
+// behind by a race is not touched here.
+const undoFailureForecastOverhaulEvent = async (req, res) => {
+  try {
+    const result = await query(
+      `UPDATE failure_forecast_overhaul_event
+       SET undone_at = NOW()
+       WHERE id = (
+         SELECT id FROM failure_forecast_overhaul_event
+         WHERE undone_at IS NULL
+         ORDER BY created_at DESC
+         LIMIT 1
+       )
+       RETURNING id, created_at, undone_at`
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(409).json({ success: false, message: 'No active overhaul event to undo' });
+    }
+
+    console.log(`✅ Overhaul event undone by user ${req.user?.userId ?? 'unknown'}: id=${result.rows[0].id}`);
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('❌ Error undoing failure forecast overhaul event:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to undo overhaul event',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   fetchHoneywellData,
   receiveExternalData,
@@ -1534,5 +1672,8 @@ module.exports = {
   getAi1aDirectionAnnotations,
   getAi1bData,
   getFailureForecastData,
-  getFailureForecastHistory
+  getFailureForecastHistory,
+  getFailureForecastOverhaulEvents,
+  createFailureForecastOverhaulEvent,
+  undoFailureForecastOverhaulEvent
 };

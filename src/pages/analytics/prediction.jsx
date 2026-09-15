@@ -2,10 +2,11 @@ import { Box, Typography, Chip, Tooltip, ToggleButtonGroup, ToggleButton } from 
 import Grid from '@mui/material/Grid';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import MainCard from 'components/MainCard';
-import { AnalyticsHeader, RiskChart, FailureForecastChart, FAILURE_FORECAST_MODEL_LABELS } from '../../components/analytics';
+import { AnalyticsHeader, RiskChart, FailureForecastChart, FAILURE_FORECAST_MODEL_LABELS, OverhaulResetControl } from '../../components/analytics';
 import { useAi1aData } from '../../hooks/useAi1Data';
 import { useFailureForecastData } from '../../hooks/useFailureForecastData';
 import { useFailureForecastHistory } from '../../hooks/useFailureForecastHistory';
+import { useFailureForecastOverhaul } from '../../hooks/useFailureForecastOverhaul';
 
 // icons
 import PsychologyIcon from '@mui/icons-material/Psychology';
@@ -167,6 +168,7 @@ const AIAnalytics = () => {
   const { liveData: ai1aLive, history: ai1aHistory, loading: ai1aLoading } = useAi1aData(3000, ai1aVariant);
   const { rows: failureForecastRows, loading: failureForecastLoading } = useFailureForecastData();
   const { rows: failureForecastHistoryRows, loading: failureForecastHistoryLoading } = useFailureForecastHistory();
+  const { events: overhaulEvents, loading: overhaulLoading, refetch: refetchOverhaulEvents } = useFailureForecastOverhaul();
 
   const [sensorRows, setSensorRows] = useState([]);
 
@@ -414,6 +416,7 @@ const AIAnalytics = () => {
           historyRows={failureForecastHistoryRows}
           loading={failureForecastLoading || failureForecastHistoryLoading}
         />
+        <OverhaulResetControl events={overhaulEvents} loading={overhaulLoading} onChanged={refetchOverhaulEvents} />
       </Box>
 
       {/* ---------------- tables ---------------- */}
