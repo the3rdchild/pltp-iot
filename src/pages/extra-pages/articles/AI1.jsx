@@ -473,7 +473,7 @@ const AI1 = () => {
                       />
                       <Tooltip 
                         contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0' }}
-                        formatter={(value) => value.toFixed(3)}
+                        formatter={(value) => value.toFixed(2)}
                       />
                       
                       <Area 

@@ -8,6 +8,7 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import dayjs from 'dayjs';
 import MainCard from '../MainCard';
 import PropTypes from 'prop-types';
+import { resolveCustomWindow, formatTimestampForSpan } from '../../utils/chartRange';
 
 const AI2_URL = '/api/external/ai2';
 
@@ -129,13 +130,34 @@ const computeYRange = (vals, yAxisMin, yAxisMax) => {
   return { min: Math.floor(min * 0.99), max: Math.ceil(max * 1.01) };
 };
 
+// Chart numbers are capped at 2 decimals app-wide; `decimals` may ask for fewer.
+const MAX_DECIMALS = 2;
+
+// Full y-axis object, used at creation AND by every update. updateOptions
+// replaces the `yaxis` branch wholesale, so updates that sent only {min, max}
+// dropped this formatter and the axis fell back to raw floats
+// (e.g. "1.000000000000000000" on the NCG chart).
+const buildYAxis = ({ min, max, decimals, unit, yAxisTitle }) => ({
+  min,
+  max,
+  labels: {
+    style: { colors: '#86868b', fontSize: '11px' },
+    formatter: v => (v != null && Number.isFinite(v) ? v.toFixed(decimals) + unit : '')
+  },
+  title: {
+    text: yAxisTitle,
+    style: { color: '#86868b', fontSize: '12px', fontWeight: 400 }
+  }
+});
+
 /**
  * Ai2Chart — chart for a single ai2 metric (dryness_predict | ncg_predict).
  * - Seeds chart from /api/external/ai2 on mount / range change
  * - In "now" mode, appends liveValue when it changes (kept to 60 points max)
  * - Supports custom date range via date picker
  * - yAxisMin/yAxisMax: fixed baseline range (e.g. dryness 98-100%); omit for
- *   the old auto-scaled-to-data behavior. decimals: label/tooltip precision.
+ *   the old auto-scaled-to-data behavior. decimals: label/tooltip precision
+ *   (capped at 2).
  */
 const Ai2Chart = ({
   title = 'Real Time Data',
@@ -147,8 +169,9 @@ const Ai2Chart = ({
   color = '#3b82f6',
   yAxisMin = null,
   yAxisMax = null,
-  decimals = 3
+  decimals = MAX_DECIMALS
 }) => {
+  const labelDecimals = Math.min(decimals, MAX_DECIMALS);
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
   const dataRef = useRef([]);
@@ -172,6 +195,9 @@ const Ai2Chart = ({
   const [datePickerAnchor, setDatePickerAnchor] = useState(null);
   const [startDate, setStartDate] = useState(dayjs().subtract(1, 'month'));
   const [endDate, setEndDate] = useState(dayjs());
+  // Picker values while the popover is open; copied to startDate/endDate on Apply.
+  const [draftStartDate, setDraftStartDate] = useState(startDate);
+  const [draftEndDate, setDraftEndDate] = useState(endDate);
   const [isCustomRange, setIsCustomRange] = useState(false);
 
   const formatTimestamp = useCallback((ts, range) => {
@@ -185,10 +211,14 @@ const Ai2Chart = ({
       case '7d':
       case '1m':
         return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+      case 'custom': {
+        const win = resolveCustomWindow(startDate, endDate);
+        return formatTimestampForSpan(ts, win.end - win.start);
+      }
       default:
         return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
     }
-  }, []);
+  }, [startDate, endDate]);
 
   // Fetch historical data — limit-based or date-range-based
   const fetchHistory = useCallback(async ({ limit, start, end, points } = {}) => {
@@ -238,7 +268,8 @@ const Ai2Chart = ({
     const load = () => {
       let fetchParams;
       if (isCustomRange) {
-        fetchParams = { start: startDate.toDate(), end: endDate.toDate(), points: CHART_POINTS };
+        const win = resolveCustomWindow(startDate, endDate);
+        fetchParams = { start: win.start, end: win.end, points: CHART_POINTS };
       } else {
         const end = new Date();
         const ms = RANGE_DURATION_MS[timeRange] ?? RANGE_DURATION_MS['1d'];
@@ -286,13 +317,13 @@ const Ai2Chart = ({
     chartInstanceRef.current.updateOptions(
       {
         xaxis: { categories, title: { text: XAXIS_LABEL_MAP[activeRange] ?? activeRange } },
-        yaxis: { min: minY, max: maxY }
+        yaxis: buildYAxis({ min: minY, max: maxY, decimals: labelDecimals, unit, yAxisTitle })
       },
       true,
       false
     );
     chartInstanceRef.current.updateSeries([{ name: yAxisTitle, data: dataRef.current }], true);
-  }, [isCustomRange, timeRange, yAxisTitle, formatTimestamp, yAxisMin, yAxisMax]);
+  }, [isCustomRange, timeRange, yAxisTitle, formatTimestamp, yAxisMin, yAxisMax, labelDecimals, unit]);
 
   // "Now" mode: append live value and update chart directly (no React state cycle)
   useEffect(() => {
@@ -373,18 +404,7 @@ const Ai2Chart = ({
           style: { color: '#86868b', fontSize: '12px', fontWeight: 400 }
         }
       },
-      yaxis: {
-        min: minY,
-        max: maxY,
-        labels: {
-          style: { colors: '#86868b', fontSize: '11px' },
-          formatter: v => (v != null ? v.toFixed(decimals) + unit : '')
-        },
-        title: {
-          text: yAxisTitle,
-          style: { color: '#86868b', fontSize: '12px', fontWeight: 400 }
-        }
-      },
+      yaxis: buildYAxis({ min: minY, max: maxY, decimals: labelDecimals, unit, yAxisTitle }),
       grid: {
         borderColor: '#f1f1f1',
         xaxis: { lines: { show: true } },
@@ -410,12 +430,12 @@ const Ai2Chart = ({
         y: {
           formatter: (v, opts) => {
             if (v == null) return '';
-            const label = v.toFixed(decimals) + unit;
+            const label = v.toFixed(labelDecimals) + unit;
             const i = opts?.dataPointIndex;
             const lo = minsRef.current[i];
             const hi = maxsRef.current[i];
             if (lo == null || hi == null) return label;
-            return `${label}  (min ${lo.toFixed(decimals)}${unit} · max ${hi.toFixed(decimals)}${unit})`;
+            return `${label}  (min ${lo.toFixed(labelDecimals)}${unit} · max ${hi.toFixed(labelDecimals)}${unit})`;
           }
         },
         marker: { show: true }
@@ -443,13 +463,25 @@ const Ai2Chart = ({
     setIsCustomRange(false);
   };
 
+  const handleDatePickerOpen = (event) => {
+    setDraftStartDate(startDate);
+    setDraftEndDate(endDate);
+    setDatePickerAnchor(event.currentTarget);
+  };
+
   const handleApplyCustomRange = () => {
+    setStartDate(draftStartDate);
+    setEndDate(draftEndDate);
     setIsCustomRange(true);
     setTimeRange('custom');
     setDatePickerAnchor(null);
   };
 
   const openDatePicker = Boolean(datePickerAnchor);
+
+  const isDraftRangeValid = Boolean(
+    draftStartDate?.isValid?.() && draftEndDate?.isValid?.() && !draftStartDate.isAfter(draftEndDate, 'day')
+  );
 
   return (
     <MainCard>
@@ -475,7 +507,7 @@ const Ai2Chart = ({
             variant="outlined"
             size="small"
             startIcon={<CalendarMonthIcon />}
-            onClick={e => setDatePickerAnchor(e.currentTarget)}
+            onClick={handleDatePickerOpen}
             sx={{
               borderRadius: 2,
               textTransform: 'none',
@@ -500,18 +532,20 @@ const Ai2Chart = ({
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
                   label="Start Date"
-                  value={startDate}
-                  onChange={v => setStartDate(v)}
+                  value={draftStartDate}
+                  onChange={v => setDraftStartDate(v)}
+                  disableFuture
                   slotProps={{ textField: { size: 'small' } }}
                 />
                 <DatePicker
                   label="End Date"
-                  value={endDate}
-                  onChange={v => setEndDate(v)}
+                  value={draftEndDate}
+                  onChange={v => setDraftEndDate(v)}
+                  disableFuture
                   slotProps={{ textField: { size: 'small' } }}
                 />
               </LocalizationProvider>
-              <Button variant="contained" size="small" onClick={handleApplyCustomRange} sx={{ textTransform: 'none' }}>
+              <Button variant="contained" size="small" disabled={!isDraftRangeValid} onClick={handleApplyCustomRange} sx={{ textTransform: 'none' }}>
                 Apply
               </Button>
             </Box>

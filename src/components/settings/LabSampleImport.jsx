@@ -17,6 +17,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   IconButton,
   Tooltip,
   CircularProgress
@@ -60,19 +61,33 @@ export default function LabSampleImport() {
   const [samples, setSamples] = useState([]);
   const [loadingSamples, setLoadingSamples] = useState(true);
   const [samplesError, setSamplesError] = useState(null);
+  // Paged on the server (limit/offset), so the table can reach every stored
+  // row instead of only the newest handful.
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalSamples, setTotalSamples] = useState(0);
 
   const refreshSamples = useCallback(async () => {
     setLoadingSamples(true);
     setSamplesError(null);
     try {
-      const res = await getLabSamples({ limit: 20 });
-      setSamples(res?.data || []);
+      const res = await getLabSamples({ limit: rowsPerPage, offset: page * rowsPerPage });
+      const rows = res?.data || [];
+      const total = res?.total ?? rows.length;
+      // Deleting the last row on the last page leaves that page empty: step
+      // back one page (which refetches through the effect below).
+      if (rows.length === 0 && page > 0 && total > 0) {
+        setPage(Math.max(0, Math.ceil(total / rowsPerPage) - 1));
+        return;
+      }
+      setSamples(rows);
+      setTotalSamples(total);
     } catch (error) {
       setSamplesError(error?.message || 'Gagal memuat data lab');
     } finally {
       setLoadingSamples(false);
     }
-  }, []);
+  }, [page, rowsPerPage]);
 
   useEffect(() => {
     refreshSamples();
@@ -304,7 +319,7 @@ export default function LabSampleImport() {
           <Box display="flex" justifyContent="center" py={3}>
             <CircularProgress size={28} />
           </Box>
-        ) : samples.length === 0 ? (
+        ) : totalSamples === 0 ? (
           <Typography variant="body2" color="text.secondary">Belum ada data lab</Typography>
         ) : (
           <TableContainer sx={{ maxHeight: 400 }}>
@@ -339,6 +354,22 @@ export default function LabSampleImport() {
               </TableBody>
             </Table>
           </TableContainer>
+        )}
+
+        {totalSamples > 0 && (
+          <TablePagination
+            component="div"
+            count={totalSamples}
+            page={page}
+            onPageChange={(_, next) => setPage(next)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            labelRowsPerPage="Rows per-page:"
+          />
         )}
       </CardContent>
     </Card>

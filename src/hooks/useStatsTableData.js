@@ -7,9 +7,12 @@ import { getAggregatedStats } from '../utils/api';
  * Returns daily aggregated rows: { no, date, minValue, maxValue, average, stdDeviation }
  *
  * @param {string} metric - The metric to fetch data for (e.g., 'pressure', 'tds', 'dryness')
+ * @param {object|null} dateRange - optional { start_date, end_date } (YYYY-MM-DD)
  * @returns {object} { data, loading, error, refetch }
  */
-export const useStatsTableData = (metric) => {
+export const useStatsTableData = (metric, dateRange = null) => {
+  const startDate = dateRange?.start_date;
+  const endDate = dateRange?.end_date;
   const location = useLocation();
   const isTestEnvironment = location.pathname.startsWith('/test');
 
@@ -28,7 +31,7 @@ export const useStatsTableData = (metric) => {
     setError(null);
 
     try {
-      const response = await getAggregatedStats(metric);
+      const response = await getAggregatedStats(metric, { start_date: startDate, end_date: endDate });
       if (response.success && Array.isArray(response.data)) {
         setData(response.data);
       } else {
@@ -41,7 +44,7 @@ export const useStatsTableData = (metric) => {
     } finally {
       setLoading(false);
     }
-  }, [metric, isTestEnvironment]);
+  }, [metric, isTestEnvironment, startDate, endDate]);
 
   useEffect(() => {
     fetchTableData();

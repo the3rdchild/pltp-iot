@@ -15,6 +15,7 @@ import { useTestData } from '../../contexts/TestDataContext';
 import { useChartReferenceConfig } from '../../hooks/useChartReferenceConfig';
 import { getChartData, getLabComparison } from '../../utils/api';
 import { alignLabSamplesToTimestamps, alignPredictionToTimestamps } from '../../utils/labOverlay';
+import { resolveCustomWindow, formatTimestampForSpan, formatChartNumber, ONE_YEAR_MS } from '../../utils/chartRange';
 
 // Lab comparison overlay color (markers only, opt-in via labMetric)
 const LAB_SERIES_COLOR = '#f59e0b';
@@ -67,9 +68,9 @@ const RealTimeDataChart = ({
   // its length the instant the first live value landed.
   const nowBufferRef = useRef(60);
 
-  const fetchMetricFromAPI = useCallback(async (metric, range, endTime) => {
+  const fetchMetricFromAPI = useCallback(async (metric, range, endTime, startTime) => {
     try {
-      const res = await getChartData(metric, range, endTime);
+      const res = await getChartData(metric, range, endTime, startTime);
       const chart = res?.data?.chart || [];
       return {
         values: chart.map(p => p.avg ?? p.value ?? 0),
@@ -82,7 +83,7 @@ const RealTimeDataChart = ({
   }, []);
 
   const fetchChartFromAPI = useCallback(
-    (range, endTime) => fetchMetricFromAPI(dataType, range, endTime),
+    (range, endTime, startTime) => fetchMetricFromAPI(dataType, range, endTime, startTime),
     [dataType, fetchMetricFromAPI]
   );
 
@@ -94,7 +95,14 @@ const RealTimeDataChart = ({
   const [datePickerAnchor, setDatePickerAnchor] = useState(null);
   const [startDate, setStartDate] = useState(dayjs().subtract(1, 'year'));
   const [endDate, setEndDate] = useState(dayjs());
+  // Picker values while the popover is open; only copied to startDate/endDate
+  // on Apply, so choosing a date doesn't refetch before the user confirms.
+  const [draftStartDate, setDraftStartDate] = useState(startDate);
+  const [draftEndDate, setDraftEndDate] = useState(endDate);
   const [isCustomRange, setIsCustomRange] = useState(false);
+  // Set when a fetched range came back with no rows, so the chart can say so
+  // instead of silently keeping the previous range's series on screen.
+  const [emptyRange, setEmptyRange] = useState(false);
   const [showComparisonData, setShowComparisonData] = useState(false);
   const [labSamples, setLabSamples] = useState([]);
   // Prediction overlay: seeded/aligned to apiTimestamps on fetch, then kept in
@@ -114,12 +122,12 @@ const RealTimeDataChart = ({
     return () => { cancelled = true; };
   }, [labMetric, timeRange, isCustomRange, startDate, endDate, isTestEnvironment, fetchFromApi]);
 
-  // Lab overlay only where real API timestamps exist (standard fetched
-  // ranges). 'now' mode is live-append based and '1y'/'all'/custom use
-  // generated data without matching real timestamps, so those are skipped.
+  // Lab overlay only where real API timestamps exist (fetched ranges).
+  // 'now' mode is live-append based and 'all' buckets on the data's own span,
+  // so those are skipped.
   const labOverlayEnabled = Boolean(
     labMetric && !isTestEnvironment && fetchFromApi &&
-    !isCustomRange && ['1h', '1d', '7d', '1m'].includes(timeRange) &&
+    (isCustomRange || ['1h', '1d', '7d', '1m', '1y'].includes(timeRange)) &&
     apiTimestamps.length > 0
   );
   const labChartData = useMemo(
@@ -127,13 +135,13 @@ const RealTimeDataChart = ({
     [labOverlayEnabled, apiTimestamps, labSamples]
   );
 
-  // The prediction overlay is a FETCHED series, so it only exists on the
-  // ranges that fetch: 'now' is a live sliding window and '1y'/'all'/custom
-  // run on generated data. Kept out of 'now' by request -- that view is meant
-  // to show the raw sensor alone.
+  // The prediction overlay is a FETCHED series, so it only exists on ranges
+  // whose bucket grid is anchored identically for both requests: 'all' buckets
+  // on each table's own data span, so it can't be aligned. Kept out of 'now'
+  // by request -- that view is meant to show the raw sensor alone.
   const predictionEnabled = Boolean(
     predictionDataType && !isTestEnvironment && fetchFromApi &&
-    !isCustomRange && ['1h', '1d', '7d', '1m'].includes(timeRange)
+    (isCustomRange || ['1h', '1d', '7d', '1m', '1y'].includes(timeRange))
   );
 
   // Helper function to generate test chart data from TestDataContext
@@ -196,12 +204,13 @@ const RealTimeDataChart = ({
       setAiData(aiDataPoints.map(d => d.value));
       setFieldData(fieldDataPoints.map(d => d.value));
       setShowComparisonData(true);
-    } else if (fetchFromApi && !isTestEnvironment && ['now', '1h', '1d', '7d', '1m'].includes(timeRange)) {
-      // Fetch real data from API for standard ranges
+    } else if (fetchFromApi && !isTestEnvironment && (isCustomRange || ['now', '1h', '1d', '7d', '1m', '1y', 'all'].includes(timeRange))) {
+      // Fetch real data from API
       dbFetchedRef.current = false;
       setApiTimestamps([]);
       setShowComparisonData(false);
-      const rangeToFetch = timeRange === 'now' ? '1h' : timeRange;
+      setEmptyRange(false);
+      let rangeToFetch = timeRange === 'now' ? '1h' : timeRange;
 
       // Both fetches share ONE anchor instant and run in parallel (not
       // sequential .then()-chained) so the sensor and prediction bucket
@@ -211,11 +220,23 @@ const RealTimeDataChart = ({
       // each other, and at narrow bucket widths (12s at range=1h) that was
       // enough to make the prediction overlay vanish at 'now'/'1h' while
       // still working at wider ranges (found 2026-09-04).
-      const endTime = new Date().toISOString();
+      let endTime = new Date().toISOString();
+      let startTime;
+      // Custom picker and 1y have no fixed backend range: send the explicit
+      // window instead (range=custom), shared by both requests like the anchor.
+      if (isCustomRange) {
+        const win = resolveCustomWindow(startDate, endDate);
+        rangeToFetch = 'custom';
+        startTime = win.start.toISOString();
+        endTime = win.end.toISOString();
+      } else if (timeRange === '1y') {
+        rangeToFetch = 'custom';
+        startTime = new Date(Date.parse(endTime) - ONE_YEAR_MS).toISOString();
+      }
 
       Promise.all([
-        fetchChartFromAPI(rangeToFetch, endTime),
-        predictionEnabled ? fetchMetricFromAPI(predictionDataType, rangeToFetch, endTime) : Promise.resolve(null)
+        fetchChartFromAPI(rangeToFetch, endTime, startTime),
+        predictionEnabled ? fetchMetricFromAPI(predictionDataType, rangeToFetch, endTime, startTime) : Promise.resolve(null)
       ]).then(([result, predResult]) => {
         if (result && result.values.length > 0) {
           setChartData(result.values);
@@ -239,7 +260,9 @@ const RealTimeDataChart = ({
             setPredictionData([]);
           }
         } else {
+          setChartData([]);
           setPredictionData([]);
+          setEmptyRange(timeRange !== 'now');
         }
       });
     } else {
@@ -339,19 +362,19 @@ const RealTimeDataChart = ({
     return [
       {
         title: 'Field Range',
-        value: `${stats.fieldMin?.toFixed(3)}${unit} - ${stats.fieldMax?.toFixed(3)}${unit}`
+        value: `${stats.fieldMin?.toFixed(2)}${unit} - ${stats.fieldMax?.toFixed(2)}${unit}`
       },
       {
         title: 'Field Average',
-        value: `${stats.fieldAvg?.toFixed(3)}${unit}`
+        value: `${stats.fieldAvg?.toFixed(2)}${unit}`
       },
       {
         title: 'AI Range',
-        value: `${stats.aiMin?.toFixed(3)}${unit} - ${stats.aiMax?.toFixed(3)}${unit}`
+        value: `${stats.aiMin?.toFixed(2)}${unit} - ${stats.aiMax?.toFixed(2)}${unit}`
       },
       {
         title: 'AI Average',
-        value: `${stats.aiAvg?.toFixed(3)}${unit}`
+        value: `${stats.aiAvg?.toFixed(2)}${unit}`
       }
     ];
   }, [stats, unit, showComparisonData]);
@@ -369,6 +392,25 @@ const RealTimeDataChart = ({
   };
   const computedXAxisTitle = xAxisTitle ?? XAXIS_LABEL_MAP[timeRange] ?? timeRange;
 
+  // Shared by chart creation AND the update path: updateOptions replaces the
+  // `yaxis` branch wholesale, so sending only {min, max} there used to drop
+  // this formatter and the axis fell back to raw floats.
+  const yAxisLabels = {
+    style: {
+      colors: '#86868b',
+      fontSize: '11px'
+    },
+    formatter: (value) => formatChartNumber(value, unit)
+  };
+  const yAxisTitleOption = {
+    text: yAxisTitle,
+    style: {
+      color: '#86868b',
+      fontSize: '12px',
+      fontWeight: 400
+    }
+  };
+
   // Format a timestamp string for x-axis labels based on the active range
   const formatTS = (ts) => {
     if (!ts) return '';
@@ -382,6 +424,13 @@ const RealTimeDataChart = ({
       case '7d':
       case '1m':
         return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+      case '1y':
+      case 'all':
+        return d.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
+      case 'custom': {
+        const win = resolveCustomWindow(startDate, endDate);
+        return formatTimestampForSpan(ts, win.end - win.start);
+      }
       default:
         return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
     }
@@ -555,23 +604,8 @@ const RealTimeDataChart = ({
         }
       },
       yaxis: {
-        labels: {
-          style: {
-            colors: '#86868b',
-            fontSize: '11px'
-          },
-          formatter: function (value) {
-            return value ? value.toFixed(3) + unit : '';
-          }
-        },
-        title: {
-          text: yAxisTitle,
-          style: {
-            color: '#86868b',
-            fontSize: '12px',
-            fontWeight: 400
-          }
-        },
+        labels: yAxisLabels,
+        title: yAxisTitleOption,
         min: effMinValue ? Math.floor(effMinValue * 0.99) : undefined,
         max: effMaxValue ? Math.ceil(effMaxValue * 1.01) : undefined
       },
@@ -595,16 +629,15 @@ const RealTimeDataChart = ({
         theme: 'light',
         x: { show: true },
         y: {
-          formatter: function (value) {
-            return value ? value.toFixed(3) + unit : '';
-          },
+          formatter: (value) => formatChartNumber(value, unit),
           title: {
             formatter: (seriesName) => seriesName
           }
         },
         marker: { show: true }
       },
-      legend: { show: false }
+      legend: { show: false },
+      noData: { text: 'Tidak ada data pada rentang ini', style: { color: '#86868b', fontSize: '13px' } }
     };
 
     if (chartInstanceRef.current) {
@@ -627,7 +660,12 @@ const RealTimeDataChart = ({
   useEffect(() => {
     if (!chartInstanceRef.current) return;
     if (showComparisonData && (aiData.length === 0 || fieldData.length === 0)) return;
-    if (!showComparisonData && chartData.length === 0) return;
+    if (!showComparisonData && chartData.length === 0) {
+      // Fetched range with no rows: clear the plot rather than leave the
+      // previous range's series standing as if it belonged to this one.
+      if (emptyRange) chartInstanceRef.current.updateSeries([{ name: yAxisTitle, data: [] }]);
+      return;
+    }
 
     // Determine metric key for chart reference config
     const metricConfigKey = dataType === 'flow' ? 'flow_rate' : dataType;
@@ -693,6 +731,8 @@ const RealTimeDataChart = ({
       series: series,
       ...(updatedCategories ? { xaxis: { categories: updatedCategories } } : {}),
       yaxis: {
+        labels: yAxisLabels,
+        title: yAxisTitleOption,
         min: effMinValue ? Math.floor(effMinValue * 0.99) : undefined,
         max: effMaxValue ? Math.ceil(effMaxValue * 1.01) : undefined
       },
@@ -700,7 +740,7 @@ const RealTimeDataChart = ({
         yaxis: annotations
       }
     }, false, timeRange === 'now' && !showComparisonData);
-  }, [chartData, aiData, fieldData, stats, showComparisonData, timeRange, yAxisTitle, thresholds, chartRefConfig, dataType, apiTimestamps, labChartData, predictionEnabled, predictionData, predictionName]);
+  }, [chartData, aiData, fieldData, stats, showComparisonData, timeRange, yAxisTitle, thresholds, chartRefConfig, dataType, apiTimestamps, labChartData, predictionEnabled, predictionData, predictionName, emptyRange, unit]);
 
   const handleTimeRangeChange = (newRange) => {
     setTimeRange(newRange);
@@ -708,6 +748,8 @@ const RealTimeDataChart = ({
   };
 
   const handleDatePickerOpen = (event) => {
+    setDraftStartDate(startDate);
+    setDraftEndDate(endDate);
     setDatePickerAnchor(event.currentTarget);
   };
 
@@ -716,10 +758,16 @@ const RealTimeDataChart = ({
   };
 
   const handleApplyCustomRange = () => {
+    setStartDate(draftStartDate);
+    setEndDate(draftEndDate);
     setIsCustomRange(true);
     setTimeRange('custom');
     handleDatePickerClose();
   };
+
+  const isDraftRangeValid = Boolean(
+    draftStartDate?.isValid?.() && draftEndDate?.isValid?.() && !draftStartDate.isAfter(draftEndDate, 'day')
+  );
 
   const openDatePicker = Boolean(datePickerAnchor);
 
@@ -774,20 +822,23 @@ const RealTimeDataChart = ({
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
                 label="Start Date"
-                value={startDate}
-                onChange={(newValue) => setStartDate(newValue)}
+                value={draftStartDate}
+                onChange={(newValue) => setDraftStartDate(newValue)}
+                disableFuture
                 slotProps={{ textField: { size: 'small' } }}
               />
               <DatePicker
                 label="End Date"
-                value={endDate}
-                onChange={(newValue) => setEndDate(newValue)}
+                value={draftEndDate}
+                onChange={(newValue) => setDraftEndDate(newValue)}
+                disableFuture
                 slotProps={{ textField: { size: 'small' } }}
               />
             </LocalizationProvider>
             <Button
               variant="contained"
               size="small"
+              disabled={!isDraftRangeValid}
               onClick={handleApplyCustomRange}
               sx={{ textTransform: 'none' }}
             >
@@ -853,6 +904,14 @@ const RealTimeDataChart = ({
             </Grid>
           ))}
         </Grid>
+      )}
+
+      {emptyRange && (
+        <Box sx={{ textAlign: 'center', py: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            Tidak ada data pada rentang waktu yang dipilih
+          </Typography>
+        </Box>
       )}
 
       {/* Chart */}

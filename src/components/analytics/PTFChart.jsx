@@ -13,6 +13,7 @@ import { getChartData, getLabComparison, syncHoneywellLiveData } from '../../uti
 import { alignLabSamplesToTimestamps } from '../../utils/labOverlay';
 import { generateRealTimeChartData } from '../../data/simulasi';
 import { generateAIData } from '../../data/chartData';
+import { resolveCustomWindow, formatTimestampForSpan, ONE_YEAR_MS } from '../../utils/chartRange';
 
 // Points kept on screen in 'now' mode. The 1h seed arrives at 12-second
 // resolution (300 buckets), and only the newest slice of it is wanted here:
@@ -108,7 +109,12 @@ const PTFChart = ({
   const [datePickerAnchor, setDatePickerAnchor] = useState(null);
   const [startDate, setStartDate] = useState(dayjs().subtract(1, 'year'));
   const [endDate, setEndDate] = useState(dayjs());
+  // Picker values while the popover is open; copied to startDate/endDate on Apply.
+  const [draftStartDate, setDraftStartDate] = useState(startDate);
+  const [draftEndDate, setDraftEndDate] = useState(endDate);
   const [isCustomRange, setIsCustomRange] = useState(false);
+  // A fetched (non-'now') range that came back with no rows.
+  const [emptyRange, setEmptyRange] = useState(false);
   const [labPressureSamples, setLabPressureSamples] = useState([]);
   const [labTemperatureSamples, setLabTemperatureSamples] = useState([]);
 
@@ -139,19 +145,28 @@ const PTFChart = ({
       case '1y':
       case 'all':
         return d.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
+      case 'custom': {
+        const win = resolveCustomWindow(startDate, endDate);
+        return formatTimestampForSpan(ts, win.end - win.start);
+      }
       default:
         return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
     }
-  }, []);
+  }, [startDate, endDate]);
 
-  // Fetch chart data from API for a given range
-  const fetchChartFromAPI = useCallback(async (range) => {
+  // Fetch chart data from API for a given range. All three series share one
+  // end_time anchor so their bucket grids line up. `win` {start, end} turns
+  // the request into range=custom (1y button and the Select Range picker).
+  const fetchChartFromAPI = useCallback(async (range, win) => {
     setApiLoading(true);
     try {
+      const endTime = (win?.end ?? new Date()).toISOString();
+      const startTime = win?.start?.toISOString();
+      const apiRange = win ? 'custom' : range;
       const [pRes, tRes, fRes] = await Promise.all([
-        getChartData('pressure', range),
-        getChartData('temperature', range),
-        getChartData('flow_rate', range)
+        getChartData('pressure', apiRange, endTime, startTime),
+        getChartData('temperature', apiRange, endTime, startTime),
+        getChartData('flow_rate', apiRange, endTime, startTime)
       ]);
 
       const pChart = pRes?.data?.chart || [];
@@ -223,6 +238,18 @@ const PTFChart = ({
     }
     dbFetchedRef.current = false;
     nowSeedAppliedRef.current = false;
+    setEmptyRange(false);
+
+    // Hand a fetched non-'now' result to the chart, flagging an empty window
+    // so the previous range's lines don't stay up as if they belonged to it.
+    const applyFetched = (result) => {
+      if (!result) return;
+      setPressureData(result.pressure);
+      setTemperatureData(result.temperature);
+      setFlowData(result.flow);
+      setTimestamps(result.timestamps);
+      setEmptyRange(result.pressure.length === 0 && result.temperature.length === 0 && result.flow.length === 0);
+    };
 
     if (timeRange === 'now') {
       // "Now" mode: fetch latest DB data once, then update with live values
@@ -284,28 +311,27 @@ const PTFChart = ({
         setFlowData(fData);
         setTimestamps(Array.from({ length: pData.length }, (_, i) => `${i + 1}`));
       } else {
-        fetchChartFromAPI(timeRange).then(result => {
-          if (result) {
-            setPressureData(result.pressure);
-            setTemperatureData(result.temperature);
-            setFlowData(result.flow);
-            setTimestamps(result.timestamps);
-          }
-        });
+        fetchChartFromAPI(timeRange).then(applyFetched);
       }
     } else if (timeRange === '1y' || isCustomRange) {
-      // Use AI generated data for 1y/custom ranges
-      const start = isCustomRange ? startDate.toDate() : dayjs().subtract(1, 'year').toDate();
-      const end = isCustomRange ? endDate.toDate() : dayjs().toDate();
+      const end = new Date();
+      const win = isCustomRange
+        ? resolveCustomWindow(startDate, endDate)
+        : { start: new Date(end.getTime() - ONE_YEAR_MS), end };
 
-      const pData = generateAIData(start, end, 'pressure');
-      const tData = generateAIData(start, end, 'temperature');
-      const fData = generateAIData(start, end, 'flow');
+      if (isTestEnvironment) {
+        // Test: use generated data
+        const pData = generateAIData(win.start, win.end, 'pressure');
+        const tData = generateAIData(win.start, win.end, 'temperature');
+        const fData = generateAIData(win.start, win.end, 'flow');
 
-      setPressureData(pData.map(d => d.value));
-      setTemperatureData(tData.map(d => d.value));
-      setFlowData(fData.map(d => d.value));
-      setTimestamps(pData.map(d => d.timestamp || d.date));
+        setPressureData(pData.map(d => d.value));
+        setTemperatureData(tData.map(d => d.value));
+        setFlowData(fData.map(d => d.value));
+        setTimestamps(pData.map(d => d.timestamp || d.date));
+      } else {
+        fetchChartFromAPI(timeRange, win).then(applyFetched);
+      }
     }
 
     return () => {
@@ -553,6 +579,14 @@ const PTFChart = ({
   // Separate effect to update data smoothly without destroying chart
   useEffect(() => {
     if (!chartInstanceRef.current) return;
+    if (emptyRange) {
+      chartInstanceRef.current.updateSeries([
+        { name: 'Pressure (barg)', data: [] },
+        { name: 'Temperature (\u00b0C)', data: [] },
+        { name: 'Flow (t/h)', data: [] }
+      ]);
+      return;
+    }
     if (pressureData.length === 0 || temperatureData.length === 0 || flowData.length === 0) return;
 
     // For "now" mode the seed must land exactly once, and live updates own the
@@ -614,21 +648,31 @@ const PTFChart = ({
           ]
         : [])
     ], true); // animate: true for smooth transition
-  }, [pressureData, temperatureData, flowData, timestamps, timeRange, formatTimestamp, labOverlayEnabled, labPressureData, labTemperatureData]);
+  }, [pressureData, temperatureData, flowData, timestamps, timeRange, formatTimestamp, labOverlayEnabled, labPressureData, labTemperatureData, emptyRange]);
 
   const handleTimeRangeChange = (newRange) => {
     setTimeRange(newRange);
     setIsCustomRange(false);
   };
 
-  const handleDatePickerOpen = (event) => setDatePickerAnchor(event.currentTarget);
+  const handleDatePickerOpen = (event) => {
+    setDraftStartDate(startDate);
+    setDraftEndDate(endDate);
+    setDatePickerAnchor(event.currentTarget);
+  };
   const handleDatePickerClose = () => setDatePickerAnchor(null);
 
   const handleApplyCustomRange = () => {
+    setStartDate(draftStartDate);
+    setEndDate(draftEndDate);
     setIsCustomRange(true);
     setTimeRange('custom');
     handleDatePickerClose();
   };
+
+  const isDraftRangeValid = Boolean(
+    draftStartDate?.isValid?.() && draftEndDate?.isValid?.() && !draftStartDate.isAfter(draftEndDate, 'day')
+  );
 
   const openDatePicker = Boolean(datePickerAnchor);
 
@@ -692,10 +736,10 @@ const PTFChart = ({
           >
             <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker label="Start Date" value={startDate} onChange={(v) => setStartDate(v)} slotProps={{ textField: { size: 'small' } }} />
-                <DatePicker label="End Date" value={endDate} onChange={(v) => setEndDate(v)} slotProps={{ textField: { size: 'small' } }} />
+                <DatePicker label="Start Date" value={draftStartDate} onChange={(v) => setDraftStartDate(v)} disableFuture slotProps={{ textField: { size: 'small' } }} />
+                <DatePicker label="End Date" value={draftEndDate} onChange={(v) => setDraftEndDate(v)} disableFuture slotProps={{ textField: { size: 'small' } }} />
               </LocalizationProvider>
-              <Button variant="contained" size="small" onClick={handleApplyCustomRange} sx={{ textTransform: 'none' }}>Apply</Button>
+              <Button variant="contained" size="small" disabled={!isDraftRangeValid} onClick={handleApplyCustomRange} sx={{ textTransform: 'none' }}>Apply</Button>
             </Box>
           </Popover>
         </Box>
@@ -705,6 +749,11 @@ const PTFChart = ({
       {apiLoading && (
         <Box sx={{ textAlign: 'center', py: 1 }}>
           <Typography variant="caption" color="text.secondary">Loading chart data...</Typography>
+        </Box>
+      )}
+      {!apiLoading && emptyRange && (
+        <Box sx={{ textAlign: 'center', py: 1 }}>
+          <Typography variant="caption" color="text.secondary">Tidak ada data pada rentang waktu yang dipilih</Typography>
         </Box>
       )}
 

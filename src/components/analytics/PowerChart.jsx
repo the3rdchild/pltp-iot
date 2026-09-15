@@ -9,6 +9,7 @@ import dayjs from 'dayjs';
 import MainCard from '../MainCard';
 import PropTypes from 'prop-types';
 import { getChartData, syncHoneywellLiveData } from '../../utils/api';
+import { resolveCustomWindow, formatTimestampForSpan, ONE_YEAR_MS } from '../../utils/chartRange';
 
 // Points kept on screen in 'now' mode. The 1h seed arrives at 12-second
 // resolution (300 buckets), and only the newest slice of it is wanted here:
@@ -86,7 +87,12 @@ const PowerChart = ({
   const [datePickerAnchor, setDatePickerAnchor] = useState(null);
   const [startDate, setStartDate] = useState(dayjs().subtract(1, 'year'));
   const [endDate, setEndDate] = useState(dayjs());
+  // Picker values while the popover is open; copied to startDate/endDate on Apply.
+  const [draftStartDate, setDraftStartDate] = useState(startDate);
+  const [draftEndDate, setDraftEndDate] = useState(endDate);
   const [isCustomRange, setIsCustomRange] = useState(false);
+  // A fetched (non-'now') range that came back with no rows.
+  const [emptyRange, setEmptyRange] = useState(false);
 
   const timeRanges = [
     { value: 'now', label: 'Now' },
@@ -115,24 +121,30 @@ const PowerChart = ({
       case '1y':
       case 'all':
         return d.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' });
+      case 'custom': {
+        const win = resolveCustomWindow(startDate, endDate);
+        return formatTimestampForSpan(ts, win.end - win.start);
+      }
       default:
         return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
     }
-  }, []);
+  }, [startDate, endDate]);
 
   // Fetch chart data from API for a given range. All three series share one
   // end_time anchor so their bucket grids line up on the same boundaries
   // (three independent requests would each anchor to their own NOW()).
-  // `dateFilter` {start, end} slices the returned series client-side for the
-  // 1y/custom views, which the backend cannot express (widest range is 'all').
-  const fetchChartFromAPI = useCallback(async (range, dateFilter) => {
+  // `win` {start, end} turns the request into range=custom, used by the 1y
+  // button and the Select Range picker.
+  const fetchChartFromAPI = useCallback(async (range, win) => {
     setApiLoading(true);
     try {
-      const anchorTime = new Date().toISOString();
+      const anchorTime = (win?.end ?? new Date()).toISOString();
+      const startTime = win?.start?.toISOString();
+      const apiRange = win ? 'custom' : range;
       const [aRes, rRes, sRes] = await Promise.all([
-        getChartData('active_power', range, anchorTime),
-        getChartData('reactive_power', range, anchorTime),
-        getChartData('speed', range, anchorTime)
+        getChartData('active_power', apiRange, anchorTime, startTime),
+        getChartData('reactive_power', apiRange, anchorTime, startTime),
+        getChartData('speed', apiRange, anchorTime, startTime)
       ]);
 
       const aChart = aRes?.data?.chart || [];
@@ -141,26 +153,11 @@ const PowerChart = ({
 
       // Use the longest array's timestamps as reference
       const refChart = [aChart, rChart, sChart].reduce((a, b) => (a.length >= b.length ? a : b));
-      let ts = refChart.map((p) => p.timestamp);
+      const ts = refChart.map((p) => p.timestamp);
 
-      let aVals = aChart.map((p) => p.avg);
-      let rVals = rChart.map((p) => p.avg);
-      let sVals = sChart.map((p) => p.avg);
-
-      if (dateFilter) {
-        const lo = dateFilter.start.getTime();
-        const hi = dateFilter.end.getTime();
-        const keep = ts
-          .map((t, i) => {
-            const v = new Date(t).getTime();
-            return v >= lo && v <= hi ? i : -1;
-          })
-          .filter((i) => i >= 0);
-        ts = keep.map((i) => ts[i]);
-        aVals = keep.map((i) => aVals[i]);
-        rVals = keep.map((i) => rVals[i]);
-        sVals = keep.map((i) => sVals[i]);
-      }
+      const aVals = aChart.map((p) => p.avg);
+      const rVals = rChart.map((p) => p.avg);
+      const sVals = sChart.map((p) => p.avg);
 
       return { timestamps: ts, activePower: aVals, reactivePower: rVals, speed: sVals };
     } catch (err) {
@@ -175,6 +172,18 @@ const PowerChart = ({
   useEffect(() => {
     dbFetchedRef.current = false;
     nowSeedAppliedRef.current = false;
+    setEmptyRange(false);
+
+    // Hand a fetched non-'now' result to the chart, flagging an empty window
+    // so the previous range's lines don't stay up as if they belonged to it.
+    const applyFetched = (result) => {
+      if (!result) return;
+      setActivePowerData(result.activePower);
+      setReactivePowerData(result.reactivePower);
+      setSpeedData(result.speed);
+      setTimestamps(result.timestamps);
+      setEmptyRange(result.activePower.length === 0 && result.reactivePower.length === 0 && result.speed.length === 0);
+    };
 
     if (timeRange === 'now') {
       // "Now" mode: fetch latest DB data once, then update with live values
@@ -214,28 +223,17 @@ const PowerChart = ({
       initNowMode();
     } else if (['1h', '1d', '7d', '1m', 'all'].includes(timeRange) && !isCustomRange) {
       // Fetch from API for standard ranges
-      fetchChartFromAPI(timeRange).then((result) => {
-        if (result) {
-          setActivePowerData(result.activePower);
-          setReactivePowerData(result.reactivePower);
-          setSpeedData(result.speed);
-          setTimestamps(result.timestamps);
-        }
-      });
+      fetchChartFromAPI(timeRange).then(applyFetched);
     } else if (timeRange === '1y' || isCustomRange) {
-      // The backend tops out at 'all' and takes no start/end, so fetch the
-      // widest window once and slice it to the requested dates client-side.
-      const end = isCustomRange ? endDate.toDate() : dayjs().toDate();
-      const start = isCustomRange ? startDate.toDate() : dayjs().subtract(1, 'year').toDate();
+      // Explicit window (range=custom) so the backend buckets exactly the
+      // requested span. Slicing the 'all' response client-side used to leave
+      // only a handful of its 300 buckets for any window shorter than months.
+      const end = new Date();
+      const win = isCustomRange
+        ? resolveCustomWindow(startDate, endDate)
+        : { start: new Date(end.getTime() - ONE_YEAR_MS), end };
 
-      fetchChartFromAPI('all', { start, end }).then((result) => {
-        if (result) {
-          setActivePowerData(result.activePower);
-          setReactivePowerData(result.reactivePower);
-          setSpeedData(result.speed);
-          setTimestamps(result.timestamps);
-        }
-      });
+      fetchChartFromAPI(timeRange, win).then(applyFetched);
     }
   }, [timeRange, isCustomRange, startDate, endDate, fetchChartFromAPI]);
 
@@ -418,6 +416,14 @@ const PowerChart = ({
   // Separate effect to update data smoothly without destroying chart
   useEffect(() => {
     if (!chartInstanceRef.current) return;
+    if (emptyRange) {
+      chartInstanceRef.current.updateSeries([
+        { name: 'Active Power (MW)', data: [] },
+        { name: 'Reactive Power (MVAR)', data: [] },
+        { name: 'S.T Speed (RPM)', data: [] }
+      ]);
+      return;
+    }
     if (activePowerData.length === 0 || reactivePowerData.length === 0 || speedData.length === 0) return;
 
     // For "now" mode the seed must land exactly once, and live updates own the
@@ -463,21 +469,31 @@ const PowerChart = ({
       ],
       true
     ); // animate: true for smooth transition
-  }, [activePowerData, reactivePowerData, speedData, timestamps, timeRange, formatTimestamp]);
+  }, [activePowerData, reactivePowerData, speedData, timestamps, timeRange, formatTimestamp, emptyRange]);
 
   const handleTimeRangeChange = (newRange) => {
     setTimeRange(newRange);
     setIsCustomRange(false);
   };
 
-  const handleDatePickerOpen = (event) => setDatePickerAnchor(event.currentTarget);
+  const handleDatePickerOpen = (event) => {
+    setDraftStartDate(startDate);
+    setDraftEndDate(endDate);
+    setDatePickerAnchor(event.currentTarget);
+  };
   const handleDatePickerClose = () => setDatePickerAnchor(null);
 
   const handleApplyCustomRange = () => {
+    setStartDate(draftStartDate);
+    setEndDate(draftEndDate);
     setIsCustomRange(true);
     setTimeRange('custom');
     handleDatePickerClose();
   };
+
+  const isDraftRangeValid = Boolean(
+    draftStartDate?.isValid?.() && draftEndDate?.isValid?.() && !draftStartDate.isAfter(draftEndDate, 'day')
+  );
 
   const openDatePicker = Boolean(datePickerAnchor);
 
@@ -542,13 +558,26 @@ const PowerChart = ({
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
                   label="Start Date"
-                  value={startDate}
-                  onChange={(v) => setStartDate(v)}
+                  value={draftStartDate}
+                  onChange={(v) => setDraftStartDate(v)}
+                  disableFuture
                   slotProps={{ textField: { size: 'small' } }}
                 />
-                <DatePicker label="End Date" value={endDate} onChange={(v) => setEndDate(v)} slotProps={{ textField: { size: 'small' } }} />
+                <DatePicker
+                  label="End Date"
+                  value={draftEndDate}
+                  onChange={(v) => setDraftEndDate(v)}
+                  disableFuture
+                  slotProps={{ textField: { size: 'small' } }}
+                />
               </LocalizationProvider>
-              <Button variant="contained" size="small" onClick={handleApplyCustomRange} sx={{ textTransform: 'none' }}>
+              <Button
+                variant="contained"
+                size="small"
+                disabled={!isDraftRangeValid}
+                onClick={handleApplyCustomRange}
+                sx={{ textTransform: 'none' }}
+              >
                 Apply
               </Button>
             </Box>
@@ -561,6 +590,13 @@ const PowerChart = ({
         <Box sx={{ textAlign: 'center', py: 1 }}>
           <Typography variant="caption" color="text.secondary">
             Loading chart data...
+          </Typography>
+        </Box>
+      )}
+      {!apiLoading && emptyRange && (
+        <Box sx={{ textAlign: 'center', py: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            Tidak ada data pada rentang waktu yang dipilih
           </Typography>
         </Box>
       )}

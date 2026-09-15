@@ -13,6 +13,7 @@ import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
+import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 
@@ -366,6 +367,8 @@ function CombinedLabChart({ combined }) {
 export default function LabComparisonChart() {
   const [metric, setMetric] = useState('pressure');
   const [showAll, setShowAll] = useState(false);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const isAll = metric === ALL;
   const active = METRICS.find((m) => m.key === metric) ?? METRICS[0];
@@ -394,6 +397,17 @@ export default function LabComparisonChart() {
 
   // Newest first in the table, matching every other listing in this project.
   const rows = useMemo(() => [...visible].reverse(), [visible]);
+
+  // Back to the first page whenever the table's contents are swapped out.
+  useEffect(() => {
+    setPage(0);
+  }, [metric, showAll]);
+
+  // Clamped at render time too, so a shrinking dataset (e.g. a refetch) can
+  // never leave the table on a page past the end.
+  const lastPage = Math.max(0, Math.ceil(rows.length / rowsPerPage) - 1);
+  const safePage = Math.min(page, lastPage);
+  const pagedRows = rows.slice(safePage * rowsPerPage, safePage * rowsPerPage + rowsPerPage);
 
   const totalSamples = isAll ? combined.total : activeData.samples.length;
   const loading = isAll ? combinedLoading : activeData.loading;
@@ -529,7 +543,7 @@ export default function LabComparisonChart() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {rows.map((row) => {
+                {pagedRows.map((row) => {
                   const hasRef = row.comparison_avg !== null && row.comparison_avg !== undefined;
                   const diff = row.difference;
                   return (
@@ -568,6 +582,19 @@ export default function LabComparisonChart() {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={rows.length}
+            page={safePage}
+            onPageChange={(_, next) => setPage(next)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            labelRowsPerPage="Rows per-page:"
+          />
         </Box>
       )}
     </MainCard>

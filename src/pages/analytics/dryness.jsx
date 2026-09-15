@@ -197,7 +197,6 @@ const Dryness = () => {
                 color="#3b82f6"
                 yAxisMin={99.86}
                 yAxisMax={99.9}
-                decimals={4}
               />
             </Grid>
 

@@ -261,12 +261,13 @@ const getLiveMetric = async (req, res) => {
 /**
  * GET /api/data/chart/:metric
  * Get chart data with time range aggregation
- * Query params: range (1h, 1d, 7d, 1m, all), end_time (optional ISO string)
+ * Query params: range (1h, 1d, 7d, 1m, all, custom), end_time (optional ISO string),
+ *               start_time (ISO string; required for range=custom, window = start_time..end_time)
  */
 const getChartData = async (req, res) => {
   try {
     const { metric } = req.params;
-    const { range = '1d', end_time } = req.query;
+    const { range = '1d', end_time, start_time } = req.query;
 
     // Validate metric
     if (!VALID_METRICS.includes(metric)) {
@@ -279,11 +280,11 @@ const getChartData = async (req, res) => {
     // Handle calculated metrics (current, voltage)
     const isCalculatedMetric = ['current', 'voltage'].includes(metric);
 
-    const config = RANGE_CONFIG[range];
-    if (!config) {
+    let config = RANGE_CONFIG[range];
+    if (!config && range !== 'custom') {
       return res.status(400).json({
         success: false,
-        message: 'Invalid range. Valid ranges: 1h, 1d, 7d, 1m, all'
+        message: 'Invalid range. Valid ranges: 1h, 1d, 7d, 1m, all, custom'
       });
     }
 
@@ -309,6 +310,27 @@ const getChartData = async (req, res) => {
       }
     }
 
+    // Custom window (the charts' "Select Range" picker and the 1y button).
+    // Same epoch bucketing as the fixed ranges, just with the span taken from
+    // start_time..anchor, so a sensor series and an overlay fetched with the
+    // same start_time/end_time pair still land on identical bucket grids.
+    if (range === 'custom') {
+      const start = new Date(start_time);
+      if (!start_time || Number.isNaN(start.getTime()) || start >= anchor) {
+        return res.status(400).json({
+          success: false,
+          message: 'range=custom needs a parseable start_time earlier than end_time'
+        });
+      }
+      const spanSeconds = (anchor.getTime() - start.getTime()) / 1000;
+      config = {
+        interval: null,
+        start,
+        bucketSeconds: Math.max(spanSeconds / CHART_POINTS, 1),
+        points: CHART_POINTS
+      };
+    }
+
     let chartData;
 
     if (AI2_TDS_METRIC_COL[metric]) {
@@ -316,7 +338,7 @@ const getChartData = async (req, res) => {
       chartData = await getAi2TdsChartData(AI2_TDS_METRIC_COL[metric], config, anchor);
     } else if (isCalculatedMetric) {
       // For calculated metrics, fetch raw data and calculate
-      chartData = await getCalculatedMetricChartData(metric, config);
+      chartData = await getCalculatedMetricChartData(metric, config, anchor);
     } else {
       // For direct DB columns, use SQL aggregation
       const dbColumn = getDbColumnForMetric(metric);
@@ -363,11 +385,15 @@ const getChartData = async (req, res) => {
  *        data's own span instead -- not part of the bug this was added for.
  */
 const getDirectMetricChartData = async (column, config, anchor) => {
-  const { interval, bucketSeconds, points } = config;
+  const { interval, bucketSeconds, points, start } = config;
+  // A custom window binds its start as $2; fixed ranges derive it from the
+  // anchor. 'all' (no interval, no start) takes no parameters at all.
+  const isAll = interval === null && !start;
+  const startExpr = start ? '$2::timestamptz' : `$1::timestamptz - INTERVAL '${interval}'`;
 
   let sql;
 
-  if (interval === null) {
+  if (isAll) {
     // "all" range: dynamically calculate bucket size from data span
     sql = `
       WITH data_span AS (
@@ -402,7 +428,7 @@ const getDirectMetricChartData = async (column, config, anchor) => {
     // just-arrived rows even before considering bucket drift.
     sql = `
       WITH range_start AS (
-        SELECT EXTRACT(EPOCH FROM $1::timestamptz - INTERVAL '${interval}') AS start_epoch
+        SELECT EXTRACT(EPOCH FROM ${startExpr}) AS start_epoch
       )
       SELECT
         TO_TIMESTAMP(FLOOR((EXTRACT(EPOCH FROM s.timestamp) - r.start_epoch) / ${bucketSeconds}) * ${bucketSeconds} + r.start_epoch) AS bucket,
@@ -411,7 +437,7 @@ const getDirectMetricChartData = async (column, config, anchor) => {
         MAX(s.${column}) AS max_value,
         COUNT(*) AS data_points
       FROM sensor_data s, range_start r
-      WHERE s.timestamp >= $1::timestamptz - INTERVAL '${interval}'
+      WHERE s.timestamp >= ${startExpr}
         AND s.timestamp <= $1::timestamptz
         AND s.${column} IS NOT NULL
       GROUP BY 1, r.start_epoch
@@ -420,7 +446,7 @@ const getDirectMetricChartData = async (column, config, anchor) => {
     `;
   }
 
-  const result = await query(sql, interval === null ? [] : [anchor]);
+  const result = await query(sql, isAll ? [] : start ? [anchor, start] : [anchor]);
 
   return result.rows.map(row => ({
     timestamp: row.bucket,
@@ -441,11 +467,15 @@ const getDirectMetricChartData = async (column, config, anchor) => {
  * NOW() independently is what broke the overlay at narrow bucket widths.
  */
 const getAi2TdsChartData = async (column, config, anchor) => {
-  const { interval, bucketSeconds, points } = config;
+  const { interval, bucketSeconds, points, start } = config;
+  // A custom window binds its start as $2; fixed ranges derive it from the
+  // anchor. 'all' (no interval, no start) takes no parameters at all.
+  const isAll = interval === null && !start;
+  const startExpr = start ? '$2::timestamptz' : `$1::timestamptz - INTERVAL '${interval}'`;
 
   let sql;
 
-  if (interval === null) {
+  if (isAll) {
     sql = `
       WITH data_span AS (
         SELECT
@@ -473,7 +503,7 @@ const getAi2TdsChartData = async (column, config, anchor) => {
   } else {
     sql = `
       WITH range_start AS (
-        SELECT EXTRACT(EPOCH FROM $1::timestamptz - INTERVAL '${interval}') AS start_epoch
+        SELECT EXTRACT(EPOCH FROM ${startExpr}) AS start_epoch
       )
       SELECT
         TO_TIMESTAMP(FLOOR((EXTRACT(EPOCH FROM s.processed_at) - r.start_epoch) / ${bucketSeconds}) * ${bucketSeconds} + r.start_epoch) AS bucket,
@@ -482,7 +512,7 @@ const getAi2TdsChartData = async (column, config, anchor) => {
         MAX(s.${column}) AS max_value,
         COUNT(*) AS data_points
       FROM ai2_tds s, range_start r
-      WHERE s.processed_at >= $1::timestamptz - INTERVAL '${interval}'
+      WHERE s.processed_at >= ${startExpr}
         AND s.processed_at <= $1::timestamptz
         AND s.${column} IS NOT NULL
       GROUP BY 1, r.start_epoch
@@ -491,7 +521,7 @@ const getAi2TdsChartData = async (column, config, anchor) => {
     `;
   }
 
-  const result = await query(sql, interval === null ? [] : [anchor]);
+  const result = await query(sql, isAll ? [] : start ? [anchor, start] : [anchor]);
 
   return result.rows.map(row => ({
     timestamp: row.bucket,
@@ -506,11 +536,18 @@ const getAi2TdsChartData = async (column, config, anchor) => {
  * Get chart data for calculated metrics (current, voltage)
  * Uses epoch-based bucketing for consistent 60-point output
  */
-const getCalculatedMetricChartData = async (metric, config) => {
-  const { interval, bucketSeconds, points } = config;
+const getCalculatedMetricChartData = async (metric, config, anchor) => {
+  const { interval, bucketSeconds, points, start } = config;
 
   // For calculated metrics, we need to fetch raw data and calculate per bucket
-  const whereClause = interval === null ? '' : `WHERE timestamp >= NOW() - INTERVAL '${interval}'`;
+  let whereClause = '';
+  const params = [];
+  if (start) {
+    params.push(start, anchor);
+    whereClause = 'WHERE timestamp >= $1 AND timestamp <= $2';
+  } else if (interval !== null) {
+    whereClause = `WHERE timestamp >= NOW() - INTERVAL '${interval}'`;
+  }
 
   const sql = `
     SELECT
@@ -525,7 +562,7 @@ const getCalculatedMetricChartData = async (metric, config) => {
     ORDER BY timestamp ASC
   `;
 
-  const result = await query(sql);
+  const result = await query(sql, params);
   if (result.rows.length === 0) return [];
 
   // Determine bucket size
@@ -761,12 +798,32 @@ const getStatsData = async (req, res) => {
 
 /**
  * GET /api/data/stats/:metric/aggregated
- * Get aggregated statistics table data (daily min/max/avg/stddev, max 60 rows)
+ * Get aggregated statistics table data (daily min/max/avg/stddev, newest 60 rows)
+ * Query params: start_date, end_date (optional, YYYY-MM-DD, inclusive)
  * Used by PTF page statistics tables
  */
 const getAggregatedStatsData = async (req, res) => {
   try {
     const { metric } = req.params;
+    // Optional inclusive day filter (YYYY-MM-DD), from the table's date picker.
+    // Without it the endpoint keeps returning the newest 60 days as before.
+    const { start_date, end_date } = req.query;
+    const isDay = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+    if ((start_date && !isDay(start_date)) || (end_date && !isDay(end_date))) {
+      return res.status(400).json({
+        success: false,
+        message: 'start_date/end_date must be YYYY-MM-DD'
+      });
+    }
+    const hasDateFilter = Boolean(start_date || end_date);
+    const rowLimit = hasDateFilter ? 1000 : 60;
+    // Builds "AND DATE(col) >= $n" clauses against a shared params array.
+    const dayFilter = (dateExpr, params) => {
+      let clause = '';
+      if (start_date) { params.push(start_date); clause += ` AND ${dateExpr} >= $${params.length}::date`; }
+      if (end_date) { params.push(end_date); clause += ` AND ${dateExpr} <= $${params.length}::date`; }
+      return clause;
+    };
 
     if (!VALID_METRICS.includes(metric)) {
       return res.status(400).json({
@@ -778,20 +835,21 @@ const getAggregatedStatsData = async (req, res) => {
     // AI2 metrics (dryness, ncg) — query ai2 table
     if (AI2_METRIC_COL[metric]) {
       const col = AI2_METRIC_COL[metric];
+      const params = [];
       const sql = `
         SELECT
-          DATE(processed_at) AS date,
+          DATE(processed_at)::text AS date,
           MIN(${col})    AS min_value,
           MAX(${col})    AS max_value,
           AVG(${col})    AS avg_value,
           STDDEV(${col}) AS std_dev
         FROM ai2
-        WHERE ${col} IS NOT NULL
+        WHERE ${col} IS NOT NULL${dayFilter('DATE(processed_at)', params)}
         GROUP BY DATE(processed_at)
         ORDER BY date DESC
-        LIMIT 60
+        LIMIT ${rowLimit}
       `;
-      const result = await query(sql);
+      const result = await query(sql, params);
       const limit_info = getLimitForMetric(metric);
       const unit = limit_info ? limit_info.unit : '';
       const data = result.rows.map((row, index) => ({
@@ -812,13 +870,15 @@ const getAggregatedStatsData = async (req, res) => {
 
     if (isCalculatedMetric) {
       // For calculated metrics, fetch raw then aggregate in JS
+      const params = [];
       const sql = `
         SELECT timestamp, gen_output, gen_voltage_v_w, gen_voltage_w_u,
                gen_reactive_power, gen_power_factor
         FROM sensor_data
+        WHERE TRUE${dayFilter('DATE(timestamp)', params)}
         ORDER BY timestamp DESC
       `;
-      const result = await query(sql);
+      const result = await query(sql, params);
 
       // Group by date and calculate metric values
       const dayBuckets = {};
@@ -841,7 +901,7 @@ const getAggregatedStatsData = async (req, res) => {
 
       rows = Object.entries(dayBuckets)
         .sort((a, b) => b[0].localeCompare(a[0]))
-        .slice(0, 60)
+        .slice(0, rowLimit)
         .map(([date, values]) => {
           const min = Math.min(...values);
           const max = Math.max(...values);
@@ -856,20 +916,21 @@ const getAggregatedStatsData = async (req, res) => {
           };
         });
     } else {
+      const params = [];
       const sql = `
         SELECT
-          DATE(timestamp) AS date,
+          DATE(timestamp)::text AS date,
           MIN(${dbColumn}) AS min_value,
           MAX(${dbColumn}) AS max_value,
           AVG(${dbColumn}) AS avg_value,
           STDDEV(${dbColumn}) AS std_dev
         FROM sensor_data
-        WHERE ${dbColumn} IS NOT NULL
+        WHERE ${dbColumn} IS NOT NULL${dayFilter('DATE(timestamp)', params)}
         GROUP BY DATE(timestamp)
         ORDER BY date DESC
-        LIMIT 60
+        LIMIT ${rowLimit}
       `;
-      const result = await query(sql);
+      const result = await query(sql, params);
       rows = result.rows;
     }
 

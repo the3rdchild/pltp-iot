@@ -127,11 +127,16 @@ export const getDashboardStats = async () => {
  *        independently, and at narrow bucket widths (short ranges) that
  *        drift is enough to visibly misalign the two series.
  */
-export const getChartData = async (metric, range = '1d', endTime) => {
+export const getChartData = async (metric, range = '1d', endTime, startTime) => {
   try {
     const url = buildURL(apiConfig.endpoints.analytics.chartData, { metric });
     const response = await apiClient.get(url, {
-      params: { range, ...(endTime ? { end_time: endTime } : {}) }
+      params: {
+        range,
+        ...(endTime ? { end_time: endTime } : {}),
+        // Only meaningful with range='custom' (window = startTime..endTime)
+        ...(startTime ? { start_time: startTime } : {})
+      }
     });
     return response;
   } catch (error) {
@@ -165,13 +170,17 @@ export const getStatsTable = async (metric, options = {}) => {
 };
 
 /**
- * Get aggregated daily statistics (60 rows with min/max/avg/stddev)
+ * Get aggregated daily statistics (min/max/avg/stddev per day)
  * @param {string} metric - metric name
+ * @param {object} options - { start_date, end_date } as YYYY-MM-DD, both optional
  */
-export const getAggregatedStats = async (metric) => {
+export const getAggregatedStats = async (metric, options = {}) => {
   try {
     const url = buildURL('/data/stats/{metric}/aggregated', { metric });
-    const response = await apiClient.get(url);
+    const params = {};
+    if (options.start_date) params.start_date = options.start_date;
+    if (options.end_date) params.end_date = options.end_date;
+    const response = await apiClient.get(url, { params });
     return response;
   } catch (error) {
     console.error(`Error fetching aggregated stats for ${metric}:`, error);

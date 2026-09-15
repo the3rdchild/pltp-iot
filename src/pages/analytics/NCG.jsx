@@ -28,7 +28,9 @@ const NCG = () => {
     const limitData = getLimitData();
 
     const { liveData, loading } = useAi2Data();
-    const { data: ncgTableData } = useAi2StatsTable('ncg_predict');
+    // Date filter chosen in the statistics table, forwarded to the ai2 stats query
+    const [tableDateRange, setTableDateRange] = useState(null);
+    const { data: ncgTableData } = useAi2StatsTable('ncg_predict', tableDateRange);
     const ncg = liveData?.ncg_predict != null ? parseFloat(liveData.ncg_predict) : NaN;
 
     const [changePct, setChangePct] = useState(null);
@@ -204,6 +206,7 @@ const NCG = () => {
                 subtitle="Tabel data statistik yang telah diperoleh"
                 metric="ncg"
                 data={ncgTableData}
+                onDateRangeChange={setTableDateRange}
               />
             </Grid>
           </Grid>

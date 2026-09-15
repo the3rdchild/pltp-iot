@@ -1051,7 +1051,7 @@ const getAi2Data = async (req, res) => {
 // Get aggregated daily stats for an ai2 metric (ncg_predict | dryness_predict)
 const getAi2AggregatedStats = async (req, res) => {
   const VALID_AI2_METRICS = ['ncg_predict', 'dryness_predict', 'ncg_confidence', 'dryness_confidence'];
-  const { metric = 'ncg_predict' } = req.query;
+  const { metric = 'ncg_predict', start_date, end_date } = req.query;
 
   if (!VALID_AI2_METRICS.includes(metric)) {
     return res.status(400).json({
@@ -1059,6 +1059,18 @@ const getAi2AggregatedStats = async (req, res) => {
       message: `Invalid metric. Valid: ${VALID_AI2_METRICS.join(', ')}`
     });
   }
+
+  // Optional inclusive day filter (YYYY-MM-DD) from the statistics table's
+  // date picker; without it the newest 60 days are returned as before.
+  const isDay = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  if ((start_date && !isDay(start_date)) || (end_date && !isDay(end_date))) {
+    return res.status(400).json({ success: false, message: 'start_date/end_date must be YYYY-MM-DD' });
+  }
+  const params = [];
+  let dayFilter = '';
+  if (start_date) { params.push(start_date); dayFilter += ` AND DATE(processed_at) >= $${params.length}::date`; }
+  if (end_date) { params.push(end_date); dayFilter += ` AND DATE(processed_at) <= $${params.length}::date`; }
+  const rowLimit = params.length > 0 ? 1000 : 60;
 
   try {
     const sql = `
@@ -1070,13 +1082,13 @@ const getAi2AggregatedStats = async (req, res) => {
         AVG(${metric})                                        AS avg_value,
         COALESCE(STDDEV(${metric}), 0)                        AS std_dev
       FROM ai2
-      WHERE ${metric} IS NOT NULL AND processed_at IS NOT NULL
+      WHERE ${metric} IS NOT NULL AND processed_at IS NOT NULL${dayFilter}
       GROUP BY DATE(processed_at)
       ORDER BY DATE(processed_at) DESC
-      LIMIT 60
+      LIMIT ${rowLimit}
     `;
 
-    const result = await query(sql);
+    const result = await query(sql, params);
 
     const data = result.rows.map(row => ({
       no:           parseInt(row.no),

@@ -9,6 +9,8 @@ const getStatusColor = (status) => {
       return '#22c55e';
     case 'warning':
       return '#f59e0b';
+    case 'abnormal':
+    case 'critical':
     case 'low':
     case 'high':
       return '#ef4444';
