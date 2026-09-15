@@ -20,9 +20,9 @@ const calculateStats = (records) => {
   const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
 
   return {
-    min: parseFloat(min.toFixed(1)),
-    max: parseFloat(max.toFixed(1)),
-    avg: parseFloat(avg.toFixed(1)),
+    min: parseFloat(min.toFixed(3)),
+    max: parseFloat(max.toFixed(3)),
+    avg: parseFloat(avg.toFixed(3)),
     count: values.length
   };
 };
