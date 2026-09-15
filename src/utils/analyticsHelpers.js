@@ -87,15 +87,26 @@ export const getSummaryStats = (apiTableData) => {
 };
 
 /**
- * Format value with unit
+ * Format value with unit, capped at 4 digits total (integer + decimals)
+ * e.g. 1.002, 20.33, 210.4, 3000
  * @param {number} value - Numeric value
  * @param {string} unit - Unit string (ppm, kPa, °C, t/h)
- * @param {number} decimals - Number of decimal places (max 3 decimals)
+ * @param {number} maxDigits - Max total digits shown (default 4)
  * @returns {string} Formatted string
  */
-export const formatValueWithUnit = (value, unit = '', decimals = 3) => {
+export const formatValueWithUnit = (value, unit = '', maxDigits = 4) => {
   if (value === null || value === undefined) return '-';
-  return `${parseFloat(value).toFixed(decimals)}${unit}`;
+  const num = parseFloat(value);
+  if (!Number.isFinite(num)) return '-';
+
+  const intDigits = (n) => Math.max(1, Math.floor(Math.abs(n)).toString().length);
+  let decimals = Math.max(0, maxDigits - intDigits(num));
+  let text = num.toFixed(decimals);
+  // Rounding can add an integer digit (9.9996 -> 10.000), so drop one decimal
+  if (decimals > 0 && intDigits(parseFloat(text)) > intDigits(num)) {
+    text = num.toFixed(--decimals);
+  }
+  return `${text}${unit}`;
 };
 
 /**

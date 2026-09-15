@@ -8,6 +8,7 @@ import { useMetricStats } from '../../hooks/useMetricStatistics';
 import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
 import { getLimitData } from '../../utils/limitData';
+import { formatValueWithUnit } from '../../utils/analyticsHelpers';
 
 import {
   AnalyticsHeader,
@@ -66,38 +67,38 @@ const Dryness = () => {
         },
         {
             title: 'Minimum',
-            value: `${drynessStats.min24h}%`,
+            value: formatValueWithUnit(drynessStats.min24h, '%'),
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
             iconColor: '#fff',
             additionalData: [
-                { value: `${drynessStats.min12h}%`, timeLabel: '12 Jam terakhir' },
-                { value: `${drynessStats.min24h}%`, timeLabel: '1 hari terakhir' },
-                { value: `${drynessStats.min7d}%`, timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(drynessStats.min12h, '%'), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(drynessStats.min24h, '%'), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(drynessStats.min7d, '%'), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Average',
-            value: `${drynessStats.avg24h}%`,
+            value: formatValueWithUnit(drynessStats.avg24h, '%'),
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
             iconColor: '#fff',
             additionalData: [
-              { value: `${drynessStats.avg12h}%`, timeLabel: '12 Jam terakhir' },
-              { value: `${drynessStats.avg24h}%`, timeLabel: '1 hari terakhir' },
-              { value: `${drynessStats.avg7d}%`, timeLabel: '1 minggu terakhir' }
+              { value: formatValueWithUnit(drynessStats.avg12h, '%'), timeLabel: '12 Jam terakhir' },
+              { value: formatValueWithUnit(drynessStats.avg24h, '%'), timeLabel: '1 hari terakhir' },
+              { value: formatValueWithUnit(drynessStats.avg7d, '%'), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Maximum',
-            value: `${drynessStats.max24h}%`,
+            value: formatValueWithUnit(drynessStats.max24h, '%'),
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
             iconColor: '#fff',
             additionalData: [
-              { value: `${drynessStats.max12h}%`, timeLabel: '12 Jam terakhir' },
-              { value: `${drynessStats.max24h}%`, timeLabel: '1 hari terakhir' },
-              { value: `${drynessStats.max7d}%`, timeLabel: '1 minggu terakhir' }
+              { value: formatValueWithUnit(drynessStats.max12h, '%'), timeLabel: '12 Jam terakhir' },
+              { value: formatValueWithUnit(drynessStats.max24h, '%'), timeLabel: '1 hari terakhir' },
+              { value: formatValueWithUnit(drynessStats.max7d, '%'), timeLabel: '1 minggu terakhir' }
             ]
         }
     ];
