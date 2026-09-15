@@ -5,6 +5,7 @@ import MainCard from 'components/MainCard';
 import { AnalyticsHeader, RiskChart, FailureForecastChart, FAILURE_FORECAST_MODEL_LABELS } from '../../components/analytics';
 import { useAi1aData } from '../../hooks/useAi1Data';
 import { useFailureForecastData } from '../../hooks/useFailureForecastData';
+import { useFailureForecastHistory } from '../../hooks/useFailureForecastHistory';
 
 // icons
 import PsychologyIcon from '@mui/icons-material/Psychology';
@@ -165,6 +166,7 @@ const AIAnalytics = () => {
   // (see hooks/useAi1Data.js) -- that null IS the "waiting for data" signal.
   const { liveData: ai1aLive, history: ai1aHistory, loading: ai1aLoading } = useAi1aData(3000, ai1aVariant);
   const { rows: failureForecastRows, loading: failureForecastLoading } = useFailureForecastData();
+  const { rows: failureForecastHistoryRows, loading: failureForecastHistoryLoading } = useFailureForecastHistory();
 
   const [sensorRows, setSensorRows] = useState([]);
 
@@ -407,7 +409,11 @@ const AIAnalytics = () => {
 
       {/* ---------------- chart 2: failure forecast (State of Health) ---------------- */}
       <Box sx={{ mb: 3 }}>
-        <FailureForecastChart rows={failureForecastRows} loading={failureForecastLoading} />
+        <FailureForecastChart
+          rows={failureForecastRows}
+          historyRows={failureForecastHistoryRows}
+          loading={failureForecastLoading || failureForecastHistoryLoading}
+        />
       </Box>
 
       {/* ---------------- tables ---------------- */}

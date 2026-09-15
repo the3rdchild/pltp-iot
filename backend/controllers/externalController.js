@@ -1455,6 +1455,56 @@ const getFailureForecastData = async (req, res) => {
   }
 };
 
+// Get the historical failure-forecast curve (COD 2015-06-29 -> today),
+// picking up exactly where failure_forecast_projection starts. Same job
+// (workers/jobs_failure_forecast.py) writes both tables every run, sharing
+// generated_at -- see docs/failure_forecast_contract_for_beFE.md.
+//
+// segment discriminates 'nominal' (COD -> first ai1a_shadow sample,
+// 2026-08-05 -- no sensor data exists there so both models fall back to
+// their own built-in nominal-aging assumption) from 'observed' (first
+// sample -> anchor, built from real risk trajectory). Don't infer segment
+// from point_date -- always read the column.
+//
+// Join contract: the last 'observed' row per model here has failure_pct
+// exactly equal to today_failure_pct on that model's
+// failure_forecast_projection rows, same generated_at -- draw the two
+// tables as one continuous line, style-switching at that join point via
+// segment, never a date comparison.
+//
+// Same REPLACE-per-run policy as failure_forecast_projection (not
+// append-only, even though "the past" sounds like it shouldn't change --
+// risk_ref drifts slowly as ai1a_shadow history grows, so history is
+// recomputed every run to stay consistent with the projection).
+const getFailureForecastHistory = async (req, res) => {
+  try {
+    const sql = `
+      SELECT model, point_date, segment, failure_pct, risk_ref,
+             history_source, generated_at
+      FROM failure_forecast_history
+      WHERE generated_at = (SELECT MAX(generated_at) FROM failure_forecast_history)
+      ORDER BY model, point_date
+    `;
+    const result = await query(sql);
+
+    if (result.rows.length === 0) {
+      return res.status(503).json({
+        success: false,
+        message: 'failure_forecast_history is empty -- worker may not have run yet'
+      });
+    }
+
+    res.json({ success: true, data: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('❌ Error fetching failure forecast history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch failure forecast history',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   fetchHoneywellData,
   receiveExternalData,
@@ -1471,5 +1521,6 @@ module.exports = {
   getAi1aData,
   getAi1aDirectionAnnotations,
   getAi1bData,
-  getFailureForecastData
+  getFailureForecastData,
+  getFailureForecastHistory
 };

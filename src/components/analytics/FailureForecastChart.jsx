@@ -79,18 +79,26 @@ function ModelStatusCard({ model, rows }) {
 }
 
 /**
- * FailureForecastChart - turbine State-of-Health (SoH) projection, "like a
- * phone battery" per the pembimbing's framing (100% -> 0%, monotonically
- * non-increasing). Backed by failure_forecast_projection
- * (GET /api/external/failure-forecast), replacing the old ai1b-based
- * 30-day "Risk Forecast" chart on prediction.jsx.
+ * FailureForecastChart - turbine State-of-Health (SoH) curve, "like a phone
+ * battery" per the pembimbing's framing (100% -> 0%, monotonically
+ * non-increasing), drawn from COD (2015-06-29) through today (solid,
+ * failure_forecast_history) and on into the projection (dashed,
+ * failure_forecast_projection) -- replacing the old ai1b-based 30-day "Risk
+ * Forecast" chart on prediction.jsx.
  *
  * health_pct = 100 - failure_pct is a pure display flip done here, not by
  * the backend -- the wire contract's source of truth stays failure_pct
  * (monotonically NON-DECREASING toward 100), matching how the AI side's
  * own DegradationChart.tsx does this same transform only at render time.
+ *
+ * historyRows carries a `segment` ('nominal' COD->first sample, 'observed'
+ * first sample->today) that isn't used for styling here -- both draw as one
+ * solid "historis" line, since neither is a prediction the way the
+ * projection is. The distinction stays available in the raw rows for a
+ * future refinement (e.g. a lighter tone for the no-sensor-data nominal
+ * span) without a contract change.
  */
-const FailureForecastChart = ({ rows = [], loading = false }) => {
+const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) => {
   const containerRef = useRef(null);
   const chartRef = useRef(null);
 
@@ -106,19 +114,78 @@ const FailureForecastChart = ({ rows = [], loading = false }) => {
     return grouped;
   }, [rows]);
 
-  const models = useMemo(() => Object.keys(byModel), [byModel]);
+  const historyByModel = useMemo(() => {
+    const grouped = {};
+    historyRows.forEach((r) => {
+      if (!grouped[r.model]) grouped[r.model] = [];
+      grouped[r.model].push(r);
+    });
+    Object.values(grouped).forEach((list) =>
+      list.sort((a, b) => new Date(a.point_date).getTime() - new Date(b.point_date).getTime())
+    );
+    return grouped;
+  }, [historyRows]);
+
+  // Union, not just Object.keys(byModel) -- history and projection can load
+  // at slightly different times (two separate polled fetches), so a model
+  // present in one but not yet the other must still render what's there.
+  const models = useMemo(() => {
+    const set = new Set([...Object.keys(byModel), ...Object.keys(historyByModel)]);
+    return Array.from(set).sort();
+  }, [byModel, historyByModel]);
+
+  // Solid "historis" points, COD -> today, one series per model.
+  const historicalSeriesData = useMemo(() => {
+    const out = {};
+    models.forEach((model) => {
+      out[model] = (historyByModel[model] || []).map((r) => ({
+        x: new Date(r.point_date).getTime(),
+        y: Number((100 - Number(r.failure_pct)).toFixed(3))
+      }));
+    });
+    return out;
+  }, [historyByModel, models]);
+
+  // Dashed "proyeksi" points, today -> horizon. The historical line's last
+  // point is prepended so the dashed segment starts exactly where the solid
+  // one ends -- per contract, join on segment/order (last observed
+  // failure_pct == today_failure_pct), never a date comparison, so this
+  // does not assume point_date and projection_date line up exactly.
+  const projectionSeriesData = useMemo(() => {
+    const out = {};
+    models.forEach((model) => {
+      const projPoints = (byModel[model] || []).map((r) => ({
+        x: new Date(r.projection_date).getTime(),
+        y: Number((100 - Number(r.failure_pct)).toFixed(3))
+      }));
+      const lastHistorical = historicalSeriesData[model]?.[historicalSeriesData[model].length - 1];
+      out[model] = lastHistorical ? [lastHistorical, ...projPoints] : projPoints;
+    });
+    return out;
+  }, [byModel, models, historicalSeriesData]);
 
   const series = useMemo(
     () =>
-      models.map((model) => ({
-        name: `SoH – ${MODEL_LABELS[model] || model}`,
-        data: byModel[model].map((r) => ({
-          x: new Date(r.projection_date).getTime(),
-          y: Number((100 - Number(r.failure_pct)).toFixed(3))
-        }))
-      })),
-    [byModel, models]
+      models.flatMap((model) => {
+        const label = MODEL_LABELS[model] || model;
+        return [
+          { name: `SoH – ${label} (historis)`, data: historicalSeriesData[model] || [] },
+          { name: `SoH – ${label} (proyeksi)`, data: projectionSeriesData[model] || [] }
+        ];
+      }),
+    [models, historicalSeriesData, projectionSeriesData]
   );
+
+  // Per-series styling, in the same [historis, proyeksi] pairing as
+  // `series` above -- same color both halves, dashed only for proyeksi
+  // (same "solid observed + dashed predicted" convention as the TDS AI2
+  // overlay in RealTimeDataChart.jsx).
+  const seriesColors = useMemo(
+    () => models.flatMap((model) => [MODEL_COLORS[model] || '#9ca3af', MODEL_COLORS[model] || '#9ca3af']),
+    [models]
+  );
+  const seriesDashArray = useMemo(() => models.flatMap(() => [0, 6]), [models]);
+  const seriesStrokeWidth = useMemo(() => models.flatMap(() => [3, 2]), [models]);
 
   // Vertical dashed line per model at its own eta_date, when the horizon
   // returned actually reaches it.
@@ -126,7 +193,7 @@ const FailureForecastChart = ({ rows = [], loading = false }) => {
     () =>
       models
         .map((model) => {
-          const etaDate = byModel[model][0]?.eta_date;
+          const etaDate = (byModel[model] || [])[0]?.eta_date;
           if (!etaDate) return null;
           const x = new Date(etaDate).getTime();
           if (Number.isNaN(x)) return null;
@@ -146,6 +213,28 @@ const FailureForecastChart = ({ rows = [], loading = false }) => {
     [byModel, models]
   );
 
+  // Marks "today" (the history/projection join point) so the historis-vs-
+  // proyeksi switch reads clearly even before hovering the dashed segment.
+  const anchorAnnotation = useMemo(() => {
+    const x = models.map((model) => projectionSeriesData[model]?.[0]?.x).find((v) => Number.isFinite(v));
+    if (!Number.isFinite(x)) return null;
+    return {
+      x,
+      borderColor: '#94a3b8',
+      strokeDashArray: 2,
+      label: {
+        text: 'Hari ini',
+        orientation: 'horizontal',
+        style: { color: '#fff', background: '#94a3b8', fontSize: '10px' }
+      }
+    };
+  }, [models, projectionSeriesData]);
+
+  const xaxisAnnotations = useMemo(
+    () => (anchorAnnotation ? [anchorAnnotation, ...etaAnnotations] : etaAnnotations),
+    [anchorAnnotation, etaAnnotations]
+  );
+
   const buildOptions = useCallback(
     () => ({
       chart: {
@@ -157,16 +246,16 @@ const FailureForecastChart = ({ rows = [], loading = false }) => {
         zoom: { enabled: false }
       },
       series,
-      colors: models.map((m) => MODEL_COLORS[m] || '#9ca3af'),
-      stroke: { curve: 'smooth', width: 3 },
+      colors: seriesColors,
+      stroke: { curve: 'smooth', width: seriesStrokeWidth, dashArray: seriesDashArray },
       markers: { size: 0, hover: { size: 5 } },
       dataLabels: { enabled: false },
-      legend: { show: true, position: 'top', horizontalAlign: 'right' },
-      annotations: { xaxis: etaAnnotations },
+      legend: { show: true, position: 'top', horizontalAlign: 'right', fontSize: '11px' },
+      annotations: { xaxis: xaxisAnnotations },
       grid: { borderColor: '#eef0f4', strokeDashArray: 4, padding: { left: 12, right: 16 } },
       xaxis: {
         type: 'datetime',
-        title: { text: 'Tanggal proyeksi', style: { fontSize: '12px', color: '#8b93a7' } },
+        title: { text: 'Tanggal (COD → proyeksi)', style: { fontSize: '12px', color: '#8b93a7' } },
         labels: { style: { fontSize: '11px', colors: '#8b93a7' } }
       },
       yaxis: {
@@ -188,7 +277,7 @@ const FailureForecastChart = ({ rows = [], loading = false }) => {
         style: { color: '#8b93a7', fontSize: '13px' }
       }
     }),
-    [series, models, etaAnnotations, loading]
+    [series, seriesColors, seriesStrokeWidth, seriesDashArray, xaxisAnnotations, loading]
   );
 
   // Same split as RiskChart: create the ApexCharts instance once, then only
@@ -214,25 +303,32 @@ const FailureForecastChart = ({ rows = [], loading = false }) => {
     if (!chartRef.current) return;
     const opts = buildOptions();
     chartRef.current.updateOptions(
-      { annotations: opts.annotations, colors: opts.colors, xaxis: opts.xaxis, yaxis: opts.yaxis, noData: opts.noData },
+      {
+        annotations: opts.annotations,
+        colors: opts.colors,
+        stroke: opts.stroke,
+        xaxis: opts.xaxis,
+        yaxis: opts.yaxis,
+        noData: opts.noData
+      },
       true,
       false
     );
     chartRef.current.updateSeries(opts.series, false);
   }, [buildOptions]);
 
-  const generatedAt = rows[0]?.generated_at;
+  const generatedAt = rows[0]?.generated_at || historyRows[0]?.generated_at;
 
   return (
     <MainCard sx={{ width: '100%' }}>
       <Box sx={{ mb: 1.5 }}>
         <Typography variant="h5" sx={{ fontWeight: 700 }}>
-          State of Health (SoH) Turbin – Proyeksi Umur Pakai
+          State of Health (SoH) Turbin – Riwayat & Proyeksi Umur Pakai
         </Typography>
         <Typography variant="body2" color="text.secondary">
           {generatedAt
-            ? `Proyeksi dihitung ${fmtDate(generatedAt)}, dua model reliability-engineering ditampilkan berdampingan`
-            : 'Proyeksi umur pakai turbin (linear vs Weibull hazard/Cox PH), gaya "battery health"'}
+            ? `Dihitung ${fmtDate(generatedAt)} · sejak COD (29 Jun 2015) hingga proyeksi ke depan, dua model reliability-engineering ditampilkan berdampingan`
+            : 'Riwayat & proyeksi umur pakai turbin sejak COD (linear vs Weibull hazard/Cox PH), gaya "battery health"'}
         </Typography>
       </Box>
 
@@ -242,7 +338,7 @@ const FailureForecastChart = ({ rows = [], loading = false }) => {
         <Grid container spacing={2} sx={{ mt: 0.5 }}>
           {models.map((model) => (
             <Grid size={{ xs: 12, sm: 6 }} key={model}>
-              <ModelStatusCard model={model} rows={byModel[model]} />
+              <ModelStatusCard model={model} rows={byModel[model] || []} />
             </Grid>
           ))}
         </Grid>
@@ -260,6 +356,7 @@ const FailureForecastChart = ({ rows = [], loading = false }) => {
 
 FailureForecastChart.propTypes = {
   rows: PropTypes.array,
+  historyRows: PropTypes.array,
   loading: PropTypes.bool
 };
 
