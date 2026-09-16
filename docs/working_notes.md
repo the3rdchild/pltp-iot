@@ -298,3 +298,74 @@ clipping at the card edge.
 - Pushed `main` (`70ea2f7`, two commits: hard-delete then the annotation
   fix). Not yet deployed — bundled with whatever the current deploy batch
   picks up next.
+
+## Backend/Frontend — per-cycle `failure_pct` contract change (2026-09-16)
+
+**Major contract change**, relayed via "Master Session": `failure_pct`/
+`today_failure_pct` no longer measure "% toward 30-year design life" --
+they now measure "% of ONE overhaul cycle (~4yr) used up", resetting to 0
+at every recorded overhaul (sawtooth curve, not one long ramp). Full spec:
+AI_Pertasmart_V3 `simulator/failure-forecast/CONTRACT.md`, banner "🚨
+PERUBAHAN BESAR 16 Sep 2026".
+
+**Deploy ordering, IMPORTANT**: the AI side is deliberately HOLDING their
+DB migration (`init_failure_forecast.sql` -- adds `track`/`cycle_index`/
+`cycle_anchor` columns + widens `failure_pct` to `numeric(12,3)`) and the
+`pertasmart-v3-worker`/`-scheduler` restart until **we** confirm our code
+is ready -- so the production dashboard never shows a half-migrated state
+(new worker writing new columns our old code can't read, or vice versa).
+**Do not deploy this to the VPS before the Master Session confirms their
+migration + worker restart happened.** Code is pushed to `main` and passed
+our own review/build, which is what unblocks their migration -- deploying
+our side is a separate, later step.
+
+Code changes, all six WAJIB items from the contract banner:
+
+1. *(schema/type migration is the AI side's `init_failure_forecast.sql`,
+   not ours -- nothing to run on our end.)*
+2. `backend/controllers/externalController.js`: `getFailureForecastData`/
+   `getFailureForecastHistory` now SELECT `track`/`cycle_index`
+   (projection) and `cycle_index`/`cycle_anchor` (history).
+3. `FailureForecastChart.jsx`: new `insertCycleGaps` breaks the historis/
+   proyeksi line at every `cycle_index` change instead of connecting
+   across it (connecting would draw "damage decreasing" that never
+   happened -- SoH resets to 100% at each recorded overhaul).
+4. Projection rows filtered to `track === 'as_is'` before any grouping
+   (`asIsRows`) -- `'scheduled'` (the "if the ~4y cycle is kept" what-if
+   line) is fetched but deliberately NOT rendered yet, kept in the raw rows
+   for a possible future comparison-line feature. Flagged to the master
+   session as a disclosed scope decision, not a missed requirement (not in
+   the 6 WAJIB items).
+5. `yAxisBounds` replaces the old fixed `yaxis: {min:0, max:100}` -- computed
+   from the actual plotted data instead. A fixed axis clips an overdue
+   cycle exactly like clamping the *value* would (Unit 5 is at
+   `health_pct` ~ -148 per the contract's own 16 Sep 2026 example) --
+   WAJIB #4 is about the value, but a hardcoded axis range violates the
+   same spirit even if the value itself is never clamped.
+6. `eta_date`-based copy (`ModelStatusCard`, `prediction.jsx`'s stat tile)
+   now branches on the date being in the past (`overdue`) instead of
+   assuming `eta_date > now()` -- contract WAJIB #5.
+7. Replaced "umur desain"/"sisa umur turbin" framing throughout (chart
+   title, disclaimer paragraph, `ModelStatusCard` labels) with
+   siklus-overhaul framing (WAJIB #6); added an `Alert` with the contract's
+   own suggested safe sentence when a cycle is overdue, so an extreme
+   number doesn't read as "the turbine is broken".
+
+**Also**: `ModelStatusCard`'s headline is now the backend's own
+`today_failure_pct` directly, replacing this component's PRIOR client-side
+calendar-elapsed approximation (`cycleProgress`, from the 2026-09-16
+reframe earlier today) -- that approximation would now diverge from the
+real hazard-weighted number (contract example: 5.67 calendar years overdue
+computes to ~248%, not the ~142% a naive linear estimate would give) and
+show two different "% of cycle" numbers on the same page. The client-side
+reference band/midline (generic industry-literature ~4yr comparison, kept
+in `utils/failureForecastCalibration.js`) is retained as a separate,
+explicitly `(literatur)`-labeled annotation -- not a duplicate of what the
+model now genuinely computes.
+
+- Verified: `vite build` + `eslint` clean, backend `node --check` clean.
+  `insertCycleGaps`/`yAxisBounds` tested standalone against a simulated
+  sawtooth (COD → Jan 2021 TA → now, ending at the contract's own -148
+  example) before committing -- not just read through the code.
+- Pushed `main` (`35c0567`). **NOT DEPLOYED** -- waiting on the master
+  session's go-ahead per the ordering above.
