@@ -7,6 +7,7 @@ import { useAi1aData } from '../../hooks/useAi1Data';
 import { useFailureForecastData } from '../../hooks/useFailureForecastData';
 import { useFailureForecastHistory } from '../../hooks/useFailureForecastHistory';
 import { useFailureForecastOverhaul } from '../../hooks/useFailureForecastOverhaul';
+import { useTurbineRiskHistory } from '../../hooks/useTurbineRiskHistory';
 
 // icons
 import PsychologyIcon from '@mui/icons-material/Psychology';
@@ -302,6 +303,35 @@ const AIAnalytics = () => {
   const currentRisk = toNum(ai1aLive?.risk_percentage);
   const isAnomaly = ai1aLive ? ai1aLive.is_anomaly === true || ai1aLive.is_anomaly === 't' : null;
 
+  /* --- Turbine Risk History: separate 6-steam-quality-parameter model ---
+   * A DIFFERENT Isolation Forest from AI1a (6 steam-quality parameters --
+   * TDS/pressure/temperature/flow_rate are real sensor readings, dryness/
+   * NCG are AI2 model OUTPUTS, not sensor readings) -- this is also the
+   * model that anchors the failure-forecast SoH curve below. Range-fetch
+   * logic lives in useTurbineRiskHistory (factored out since it's the
+   * second chart needing the same range-selector + bucketing shape ai1a
+   * already has above). risk_percentage here is `adjusted_risk_percentage`
+   * from the backend -- ALWAYS populated on the row itself (no separate
+   * annotation join needed, unlike ai1a), same "direction-corrected"
+   * meaning as ai1a's own adjusted values. */
+  const [turbineRiskSelection, setTurbineRiskSelection] = useState({ range: '1d', custom: null });
+  const handleTurbineRiskRangeChange = useCallback((range, custom) => {
+    setTurbineRiskSelection({ range, custom: custom ?? null });
+  }, []);
+  const { rows: turbineRiskRows } = useTurbineRiskHistory(turbineRiskSelection);
+
+  const turbineRiskChart = useMemo(() => {
+    const rows = turbineRiskRows.filter((r) => toNum(r.risk_percentage) !== null);
+    const lows = rows.map((r) => toNum(r.risk_percentage_min)).filter((v) => v !== null);
+    const highs = rows.map((r) => toNum(r.risk_percentage_max)).filter((v) => v !== null);
+    return {
+      series: rows.map((r) => toNum(r.risk_percentage)),
+      categories: rows.map((r) => fmtClock(r.timestamp)),
+      timestamps: rows.map((r) => r.timestamp),
+      extremes: lows.length > 0 && highs.length > 0 ? { min: Math.min(...lows), max: Math.max(...highs) } : null
+    };
+  }, [turbineRiskRows]);
+
   /* --- Failure forecast: turbine State-of-Health projection ------- */
 
   // Summary for the stat tile above: the anchor (today) row per model plus
@@ -422,6 +452,27 @@ const AIAnalytics = () => {
           chartType="area"
           yAxisMax={100}
           emptyMessage="Belum ada window yang valid"
+        />
+      </Box>
+
+      {/* ---------------- chart 1b: Turbine Risk History (separate model) ---------------- */}
+      <Box sx={{ mb: 3 }}>
+        <RiskChart
+          title="Turbine Risk History"
+          subtitle="Risk score dari 6 parameter kualitas uap (Isolation Forest terpisah dari AI1a), sudah dikoreksi arah proses - bukan angka mentah"
+          badge="ADJUSTED"
+          badgeColor="warning"
+          series={turbineRiskChart.series}
+          categories={turbineRiskChart.categories}
+          timestamps={turbineRiskChart.timestamps}
+          seriesExtremes={turbineRiskChart.extremes}
+          showRangeSelector
+          onRangeChange={handleTurbineRiskRangeChange}
+          color="#0d9488"
+          chartType="area"
+          yAxisMax={100}
+          emptyMessage="Belum ada data turbine risk history"
+          footnote="Model terpisah dari AI1a -- 6 parameter kualitas uap (TDS/pressure/temperature/flow_rate dari sensor asli, dryness & NCG dari output AI2, bukan sensor langsung). Keterbatasan: window latih baru ~37 hari (jauh lebih pendek dari AI1a); dryness & NCG hampir redundan dengan pressure/temperature/TDS (R² ~0,99), jadi menambah sangat sedikit informasi baru; anotasi arah proses cuma punya aturan untuk TDS/dryness/NCG -- pressure/temperature/flow_rate sengaja tanpa verdict baik/buruk."
         />
       </Box>
 

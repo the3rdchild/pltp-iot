@@ -1385,6 +1385,104 @@ const getAi1aDirectionAnnotations = async (req, res) => {
   }
 };
 
+// Model-version prefix filter -- ANY retrain gets a new suffixed
+// model_version (e.g. TRH_v3.0_turbine_risk_history_20260915), and mixing
+// two different model_version values in one chart series would mix two
+// different scoring "rulers" together (same class of bug already handled
+// for ai1a_shadow via AI1A_SHADOW_MODEL_VERSION_PREFIX above). LIKE prefix
+// rather than an exact match so this survives a retrain without a code
+// change.
+const TURBINE_RISK_HISTORY_MODEL_VERSION_PREFIX = 'TRH_v3.0_%';
+
+// Get turbine_risk_history rows -- the 6-steam-quality-parameter
+// Isolation Forest that also anchors the failure-forecast SoH curve (see
+// FailureForecastChart.jsx), read here for its own "risk history" chart
+// (mirrors getAi1aData's shape/bucketing, but simpler: single table, no
+// source_table toggle, no direction_annotation LEFT JOIN needed --
+// adjusted_risk_percentage is ALWAYS populated on the row itself, per
+// AI_Pertasmart_V3 docs/turbine_risk_history_contract_for_beFE.md, even
+// when no correction applied).
+//
+// `"timestamp"` is quoted throughout -- it's a Postgres reserved word as
+// an unquoted identifier.
+//
+// Caveats worth remembering if this data is ever quoted without the FE's
+// own footnote alongside it: training window is only ~37 days (far
+// shorter than AI1a); 2 of the 6 input parameters (dryness, ncg) are AI2
+// MODEL OUTPUTS, not sensor readings, and are ~99% reconstructible from
+// pressure/temperature/TDS (near-redundant, not independent information);
+// direction_flag only has rules for TDS/dryness/ncg -- pressure/
+// temperature/flow_rate deliberately carry no good/bad verdict.
+const getTurbineRiskHistoryData = async (req, res) => {
+  try {
+    const { limit = 50, start_date, end_date, points } = req.query;
+
+    // Bucketed (chart) path -- see resolveBucketing above.
+    const bucketing = (start_date && end_date) ? resolveBucketing(points, start_date, end_date) : null;
+
+    if (bucketing) {
+      const bucket = bucketExpr('"timestamp"', bucketing);
+      const bucketSql = `
+        SELECT
+          ${bucket}                                     AS timestamp,
+          AVG(adjusted_risk_percentage)                 AS risk_percentage,
+          MIN(adjusted_risk_percentage)                 AS risk_percentage_min,
+          MAX(adjusted_risk_percentage)                 AS risk_percentage_max,
+          BOOL_OR(is_anomaly)                           AS is_anomaly,
+          COUNT(*) FILTER (WHERE is_anomaly)::int       AS anomaly_count,
+          MODE() WITHIN GROUP (ORDER BY risk_label)     AS risk_label,
+          MAX(model_version)                            AS model_version,
+          MAX("timestamp")                              AS bucket_last_at,
+          COUNT(*)::int                                 AS data_points
+        FROM turbine_risk_history
+        WHERE model_version LIKE $3 AND "timestamp" >= $1 AND "timestamp" <= $2
+        GROUP BY 1
+        ORDER BY 1 DESC
+      `;
+
+      const bucketResult = await query(bucketSql, [start_date, end_date, TURBINE_RISK_HISTORY_MODEL_VERSION_PREFIX]);
+
+      return res.json({
+        success: true,
+        data: bucketResult.rows,
+        count: bucketResult.rows.length,
+        sampled: true,
+        bucket_seconds: bucketing.bucketSeconds
+      });
+    }
+
+    let sql = `
+      SELECT "timestamp", model_version, risk_percentage, adjusted_risk_percentage,
+             is_anomaly, risk_label
+      FROM turbine_risk_history
+      WHERE model_version LIKE $1
+    `;
+    const params = [TURBINE_RISK_HISTORY_MODEL_VERSION_PREFIX];
+
+    if (start_date && end_date) {
+      params.push(start_date);
+      sql += ` AND "timestamp" >= $${params.length}`;
+      params.push(end_date);
+      sql += ` AND "timestamp" <= $${params.length}`;
+      sql += ` ORDER BY "timestamp" DESC`;
+    } else {
+      params.push(parseInt(limit));
+      sql += ` ORDER BY "timestamp" DESC LIMIT $${params.length}`;
+    }
+
+    const result = await query(sql, params);
+
+    res.json({ success: true, data: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('❌ Error fetching turbine risk history data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch turbine risk history data',
+      error: error.message
+    });
+  }
+};
+
 // Get latest AI1b 30-day risk forecasts
 const getAi1bData = async (req, res) => {
   try {
@@ -1758,6 +1856,7 @@ module.exports = {
   getAi1aData,
   getAi1aDirectionAnnotations,
   getAi1bData,
+  getTurbineRiskHistoryData,
   getFailureForecastData,
   getFailureForecastHistory,
   getFailureForecastOverhaulEvents,

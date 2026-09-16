@@ -16,6 +16,7 @@ const {
   getAi1aData,
   getAi1aDirectionAnnotations,
   getAi1bData,
+  getTurbineRiskHistoryData,
   getFailureForecastData,
   getFailureForecastHistory,
   getFailureForecastOverhaulEvents,
@@ -76,6 +77,13 @@ router.get('/ai1a/direction', getAi1aDirectionAnnotations);
 
 // GET /api/external/ai1b - Get latest AI1b 30-day risk forecasts
 router.get('/ai1b', getAi1bData);
+
+// GET /api/external/turbine-risk-history - Get turbine_risk_history rows
+// (6-steam-quality-parameter Isolation Forest, separate model from AI1a --
+// also anchors the failure-forecast SoH curve). See
+// getTurbineRiskHistoryData in externalController.js for the full contract
+// + caveats (short training window, near-redundant dryness/ncg inputs).
+router.get('/turbine-risk-history', getTurbineRiskHistoryData);
 
 // GET /api/external/failure-forecast - Get latest failure-forecast projection
 // (turbine State-of-Health curve, linear + weibull_cox side by side). See
