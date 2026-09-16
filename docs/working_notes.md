@@ -448,3 +448,28 @@ boundary falls.
   segments, not one chained line.
 - Pushed `main` (`08ac88d`, two commits: instant-refresh then connector).
   Not yet deployed.
+
+## Chart 0% reference line (2026-09-16)
+
+User asked (via Master Session) for a horizontal reference line at 0% on
+the SoH chart -- with `yAxisBounds` now unclamped and often sparse (e.g.
+100%, -349%, -799%), it wasn't obvious exactly where the curve crosses
+from positive into negative health.
+
+- Added a `yaxis` annotation (`{ y: 0, ... }`, ApexCharts) with a "0%"
+  label, always rendered (not conditional on data actually going
+  negative) so it's a fixed scale marker rather than something that pops
+  in/out. New `ZERO_LINE_COLOR` (neutral gray, matches the existing axis
+  label color) -- deliberately NOT `PLAN_REFERENCE_COLOR` (amber,
+  literature reference) or `OVERHAUL_CONNECTOR_COLOR` (red, event marker),
+  since this is neither of those.
+- Verified: `vite build` + `eslint` clean. Also rendered a standalone
+  ApexCharts smoke test (same annotation config against synthetic data
+  crossing zero) via a temp local static server + the Browser pane, since
+  the real `/prediction` page needs an authenticated session this agent
+  can't log into -- confirmed the dashed line + "0%" label land exactly
+  at the zero crossing.
+- Pushed `main` (`434e3fd`). **Explicitly NOT deployed** -- user wants it
+  bundled with tomorrow's Turbine Risk History deploy (relayed via Master
+  Session); do not push this to the VPS ahead of that without checking
+  first.
