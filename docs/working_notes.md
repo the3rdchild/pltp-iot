@@ -367,5 +367,34 @@ model now genuinely computes.
   `insertCycleGaps`/`yAxisBounds` tested standalone against a simulated
   sawtooth (COD → Jan 2021 TA → now, ending at the contract's own -148
   example) before committing -- not just read through the code.
-- Pushed `main` (`35c0567`). **NOT DEPLOYED** -- waiting on the master
-  session's go-ahead per the ordering above.
+- Pushed `main` (`35c0567`). **Deployed and confirmed working** (master
+  session, 2026-09-16) -- AI side ran their migration + worker restart
+  first per the ordering above, then this was deployed; track-filter fix
+  confirmed live (no more overlapping/chaotic as_is vs. scheduled lines).
+
+### Follow-up bug found live: projection tail flattened the whole chart (2026-09-16)
+
+User found the SoH chart looked like a flat 100% line from 2016 to today
+then one smooth decline to ~-5230% by ~2048 -- looked like the sawtooth
+wasn't happening at all. Root cause (confirmed by the AI side via direct DB
+check, not assumed): the sawtooth WAS real in the data (6 correctly
+segmented cycles) -- the bug was purely in `yAxisBounds`, which read its
+min from the ENTIRE `as_is` projection including the far-future tail. With
+no future overhaul ever assumed, that tail keeps accelerating (Weibull
+beta=2.5) for as long as the backend computes it; one extreme point that
+far out stretched the axis so far the real 0-100% sawtooth compressed into
+under 2% of the chart's height.
+
+- **Fix**: bound the DISPLAYED `as_is` projection to `today + 6 years`
+  (reuses `PLANNED_CYCLE_RANGE_YEARS[1]` rather than a new magic number) --
+  a display-range decision, not a value clamp (WAJIB #4 still holds, the
+  backend keeps computing/returning the full horizon). Measured from "now"
+  so the window is always a fixed positive length regardless of how
+  overdue the cycle already is. `etaAnnotations` skips an eta_date beyond
+  that same cutoff (would otherwise sit outside the plotted x-range). Added
+  a caption disclosing the cutoff rather than silently truncating.
+- Verified: `vite build` + `eslint` clean; simulated a 25-year accelerating
+  tail standalone before committing (confirmed roughly an order-of-
+  magnitude reduction in the extreme value reaching the y-axis).
+- Pushed `main` (`cd263d5`). Not yet confirmed deployed -- told "SSH BE FE
+  Agent" and the master session, standing by for their report.
