@@ -1422,17 +1422,26 @@ const getAi1bData = async (req, res) => {
   }
 };
 
-// Get the latest failure-forecast projection (turbine State-of-Health /
-// remaining-life curve, linear + weibull_cox models side by side).
+// Get the latest failure-forecast projection (turbine State-of-Health
+// curve, currently weibull_cox only -- linear was retired from the
+// production worker 15 Sep 2026, see CONTRACT.md).
 //
 // Written by a separate AI-side job (workers/jobs_failure_forecast.py,
-// ~60s cadence) straight from ai1a_shadow -- see
-// docs/failure_forecast_contract_for_beFE.md for the full contract. This
-// replaces the old ai1b-based "Risk Forecast - 30 Hari ke Depan" chart on
-// prediction.jsx: the AI side pivoted from a 30-day risk forecast to a
-// yearly-horizon degradation projection (dosen's "like a phone battery"
-// framing), see CATATAN_KERJA_LAPORAN.md "SCOPE: Pivot 'predict failure'..."
-// (12 Sep 2026).
+// ~60s cadence) -- see AI_Pertasmart_V3
+// simulator/failure-forecast/CONTRACT.md for the full contract (this repo
+// doesn't have its own copy; that file is the source of truth and gets
+// updated in place by the AI side).
+//
+// ⚠️ 16 Sep 2026 contract change: `failure_pct` no longer means "% toward
+// 30-year design life" -- it's now "% of ONE overhaul cycle (~4 years)
+// used up", resetting to 0 at every recorded overhaul. `track` ('as_is' =
+// honest default, no future overhaul assumed; 'scheduled' = "if the cycle
+// is kept" what-if) and `cycle_index` (which cycle a point belongs to) are
+// new columns -- both returned here UNFILTERED; the FE is responsible for
+// filtering to track='as_is' and never connecting points across a
+// cycle_index change (see FailureForecastChart.jsx). Do NOT clamp
+// failure_pct/today_failure_pct anywhere in this response -- values over
+// 100 (an overdue cycle) are correct, not a bug.
 //
 // failure_forecast_projection is REPLACEd whole on every job run (no
 // history accumulation), so "the current projection" is always every row
@@ -1442,11 +1451,11 @@ const getAi1bData = async (req, res) => {
 const getFailureForecastData = async (req, res) => {
   try {
     const sql = `
-      SELECT model, projection_date, failure_pct, today_failure_pct,
+      SELECT model, track, cycle_index, projection_date, failure_pct, today_failure_pct,
              eta_date, risk_ref, overhaul_active_since, generated_at
       FROM failure_forecast_projection
       WHERE generated_at = (SELECT MAX(generated_at) FROM failure_forecast_projection)
-      ORDER BY model, projection_date
+      ORDER BY model, track, cycle_index, projection_date
     `;
     const result = await query(sql);
 
@@ -1469,34 +1478,43 @@ const getFailureForecastData = async (req, res) => {
 };
 
 // Get the historical failure-forecast curve (COD 2015-06-29 -> today),
-// picking up exactly where failure_forecast_projection starts. Same job
-// (workers/jobs_failure_forecast.py) writes both tables every run, sharing
-// generated_at -- see docs/failure_forecast_contract_for_beFE.md.
+// picking up exactly where failure_forecast_projection's track='as_is'
+// starts. Same job (workers/jobs_failure_forecast.py) writes both tables
+// every run, sharing generated_at -- see AI_Pertasmart_V3
+// simulator/failure-forecast/CONTRACT.md.
 //
-// segment discriminates 'nominal' (COD -> first ai1a_shadow sample,
-// 2026-08-05 -- no sensor data exists there so both models fall back to
-// their own built-in nominal-aging assumption) from 'observed' (first
-// sample -> anchor, built from real risk trajectory). Don't infer segment
-// from point_date -- always read the column.
+// segment discriminates 'nominal' (no risk data yet in that cycle -- both
+// models fall back to their own built-in nominal-aging assumption) from
+// 'observed' (real risk trajectory). Don't infer segment from point_date --
+// always read the column. Since 16 Sep 2026 either segment can occur in
+// ANY cycle (cycle_index), not just once at the start of the whole curve.
 //
-// Join contract: the last 'observed' row per model here has failure_pct
-// exactly equal to today_failure_pct on that model's
-// failure_forecast_projection rows, same generated_at -- draw the two
-// tables as one continuous line, style-switching at that join point via
-// segment, never a date comparison.
+// ⚠️ 16 Sep 2026 contract change: `cycle_index`/`cycle_anchor` are new --
+// this curve can now span more than one recorded overhaul cycle, and
+// points from different cycles must NEVER be connected into one line
+// segment (SoH resets to 100% at each cycle boundary; connecting across it
+// draws "damage decreasing" that never happened). See FailureForecastChart
+// .jsx's insertCycleGaps. `failure_pct` here is cycle-relative like
+// projection's -- same "never clamp" rule applies.
+//
+// Join contract: the LAST row per model here (latest point_date) has the
+// SAME cycle_index and failure_pct exactly equal to today_failure_pct on
+// that model's failure_forecast_projection track='as_is' rows, same
+// generated_at -- draw the two tables as one continuous line, style-
+// switching at that join point via segment, never a date comparison.
 //
 // Same REPLACE-per-run policy as failure_forecast_projection (not
 // append-only, even though "the past" sounds like it shouldn't change --
-// risk_ref drifts slowly as ai1a_shadow history grows, so history is
+// risk_ref drifts slowly as turbine_risk_history grows, so history is
 // recomputed every run to stay consistent with the projection).
 const getFailureForecastHistory = async (req, res) => {
   try {
     const sql = `
-      SELECT model, point_date, segment, failure_pct, risk_ref,
-             history_source, generated_at
+      SELECT model, cycle_index, cycle_anchor, point_date, segment, failure_pct,
+             risk_ref, history_source, generated_at
       FROM failure_forecast_history
       WHERE generated_at = (SELECT MAX(generated_at) FROM failure_forecast_history)
-      ORDER BY model, point_date
+      ORDER BY model, cycle_index, point_date
     `;
     const result = await query(sql);
 

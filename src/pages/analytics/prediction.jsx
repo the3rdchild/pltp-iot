@@ -288,17 +288,22 @@ const AIAnalytics = () => {
   /* --- Failure forecast: turbine State-of-Health projection ------- */
 
   // Summary for the stat tile above: the anchor (today) row per model plus
-  // whichever model's ETA comes soonest. rows arrive ordered by
-  // (model, projection_date) server-side, so the first row seen per model
-  // is that model's anchor point.
+  // whichever model's target Turn Around comes soonest. Explicitly filtered
+  // to track='as_is' (16 Sep 2026 contract change) -- rows now also include
+  // a 'scheduled' what-if track, and its anchor row starts a fresh
+  // hypothetical cycle at failure_pct=0, which would look like "perfect
+  // health" here if it slipped through. `health`/`worstHealth` are NEVER
+  // clamped: an overdue cycle correctly pushes this negative.
   const failureForecastSummary = useMemo(() => {
     const anchors = [];
     const seen = new Set();
-    failureForecastRows.forEach((r) => {
-      if (seen.has(r.model)) return;
-      seen.add(r.model);
-      anchors.push({ model: r.model, health: 100 - toNum(r.today_failure_pct), etaDate: r.eta_date });
-    });
+    failureForecastRows
+      .filter((r) => (r.track ?? 'as_is') === 'as_is')
+      .forEach((r) => {
+        if (seen.has(r.model)) return;
+        seen.add(r.model);
+        anchors.push({ model: r.model, health: 100 - toNum(r.today_failure_pct), etaDate: r.eta_date });
+      });
 
     const worst = anchors.reduce(
       (min, a) => (a.health !== null && (min === null || a.health < min.health) ? a : min),
@@ -308,7 +313,14 @@ const AIAnalytics = () => {
       .filter((a) => a.etaDate)
       .reduce((min, a) => (min === null || new Date(a.etaDate) < new Date(min.etaDate) ? a : min), null);
 
-    return { worstHealth: worst?.health ?? null, soonestEta: soonestEta?.etaDate ?? null, soonestModel: soonestEta?.model ?? null };
+    return {
+      worstHealth: worst?.health ?? null,
+      soonestEta: soonestEta?.etaDate ?? null,
+      soonestModel: soonestEta?.model ?? null,
+      // Contract WAJIB #5: eta_date CAN be in the past for an overdue
+      // as_is cycle -- that's a real "TA is due" reading, not stale data.
+      soonestEtaOverdue: soonestEta?.etaDate ? new Date(soonestEta.etaDate).getTime() < Date.now() : false
+    };
   }, [failureForecastRows]);
 
   /* --- render ----------------------------------------------------- */
@@ -358,14 +370,14 @@ const AIAnalytics = () => {
 
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <StatTile
-            title="State of Health Turbin"
+            title="SoH Siklus Overhaul Berjalan"
             subtitle={
               failureForecastLoading
                 ? 'Memuat proyeksi...'
                 : failureForecastSummary.soonestEta
-                  ? `ETA overhaul terdekat: ${fmtDateFull(failureForecastSummary.soonestEta)} (${
-                      FAILURE_FORECAST_MODEL_LABELS[failureForecastSummary.soonestModel] || failureForecastSummary.soonestModel
-                    })`
+                  ? `${failureForecastSummary.soonestEtaOverdue ? 'Target TA (sudah lewat)' : 'Target Turn Around terdekat'}: ${fmtDateFull(
+                      failureForecastSummary.soonestEta
+                    )} (${FAILURE_FORECAST_MODEL_LABELS[failureForecastSummary.soonestModel] || failureForecastSummary.soonestModel})`
                   : 'Belum tercapai dalam horizon proyeksi'
             }
             value={failureForecastSummary.worstHealth === null ? null : fmtNum(failureForecastSummary.worstHealth, 1)}

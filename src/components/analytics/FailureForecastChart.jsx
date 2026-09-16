@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import ApexCharts from 'apexcharts';
-import { Box, Typography, Stack, Divider } from '@mui/material';
+import { Alert, Box, Typography, Stack, Divider } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import PropTypes from 'prop-types';
 import MainCard from '../MainCard';
-import { PLANNED_CYCLE_YEARS, PLANNED_CYCLE_RANGE_YEARS, cycleAnchorMs, cycleProgress, yearsToMs } from '../../utils/failureForecastCalibration';
+import { PLANNED_CYCLE_YEARS, PLANNED_CYCLE_RANGE_YEARS, cycleAnchorMs, yearsToMs } from '../../utils/failureForecastCalibration';
 
 // Display-only labels/colors -- the wire values are always 'linear' /
 // 'weibull_cox' (see docs/failure_forecast_contract_for_beFE.md). Exported
@@ -89,53 +89,80 @@ const resolveAnnotationCollisions = (items, domainMs) => {
   });
 };
 
+// Breaks a chronologically-sorted points array into visually separate
+// segments at each cycle_index change -- WAJIB per the 16 Sep 2026 contract
+// change (CONTRACT.md banner, point 2): connecting points across a cycle
+// boundary would draw "damage decreasing" that never happened -- SoH resets
+// to 100% at every recorded overhaul, it doesn't ease down to it. Inserts a
+// single null-y point 1ms before the first point of the new cycle so
+// ApexCharts breaks the line there, rather than splitting into a separate
+// series per cycle (which would also multiply legend entries -- the
+// production worker currently writes one cycle for `as_is`/projection but
+// history can already span several).
+const insertCycleGaps = (points) => {
+  const out = [];
+  points.forEach((p, i) => {
+    if (i > 0 && p.cycleIndex !== points[i - 1].cycleIndex) {
+      out.push({ x: p.x - 1, y: null });
+    }
+    out.push({ x: p.x, y: p.y });
+  });
+  return out;
+};
+
 /**
  * Per-model status card, mirroring the AI-side interactive demo's
  * LifetimeStatusPanel.tsx (both models shown side by side, never one
  * silently picked).
  *
  * Reframed 2026-09-16 (dosen feedback via "Master Session" cross-session
- * handoff): the headline used to be SoH-now / ETA ~2045, which read as
- * "T_desain 30 tahun" framing even though the chart's own reference band
- * (below) already reflects the newer predictive-maintenance framing --
- * "siklus overhaul rencana ~4 tahun". Now the cycle-progress number (same
- * anchor as the band, model-independent) is the headline; SoH-now stays
- * visible as its own block; ETA is demoted to a muted secondary line
- * (kept, not deleted -- still a valid consequence of the curve, just not
- * what should catch the eye first).
+ * handoff, contract change same day): `failure_pct`/`today_failure_pct`
+ * from the backend now mean "% of ONE overhaul cycle (~4 years) used up",
+ * not "% toward 30-year design life" -- see CONTRACT.md's "PERUBAHAN BESAR
+ * 16 Sep 2026" banner. The headline here used to be this component's OWN
+ * client-side calendar-elapsed-vs-4-years estimate (a stand-in before the
+ * backend computed this properly); it's now the backend's real
+ * hazard-weighted `today_failure_pct` directly -- the two numbers would
+ * otherwise diverge and show two different "% of cycle" figures on the
+ * same page, which is worse than showing neither. NOT clamped (contract
+ * WAJIB #4): a value like 248% is correct and must render as 248%, not be
+ * capped at 100.
  *
- * `wide` (same day, follow-up): true when this is the ONLY card in the row
- * (see the `models.length === 1` check at the call site) -- linear was
- * retired from the AI-side production worker, so a single Weibull-Cox card
- * was stretching to fill a half-width grid slot with the other half empty.
- * When wide, the headline and SoH-now blocks sit side by side (a wide card
- * has room); otherwise they stack vertically exactly as before, which is
- * still correct the moment a second model reappears -- this prop is
- * data-driven (models.length), never a hardcoded single-model assumption.
+ * `wide`: true when this is the ONLY card in the row (see the
+ * `models.length === 1` check at the call site) -- linear was retired from
+ * the AI-side production worker, so a single Weibull-Cox card was
+ * stretching to fill a half-width grid slot with the other half empty.
+ * When wide, the headline and SoH-now blocks sit side by side; otherwise
+ * they stack vertically -- data-driven (models.length), never a hardcoded
+ * single-model assumption.
  */
-function ModelStatusCard({ model, rows, cycleAnchor, wide = false }) {
+function ModelStatusCard({ model, rows, wide = false }) {
   const anchor = rows[0];
   if (!anchor) return null;
 
-  const health = 100 - Number(anchor.today_failure_pct);
+  const cyclePct = Number(anchor.today_failure_pct);
+  const health = 100 - cyclePct;
   const yearsLeft = yearsUntil(anchor.eta_date);
   const color = MODEL_COLORS[model] || '#9ca3af';
-  const { pct: cyclePct, yearsToPlanned } = cycleProgress(cycleAnchor);
-  const cycleOverdue = yearsToPlanned < 0;
+  // Contract WAJIB #5: eta_date CAN be in the past for track='as_is' -- a
+  // unit already overdue on its current cycle. yearsLeft going negative is
+  // the expected shape of that, not a bug to guard against.
+  const overdue = yearsLeft !== null && yearsLeft < 0;
 
   const cycleBlock = (
     <Box>
       <Typography variant="h3" sx={{ fontWeight: 700, color: PLAN_REFERENCE_COLOR, lineHeight: 1.15 }}>
-        {Number.isFinite(cyclePct) ? Math.max(0, cyclePct).toFixed(0) : '-'}%
+        {Number.isFinite(cyclePct) ? cyclePct.toFixed(0) : '-'}%
       </Typography>
       <Typography variant="caption" color="text.secondary">
-        {cycleOverdue ? `Dari siklus overhaul rencana (~${PLANNED_CYCLE_YEARS} tahun)` : `Menuju siklus overhaul rencana (~${PLANNED_CYCLE_YEARS} tahun)`}
+        Jatah siklus overhaul terpakai (referensi ~{PLANNED_CYCLE_YEARS} tahun)
       </Typography>
       <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
-        {cycleOverdue
-          ? `Sudah ${Math.abs(yearsToPlanned).toFixed(1)} tahun melewati titik tengah rencana`
-          : `~${yearsToPlanned.toFixed(1)} tahun lagi ke titik tengah rencana`}{' '}
-        (rentang wajar {PLANNED_CYCLE_RANGE_YEARS[0]}–{PLANNED_CYCLE_RANGE_YEARS[1]} tahun, bukan aturan otomatis)
+        {yearsLeft === null
+          ? 'Belum diketahui kapan jatah siklus habis dalam horizon proyeksi'
+          : overdue
+            ? `Sudah ${Math.abs(yearsLeft).toFixed(1)} tahun melewati target jatah siklus -- TA mungkin sudah lewat jadwal atau belum tercatat`
+            : `~${yearsLeft.toFixed(1)} tahun lagi menuju jatah siklus habis (Turn Around berikutnya)`}
       </Typography>
     </Box>
   );
@@ -146,7 +173,7 @@ function ModelStatusCard({ model, rows, cycleAnchor, wide = false }) {
         {Number.isFinite(health) ? health.toFixed(1) : '-'}%
       </Typography>
       <Typography variant="caption" color="text.secondary">
-        State of Health saat ini
+        SoH siklus berjalan saat ini
       </Typography>
     </Box>
   );
@@ -175,13 +202,13 @@ function ModelStatusCard({ model, rows, cycleAnchor, wide = false }) {
 
       <Box sx={{ mt: wide ? 2 : 1 }}>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-          ETA overhaul/maintenance (proyeksi model): {anchor.eta_date ? fmtDate(anchor.eta_date) : 'belum tercapai dalam horizon proyeksi'}
-          {yearsLeft !== null && ` (~${yearsLeft.toFixed(1)} tahun lagi)`}
+          Target Turn Around (proyeksi model): {anchor.eta_date ? fmtDate(anchor.eta_date) : 'belum tercapai dalam horizon proyeksi'}
+          {yearsLeft !== null && (overdue ? ` (sudah ~${Math.abs(yearsLeft).toFixed(1)} tahun lewat)` : ` (~${yearsLeft.toFixed(1)} tahun lagi)`)}
         </Typography>
 
         {anchor.overhaul_active_since && (
           <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: '#9271FF', fontWeight: 600 }}>
-            Overhaul aktif sejak {fmtDate(anchor.overhaul_active_since)} -- umur efektif dihitung ulang dari titik ini
+            Overhaul aktif sejak {fmtDate(anchor.overhaul_active_since)} -- siklus (bukan umur turbin) dihitung ulang dari titik ini
           </Typography>
         )}
       </Box>
@@ -191,37 +218,59 @@ function ModelStatusCard({ model, rows, cycleAnchor, wide = false }) {
 
 /**
  * FailureForecastChart - turbine State-of-Health (SoH) curve, "like a phone
- * battery" per the pembimbing's framing (100% -> 0%, monotonically
- * non-increasing), drawn from COD (2015-06-29) through today (solid,
- * failure_forecast_history) and on into the projection (dashed,
- * failure_forecast_projection) -- replacing the old ai1b-based 30-day "Risk
- * Forecast" chart on prediction.jsx.
+ * battery" per the pembimbing's framing (100% -> 0%), drawn from COD
+ * (2015-06-29) through today (solid, failure_forecast_history) and on into
+ * the projection (dashed, failure_forecast_projection).
+ *
+ * **Contract change 16 Sep 2026** (CONTRACT.md "PERUBAHAN BESAR" banner):
+ * `failure_pct` no longer measures progress toward 30-year design life --
+ * it's now "% of ONE overhaul cycle (~4 years) used up", resetting to 0 at
+ * every recorded overhaul. The curve is a SAWTOOTH, not one long ramp. This
+ * component was updated to match:
+ * - `track`: rows are filtered to `'as_is'` (the honest "no future overhaul
+ *   assumed" line) -- `'scheduled'` (the "if the ~4y cycle is kept"
+ *   what-if line) is deliberately NOT rendered yet, kept available in the
+ *   raw fetched rows for a possible future comparison-line feature. WAJIB
+ *   per contract: without this filter, the two tracks would overlap.
+ * - `cycle_index`: points from a different cycle are never connected into
+ *   one line segment (see insertCycleGaps above) -- doing so would draw
+ *   "damage decreasing" that never happened.
+ * - `failure_pct`/`health_pct` are NEVER clamped (see yAxisBounds below) --
+ *   an overdue cycle can legitimately show >100%/<0%, and clipping that at
+ *   the axis level is exactly the kind of silent clamp the contract warns
+ *   against, even without touching the underlying value.
+ * - `eta_date` can be in the past for an overdue `as_is` cycle -- `overdue`
+ *   below branches the copy instead of assuming `eta_date > now()`.
  *
  * health_pct = 100 - failure_pct is a pure display flip done here, not by
- * the backend -- the wire contract's source of truth stays failure_pct
- * (monotonically NON-DECREASING toward 100), matching how the AI side's
- * own DegradationChart.tsx does this same transform only at render time.
+ * the backend -- the wire contract's source of truth stays failure_pct,
+ * matching how the AI side's own DegradationChart.tsx does this same
+ * transform only at render time.
  *
- * historyRows carries a `segment` ('nominal' COD->first sample, 'observed'
- * first sample->today) that isn't used for styling here -- both draw as one
- * solid "historis" line, since neither is a prediction the way the
- * projection is. The distinction stays available in the raw rows for a
- * future refinement (e.g. a lighter tone for the no-sensor-data nominal
- * span) without a contract change.
+ * historyRows carries a `segment` ('nominal' -- no risk data yet in this
+ * cycle, 'observed' -- real trajectory) that isn't used for styling here --
+ * both draw as one solid "historis" line, since neither is a prediction the
+ * way the projection is.
  */
 const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) => {
   const containerRef = useRef(null);
   const chartRef = useRef(null);
 
-  // overhaul_active_since is a run-level flag repeated on every projection
-  // row (same value or null across all of them, see the contract) -- .find
-  // rather than rows[0] only so a transient partial fetch doesn't miss it.
+  // overhaul_active_since is a run-level flag repeated on every row of
+  // EITHER track (same value or null across all of them, see the contract)
+  // -- .find rather than rows[0] only so a transient partial fetch doesn't
+  // miss it.
   const overhaulActiveSince = useMemo(() => rows.find((r) => r.overhaul_active_since)?.overhaul_active_since ?? null, [rows]);
   const cycleAnchor = useMemo(() => cycleAnchorMs(overhaulActiveSince), [overhaulActiveSince]);
 
+  // 'as_is' = the honest default (no future overhaul assumed). Falls back
+  // to treating a row with no `track` at all as 'as_is' -- defensive only,
+  // every row should carry one post-migration.
+  const asIsRows = useMemo(() => rows.filter((r) => (r.track ?? 'as_is') === 'as_is'), [rows]);
+
   const byModel = useMemo(() => {
     const grouped = {};
-    rows.forEach((r) => {
+    asIsRows.forEach((r) => {
       if (!grouped[r.model]) grouped[r.model] = [];
       grouped[r.model].push(r);
     });
@@ -229,7 +278,7 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
       list.sort((a, b) => new Date(a.projection_date).getTime() - new Date(b.projection_date).getTime())
     );
     return grouped;
-  }, [rows]);
+  }, [asIsRows]);
 
   const historyByModel = useMemo(() => {
     const grouped = {};
@@ -251,32 +300,43 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
     return Array.from(set).sort();
   }, [byModel, historyByModel]);
 
-  // Solid "historis" points, COD -> today, one series per model.
+  // Solid "historis" points, COD -> today, one series per model. Broken
+  // into cycle-separated segments via insertCycleGaps -- history can
+  // already span more than one recorded overhaul cycle (cycle_index 0, 1,
+  // ...), and none of them connect to the next.
   const historicalSeriesData = useMemo(() => {
     const out = {};
     models.forEach((model) => {
-      out[model] = (historyByModel[model] || []).map((r) => ({
+      const points = (historyByModel[model] || []).map((r) => ({
         x: new Date(r.point_date).getTime(),
-        y: Number((100 - Number(r.failure_pct)).toFixed(3))
+        y: Number((100 - Number(r.failure_pct)).toFixed(3)),
+        cycleIndex: Number(r.cycle_index ?? 0)
       }));
+      out[model] = insertCycleGaps(points);
     });
     return out;
   }, [historyByModel, models]);
 
-  // Dashed "proyeksi" points, today -> horizon. The historical line's last
-  // point is prepended so the dashed segment starts exactly where the solid
-  // one ends -- per contract, join on segment/order (last observed
-  // failure_pct == today_failure_pct), never a date comparison, so this
-  // does not assume point_date and projection_date line up exactly.
+  // Dashed "proyeksi" points (track='as_is' only, see asIsRows), today ->
+  // horizon. The historical line's last point is prepended so the dashed
+  // segment starts exactly where the solid one ends -- per contract, join
+  // on cycle_index + order (last observed failure_pct == today_failure_pct
+  // for the SAME cycle_index), never a date comparison, so this does not
+  // assume point_date and projection_date line up exactly. `as_is` should
+  // never itself cross a cycle boundary (it never assumes a future
+  // overhaul) but insertCycleGaps is applied anyway for consistency/
+  // robustness rather than trusting that invariant silently.
   const projectionSeriesData = useMemo(() => {
     const out = {};
     models.forEach((model) => {
       const projPoints = (byModel[model] || []).map((r) => ({
         x: new Date(r.projection_date).getTime(),
-        y: Number((100 - Number(r.failure_pct)).toFixed(3))
+        y: Number((100 - Number(r.failure_pct)).toFixed(3)),
+        cycleIndex: Number(r.cycle_index ?? 0)
       }));
+      const gapped = insertCycleGaps(projPoints);
       const lastHistorical = historicalSeriesData[model]?.[historicalSeriesData[model].length - 1];
-      out[model] = lastHistorical ? [lastHistorical, ...projPoints] : projPoints;
+      out[model] = lastHistorical ? [lastHistorical, ...gapped] : gapped;
     });
     return out;
   }, [byModel, models, historicalSeriesData]);
@@ -347,15 +407,17 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
     };
   }, [models, projectionSeriesData]);
 
-  // Planned-overhaul-cycle reference band [anchor+2y, anchor+6y] + a midline
-  // at anchor+4y -- ONE band for the whole chart (not per-model: the plan
-  // is independent of which aging model is shown), same anchor rule as the
-  // reset control's context note (cycleAnchor above). Added 2026-09-16 so
-  // this chart's headline framing matches the "siklus overhaul rencana"
-  // language already used below it (OverhaulResetControl) -- previously
-  // only the ETA/T_desain=30-year framing appeared on the chart itself.
-  // Must keep working with 1 model as cleanly as 2 (linear is being
-  // retired from the AI-side worker) -- nothing here depends on `models`.
+  // Generic industry-literature reference band [anchor+2y, anchor+6y] + a
+  // midline at anchor+4y -- ONE band for the whole chart (not per-model:
+  // the literature reference is independent of which aging model is
+  // shown), same anchor rule as the reset control's context note
+  // (cycleAnchor above). Deliberately labeled "(literatur)": since the 16
+  // Sep 2026 contract change the model's OWN `eta_date`/`failure_pct` are a
+  // REAL hazard-weighted computation of the current cycle (see
+  // ModelStatusCard) -- this band is a separate, calendar-only heuristic
+  // reference for comparison, not a duplicate of what the model computes.
+  // Must keep working with 1 model as cleanly as 2 (linear retired from
+  // the AI-side worker) -- nothing here depends on `models`.
   const cycleBandAnnotation = useMemo(
     () => ({
       x: cycleAnchor + yearsToMs(PLANNED_CYCLE_RANGE_YEARS[0]),
@@ -363,7 +425,7 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
       fillColor: PLAN_REFERENCE_COLOR,
       opacity: 0.1,
       label: {
-        text: `Siklus overhaul rencana (${PLANNED_CYCLE_RANGE_YEARS[0]}–${PLANNED_CYCLE_RANGE_YEARS[1]} th)`,
+        text: `Referensi literatur: siklus ${PLANNED_CYCLE_RANGE_YEARS[0]}–${PLANNED_CYCLE_RANGE_YEARS[1]} th`,
         orientation: 'horizontal',
         position: 'top',
         style: { color: '#7c2d12', background: '#fef3c7', fontSize: '10px' }
@@ -378,7 +440,7 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
       borderColor: PLAN_REFERENCE_COLOR,
       strokeDashArray: 3,
       label: {
-        text: `~${PLANNED_CYCLE_YEARS} th (rencana)`,
+        text: `~${PLANNED_CYCLE_YEARS} th (literatur)`,
         orientation: 'horizontal',
         style: { color: '#fff', background: PLAN_REFERENCE_COLOR, fontSize: '10px' }
       }
@@ -403,6 +465,30 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
     const combined = [cycleBandAnnotation, cycleMidAnnotation, ...base];
     return resolveAnnotationCollisions(combined, chartDomainMs);
   }, [anchorAnnotation, etaAnnotations, cycleBandAnnotation, cycleMidAnnotation, chartDomainMs]);
+
+  // Y-axis bounds -- NEVER a fixed [0, 100]. Contract WAJIB #4 (16 Sep
+  // 2026): failure_pct/health_pct must never be clamped, and a fixed axis
+  // range clips an overdue cycle just as effectively as clamping the value
+  // itself would (Unit 5 is at health_pct ~ -148 as of this change). 100 is
+  // still a safe, meaningful ceiling -- failure_pct can't go below 0 per
+  // contract, so health_pct can't exceed 100 -- only the floor needs to
+  // expand, and only when the data actually goes there.
+  const yAxisBounds = useMemo(() => {
+    const values = models
+      .flatMap((model) => [...(historicalSeriesData[model] || []), ...(projectionSeriesData[model] || [])])
+      .map((p) => p.y)
+      .filter((v) => v != null && Number.isFinite(v));
+    const dataMin = values.length ? Math.min(...values) : 0;
+    const min = Math.min(0, dataMin);
+    const padding = min < 0 ? Math.abs(min) * 0.08 : 0;
+    return { min: Math.floor(min - padding), max: 100 };
+  }, [models, historicalSeriesData, projectionSeriesData]);
+
+  // Contract §1.3: an overdue cycle (failure_pct > 100) is a real, expected
+  // reading, not a bug -- but showing it bare risks reading as "the turbine
+  // is broken" instead of "this cycle's interval has been exceeded". Uses
+  // the same safe phrasing CONTRACT.md itself suggests for this exact case.
+  const isOverdue = models.some((model) => Number((byModel[model] || [])[0]?.today_failure_pct) > 100);
 
   const buildOptions = useCallback(
     () => ({
@@ -431,8 +517,8 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
         labels: { style: { fontSize: '11px', colors: '#8b93a7' } }
       },
       yaxis: {
-        min: 0,
-        max: 100,
+        min: yAxisBounds.min,
+        max: yAxisBounds.max,
         title: { text: 'State of Health (%)', style: { fontSize: '12px', color: '#8b93a7' } },
         labels: {
           formatter: (v) => (v === null || v === undefined ? '' : `${v.toFixed(0)}%`),
@@ -449,7 +535,7 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
         style: { color: '#8b93a7', fontSize: '13px' }
       }
     }),
-    [series, seriesColors, seriesStrokeWidth, seriesDashArray, xaxisAnnotations, loading]
+    [series, seriesColors, seriesStrokeWidth, seriesDashArray, xaxisAnnotations, yAxisBounds, loading]
   );
 
   // Same split as RiskChart: create the ApexCharts instance once, then only
@@ -495,14 +581,23 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
     <MainCard sx={{ width: '100%' }}>
       <Box sx={{ mb: 1.5 }}>
         <Typography variant="h5" sx={{ fontWeight: 700 }}>
-          State of Health (SoH) Turbin – Riwayat & Proyeksi Umur Pakai
+          State of Health (SoH) Turbin – Riwayat & Proyeksi Siklus Overhaul
         </Typography>
         <Typography variant="body2" color="text.secondary">
           {generatedAt
-            ? `Dihitung ${fmtDate(generatedAt)} · sejak COD (29 Jun 2015) hingga proyeksi ke depan, pita oranye menandai siklus overhaul rencana (~${PLANNED_CYCLE_YEARS} tahun, rentang ${PLANNED_CYCLE_RANGE_YEARS[0]}–${PLANNED_CYCLE_RANGE_YEARS[1]} tahun) sebagai acuan operasional`
-            : `Riwayat & proyeksi umur pakai turbin sejak COD, dengan siklus overhaul rencana (~${PLANNED_CYCLE_YEARS} tahun) sebagai acuan operasional`}
+            ? `Dihitung ${fmtDate(generatedAt)} · kurva gigi-gergaji: SoH reset ke 100% tiap overhaul mayor tercatat; pita oranye = referensi literatur siklus rencana (~${PLANNED_CYCLE_YEARS} tahun, rentang ${PLANNED_CYCLE_RANGE_YEARS[0]}–${PLANNED_CYCLE_RANGE_YEARS[1]} tahun)`
+            : `Riwayat & proyeksi siklus overhaul turbin sejak COD, dengan referensi literatur siklus ~${PLANNED_CYCLE_YEARS} tahun sebagai pembanding`}
         </Typography>
       </Box>
+
+      {isOverdue && (
+        <Alert severity="warning" sx={{ mb: 1.5 }}>
+          Siklus overhaul yang sedang berjalan sudah melewati interval rencana ~{PLANNED_CYCLE_YEARS} tahun. Ini{' '}
+          <strong>bukan</strong> berarti turbin rusak — skala ini mengukur jarak ke Turn Around berikutnya, bukan sisa umur
+          turbin. Kemungkinan: TA memang sudah lewat jadwal, atau sudah ada TA yang belum dicatat di sistem (pakai tombol
+          reset di bawah kalau begitu).
+        </Alert>
+      )}
 
       <Box ref={containerRef} sx={{ width: '100%' }} />
 
@@ -514,17 +609,20 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
             // `wide` doc comment on ModelStatusCard) so it doesn't stretch
             // to a half-width slot with the other half sitting empty.
             <Grid size={{ xs: 12, sm: models.length > 1 ? 6 : 12 }} key={model}>
-              <ModelStatusCard model={model} rows={byModel[model] || []} cycleAnchor={cycleAnchor} wide={models.length === 1} />
+              <ModelStatusCard model={model} rows={byModel[model] || []} wide={models.length === 1} />
             </Grid>
           ))}
         </Grid>
       )}
 
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2, lineHeight: 1.6 }}>
-        <strong>Keterbatasan:</strong> kedua model adalah heuristik reliability-engineering yang dikalibrasi dari literatur industri (umur
-        desain turbin ≈30 tahun, dsb.), <strong>bukan</strong> model machine learning yang divalidasi ke kejadian gagal nyata — Unit 5 belum
-        pernah mengalami kegagalan/overhaul besar dalam data yang ada, sehingga tidak ada ground truth untuk validasi. Angka di atas adalah{' '}
-        <strong>estimasi skenario</strong>, bukan tanggal kegagalan yang pasti.
+        <strong>Keterbatasan:</strong> model (Weibull hazard/Cox PH) adalah heuristik reliability-engineering yang
+        dikalibrasi dari literatur industri (siklus overhaul mayor ≈{PLANNED_CYCLE_YEARS} tahun, rentang wajar{' '}
+        {PLANNED_CYCLE_RANGE_YEARS[0]}–{PLANNED_CYCLE_RANGE_YEARS[1]} tahun), <strong>bukan</strong> model machine learning
+        yang divalidasi ke kejadian gagal nyata — riwayat overhaul Unit 5 di sistem ini nyaris kosong (satu-satunya titik
+        data publik: Turn Around 14 Jan 2021), sehingga angka overdue yang ekstrem sebagian besar juga bisa mencerminkan{' '}
+        <strong>catatan maintenance yang tidak lengkap</strong>, bukan cuma kondisi turbin sesungguhnya. Angka di atas adalah{' '}
+        <strong>estimasi skenario relatif terhadap siklus overhaul</strong>, bukan tanggal kegagalan turbin yang pasti.
       </Typography>
     </MainCard>
   );
