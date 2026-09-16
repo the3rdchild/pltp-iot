@@ -317,29 +317,50 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
     return out;
   }, [historyByModel, models]);
 
+  // How far past "today" the `as_is` projection is actually PLOTTED --
+  // NOT a data clamp (the backend keeps computing/returning the full
+  // horizon, decades out, per contract WAJIB #4's "never clamp the value"),
+  // purely a display-range decision. Found live 2026-09-16: with no future
+  // overhaul ever assumed, `as_is` keeps accelerating (Weibull beta=2.5)
+  // for as long as the backend projects it -- one real report showed it
+  // reaching health_pct ~ -5230% by ~2048. A single point that extreme
+  // stretched the y-axis so far that the real, meaningful sawtooth teeth
+  // (0-100%, 2016-today) compressed into under 2% of the chart's height --
+  // visually flat even though the underlying data was correct. Reuses
+  // PLANNED_CYCLE_RANGE_YEARS[1] (6) rather than inventing a fourth magic
+  // number: "don't plot further out than the upper end of our own
+  // literature reference band, past today" is an easy rule to justify and
+  // ties to a number already explained elsewhere on this chart. Measured
+  // from "now" (not from cycleAnchor) so it stays a fixed-length,
+  // always-positive window regardless of how overdue the current cycle
+  // already is.
+  const projectionDisplayCutoffMs = Date.now() + yearsToMs(PLANNED_CYCLE_RANGE_YEARS[1]);
+
   // Dashed "proyeksi" points (track='as_is' only, see asIsRows), today ->
-  // horizon. The historical line's last point is prepended so the dashed
-  // segment starts exactly where the solid one ends -- per contract, join
-  // on cycle_index + order (last observed failure_pct == today_failure_pct
-  // for the SAME cycle_index), never a date comparison, so this does not
-  // assume point_date and projection_date line up exactly. `as_is` should
-  // never itself cross a cycle boundary (it never assumes a future
-  // overhaul) but insertCycleGaps is applied anyway for consistency/
-  // robustness rather than trusting that invariant silently.
+  // display cutoff above. The historical line's last point is prepended so
+  // the dashed segment starts exactly where the solid one ends -- per
+  // contract, join on cycle_index + order (last observed failure_pct ==
+  // today_failure_pct for the SAME cycle_index), never a date comparison,
+  // so this does not assume point_date and projection_date line up
+  // exactly. `as_is` should never itself cross a cycle boundary (it never
+  // assumes a future overhaul) but insertCycleGaps is applied anyway for
+  // consistency/robustness rather than trusting that invariant silently.
   const projectionSeriesData = useMemo(() => {
     const out = {};
     models.forEach((model) => {
-      const projPoints = (byModel[model] || []).map((r) => ({
-        x: new Date(r.projection_date).getTime(),
-        y: Number((100 - Number(r.failure_pct)).toFixed(3)),
-        cycleIndex: Number(r.cycle_index ?? 0)
-      }));
+      const projPoints = (byModel[model] || [])
+        .filter((r) => new Date(r.projection_date).getTime() <= projectionDisplayCutoffMs)
+        .map((r) => ({
+          x: new Date(r.projection_date).getTime(),
+          y: Number((100 - Number(r.failure_pct)).toFixed(3)),
+          cycleIndex: Number(r.cycle_index ?? 0)
+        }));
       const gapped = insertCycleGaps(projPoints);
       const lastHistorical = historicalSeriesData[model]?.[historicalSeriesData[model].length - 1];
       out[model] = lastHistorical ? [lastHistorical, ...gapped] : gapped;
     });
     return out;
-  }, [byModel, models, historicalSeriesData]);
+  }, [byModel, models, historicalSeriesData, projectionDisplayCutoffMs]);
 
   const series = useMemo(
     () =>
@@ -365,7 +386,12 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
   const seriesStrokeWidth = useMemo(() => models.flatMap(() => [3, 2]), [models]);
 
   // Vertical dashed line per model at its own eta_date, when the horizon
-  // returned actually reaches it.
+  // returned actually reaches it AND it falls within the displayed window
+  // (projectionDisplayCutoffMs) -- an eta_date beyond the cutoff would
+  // place the annotation outside the plotted x-range entirely, so it's
+  // skipped rather than drawn off-chart. Not an issue for an already-
+  // overdue cycle (its eta_date is in the past, well inside the window);
+  // matters for a not-yet-overdue model whose eta could land years out.
   const etaAnnotations = useMemo(
     () =>
       models
@@ -373,7 +399,7 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
           const etaDate = (byModel[model] || [])[0]?.eta_date;
           if (!etaDate) return null;
           const x = new Date(etaDate).getTime();
-          if (Number.isNaN(x)) return null;
+          if (Number.isNaN(x) || x > projectionDisplayCutoffMs) return null;
           const color = MODEL_COLORS[model] || '#9ca3af';
           return {
             x,
@@ -387,7 +413,7 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
           };
         })
         .filter(Boolean),
-    [byModel, models]
+    [byModel, models, projectionDisplayCutoffMs]
   );
 
   // Marks "today" (the history/projection join point) so the historis-vs-
@@ -587,6 +613,12 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
           {generatedAt
             ? `Dihitung ${fmtDate(generatedAt)} · kurva gigi-gergaji: SoH reset ke 100% tiap overhaul mayor tercatat; pita oranye = referensi literatur siklus rencana (~${PLANNED_CYCLE_YEARS} tahun, rentang ${PLANNED_CYCLE_RANGE_YEARS[0]}–${PLANNED_CYCLE_RANGE_YEARS[1]} tahun)`
             : `Riwayat & proyeksi siklus overhaul turbin sejak COD, dengan referensi literatur siklus ~${PLANNED_CYCLE_YEARS} tahun sebagai pembanding`}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
+          Proyeksi ditampilkan sampai ~{PLANNED_CYCLE_RANGE_YEARS[1]} tahun ke depan untuk keterbacaan -- asumsi "tidak
+          ada overhaul lagi" untuk jangka yang jauh lebih panjang tetap dihitung di backend, cuma sengaja tidak
+          digambar di sini karena akan menekan skala sumbu-Y sampai bagian riwayat yang justru penting jadi kelihatan
+          rata.
         </Typography>
       </Box>
 
