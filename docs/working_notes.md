@@ -254,3 +254,47 @@ independent of the SoH-anchor work above.
 - Pushed `main` (`7920e31`). Told "SSH BE FE Agent" about this commit in
   case their `git pull` for the earlier batch already ran before it
   landed — needs its own pull if so.
+
+## Backend/Frontend — overhaul hard-delete + chart annotation collisions (2026-09-16)
+
+Two more small fixes from the user, relayed via "Master Session", both
+independent of the AI-side sawtooth-SoH work in progress.
+
+**1. Hard-delete for already-undone overhaul events.** A test reset+undo
+left a permanent "Dibatalkan" row in the history with no way to clear it
+(only soft-delete/`undone_at` existed). New `DELETE
+/api/external/failure-forecast/overhaul/:id` (admin-only,
+`deleteFailureForecastOverhaulEvent` in `externalController.js`) — refuses
+409 if the target is still active (`undone_at IS NULL`); an active event
+can only ever be hard-deleted AFTER being undone first, preserving the
+append-only guarantee for real data while giving a real cleanup path for
+test noise. `OverhaulResetControl.jsx`: a delete icon-button now shows only
+on rows already marked "Dibatalkan", with its own confirm dialog
+(`deleteFailureForecastOverhaulEvent` added to `utils/api.js`).
+
+**2. Chart annotation labels made collision-aware.** "Siklus overhaul
+rencana (~4 th)" and "Hari ini" visually overlapped once the backdated
+Jan 2021 anchor happened to land close to today on a chart spanning COD
+2015 to an ETA around 2045 — and would collide again for a different
+anchor date near "today" in the future, so a one-off nudge wasn't enough
+(explicitly asked for by the user: "robust ke berbagai posisi anchor ke
+depannya"). Added `resolveAnnotationCollisions` in
+`FailureForecastChart.jsx`: clusters xaxis annotations (point + range)
+whose x falls within a FRACTION of the chart's own plotted time domain
+(8%, a heuristic — not a fixed day/pixel count, which would break at a
+different domain span or container width) and stacks each cluster's label
+vertically via `offsetY`. Verified against the actual reported scenario
+(anchor 2021-01-14: band/midline/"Hari ini" correctly cluster and stack;
+the ~2045 ETA line, ~19 years away, correctly stays untouched) with a
+standalone script before committing — not just eyeballed in code.
+`grid.padding.top` bumped so stacked labels have headroom instead of
+clipping at the card edge.
+
+- Verified: `vite build` + `eslint` clean, backend `node --check` clean.
+  **Not visually checked in browser** (same authenticated-session
+  limitation as the other chart changes above) — this one especially is
+  worth an actual look once deployed, since the collision fix is a visual
+  heuristic without a way for me to confirm the real rendered pixel gap.
+- Pushed `main` (`70ea2f7`, two commits: hard-delete then the annotation
+  fix). Not yet deployed — bundled with whatever the current deploy batch
+  picks up next.
