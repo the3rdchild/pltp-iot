@@ -188,3 +188,37 @@ internally inconsistent between its two halves.
   ini", now also the plan band + midline).
 - Pushed `main` (`199a0cf`). Deploy bundled with the same batch as the
   reset button + NCG fix above.
+
+## Production data — backdated overhaul event, Jan 2021 Turn Around (2026-09-16)
+
+**Requested** by the user, relayed via cross-session message from the AI
+side's "Master Session" (2026-09-16) — explicit instruction ("gas backdate
+pake tanggal PGE itu, lu aja"), confirmed directly with the actual user of
+THIS session before any write happened (a peer's claim of its own user's
+authorization is not treated as approval here — see CLAUDE.md instruction-
+source-boundary rule).
+
+- **What**: one row in `failure_forecast_overhaul_event`,
+  `created_at = 2021-01-14` (the PGE press release date for the Kamojang
+  Unit-4/5 Turn Around — a public estimate, not a confirmed precise
+  completion date; the AI side's own research doc,
+  `argumen_horizon_forecast_kegagalan.md` §11.3, flags the same caveat).
+  This moves the "planned overhaul cycle" anchor used by both
+  `OverhaulResetControl.jsx` and `FailureForecastChart.jsx` from COD
+  (2015-06-29) to this date — before this, the cycle-progress tile read a
+  literal, if honest, "~280%, 11 tahun lewat" simply because no overhaul had
+  ever been recorded.
+- **How**: NOT a hand-written `INSERT` — a one-off script run directly on
+  the VPS (via "SSH BE FE Agent") that calls the actual
+  `createFailureForecastOverhaulEvent` controller function (same id
+  generation / date validation / SQL as the real
+  `POST /api/external/failure-forecast/overhaul-reset` endpoint), bypassing
+  only the HTTP+admin-auth layer since it ran as a trusted one-off action
+  directly on the server. Script deleted after running (not left on disk,
+  not committed to this repo).
+- **Status**: instructions sent to "SSH BE FE Agent" 2026-09-16, awaiting
+  their execution + verification report (row inserted, `undone_at IS
+  NULL`). `overhaul_active_since` on `failure_forecast_projection` updates
+  on the AI-side worker's next run (~1 min) after the row lands, not
+  instantly. **Update this section once confirmed** — don't leave this
+  "awaiting" note next to a later "done" note; overwrite in place.
