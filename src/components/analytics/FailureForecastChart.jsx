@@ -41,6 +41,14 @@ const yearsUntil = (etaDate) => {
 // actual curve/SoH data, so the two kinds of number never look alike.
 const PLAN_REFERENCE_COLOR = '#d97706';
 
+// Neutral axis-scale gray -- distinct from PLAN_REFERENCE_COLOR (amber,
+// literature reference), OVERHAUL_CONNECTOR_COLOR (red, event marker), and
+// MODEL_COLORS (actual data): the 0% line is part of the chart's own
+// scale, not a reference/event/data marker, so it reads as "same family"
+// as the axis labels themselves (#8b93a7 elsewhere in this file) rather
+// than any of those other three kinds of annotation.
+const ZERO_LINE_COLOR = '#8b93a7';
+
 // Collision-aware stacking for xaxis annotation labels. ApexCharts has no
 // built-in overlap avoidance, and a fixed one-off "nudge this label up"
 // doesn't hold once an anchor moves -- exactly what happened when the
@@ -572,6 +580,30 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
   // the same safe phrasing CONTRACT.md itself suggests for this exact case.
   const isOverdue = models.some((model) => Number((byModel[model] || [])[0]?.today_failure_pct) > 100);
 
+  // Horizontal 0% reference line -- requested by the user 2026-09-16: with
+  // yAxisBounds now auto-expanding well below 0 for an overdue cycle (e.g.
+  // 100%, -349%, -799%, ...), it wasn't obvious at a glance exactly where
+  // the curve actually crosses into negative health. Always rendered
+  // (not conditional on the data actually going negative) so it doesn't
+  // pop in/out as the curve moves around 0 -- it's a fixed scale marker,
+  // same idea as always showing 0 on a temperature axis.
+  const yaxisAnnotations = useMemo(
+    () => [
+      {
+        y: 0,
+        borderColor: ZERO_LINE_COLOR,
+        strokeDashArray: 4,
+        label: {
+          text: '0%',
+          position: 'left',
+          offsetX: 20,
+          style: { color: '#fff', background: ZERO_LINE_COLOR, fontSize: '10px' }
+        }
+      }
+    ],
+    []
+  );
+
   const buildOptions = useCallback(
     () => ({
       chart: {
@@ -588,7 +620,7 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
       markers: { size: 0, hover: { size: 5 } },
       dataLabels: { enabled: false },
       legend: { show: true, position: 'top', horizontalAlign: 'right', fontSize: '11px' },
-      annotations: { xaxis: xaxisAnnotations },
+      annotations: { xaxis: xaxisAnnotations, yaxis: yaxisAnnotations },
       // Extra top padding gives resolveAnnotationCollisions' stacked labels
       // (e.g. plan-cycle midline + "Hari ini" landing close together) room
       // to sit above the plot area instead of getting clipped at the card edge.
@@ -617,7 +649,7 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
         style: { color: '#8b93a7', fontSize: '13px' }
       }
     }),
-    [series, seriesColors, seriesStrokeWidth, seriesDashArray, xaxisAnnotations, yAxisBounds, loading]
+    [series, seriesColors, seriesStrokeWidth, seriesDashArray, xaxisAnnotations, yaxisAnnotations, yAxisBounds, loading]
   );
 
   // Same split as RiskChart: create the ApexCharts instance once, then only
