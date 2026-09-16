@@ -222,3 +222,35 @@ source-boundary rule).
   on the AI-side worker's next run (~1 min) after the row lands, not
   instantly. **Update this section once confirmed** — don't leave this
   "awaiting" note next to a later "done" note; overwrite in place.
+
+## Frontend — remove stale AI1a shadow toggle + fix single-model SoH layout (2026-09-16)
+
+Two small UI fixes requested by the user, relayed via "Master Session",
+independent of the SoH-anchor work above.
+
+- **"Produksi"/"Shadow 70" toggle removed** from `prediction.jsx` (used to
+  sit above "Adjusted Risk History"). AI1a-70 was promoted to production
+  the same day and `AI1A_SHADOW_DIRS` is now empty on the VPS, so
+  `ai1a_shadow` would only ever show frozen data from here on — not a live
+  comparison arm any more. Page always reads `'ai1a'` now (the hook's own
+  default); the `source_table` query param was dropped from the ai1a
+  range-fetch URL rather than hardcoded to `ai1a`, since the backend
+  already defaults there. `AI1A_SOURCE_TABLES` in
+  `externalController.js`/`getAi1aData` itself is untouched — only this
+  page's toggle is gone, so a shadow arm can still be read another way if
+  one is ever reintroduced.
+- **SoH stat-card layout fixed for the now-common 1-model case**:
+  `FailureForecastChart`'s per-model card grid was hardcoded to a 2-up
+  half-width layout; with `linear` retired from the AI-side production
+  worker, the lone Weibull-Cox card stretched into one half-width slot
+  with the other half sitting empty (screenshot from the user). Grid sizing
+  and each `ModelStatusCard`'s internal layout (headline + SoH-now side by
+  side vs. stacked) now both key off `models.length`, not a hardcoded
+  single-model assumption — reverts to the original 2-up stacked layout
+  automatically the moment a second model reappears.
+- Verified: `vite build` + `eslint` clean. **Not visually checked in
+  browser** (needs an authenticated session, same limitation as the SoH
+  reframe above) — worth a look alongside that one once deployed.
+- Pushed `main` (`7920e31`). Told "SSH BE FE Agent" about this commit in
+  case their `git pull` for the earlier batch already ran before it
+  landed — needs its own pull if so.
