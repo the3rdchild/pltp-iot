@@ -165,9 +165,26 @@ const AIAnalytics = () => {
   // backend/controllers/externalController.js if a shadow arm is ever
   // reintroduced.
   const { liveData: ai1aLive, history: ai1aHistory, loading: ai1aLoading } = useAi1aData(3000);
-  const { rows: failureForecastRows, loading: failureForecastLoading } = useFailureForecastData();
-  const { rows: failureForecastHistoryRows, loading: failureForecastHistoryLoading } = useFailureForecastHistory();
+  const {
+    rows: failureForecastRows,
+    loading: failureForecastLoading,
+    refetch: refetchFailureForecastData
+  } = useFailureForecastData();
+  const {
+    rows: failureForecastHistoryRows,
+    loading: failureForecastHistoryLoading,
+    refetch: refetchFailureForecastHistory
+  } = useFailureForecastHistory();
   const { events: overhaulEvents, loading: overhaulLoading, refetch: refetchOverhaulEvents } = useFailureForecastOverhaul();
+
+  // After a reset/undo settles (OverhaulResetControl's own poll confirms the
+  // AI-side worker's on-demand recompute landed, or times out and falls
+  // back to the normal ~60s cadence) -- refreshes the two chart data hooks
+  // together so the caller doesn't need to know there are two of them.
+  const refreshFailureForecastChart = useCallback(() => {
+    refetchFailureForecastData();
+    refetchFailureForecastHistory();
+  }, [refetchFailureForecastData, refetchFailureForecastHistory]);
 
   const [sensorRows, setSensorRows] = useState([]);
 
@@ -415,7 +432,13 @@ const AIAnalytics = () => {
           historyRows={failureForecastHistoryRows}
           loading={failureForecastLoading || failureForecastHistoryLoading}
         />
-        <OverhaulResetControl events={overhaulEvents} loading={overhaulLoading} onChanged={refetchOverhaulEvents} />
+        <OverhaulResetControl
+          events={overhaulEvents}
+          loading={overhaulLoading}
+          onChanged={refetchOverhaulEvents}
+          currentGeneratedAt={failureForecastRows[0]?.generated_at ?? null}
+          onProjectionRefresh={refreshFailureForecastChart}
+        />
       </Box>
 
       {/* ---------------- tables ---------------- */}

@@ -41,6 +41,36 @@ const fmtDate = (value) => {
 
 const yearsSince = (value) => (Date.now() - new Date(value).getTime()) / (365.25 * 24 * 60 * 60 * 1000);
 
+const RECOMPUTE_POLL_INTERVAL_MS = 1000;
+const RECOMPUTE_POLL_MAX_ATTEMPTS = 10;
+
+// After a reset/undo, the backend already fired a best-effort recompute
+// trigger (createFailureForecastOverhaulEvent/undoFailureForecastOverhaulEvent
+// -- see CONTRACT.md §3.1, 2026-09-16), but that job runs async on the AI
+// side: enqueue -> run -> REPLACE the projection table isn't instant, even
+// though it's normally under a second. Polls OUR OWN projection endpoint
+// (not the recompute trigger itself, which only reports "enqueued") for up
+// to ~10s, watching for `generated_at` to move past whatever it was before
+// this action -- only then is there actually something new to render.
+// Returns true if a fresh run was observed, false if the budget ran out
+// (the normal ~60s poll in the parent hooks still catches it eventually).
+const waitForFreshProjection = async (beforeGeneratedAt) => {
+  for (let attempt = 0; attempt < RECOMPUTE_POLL_MAX_ATTEMPTS; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, RECOMPUTE_POLL_INTERVAL_MS));
+    try {
+      const res = await fetch('/api/external/failure-forecast');
+      const json = await res.json();
+      const generatedAt = json?.data?.[0]?.generated_at;
+      if (generatedAt && generatedAt !== beforeGeneratedAt) return true;
+    } catch {
+      // One failed poll attempt isn't fatal -- keep trying until the
+      // budget above runs out, same as a normal transient fetch hiccup
+      // elsewhere in this app.
+    }
+  }
+  return false;
+};
+
 /**
  * Admin control for logging/undoing a completed major overhaul (Turn
  * Around) -- the event that resets the SoH curve's anchor back to 100%.
@@ -55,7 +85,7 @@ const yearsSince = (value) => (Date.now() - new Date(value).getTime()) / (365.25
  * requireRole('admin'), same split ProtectedRoute.jsx documents for the
  * rest of this app.
  */
-const OverhaulResetControl = ({ events = [], loading = false, onChanged }) => {
+const OverhaulResetControl = ({ events = [], loading = false, onChanged, currentGeneratedAt = null, onProjectionRefresh }) => {
   const isAdmin = getCurrentUser()?.role === 'admin';
 
   const [dialog, setDialog] = useState(null); // null | 'reset' | 'undo' | 'delete'
@@ -65,6 +95,10 @@ const OverhaulResetControl = ({ events = [], loading = false, onChanged }) => {
   // Which row 'delete' targets -- unlike undo (always "the latest active"),
   // hard-delete is per-row, so the dialog needs to remember which one.
   const [deleteTarget, setDeleteTarget] = useState(null);
+  // Shown briefly after a reset/undo while waitForFreshProjection is
+  // polling, or as a one-line note if it timed out -- cleared the next
+  // time either dialog opens.
+  const [syncStatus, setSyncStatus] = useState(null); // null | 'waiting' | 'timeout'
 
   // Newest event without undone_at -- same "latest active wins" rule the
   // AI-side worker itself uses when picking the anchor.
@@ -76,12 +110,27 @@ const OverhaulResetControl = ({ events = [], loading = false, onChanged }) => {
   const openReset = () => {
     setEffectiveDate(todayIsoDate());
     setFormError(null);
+    setSyncStatus(null);
     setDialog('reset');
   };
 
   const openUndo = () => {
     setFormError(null);
+    setSyncStatus(null);
     setDialog('undo');
+  };
+
+  // Shared by both handleConfirmReset and handleConfirmUndo, run AFTER the
+  // write itself already succeeded: refresh the event list immediately
+  // (that write is already committed, nothing to wait for), then wait for
+  // the chart's own data to actually change before telling the parent to
+  // re-render it.
+  const syncAfterWrite = async () => {
+    onChanged?.();
+    setSyncStatus('waiting');
+    const synced = await waitForFreshProjection(currentGeneratedAt);
+    setSyncStatus(synced ? null : 'timeout');
+    onProjectionRefresh?.();
   };
 
   const openDelete = (event) => {
@@ -115,7 +164,7 @@ const OverhaulResetControl = ({ events = [], loading = false, onChanged }) => {
     try {
       await createFailureForecastOverhaulEvent(effectiveDate);
       setDialog(null);
-      onChanged?.();
+      await syncAfterWrite();
     } catch (err) {
       setFormError(err.response?.data?.message || err.message || 'Gagal mencatat event overhaul');
     } finally {
@@ -129,7 +178,7 @@ const OverhaulResetControl = ({ events = [], loading = false, onChanged }) => {
     try {
       await undoFailureForecastOverhaulEvent();
       setDialog(null);
-      onChanged?.();
+      await syncAfterWrite();
     } catch (err) {
       setFormError(err.response?.data?.message || err.message || 'Gagal membatalkan event overhaul');
     } finally {
@@ -172,6 +221,18 @@ const OverhaulResetControl = ({ events = [], loading = false, onChanged }) => {
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
         {cycleNote}
       </Typography>
+
+      {syncStatus === 'waiting' && (
+        <Alert severity="info" sx={{ mb: 1.5 }}>
+          Menyinkronkan chart dengan perubahan terbaru...
+        </Alert>
+      )}
+      {syncStatus === 'timeout' && (
+        <Alert severity="info" sx={{ mb: 1.5 }} onClose={() => setSyncStatus(null)}>
+          Event tersimpan. Chart belum sempat ter-update instan -- akan muncul otomatis dalam waktu singkat (maks
+          ~1 menit).
+        </Alert>
+      )}
 
       {isAdmin ? (
         <Stack direction="row" spacing={1.5} sx={{ mb: 2, flexWrap: 'wrap', rowGap: 1 }}>
@@ -228,8 +289,8 @@ const OverhaulResetControl = ({ events = [], loading = false, onChanged }) => {
         <DialogTitle>Catat Overhaul Mayor Selesai</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 2 }}>
-            Ini bukan aksi kosmetik -- SoH akan direset ke 100% dan proyeksi umur pakai dihitung ulang dari
-            tanggal ini pada run berikutnya (±60 detik). Gunakan HANYA setelah overhaul mayor/Turn Around
+            Ini bukan aksi kosmetik -- SoH akan direset ke 100% dan proyeksi siklus overhaul dihitung ulang dari
+            tanggal ini, biasanya dalam beberapa detik. Gunakan HANYA setelah overhaul mayor/Turn Around
             benar-benar selesai (bukan inspeksi tahunan/borescope).
           </DialogContentText>
           <TextField
@@ -310,7 +371,9 @@ const OverhaulResetControl = ({ events = [], loading = false, onChanged }) => {
 OverhaulResetControl.propTypes = {
   events: PropTypes.array,
   loading: PropTypes.bool,
-  onChanged: PropTypes.func
+  onChanged: PropTypes.func,
+  currentGeneratedAt: PropTypes.string,
+  onProjectionRefresh: PropTypes.func
 };
 
 export default OverhaulResetControl;

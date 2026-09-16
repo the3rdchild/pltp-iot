@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const FAILURE_FORECAST_URL = '/api/external/failure-forecast';
 
@@ -11,45 +11,45 @@ const FAILURE_FORECAST_URL = '/api/external/failure-forecast';
  * already ordered by (model, projection_date) server-side. There is no
  * single "live" row the way ai1a/ai1b have one, so this hook exposes the
  * raw row list rather than a liveData/history split.
+ *
+ * `refetch` (added 2026-09-16) lets a caller force an immediate re-fetch
+ * outside the poll interval -- used by OverhaulResetControl after a
+ * reset/undo, once its own poll-for-fresh-`generated_at` loop confirms the
+ * AI-side worker's on-demand recompute has actually landed (see
+ * CONTRACT.md §3.1) -- calling this any earlier would just re-fetch the
+ * same stale row the interval was already going to pick up anyway.
  */
 export const useFailureForecastData = (pollInterval = 60000) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchData = () => {
-      fetch(FAILURE_FORECAST_URL)
-        .then((r) => r.json())
-        .then((json) => {
-          if (cancelled) return;
-          if (json.success && Array.isArray(json.data)) {
-            setRows(json.data);
-            setError(null);
-          } else {
-            setRows([]);
-            setError(json.message || 'failure-forecast fetch failed');
-          }
-          setLoading(false);
-        })
-        .catch((err) => {
-          if (cancelled) return;
-          console.error('failure-forecast fetch error:', err);
+  const refetch = useCallback(() => {
+    return fetch(FAILURE_FORECAST_URL)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          setRows(json.data);
+          setError(null);
+        } else {
           setRows([]);
-          setError(err.message);
-          setLoading(false);
-        });
-    };
+          setError(json.message || 'failure-forecast fetch failed');
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('failure-forecast fetch error:', err);
+        setRows([]);
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
 
-    fetchData();
-    const id = setInterval(fetchData, pollInterval);
-    return () => {
-      cancelled = true;
-      clearInterval(id);
-    };
-  }, [pollInterval]);
+  useEffect(() => {
+    refetch();
+    const id = setInterval(refetch, pollInterval);
+    return () => clearInterval(id);
+  }, [refetch, pollInterval]);
 
-  return { rows, loading, error };
+  return { rows, loading, error, refetch };
 };

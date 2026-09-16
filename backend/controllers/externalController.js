@@ -1567,9 +1567,30 @@ const getFailureForecastOverhaulEvents = async (req, res) => {
   }
 };
 
+// Best-effort trigger telling the AI side's job to recompute the SoH
+// projection RIGHT NOW instead of waiting for its own ~60s cadence -- see
+// simulator/failure-forecast/CONTRACT.md §3.1 (added 2026-09-16, in
+// response to us reporting the stale-chart-after-reset UX gap). Localhost-
+// only, no password by design (only reachable from another process on the
+// same VPS, never from a browser -- our Node backend is that process).
+// Always responds 202 immediately; the actual recompute runs async on
+// their side. Failing this must NEVER fail the write that already
+// succeeded above it -- the normal ~60s worker cadence still picks the
+// change up on its own either way.
+const triggerOverhaulRecompute = async () => {
+  try {
+    await axios.post('http://127.0.0.1:8600/api/overhaul/recompute', null, { timeout: 3000 });
+  } catch (error) {
+    console.error(
+      '⚠️ Overhaul recompute trigger failed (non-fatal -- the ~60s worker cadence will still pick this up):',
+      error.message
+    );
+  }
+};
+
 // Record a completed major overhaul/Turn Around. The next
-// jobs_failure_forecast.py run (~60s) picks this up as the new SoH anchor --
-// nothing to trigger on our side.
+// jobs_failure_forecast.py run (~60s, or immediately via
+// triggerOverhaulRecompute below) picks this up as the new SoH anchor.
 //
 // INSERTs directly into the AI-side's Postgres table (same DB already used
 // for failure_forecast_projection/history) rather than proxying to the
@@ -1625,6 +1646,8 @@ const createFailureForecastOverhaulEvent = async (req, res) => {
       `✅ Overhaul event recorded by user ${req.user?.userId ?? 'unknown'}: id=${id} effective_at=${effectiveAt.toISOString()}`
     );
 
+    await triggerOverhaulRecompute();
+
     res.status(201).json({ success: true, data: { id, created_at: effectiveAt.toISOString(), undone_at: null } });
   } catch (error) {
     console.error('❌ Error recording failure forecast overhaul event:', error);
@@ -1661,6 +1684,8 @@ const undoFailureForecastOverhaulEvent = async (req, res) => {
     }
 
     console.log(`✅ Overhaul event undone by user ${req.user?.userId ?? 'unknown'}: id=${result.rows[0].id}`);
+
+    await triggerOverhaulRecompute();
 
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
