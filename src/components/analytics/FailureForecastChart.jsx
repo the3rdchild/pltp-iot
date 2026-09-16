@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import ApexCharts from 'apexcharts';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Stack, Divider } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import PropTypes from 'prop-types';
 import MainCard from '../MainCard';
@@ -55,8 +55,17 @@ const PLAN_REFERENCE_COLOR = '#d97706';
  * visible as its own block; ETA is demoted to a muted secondary line
  * (kept, not deleted -- still a valid consequence of the curve, just not
  * what should catch the eye first).
+ *
+ * `wide` (same day, follow-up): true when this is the ONLY card in the row
+ * (see the `models.length === 1` check at the call site) -- linear was
+ * retired from the AI-side production worker, so a single Weibull-Cox card
+ * was stretching to fill a half-width grid slot with the other half empty.
+ * When wide, the headline and SoH-now blocks sit side by side (a wide card
+ * has room); otherwise they stack vertically exactly as before, which is
+ * still correct the moment a second model reappears -- this prop is
+ * data-driven (models.length), never a hardcoded single-model assumption.
  */
-function ModelStatusCard({ model, rows, cycleAnchor }) {
+function ModelStatusCard({ model, rows, cycleAnchor, wide = false }) {
   const anchor = rows[0];
   if (!anchor) return null;
 
@@ -66,13 +75,9 @@ function ModelStatusCard({ model, rows, cycleAnchor }) {
   const { pct: cyclePct, yearsToPlanned } = cycleProgress(cycleAnchor);
   const cycleOverdue = yearsToPlanned < 0;
 
-  return (
-    <MainCard sx={{ height: '100%', bgcolor: '#F7F8FA' }} contentSX={{ p: 2.5 }}>
-      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700 }}>
-        Model {MODEL_LABELS[model] || model}
-      </Typography>
-
-      <Typography variant="h3" sx={{ fontWeight: 700, color: PLAN_REFERENCE_COLOR, mt: 0.5, lineHeight: 1.15 }}>
+  const cycleBlock = (
+    <Box>
+      <Typography variant="h3" sx={{ fontWeight: 700, color: PLAN_REFERENCE_COLOR, lineHeight: 1.15 }}>
         {Number.isFinite(cyclePct) ? Math.max(0, cyclePct).toFixed(0) : '-'}%
       </Typography>
       <Typography variant="caption" color="text.secondary">
@@ -84,26 +89,54 @@ function ModelStatusCard({ model, rows, cycleAnchor }) {
           : `~${yearsToPlanned.toFixed(1)} tahun lagi ke titik tengah rencana`}{' '}
         (rentang wajar {PLANNED_CYCLE_RANGE_YEARS[0]}–{PLANNED_CYCLE_RANGE_YEARS[1]} tahun, bukan aturan otomatis)
       </Typography>
+    </Box>
+  );
 
-      <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, color, lineHeight: 1.15 }}>
-          {Number.isFinite(health) ? health.toFixed(1) : '-'}%
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          State of Health saat ini
-        </Typography>
-      </Box>
+  const healthBlock = (
+    <Box>
+      <Typography variant="h5" sx={{ fontWeight: 700, color, lineHeight: 1.15 }}>
+        {Number.isFinite(health) ? health.toFixed(1) : '-'}%
+      </Typography>
+      <Typography variant="caption" color="text.secondary">
+        State of Health saat ini
+      </Typography>
+    </Box>
+  );
 
-      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-        ETA overhaul/maintenance (proyeksi model): {anchor.eta_date ? fmtDate(anchor.eta_date) : 'belum tercapai dalam horizon proyeksi'}
-        {yearsLeft !== null && ` (~${yearsLeft.toFixed(1)} tahun lagi)`}
+  return (
+    <MainCard sx={{ height: '100%', bgcolor: '#F7F8FA' }} contentSX={{ p: 2.5 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700, mb: wide ? 1 : 0.5 }}>
+        Model {MODEL_LABELS[model] || model}
       </Typography>
 
-      {anchor.overhaul_active_since && (
-        <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#9271FF', fontWeight: 600 }}>
-          Overhaul aktif sejak {fmtDate(anchor.overhaul_active_since)} -- umur efektif dihitung ulang dari titik ini
-        </Typography>
+      {wide ? (
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={{ xs: 2, sm: 5 }}
+          divider={<Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', sm: 'block' } }} />}
+        >
+          {cycleBlock}
+          {healthBlock}
+        </Stack>
+      ) : (
+        <>
+          {cycleBlock}
+          <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>{healthBlock}</Box>
+        </>
       )}
+
+      <Box sx={{ mt: wide ? 2 : 1 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+          ETA overhaul/maintenance (proyeksi model): {anchor.eta_date ? fmtDate(anchor.eta_date) : 'belum tercapai dalam horizon proyeksi'}
+          {yearsLeft !== null && ` (~${yearsLeft.toFixed(1)} tahun lagi)`}
+        </Typography>
+
+        {anchor.overhaul_active_since && (
+          <Typography variant="caption" sx={{ display: 'block', mt: 0.5, color: '#9271FF', fontWeight: 600 }}>
+            Overhaul aktif sejak {fmtDate(anchor.overhaul_active_since)} -- umur efektif dihitung ulang dari titik ini
+          </Typography>
+        )}
+      </Box>
     </MainCard>
   );
 }
@@ -413,8 +446,12 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
       {models.length > 0 && (
         <Grid container spacing={2} sx={{ mt: 0.5 }}>
           {models.map((model) => (
-            <Grid size={{ xs: 12, sm: 6 }} key={model}>
-              <ModelStatusCard model={model} rows={byModel[model] || []} cycleAnchor={cycleAnchor} />
+            // Full width when this is the only model card (models.length
+            // driven, not a hardcoded "always 1" assumption -- see the
+            // `wide` doc comment on ModelStatusCard) so it doesn't stretch
+            // to a half-width slot with the other half sitting empty.
+            <Grid size={{ xs: 12, sm: models.length > 1 ? 6 : 12 }} key={model}>
+              <ModelStatusCard model={model} rows={byModel[model] || []} cycleAnchor={cycleAnchor} wide={models.length === 1} />
             </Grid>
           ))}
         </Grid>

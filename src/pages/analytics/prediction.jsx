@@ -1,4 +1,4 @@
-import { Box, Typography, Chip, Tooltip, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { Box, Typography, Chip, Tooltip } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import MainCard from 'components/MainCard';
@@ -154,18 +154,17 @@ function StatTile({ title, subtitle, value, unit, icon, accent, chip, chipColor 
  * ------------------------------------------------------------------ */
 
 const AIAnalytics = () => {
-  // Which ai1a source table drives every AI1a tile/chart/table below --
-  // 'ai1a' (production, 65-feature) or 'ai1a_shadow' (comparison run,
-  // 70-feature/has TDS). See AI1A_SOURCE_TABLES in
-  // backend/controllers/externalController.js for why 'ai1a_shadow' is
-  // readable through this page at all. FE-only state, not persisted --
-  // no existing convention in this codebase for persisting a view toggle
-  // like this, and the toggle resetting to Produksi on reload is fine.
-  const [ai1aVariant, setAi1aVariant] = useState('ai1a');
-
   // liveData is null whenever the newest row is older than 10 minutes
   // (see hooks/useAi1Data.js) -- that null IS the "waiting for data" signal.
-  const { liveData: ai1aLive, history: ai1aHistory, loading: ai1aLoading } = useAi1aData(3000, ai1aVariant);
+  //
+  // Always reads 'ai1a' (production) -- the "Produksi"/"Shadow 70" toggle
+  // that used to sit above the risk chart was removed 2026-09-16: AI1a-70
+  // was promoted to production the same day, so AI1A_SHADOW_DIRS is now
+  // empty on the VPS and 'ai1a_shadow' would only ever show frozen/stale
+  // data, never a live comparison. See AI1A_SOURCE_TABLES in
+  // backend/controllers/externalController.js if a shadow arm is ever
+  // reintroduced.
+  const { liveData: ai1aLive, history: ai1aHistory, loading: ai1aLoading } = useAi1aData(3000);
   const { rows: failureForecastRows, loading: failureForecastLoading } = useFailureForecastData();
   const { rows: failureForecastHistoryRows, loading: failureForecastHistoryLoading } = useFailureForecastHistory();
   const { events: overhaulEvents, loading: overhaulLoading, refetch: refetchOverhaulEvents } = useFailureForecastOverhaul();
@@ -242,7 +241,7 @@ const AIAnalytics = () => {
       const pointsParam = range === 'now' ? '' : `&points=${AI1A_CHART_POINTS}`;
 
       fetch(
-        `/api/external/ai1a?start_date=${encodeURIComponent(startIso)}&end_date=${encodeURIComponent(endIso)}${pointsParam}&source_table=${ai1aVariant}`
+        `/api/external/ai1a?start_date=${encodeURIComponent(startIso)}&end_date=${encodeURIComponent(endIso)}${pointsParam}`
       )
         .then((r) => r.json())
         .then((json) => {
@@ -260,7 +259,7 @@ const AIAnalytics = () => {
       cancelled = true;
       clearInterval(id);
     };
-  }, [ai1aSelection, ai1aVariant]);
+  }, [ai1aSelection]);
 
   const ai1aChart = useMemo(() => {
     // Before the first range fetch resolves, fall back to useAi1aData's
@@ -318,19 +317,7 @@ const AIAnalytics = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 1.5 }}>
-        <AnalyticsHeader title="Risk Analytics" subtitle="Anomaly Detection & Risk Forecast" />
-        <ToggleButtonGroup
-          size="small"
-          exclusive
-          value={ai1aVariant}
-          onChange={(_e, next) => { if (next) setAi1aVariant(next); }}
-          sx={{ mb: 1 }}
-        >
-          <ToggleButton value="ai1a" sx={{ textTransform: 'none', px: 2 }}>Produksi</ToggleButton>
-          <ToggleButton value="ai1a_shadow" sx={{ textTransform: 'none', px: 2 }}>Shadow 70</ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
+      <AnalyticsHeader title="Risk Analytics" subtitle="Anomaly Detection & Risk Forecast" />
 
       {/* ---------------- status tiles ---------------- */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
