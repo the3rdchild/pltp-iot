@@ -41,6 +41,54 @@ const yearsUntil = (etaDate) => {
 // actual curve/SoH data, so the two kinds of number never look alike.
 const PLAN_REFERENCE_COLOR = '#d97706';
 
+// Collision-aware stacking for xaxis annotation labels. ApexCharts has no
+// built-in overlap avoidance, and a fixed one-off "nudge this label up"
+// doesn't hold once an anchor moves -- exactly what happened when the
+// backdated Jan 2021 overhaul event landed close to "Hari ini" on a chart
+// spanning COD 2015 to an ETA around 2045 (dosen feedback, 2026-09-16).
+//
+// "Close" is a FRACTION of the chart's own time domain rather than a fixed
+// day/pixel count, since the actual pixel gap between two dates depends on
+// both the domain span and the container's rendered width (which this
+// component doesn't control -- it's `width: '100%'`). This is a heuristic,
+// not a pixel-exact collision test (ApexCharts doesn't expose rendered
+// label bounding boxes to react to before paint) -- 8% was picked to
+// reasonably cover a multi-decade domain rendered at a typical dashboard
+// card width; a redesign that changes the chart's aspect ratio a lot may
+// need to revisit this number.
+const ANNOTATION_COLLISION_FRACTION = 0.08;
+const ANNOTATION_STACK_STEP_PX = 22;
+
+// Takes xaxis annotations (point -- `x` only -- or range -- `x` + `x2`) and
+// returns new objects with `label.offsetY` adjusted so labels whose x
+// positions cluster together stack vertically instead of overlapping.
+// Pure -- returns new annotation objects, never mutates the input.
+const resolveAnnotationCollisions = (items, domainMs) => {
+  if (items.length < 2 || !(domainMs > 0)) return items;
+
+  const threshold = domainMs * ANNOTATION_COLLISION_FRACTION;
+  const order = items
+    .map((item, i) => ({ i, pos: item.x2 != null ? (item.x + item.x2) / 2 : item.x }))
+    .sort((a, b) => a.pos - b.pos);
+
+  const stackIndexByItem = new Array(items.length).fill(0);
+  let clusterStart = 0;
+  order.forEach((entry, idx) => {
+    if (idx > 0 && entry.pos - order[idx - 1].pos > threshold) {
+      clusterStart = idx; // far enough from the previous one -- new cluster
+    }
+    stackIndexByItem[entry.i] = idx - clusterStart;
+  });
+
+  return items.map((item, i) => {
+    if (stackIndexByItem[i] === 0) return item; // no collision -- leave as-is
+    return {
+      ...item,
+      label: { ...item.label, offsetY: (item.label?.offsetY ?? 0) - stackIndexByItem[i] * ANNOTATION_STACK_STEP_PX }
+    };
+  });
+};
+
 /**
  * Per-model status card, mirroring the AI-side interactive demo's
  * LifetimeStatusPanel.tsx (both models shown side by side, never one
@@ -338,11 +386,23 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
     [cycleAnchor]
   );
 
+  // Full plotted time span (COD/earliest history point -> furthest ETA or
+  // projection point), used only as the reference scale for
+  // resolveAnnotationCollisions above -- not rendered anywhere itself.
+  const chartDomainMs = useMemo(() => {
+    const xs = models.flatMap((model) => [
+      ...(historicalSeriesData[model] || []).map((p) => p.x),
+      ...(projectionSeriesData[model] || []).map((p) => p.x)
+    ]);
+    return xs.length ? Math.max(...xs) - Math.min(...xs) : 0;
+  }, [models, historicalSeriesData, projectionSeriesData]);
+
   const xaxisAnnotations = useMemo(() => {
     const base = anchorAnnotation ? [anchorAnnotation, ...etaAnnotations] : etaAnnotations;
     // Band first so ApexCharts draws it behind the point annotations.
-    return [cycleBandAnnotation, cycleMidAnnotation, ...base];
-  }, [anchorAnnotation, etaAnnotations, cycleBandAnnotation, cycleMidAnnotation]);
+    const combined = [cycleBandAnnotation, cycleMidAnnotation, ...base];
+    return resolveAnnotationCollisions(combined, chartDomainMs);
+  }, [anchorAnnotation, etaAnnotations, cycleBandAnnotation, cycleMidAnnotation, chartDomainMs]);
 
   const buildOptions = useCallback(
     () => ({
@@ -361,7 +421,10 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
       dataLabels: { enabled: false },
       legend: { show: true, position: 'top', horizontalAlign: 'right', fontSize: '11px' },
       annotations: { xaxis: xaxisAnnotations },
-      grid: { borderColor: '#eef0f4', strokeDashArray: 4, padding: { left: 12, right: 16 } },
+      // Extra top padding gives resolveAnnotationCollisions' stacked labels
+      // (e.g. plan-cycle midline + "Hari ini" landing close together) room
+      // to sit above the plot area instead of getting clipped at the card edge.
+      grid: { borderColor: '#eef0f4', strokeDashArray: 4, padding: { left: 12, right: 16, top: 30 } },
       xaxis: {
         type: 'datetime',
         title: { text: 'Tanggal (COD → proyeksi)', style: { fontSize: '12px', color: '#8b93a7' } },
