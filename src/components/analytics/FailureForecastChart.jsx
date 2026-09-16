@@ -4,6 +4,7 @@ import { Box, Typography } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import PropTypes from 'prop-types';
 import MainCard from '../MainCard';
+import { PLANNED_CYCLE_YEARS, PLANNED_CYCLE_RANGE_YEARS, cycleAnchorMs, cycleProgress, yearsToMs } from '../../utils/failureForecastCalibration';
 
 // Display-only labels/colors -- the wire values are always 'linear' /
 // 'weibull_cox' (see docs/failure_forecast_contract_for_beFE.md). Exported
@@ -35,40 +36,69 @@ const yearsUntil = (etaDate) => {
   return (eta - Date.now()) / (365.25 * 24 * 60 * 60 * 1000);
 };
 
+// Amber/orange throughout this file means "planned-cycle reference"
+// (independent of any model); model colors (MODEL_COLORS) stay reserved for
+// actual curve/SoH data, so the two kinds of number never look alike.
+const PLAN_REFERENCE_COLOR = '#d97706';
+
 /**
  * Per-model status card, mirroring the AI-side interactive demo's
  * LifetimeStatusPanel.tsx (both models shown side by side, never one
  * silently picked).
+ *
+ * Reframed 2026-09-16 (dosen feedback via "Master Session" cross-session
+ * handoff): the headline used to be SoH-now / ETA ~2045, which read as
+ * "T_desain 30 tahun" framing even though the chart's own reference band
+ * (below) already reflects the newer predictive-maintenance framing --
+ * "siklus overhaul rencana ~4 tahun". Now the cycle-progress number (same
+ * anchor as the band, model-independent) is the headline; SoH-now stays
+ * visible as its own block; ETA is demoted to a muted secondary line
+ * (kept, not deleted -- still a valid consequence of the curve, just not
+ * what should catch the eye first).
  */
-function ModelStatusCard({ model, rows }) {
+function ModelStatusCard({ model, rows, cycleAnchor }) {
   const anchor = rows[0];
   if (!anchor) return null;
 
   const health = 100 - Number(anchor.today_failure_pct);
   const yearsLeft = yearsUntil(anchor.eta_date);
   const color = MODEL_COLORS[model] || '#9ca3af';
+  const { pct: cyclePct, yearsToPlanned } = cycleProgress(cycleAnchor);
+  const cycleOverdue = yearsToPlanned < 0;
 
   return (
     <MainCard sx={{ height: '100%', bgcolor: '#F7F8FA' }} contentSX={{ p: 2.5 }}>
       <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 700 }}>
         Model {MODEL_LABELS[model] || model}
       </Typography>
-      <Typography variant="h3" sx={{ fontWeight: 700, color, mt: 0.5, lineHeight: 1.15 }}>
-        {Number.isFinite(health) ? health.toFixed(1) : '-'}%
+
+      <Typography variant="h3" sx={{ fontWeight: 700, color: PLAN_REFERENCE_COLOR, mt: 0.5, lineHeight: 1.15 }}>
+        {Number.isFinite(cyclePct) ? Math.max(0, cyclePct).toFixed(0) : '-'}%
       </Typography>
       <Typography variant="caption" color="text.secondary">
-        State of Health saat ini
+        {cycleOverdue ? `Dari siklus overhaul rencana (~${PLANNED_CYCLE_YEARS} tahun)` : `Menuju siklus overhaul rencana (~${PLANNED_CYCLE_YEARS} tahun)`}
       </Typography>
-      <Box sx={{ mt: 1.5 }}>
-        <Typography variant="body2">
-          ETA overhaul/maintenance: <strong>{anchor.eta_date ? fmtDate(anchor.eta_date) : 'Belum tercapai dalam horizon proyeksi'}</strong>
+      <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary' }}>
+        {cycleOverdue
+          ? `Sudah ${Math.abs(yearsToPlanned).toFixed(1)} tahun melewati titik tengah rencana`
+          : `~${yearsToPlanned.toFixed(1)} tahun lagi ke titik tengah rencana`}{' '}
+        (rentang wajar {PLANNED_CYCLE_RANGE_YEARS[0]}–{PLANNED_CYCLE_RANGE_YEARS[1]} tahun, bukan aturan otomatis)
+      </Typography>
+
+      <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, color, lineHeight: 1.15 }}>
+          {Number.isFinite(health) ? health.toFixed(1) : '-'}%
         </Typography>
-        {yearsLeft !== null && (
-          <Typography variant="caption" color="text.secondary">
-            (~{yearsLeft.toFixed(1)} tahun lagi dari sekarang)
-          </Typography>
-        )}
+        <Typography variant="caption" color="text.secondary">
+          State of Health saat ini
+        </Typography>
       </Box>
+
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+        ETA overhaul/maintenance (proyeksi model): {anchor.eta_date ? fmtDate(anchor.eta_date) : 'belum tercapai dalam horizon proyeksi'}
+        {yearsLeft !== null && ` (~${yearsLeft.toFixed(1)} tahun lagi)`}
+      </Typography>
+
       {anchor.overhaul_active_since && (
         <Typography variant="caption" sx={{ display: 'block', mt: 1, color: '#9271FF', fontWeight: 600 }}>
           Overhaul aktif sejak {fmtDate(anchor.overhaul_active_since)} -- umur efektif dihitung ulang dari titik ini
@@ -101,6 +131,12 @@ function ModelStatusCard({ model, rows }) {
 const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) => {
   const containerRef = useRef(null);
   const chartRef = useRef(null);
+
+  // overhaul_active_since is a run-level flag repeated on every projection
+  // row (same value or null across all of them, see the contract) -- .find
+  // rather than rows[0] only so a transient partial fetch doesn't miss it.
+  const overhaulActiveSince = useMemo(() => rows.find((r) => r.overhaul_active_since)?.overhaul_active_since ?? null, [rows]);
+  const cycleAnchor = useMemo(() => cycleAnchorMs(overhaulActiveSince), [overhaulActiveSince]);
 
   const byModel = useMemo(() => {
     const grouped = {};
@@ -230,10 +266,50 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
     };
   }, [models, projectionSeriesData]);
 
-  const xaxisAnnotations = useMemo(
-    () => (anchorAnnotation ? [anchorAnnotation, ...etaAnnotations] : etaAnnotations),
-    [anchorAnnotation, etaAnnotations]
+  // Planned-overhaul-cycle reference band [anchor+2y, anchor+6y] + a midline
+  // at anchor+4y -- ONE band for the whole chart (not per-model: the plan
+  // is independent of which aging model is shown), same anchor rule as the
+  // reset control's context note (cycleAnchor above). Added 2026-09-16 so
+  // this chart's headline framing matches the "siklus overhaul rencana"
+  // language already used below it (OverhaulResetControl) -- previously
+  // only the ETA/T_desain=30-year framing appeared on the chart itself.
+  // Must keep working with 1 model as cleanly as 2 (linear is being
+  // retired from the AI-side worker) -- nothing here depends on `models`.
+  const cycleBandAnnotation = useMemo(
+    () => ({
+      x: cycleAnchor + yearsToMs(PLANNED_CYCLE_RANGE_YEARS[0]),
+      x2: cycleAnchor + yearsToMs(PLANNED_CYCLE_RANGE_YEARS[1]),
+      fillColor: PLAN_REFERENCE_COLOR,
+      opacity: 0.1,
+      label: {
+        text: `Siklus overhaul rencana (${PLANNED_CYCLE_RANGE_YEARS[0]}–${PLANNED_CYCLE_RANGE_YEARS[1]} th)`,
+        orientation: 'horizontal',
+        position: 'top',
+        style: { color: '#7c2d12', background: '#fef3c7', fontSize: '10px' }
+      }
+    }),
+    [cycleAnchor]
   );
+
+  const cycleMidAnnotation = useMemo(
+    () => ({
+      x: cycleAnchor + yearsToMs(PLANNED_CYCLE_YEARS),
+      borderColor: PLAN_REFERENCE_COLOR,
+      strokeDashArray: 3,
+      label: {
+        text: `~${PLANNED_CYCLE_YEARS} th (rencana)`,
+        orientation: 'horizontal',
+        style: { color: '#fff', background: PLAN_REFERENCE_COLOR, fontSize: '10px' }
+      }
+    }),
+    [cycleAnchor]
+  );
+
+  const xaxisAnnotations = useMemo(() => {
+    const base = anchorAnnotation ? [anchorAnnotation, ...etaAnnotations] : etaAnnotations;
+    // Band first so ApexCharts draws it behind the point annotations.
+    return [cycleBandAnnotation, cycleMidAnnotation, ...base];
+  }, [anchorAnnotation, etaAnnotations, cycleBandAnnotation, cycleMidAnnotation]);
 
   const buildOptions = useCallback(
     () => ({
@@ -327,8 +403,8 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
         </Typography>
         <Typography variant="body2" color="text.secondary">
           {generatedAt
-            ? `Dihitung ${fmtDate(generatedAt)} · sejak COD (29 Jun 2015) hingga proyeksi ke depan, dua model reliability-engineering ditampilkan berdampingan`
-            : 'Riwayat & proyeksi umur pakai turbin sejak COD (linear vs Weibull hazard/Cox PH), gaya "battery health"'}
+            ? `Dihitung ${fmtDate(generatedAt)} · sejak COD (29 Jun 2015) hingga proyeksi ke depan, pita oranye menandai siklus overhaul rencana (~${PLANNED_CYCLE_YEARS} tahun, rentang ${PLANNED_CYCLE_RANGE_YEARS[0]}–${PLANNED_CYCLE_RANGE_YEARS[1]} tahun) sebagai acuan operasional`
+            : `Riwayat & proyeksi umur pakai turbin sejak COD, dengan siklus overhaul rencana (~${PLANNED_CYCLE_YEARS} tahun) sebagai acuan operasional`}
         </Typography>
       </Box>
 
@@ -338,7 +414,7 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
         <Grid container spacing={2} sx={{ mt: 0.5 }}>
           {models.map((model) => (
             <Grid size={{ xs: 12, sm: 6 }} key={model}>
-              <ModelStatusCard model={model} rows={byModel[model] || []} />
+              <ModelStatusCard model={model} rows={byModel[model] || []} cycleAnchor={cycleAnchor} />
             </Grid>
           ))}
         </Grid>

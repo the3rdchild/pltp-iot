@@ -19,21 +19,11 @@ import PropTypes from 'prop-types';
 import MainCard from '../MainCard';
 import { getCurrentUser } from '../../services/authService';
 import { createFailureForecastOverhaulEvent, undoFailureForecastOverhaulEvent } from '../../utils/api';
+import { COD_DATE, PLANNED_CYCLE_YEARS } from '../../utils/failureForecastCalibration';
 
-// Commercial-operation-date -- an overhaul event can't predate it. Same
-// bound the backend enforces (OVERHAUL_COD_DATE in externalController.js);
-// duplicated here only for the date-picker's min attribute and the client-
-// side error message shown before a round-trip, the backend stays the
-// actual authority.
-const COD_DATE = '2015-06-29';
-
-// Reference-only planned overhaul cycle for turbines like this one (industry
-// range 2-6 years, 4 as the midpoint) -- NOT a validation rule or an
-// automatic reset trigger. See AI_Pertasmart_V3/docs/
-// argumen_horizon_forecast_kegagalan.md §11.5: Unit 5's real cycle isn't
-// known (one public data point only), so this is shown purely as context
-// for the operator's own judgement call.
-const PLANNED_CYCLE_YEARS = 4;
+// COD_DATE is enforced authoritatively by the backend (OVERHAUL_COD_DATE in
+// externalController.js) -- used here only for the date-picker's min
+// attribute and the client-side error message shown before a round-trip.
 
 const todayIsoDate = () => new Date().toISOString().slice(0, 10);
 
