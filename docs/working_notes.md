@@ -398,3 +398,53 @@ under 2% of the chart's height.
   magnitude reduction in the extreme value reaching the y-axis).
 - Pushed `main` (`cd263d5`). Not yet confirmed deployed -- told "SSH BE FE
   Agent" and the master session, standing by for their report.
+
+## Overhaul UX polish: instant refresh + boundary connector (2026-09-16)
+
+Two more requests from the user while actively testing the reset feature,
+both on `FailureForecastChart.jsx`/`OverhaulResetControl.jsx`.
+
+**1. Instant chart refresh after reset/undo.** Previously the chart stayed
+stale up to ~1 minute (verified live: `overhaul_active_since` stayed ~4
+min stale before self-updating), waiting on the AI-side worker's own poll
+cadence. AI side added a trigger for this
+(`POST http://127.0.0.1:8600/api/overhaul/recompute`, CONTRACT.md §3.1,
+localhost-only/no password -- only reachable from our own Node backend,
+never a browser, always 202, best-effort).
+
+- Backend: `createFailureForecastOverhaulEvent`/
+  `undoFailureForecastOverhaulEvent` call it (`triggerOverhaulRecompute`)
+  right after their own DB write succeeds. Failing this NEVER fails the
+  write itself (try/catch, logged only) -- the normal ~60s cadence still
+  catches it either way.
+- FE: `useFailureForecastData`/`useFailureForecastHistory` both gained a
+  `refetch` (matching `useFailureForecastOverhaul`'s existing pattern).
+  `OverhaulResetControl` polls `GET /api/external/failure-forecast` every
+  1s for up to 10s after a successful reset/undo (`waitForFreshProjection`),
+  watching for `generated_at` to move past its pre-action value -- not a
+  fixed delay, since there's still an enqueue→run→REPLACE gap even though
+  the job itself usually finishes under a second. Once changed (or the
+  10s budget runs out) tells `prediction.jsx` to refetch both chart hooks
+  via a new `onProjectionRefresh` prop; a timeout shows a one-line note
+  rather than silently doing nothing.
+
+**2. Visual connector at cycle boundaries.** `insertCycleGaps` correctly
+breaks the line at each recorded overhaul (intentional -- connecting it
+would draw "damage decreasing" that never happened), but a bare gap read
+as "data missing" rather than "an overhaul happened here" (user sent a
+mockup: a distinct line joining the two real values at the boundary).
+Added `buildCycleBoundaryConnectors` -- a separate series per model
+containing only the two real endpoint values at each `cycle_index` change,
+isolated per boundary so multiple overhauls don't chain into one line,
+styled distinctly (`OVERHAUL_CONNECTOR_COLOR`, red, thicker) so it's never
+mistaken for the real data curve. `historicalSeriesData` and this new
+series now share one `historicalRawPoints` source instead of each
+re-deriving points independently, so they can't disagree about where a
+boundary falls.
+
+- Verified: `vite build` + `eslint` clean, backend `node --check` clean.
+  `buildCycleBoundaryConnectors` tested standalone against a simulated
+  3-cycle history (two overhauls) -- confirmed two isolated connector
+  segments, not one chained line.
+- Pushed `main` (`08ac88d`, two commits: instant-refresh then connector).
+  Not yet deployed.
