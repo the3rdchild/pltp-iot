@@ -513,3 +513,57 @@ Forest that also anchors the SoH curve) instead of `ai1a`.
 - Pushed `main` (`1cf2790`). **NOT deployed** -- bundled with the 0%
   reference line for tomorrow's deploy, per the user's request relayed via
   Master Session.
+
+## UI terminology rename: AI1a/AI2 jargon -> thesis-final names (2026-09-16)
+
+Per the confirmed final terminology in the thesis document (re-confirmed
+by the "BAB V laporan semhas" session, not a new proposal): `AI1a` ->
+**Overall Risk History**, AI2 dryness output -> **Dryness Prediction**,
+AI2 NCG output -> **NCG Prediction**, TDS nowcast -> **TDS Prediction**.
+Scope confirmed by the user: **UI-rendered text only** --
+file/function/variable/component names, DB table names, `model_version`
+strings untouched.
+
+**Explicitly NOT touched** (follow-up guardrail from the master session,
+important to remember for any future pass over this same area):
+- raw/adjusted/"mentah"/"terkoreksi" labels on the Overall Risk History
+  chart -- out of scope, no official replacement term exists.
+- anything mentioning Severity/severity classification -- the thesis
+  dropped that concept from the REPORT only; whether it's also dropped
+  from the dashboard UI is a separate, not-yet-decided product question.
+
+Files changed: `prediction.jsx` (both risk chart titles + Turbine Risk
+History's subtitle/footnote), `TDS.jsx` (predictionName), `component-
+overview/history.jsx` (empty-state caption + 3 table headers, "Severity"/
+"Risk %"/"Anomaly Score" wording itself untouched), `home/homeData.jsx`
+(both home-page AI cards), `dashboard/default.jsx` ("Data AI belum
+tersedia" x2), `settings/LabComparisonChart.jsx` (generic "Prediksi AI"
+now names the specific model based on which `ai2.*` column is being
+compared), `extra-pages/articles/AI2.jsx` (~13 locations, full manual
+read-through -- headline, intro, comparison table, cost analysis,
+conclusion, bibliography -- reworded to keep prose natural, not a blind
+find-replace), `extra-pages/articles/AI1.jsx` (headline only, see below).
+
+**⚠️ Flagged to master session, NOT resolved**: `AI1.jsx`'s explicit scope
+was "rename the headline only." The rest of that article still describes
+a paired "AI #1a" (current risk) / "AI #1b" (30-day LSTM forecast)
+system across several sections -- this **contradicts** the brief's claim
+that no AI1b text exists in the repo. AI1b's actual feature (the 30-day
+risk forecast chart) was already retired from the live dashboard earlier
+THIS SAME SESSION (replaced by the failure-forecast SoH chart, see the
+"Pivot 'predict failure'..." section elsewhere in this file) -- so the
+article is genuinely stale, describing a retired feature as if live, not
+just inconsistently named. Renaming only the AI1a half there would have
+produced mismatched, confusing prose against the still-present AI1b
+description, so left entirely untouched pending clarification rather
+than guessed. **Do not touch AI1.jsx's AI1a/AI1b sub-sections without
+that clarification.**
+
+- Verified: `vite build` + `eslint` clean on every file touched (7
+  pre-existing `rules-of-hooks` errors elsewhere are unrelated -- verified
+  via `git status` that those files weren't touched by this change).
+  Grepped the whole `src/` tree afterward for residual "AI1a"/"AI1b"/"AI2"
+  outside comments/constant names/the flagged AI1.jsx exception -- none
+  found.
+- Pushed `main` (`3539b6e`). **NOT deployed** -- bundled with the 0%
+  reference line + Turbine Risk History chart for tomorrow's deploy.
