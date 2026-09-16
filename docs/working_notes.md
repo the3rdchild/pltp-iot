@@ -148,3 +148,43 @@ Time Data (AI)" on `/dashboard/ncg` had its y-axis hardcoded to `-1..1 wt%`
   quick look on `/dashboard/ncg` once deployed.
 - Pushed `main` (`25d5b60`). Deploy bundled with tomorrow's batch per the
   master session (reset button + this + their other pending VPS work).
+
+## Frontend — SoH chart headline reframed to planned overhaul cycle (2026-09-16)
+
+Follow-up from the AI side's "Master Session": the SoH chart itself still
+headlined ETA/T_desain=30-year framing (ETA ~2045) even though the reset-
+control section right below it already used the newer predictive-
+maintenance framing ("siklus overhaul rencana ~4 tahun") — the page was
+internally inconsistent between its two halves.
+
+- `FailureForecastChart.jsx`: added a reference band
+  `[anchor+2y, anchor+6y]` + midline `anchor+4y` to the chart itself
+  (`anchor` = active overhaul event else COD — same rule as the reset
+  control). **One band for the whole chart, not per-model** (the plan is
+  model-independent) — verified it still renders correctly with only 1
+  model curve, since `linear` is mid-removal from the AI-side worker per
+  the master session's FYI.
+  - `ModelStatusCard` reframed: cycle-progress-toward-plan is now the
+    primary (h3) number per card; "State of Health saat ini" stays its own
+    labeled block below a divider; ETA is demoted to a muted caption line
+    (kept, not deleted). Headline copy switches between "menuju"/"dari"
+    depending on whether the plan's 4-year midpoint has already passed —
+    checked this against the REAL current data (no overhaul ever recorded,
+    anchor = COD 2015): today that's ~11 years past COD, so the tile
+    correctly reads "~280%, sudah X tahun melewati titik tengah rencana",
+    not a nonsensical "menuju... 280%".
+- Extracted `COD_DATE`/`PLANNED_CYCLE_YEARS`/`PLANNED_CYCLE_RANGE_YEARS`
+  (previously only inside `OverhaulResetControl.jsx`) into a new
+  `utils/failureForecastCalibration.js` — single source so the chart and
+  the reset control can't drift on what "the plan" means, same class of
+  bug as the NCG y-axis fix above. `OverhaulResetControl.jsx` now imports
+  from there instead of redefining.
+- Verified: `vite build` + `eslint` clean; ran the cycle-progress/band math
+  standalone against both the no-override (COD anchor) and an active-
+  override scenario before committing.
+- **Not visually checked in browser** (needs an authenticated dev session)
+  — worth a look for annotation-label overlap once deployed, since the
+  chart already draws several xaxis annotations (ETA per model, "Hari
+  ini", now also the plan band + midline).
+- Pushed `main` (`199a0cf`). Deploy bundled with the same batch as the
+  reset button + NCG fix above.
