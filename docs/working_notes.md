@@ -473,3 +473,43 @@ from positive into negative health.
   bundled with tomorrow's Turbine Risk History deploy (relayed via Master
   Session); do not push this to the VPS ahead of that without checking
   first.
+
+## Turbine Risk History chart (2026-09-16)
+
+Item 2 of the original 7-item request (15 Sep) that had been missed --
+only item 3 (SoH curve switched to `turbine_risk_history` as its input)
+had actually shipped. User approved doing this tonight so it can bundle
+with tomorrow's 0% reference-line deploy.
+
+New chart on `/prediction`, directly below "Adjusted Risk History (ai1a)":
+same `RiskChart` component, same range-selector/bucketing shape, fed by
+`turbine_risk_history` (the separate 6-steam-quality-parameter Isolation
+Forest that also anchors the SoH curve) instead of `ai1a`.
+
+- Backend: `getTurbineRiskHistoryData`
+  (`GET /api/external/turbine-risk-history`) mirrors `getAi1aData`'s
+  bucketed/raw shape (reuses `resolveBucketing`/`bucketExpr` as-is) but
+  simpler -- single table, no `source_table` toggle, no
+  `ai1a_direction_annotation`-style LEFT JOIN needed since
+  `adjusted_risk_percentage` is always populated on the row itself per the
+  AI side's `turbine_risk_history_contract_for_beFE.md` (gitignored on
+  their side, contents relayed via chat). `model_version` filtered to
+  `'TRH_v3.0_%'` so a future retrain can't mix two risk scales into one
+  series (same guard class as `ai1a_shadow`'s existing one).
+- Frontend: `RiskChart` reused as-is (already built for "caller owns range
+  fetching"). New `useTurbineRiskHistory` hook factors out the
+  range-selector + bucketing fetch logic instead of copying ai1a's
+  ~50-line inline version a second time into `prediction.jsx`. Distinct
+  color (teal `#0d9488` vs ai1a's blue) per explicit user request so the
+  two charts are easy to tell apart. `footnote` prop carries the three
+  caveats from the contract doc verbatim in spirit: ~37-day training
+  window, dryness/NCG being AI2 outputs (not sensors, ~99%
+  reconstructible from P/T/TDS), direction_flag only covering
+  TDS/dryness/NCG.
+- Verified: `vite build` + `eslint` clean, backend `node --check` clean.
+  **Could not hit the live table directly** (no DB access from this
+  session) -- query construction mirrors the already-proven `ai1a` pattern
+  exactly, just different table/columns.
+- Pushed `main` (`1cf2790`). **NOT deployed** -- bundled with the 0%
+  reference line for tomorrow's deploy, per the user's request relayed via
+  Master Session.
