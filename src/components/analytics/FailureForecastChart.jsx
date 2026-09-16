@@ -110,6 +110,35 @@ const insertCycleGaps = (points) => {
   return out;
 };
 
+// Distinct from MODEL_COLORS/PLAN_REFERENCE_COLOR -- marks an EVENT
+// (an overhaul happened here), never a data series or a literature
+// reference, so it needs to read as neither of those at a glance.
+const OVERHAUL_CONNECTOR_COLOR = '#dc2626';
+
+// Builds a separate connector series marking each recorded overhaul
+// (cycle_index change) in a chronologically-sorted points array -- the two
+// REAL values on either side of the boundary (old cycle's last point, new
+// cycle's first point, usually ~0% and ~100%), joined by their own short
+// line segment. Requested by the user 2026-09-16: insertCycleGaps
+// correctly leaves the main data line broken there (connecting it would
+// draw "damage decreasing" that never happened), but a bare gap on its own
+// read as "data missing" rather than "an overhaul happened here" -- this
+// is a pure event marker, rendered as its own series (distinct color/
+// width, see OVERHAUL_CONNECTOR_COLOR) so it can never be mistaken for the
+// real SoH curve.
+const buildCycleBoundaryConnectors = (points) => {
+  const out = [];
+  points.forEach((p, i) => {
+    if (i === 0) return;
+    const prev = points[i - 1];
+    if (p.cycleIndex === prev.cycleIndex) return;
+    if (out.length > 0) out.push({ x: prev.x - 1, y: null }); // isolate from an earlier connector
+    out.push({ x: prev.x, y: prev.y });
+    out.push({ x: p.x, y: p.y });
+  });
+  return out;
+};
+
 /**
  * Per-model status card, mirroring the AI-side interactive demo's
  * LifetimeStatusPanel.tsx (both models shown side by side, never one
@@ -300,22 +329,44 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
     return Array.from(set).sort();
   }, [byModel, historyByModel]);
 
-  // Solid "historis" points, COD -> today, one series per model. Broken
-  // into cycle-separated segments via insertCycleGaps -- history can
-  // already span more than one recorded overhaul cycle (cycle_index 0, 1,
-  // ...), and none of them connect to the next.
-  const historicalSeriesData = useMemo(() => {
+  // Raw historical points (cycleIndex kept), COD -> today, one array per
+  // model -- shared source for both the main "historis" line
+  // (insertCycleGaps) and the overhaul-boundary connector series below, so
+  // the two never disagree about where a cycle actually changed.
+  const historicalRawPoints = useMemo(() => {
     const out = {};
     models.forEach((model) => {
-      const points = (historyByModel[model] || []).map((r) => ({
+      out[model] = (historyByModel[model] || []).map((r) => ({
         x: new Date(r.point_date).getTime(),
         y: Number((100 - Number(r.failure_pct)).toFixed(3)),
         cycleIndex: Number(r.cycle_index ?? 0)
       }));
-      out[model] = insertCycleGaps(points);
     });
     return out;
   }, [historyByModel, models]);
+
+  // Solid "historis" line, broken into cycle-separated segments via
+  // insertCycleGaps -- history can already span more than one recorded
+  // overhaul cycle (cycle_index 0, 1, ...), and none of them connect to
+  // the next.
+  const historicalSeriesData = useMemo(() => {
+    const out = {};
+    models.forEach((model) => {
+      out[model] = insertCycleGaps(historicalRawPoints[model] || []);
+    });
+    return out;
+  }, [historicalRawPoints, models]);
+
+  // Visual-only event marker at each recorded overhaul -- see
+  // buildCycleBoundaryConnectors's own doc comment. Rendered as its own
+  // series (OVERHAUL_CONNECTOR_COLOR), never merged into historicalSeriesData.
+  const overhaulConnectors = useMemo(() => {
+    const out = {};
+    models.forEach((model) => {
+      out[model] = buildCycleBoundaryConnectors(historicalRawPoints[model] || []);
+    });
+    return out;
+  }, [historicalRawPoints, models]);
 
   // How far past "today" the `as_is` projection is actually PLOTTED --
   // NOT a data clamp (the backend keeps computing/returning the full
@@ -362,28 +413,33 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
     return out;
   }, [byModel, models, historicalSeriesData, projectionDisplayCutoffMs]);
 
+  // [historis, proyeksi, overhaul-connector] per model -- keep this triple
+  // in sync with the three styling arrays right below, they're positional.
   const series = useMemo(
     () =>
       models.flatMap((model) => {
         const label = MODEL_LABELS[model] || model;
         return [
           { name: `SoH – ${label} (historis)`, data: historicalSeriesData[model] || [] },
-          { name: `SoH – ${label} (proyeksi)`, data: projectionSeriesData[model] || [] }
+          { name: `SoH – ${label} (proyeksi)`, data: projectionSeriesData[model] || [] },
+          { name: 'Overhaul tercatat', data: overhaulConnectors[model] || [] }
         ];
       }),
-    [models, historicalSeriesData, projectionSeriesData]
+    [models, historicalSeriesData, projectionSeriesData, overhaulConnectors]
   );
 
-  // Per-series styling, in the same [historis, proyeksi] pairing as
-  // `series` above -- same color both halves, dashed only for proyeksi
-  // (same "solid observed + dashed predicted" convention as the TDS AI2
-  // overlay in RealTimeDataChart.jsx).
+  // Per-series styling, in the same [historis, proyeksi, connector] triple
+  // as `series` above -- same model color both data halves, dashed only for
+  // proyeksi (same "solid observed + dashed predicted" convention as the
+  // TDS AI2 overlay in RealTimeDataChart.jsx); the connector always gets
+  // OVERHAUL_CONNECTOR_COLOR regardless of model, since it marks an event,
+  // not model output.
   const seriesColors = useMemo(
-    () => models.flatMap((model) => [MODEL_COLORS[model] || '#9ca3af', MODEL_COLORS[model] || '#9ca3af']),
+    () => models.flatMap((model) => [MODEL_COLORS[model] || '#9ca3af', MODEL_COLORS[model] || '#9ca3af', OVERHAUL_CONNECTOR_COLOR]),
     [models]
   );
-  const seriesDashArray = useMemo(() => models.flatMap(() => [0, 6]), [models]);
-  const seriesStrokeWidth = useMemo(() => models.flatMap(() => [3, 2]), [models]);
+  const seriesDashArray = useMemo(() => models.flatMap(() => [0, 6, 0]), [models]);
+  const seriesStrokeWidth = useMemo(() => models.flatMap(() => [3, 2, 4]), [models]);
 
   // Vertical dashed line per model at its own eta_date, when the horizon
   // returned actually reaches it AND it falls within the displayed window
