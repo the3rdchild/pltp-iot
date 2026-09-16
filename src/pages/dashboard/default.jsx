@@ -190,7 +190,7 @@ function MobileLayout({
               )}
               {!usingAi1a && (
                 <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center', mt: 0.5 }}>
-                  Data AI belum tersedia — estimasi dari ambang sensor
+                  Data Overall Risk History belum tersedia — estimasi dari ambang sensor
                 </Typography>
               )}
             </Box>
@@ -539,7 +539,7 @@ function DesktopLayout({
                   )}
                   {!usingAi1a && (
                     <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center', mt: 0.5, fontSize: '0.65rem', lineHeight: 1.2 }}>
-                      Data AI belum tersedia — estimasi dari ambang sensor
+                      Data Overall Risk History belum tersedia — estimasi dari ambang sensor
                     </Typography>
                   )}
                 </Box>

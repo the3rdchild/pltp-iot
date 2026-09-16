@@ -244,7 +244,7 @@ const AI1 = () => {
       {/* Header */}
       <Box sx={{ mb: 4, textAlign: 'center' }}>
         <Typography variant="h3" gutterBottom sx={{ fontWeight: 700, color: '#1e293b' }}>
-          AI #1: Risk Prediction System
+          Overall Risk History
         </Typography>
         <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 800, mx: 'auto' }}>
           Sistem prediksi risiko kerusakan turbin menggunakan <strong>Random Forest</strong> untuk analisis real-time 

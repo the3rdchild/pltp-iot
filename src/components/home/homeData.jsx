@@ -157,18 +157,18 @@ export const samplingCards = [
 export const aiCards = [
   {
     image: drynessImage,
-    alt: 'AI1 Anomaly Detection',
-    title: 'AI1 - Prediksi Anomali & Status Turbin',
+    alt: 'Overall Risk History Anomaly Detection',
+    title: 'Overall Risk History - Prediksi Anomali & Status Turbin',
     description:
-      'Sistem AI1 menganalisis 12 parameter operasional secara real-time untuk mendeteksi anomali dan memprediksi risiko kerusakan turbin. AI memberikan status kondisi (Low/Medium/High) dan peringatan dini untuk tindakan preventif.',
+      'Sistem Overall Risk History menganalisis 12 parameter operasional secara real-time untuk mendeteksi anomali dan memprediksi risiko kerusakan turbin. AI memberikan status kondisi (Low/Medium/High) dan peringatan dini untuk tindakan preventif.',
     href: '/artikel-AI1'
   },
   {
     image: ncgImage,
-    alt: 'AI2 Virtual Sensor',
-    title: 'AI2 - Virtual Sensor Dryness & NCG',
+    alt: 'Dryness & NCG Prediction Virtual Sensor',
+    title: 'Dryness & NCG Prediction - Virtual Sensor Kualitas Uap',
     description:
-      'AI2 berfungsi sebagai virtual sensor yang memprediksi nilai dryness fraction dan NCG content tanpa pengambilan sampel langsung. Teknologi ini mengurangi biaya operasional sambil tetap menjaga akurasi monitoring.',
+      'Dryness & NCG Prediction berfungsi sebagai virtual sensor yang memprediksi nilai dryness fraction dan NCG content tanpa pengambilan sampel langsung. Teknologi ini mengurangi biaya operasional sambil tetap menjaga akurasi monitoring.',
     href: '/artikel-AI2'
   }
 ];

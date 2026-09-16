@@ -258,7 +258,7 @@ export default function ArtikelAI2() {
             textShadow: '2px 2px 4px rgba(0,0,0,0.2)',
             lineHeight: '1.2'
           }}>
-            AI2: LSTM Virtual Sensor untuk Dryness & NCG
+            Dryness & NCG Prediction: LSTM Virtual Sensor
           </h1>
           <p style={{
             fontSize: '20px',
@@ -293,7 +293,7 @@ export default function ArtikelAI2() {
               marginBottom: '15px',
               textAlign: 'justify'
             }}>
-              AI2 adalah <strong>virtual sensor</strong> berbasis LSTM (Long Short-Term Memory) neural network yang 
+              Dryness & NCG Prediction adalah <strong>virtual sensor</strong> berbasis LSTM (Long Short-Term Memory) neural network yang
               memprediksi <strong>dryness fraction</strong> dan <strong>NCG (Non-Condensible Gas) content</strong> 
               secara real-time tanpa memerlukan sampling manual. Sistem ini tidak hanya predict nilai saat ini, 
               tapi juga <strong>forecast 30 hari ke depan</strong> dengan uncertainty quantification.<Ref num={1} />
@@ -313,7 +313,7 @@ export default function ArtikelAI2() {
                 margin: 0,
                 fontWeight: '500'
               }}>
-                <strong>🎯 Output AI2:</strong><br/>
+                <strong>🎯 Output Dryness & NCG Prediction:</strong><br/>
                 • <strong>Current Prediction:</strong> Dryness fraction (90-100%) dan NCG (3-15 wt%) untuk timestep sekarang<br/>
                 • <strong>30-Day Forecast:</strong> Prediksi harian untuk 30 hari ke depan dengan confidence interval<br/>
                 • <strong>Trend Analysis:</strong> Apakah dryness turun atau NCG naik dalam forecasting horizon<br/>
@@ -370,7 +370,7 @@ export default function ArtikelAI2() {
               textAlign: 'justify'
             }}>
               Dengan 1 sample per bulan, engineer hanya punya 12 data points per tahun. Ini insufficient untuk 
-              monitoring continuous process. <strong>AI2 solve ini dengan real-time prediction setiap 5 detik</strong> 
+              monitoring continuous process. <strong>Dryness & NCG Prediction solve ini dengan real-time prediction setiap 5 detik</strong>
               (12x lebih banyak data dibanding manual sampling dalam 1 hari saja!).
             </p>
           </section>
@@ -539,7 +539,7 @@ export default function ArtikelAI2() {
               marginBottom: '15px',
               textAlign: 'justify'
             }}>
-              Model AI2 menggunakan stacked LSTM architecture dengan 2 layers. Setiap layer punya 128 hidden units 
+              Model Dryness & NCG Prediction menggunakan stacked LSTM architecture dengan 2 layers. Setiap layer punya 128 hidden units
               (neurons). Dropout regularization (0.2) diterapkan untuk prevent overfitting.<Ref num={5} />
             </p>
 
@@ -1425,14 +1425,14 @@ model.load_state_dict(torch.load('best_model.pth'))`}</pre>
               marginBottom: '20px'
             }}>
               <h4 style={{ fontSize: '18px', fontWeight: '700', color: '#1a2642', marginBottom: '12px' }}>
-                📊 Comparison: AI2 vs Manual Sampling
+                📊 Comparison: Dryness & NCG Prediction vs Manual Sampling
               </h4>
               <table style={{ width: '100%', fontSize: '14px', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#e2e8f0' }}>
                     <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #cbd5e0' }}>Aspect</th>
                     <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #cbd5e0' }}>Manual Sampling</th>
-                    <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #cbd5e0' }}>AI2 Virtual Sensor</th>
+                    <th style={{ padding: '10px', textAlign: 'left', border: '1px solid #cbd5e0' }}>Dryness & NCG Prediction</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1485,7 +1485,7 @@ model.load_state_dict(torch.load('best_model.pth'))`}</pre>
               }}>
                 💰 <strong>Cost Savings Analysis:</strong><br/>
                 • Manual sampling: 12x per year × Rp 7 juta = Rp 84 juta/year<br/>
-                • AI2 operational cost: ~Rp 5 juta/year (cloud computing + maintenance)<br/>
+                • Dryness & NCG Prediction operational cost: ~Rp 5 juta/year (cloud computing + maintenance)<br/>
                 • <strong>Net savings: Rp 79 juta/year per turbin</strong><br/>
                 • Additional benefit: Real-time monitoring enables faster response → Prevented 2 unplanned shutdowns 
                 in 2024 (estimated savings Rp 5 miliar)
@@ -1513,7 +1513,7 @@ model.load_state_dict(torch.load('best_model.pth'))`}</pre>
               marginBottom: '15px',
               textAlign: 'justify'
             }}>
-              AI2 successfully mengimplementasikan virtual sensor berbasis LSTM yang menggantikan expensive manual 
+              Dryness & NCG Prediction successfully mengimplementasikan virtual sensor berbasis LSTM yang menggantikan expensive manual
               sampling dengan real-time prediction yang accurate dan cost-effective. System tidak hanya predict 
               current values tapi juga forecast 30 hari ke depan dengan uncertainty quantification.
             </p>
@@ -1565,9 +1565,9 @@ model.load_state_dict(torch.load('best_model.pth'))`}</pre>
                 color: '#1a2642',
                 margin: 0
               }}>
-                <strong>🚀 Integration dengan AI1:</strong><br/>
-                AI2 virtual sensor bekerja secara complementary dengan AI1 risk prediction. Forecasted dryness 
-                dan NCG values dari AI2 bisa digunakan sebagai additional input untuk AI1, meningkatkan accuracy 
+                <strong>🚀 Integration dengan Overall Risk History:</strong><br/>
+                Dryness & NCG Prediction virtual sensor bekerja secara complementary dengan Overall Risk History risk prediction. Forecasted dryness
+                dan NCG values dari Dryness & NCG Prediction bisa digunakan sebagai additional input untuk Overall Risk History, meningkatkan accuracy
                 risk prediction dengan look-ahead capability. Combined system memberikan comprehensive predictive 
                 maintenance solution untuk PLTP Kamojang.
               </p>
@@ -1595,7 +1595,7 @@ model.load_state_dict(torch.load('best_model.pth'))`}</pre>
               color: '#4a5568'
             }}>
               <p id="ref-1" style={{ marginBottom: '12px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [1] "LSTMVirtualSensor Architecture", Pertamina Geothermal Energy - AI2 Model Specifications, 2024.
+                [1] "LSTMVirtualSensor Architecture", Pertamina Geothermal Energy - Dryness & NCG Prediction Model Specifications, 2024.
               </p>
 
               <p id="ref-2" style={{ marginBottom: '12px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>

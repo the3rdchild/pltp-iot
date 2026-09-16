@@ -438,7 +438,7 @@ const AIAnalytics = () => {
       {/* ---------------- chart 1: AI1a direction-adjusted ---------------- */}
       <Box sx={{ mb: 3 }}>
         <RiskChart
-          title="Adjusted Risk History"
+          title="Overall Risk History"
           subtitle="Risk percentage per window waktu dari anomaly detection, sudah dikoreksi arah proses - bukan angka mentah"
           badge="ADJUSTED"
           badgeColor="warning"
@@ -459,7 +459,7 @@ const AIAnalytics = () => {
       <Box sx={{ mb: 3 }}>
         <RiskChart
           title="Turbine Risk History"
-          subtitle="Risk score dari 6 parameter kualitas uap (Isolation Forest terpisah dari AI1a), sudah dikoreksi arah proses - bukan angka mentah"
+          subtitle="Risk score dari 6 parameter kualitas uap (Isolation Forest terpisah dari Overall Risk History), sudah dikoreksi arah proses - bukan angka mentah"
           badge="ADJUSTED"
           badgeColor="warning"
           series={turbineRiskChart.series}
@@ -472,7 +472,7 @@ const AIAnalytics = () => {
           chartType="area"
           yAxisMax={100}
           emptyMessage="Belum ada data turbine risk history"
-          footnote="Model terpisah dari AI1a -- 6 parameter kualitas uap (TDS/pressure/temperature/flow_rate dari sensor asli, dryness & NCG dari output AI2, bukan sensor langsung). Keterbatasan: window latih baru ~37 hari (jauh lebih pendek dari AI1a); dryness & NCG hampir redundan dengan pressure/temperature/TDS (R² ~0,99), jadi menambah sangat sedikit informasi baru; anotasi arah proses cuma punya aturan untuk TDS/dryness/NCG -- pressure/temperature/flow_rate sengaja tanpa verdict baik/buruk."
+          footnote="Model terpisah dari Overall Risk History -- 6 parameter kualitas uap (TDS/pressure/temperature/flow_rate dari sensor asli, dryness dari output Dryness Prediction & NCG dari output NCG Prediction, bukan sensor langsung). Keterbatasan: window latih baru ~37 hari (jauh lebih pendek dari Overall Risk History); dryness & NCG hampir redundan dengan pressure/temperature/TDS (R² ~0,99), jadi menambah sangat sedikit informasi baru; anotasi arah proses cuma punya aturan untuk TDS/dryness/NCG -- pressure/temperature/flow_rate sengaja tanpa verdict baik/buruk."
         />
       </Box>
 
