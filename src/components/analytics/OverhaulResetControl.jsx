@@ -9,16 +9,23 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  IconButton,
   Stack,
   TextField,
+  Tooltip,
   Typography
 } from '@mui/material';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import UndoIcon from '@mui/icons-material/Undo';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import PropTypes from 'prop-types';
 import MainCard from '../MainCard';
 import { getCurrentUser } from '../../services/authService';
-import { createFailureForecastOverhaulEvent, undoFailureForecastOverhaulEvent } from '../../utils/api';
+import {
+  createFailureForecastOverhaulEvent,
+  undoFailureForecastOverhaulEvent,
+  deleteFailureForecastOverhaulEvent
+} from '../../utils/api';
 import { COD_DATE, PLANNED_CYCLE_YEARS } from '../../utils/failureForecastCalibration';
 
 // COD_DATE is enforced authoritatively by the backend (OVERHAUL_COD_DATE in
@@ -51,10 +58,13 @@ const yearsSince = (value) => (Date.now() - new Date(value).getTime()) / (365.25
 const OverhaulResetControl = ({ events = [], loading = false, onChanged }) => {
   const isAdmin = getCurrentUser()?.role === 'admin';
 
-  const [dialog, setDialog] = useState(null); // null | 'reset' | 'undo'
+  const [dialog, setDialog] = useState(null); // null | 'reset' | 'undo' | 'delete'
   const [effectiveDate, setEffectiveDate] = useState(todayIsoDate());
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
+  // Which row 'delete' targets -- unlike undo (always "the latest active"),
+  // hard-delete is per-row, so the dialog needs to remember which one.
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // Newest event without undone_at -- same "latest active wins" rule the
   // AI-side worker itself uses when picking the anchor.
@@ -74,8 +84,17 @@ const OverhaulResetControl = ({ events = [], loading = false, onChanged }) => {
     setDialog('undo');
   };
 
+  const openDelete = (event) => {
+    setFormError(null);
+    setDeleteTarget(event);
+    setDialog('delete');
+  };
+
   const closeDialog = () => {
-    if (!submitting) setDialog(null);
+    if (!submitting) {
+      setDialog(null);
+      setDeleteTarget(null);
+    }
   };
 
   const handleConfirmReset = async () => {
@@ -113,6 +132,26 @@ const OverhaulResetControl = ({ events = [], loading = false, onChanged }) => {
       onChanged?.();
     } catch (err) {
       setFormError(err.response?.data?.message || err.message || 'Gagal membatalkan event overhaul');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setFormError(null);
+    setSubmitting(true);
+    try {
+      await deleteFailureForecastOverhaulEvent(deleteTarget.id);
+      setDialog(null);
+      setDeleteTarget(null);
+      onChanged?.();
+    } catch (err) {
+      // Backend refuses with 409 if this row somehow became active again
+      // between the list loading and the click (e.g. an undo got reverted
+      // some other way) -- surfaced as-is rather than assumed to be a
+      // network error.
+      setFormError(err.response?.data?.message || err.message || 'Gagal menghapus event overhaul');
     } finally {
       setSubmitting(false);
     }
@@ -168,6 +207,16 @@ const OverhaulResetControl = ({ events = [], loading = false, onChanged }) => {
                   <Typography variant="caption" color="text.secondary">
                     (dibatalkan {fmtDate(e.undone_at)})
                   </Typography>
+                )}
+                {/* Hard-delete only ever offered for an already-undone row --
+                    an Aktif row has no delete affordance at all, it must be
+                    undone first (separate, already-audited step). */}
+                {isAdmin && e.undone_at && (
+                  <Tooltip title="Hapus permanen (event ini sudah dibatalkan)">
+                    <IconButton size="small" onClick={() => openDelete(e)} disabled={loading}>
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
                 )}
               </Stack>
             ))}
@@ -227,6 +276,30 @@ const OverhaulResetControl = ({ events = [], loading = false, onChanged }) => {
           </Button>
           <Button variant="contained" color="warning" onClick={handleConfirmUndo} disabled={submitting || !activeEvent}>
             {submitting ? 'Memproses...' : 'Ya, Batalkan'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={dialog === 'delete'} onClose={closeDialog}>
+        <DialogTitle>Hapus Permanen Event Overhaul?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {deleteTarget
+              ? `Event overhaul ${fmtDate(deleteTarget.created_at)} (status: dibatalkan) akan dihapus PERMANEN dari riwayat -- tidak bisa dikembalikan. Cuma untuk beresin entri test/salah input, bukan buat event asli.`
+              : 'Tidak ada event yang dipilih.'}
+          </DialogContentText>
+          {formError && (
+            <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1 }}>
+              {formError}
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDialog} disabled={submitting}>
+            Batal
+          </Button>
+          <Button variant="contained" color="error" onClick={handleConfirmDelete} disabled={submitting || !deleteTarget}>
+            {submitting ? 'Menghapus...' : 'Ya, Hapus Permanen'}
           </Button>
         </DialogActions>
       </Dialog>

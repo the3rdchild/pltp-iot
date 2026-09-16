@@ -20,7 +20,8 @@ const {
   getFailureForecastHistory,
   getFailureForecastOverhaulEvents,
   createFailureForecastOverhaulEvent,
-  undoFailureForecastOverhaulEvent
+  undoFailureForecastOverhaulEvent,
+  deleteFailureForecastOverhaulEvent
 } = require('../controllers/externalController');
 
 // Import API Key authentication middleware
@@ -101,6 +102,11 @@ router.post('/failure-forecast/overhaul-reset', authenticateToken, requireRole('
 // POST /api/external/failure-forecast/overhaul-undo - Soft-delete (undo) the
 // most recently recorded active overhaul event. Admin-only, same as above.
 router.post('/failure-forecast/overhaul-undo', authenticateToken, requireRole('admin'), undoFailureForecastOverhaulEvent);
+
+// DELETE /api/external/failure-forecast/overhaul/:id - Permanently remove an
+// ALREADY-UNDONE overhaul event (test/mistaken-entry cleanup). Admin-only.
+// Refuses (409) if the event is still active -- undo it first, then delete.
+router.delete('/failure-forecast/overhaul/:id', authenticateToken, requireRole('admin'), deleteFailureForecastOverhaulEvent);
 
 // Testing endpoints - protected with API Key for security
 router.post('/test', validateApiKey, testConnection); // Test connection and insert sample data

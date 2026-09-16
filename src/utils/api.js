@@ -397,6 +397,24 @@ export const undoFailureForecastOverhaulEvent = async () => {
 };
 
 /**
+ * Permanently remove an ALREADY-UNDONE overhaul event (test/mistaken-entry
+ * cleanup). The backend refuses this for a still-active event (undo it
+ * first) -- this call can fail with that 409 by design, not just on a
+ * network error. Admin-only on the backend, same as above.
+ *
+ * @param {string} id
+ */
+export const deleteFailureForecastOverhaulEvent = async (id) => {
+  try {
+    const response = await apiClient.delete(`/external/failure-forecast/overhaul/${encodeURIComponent(id)}`);
+    return response;
+  } catch (error) {
+    console.error('Error deleting overhaul event:', error);
+    throw error;
+  }
+};
+
+/**
  * Generic API call builder
  * Use this for custom endpoints not covered above
  *
@@ -467,6 +485,7 @@ export default {
   getFlowPageData,
   createFailureForecastOverhaulEvent,
   undoFailureForecastOverhaulEvent,
+  deleteFailureForecastOverhaulEvent,
   customAPICall,
   getAPIConfig,
   getAvailableMetrics,

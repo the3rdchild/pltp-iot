@@ -1655,6 +1655,50 @@ const undoFailureForecastOverhaulEvent = async (req, res) => {
   }
 };
 
+// Permanently remove an ALREADY-UNDONE overhaul event -- cleanup for
+// test/mistaken entries, requested by the user 2026-09-16 after a test
+// reset+undo left a "Dibatalkan" row with no way to clear it (only
+// undo/soft-delete existed until now).
+//
+// Deliberately narrower than a generic DELETE: an ACTIVE event
+// (undone_at IS NULL) can NEVER be hard-deleted directly here, even by an
+// admin -- it must be undone first (a separate, already-audited step) and
+// only THEN hard-deleted. This preserves the append-only guarantee for
+// real/active data (the shared table's own soft-delete contract, see
+// getFailureForecastOverhaulEvents above) while still giving a way to
+// clear genuine test noise -- two deliberate steps for two different kinds
+// of "this shouldn't be here" (wrong entry -> undo it; already-undone
+// clutter -> hard-delete it).
+const deleteFailureForecastOverhaulEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const existing = await query('SELECT undone_at FROM failure_forecast_overhaul_event WHERE id = $1', [id]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Overhaul event not found' });
+    }
+    if (existing.rows[0].undone_at === null) {
+      return res.status(409).json({
+        success: false,
+        message: 'Cannot hard-delete an ACTIVE overhaul event -- undo it first, then delete'
+      });
+    }
+
+    await query('DELETE FROM failure_forecast_overhaul_event WHERE id = $1', [id]);
+
+    console.log(`✅ Overhaul event hard-deleted by user ${req.user?.userId ?? 'unknown'}: id=${id}`);
+
+    res.json({ success: true, data: { id } });
+  } catch (error) {
+    console.error('❌ Error deleting failure forecast overhaul event:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete overhaul event',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   fetchHoneywellData,
   receiveExternalData,
@@ -1675,5 +1719,6 @@ module.exports = {
   getFailureForecastHistory,
   getFailureForecastOverhaulEvents,
   createFailureForecastOverhaulEvent,
-  undoFailureForecastOverhaulEvent
+  undoFailureForecastOverhaulEvent,
+  deleteFailureForecastOverhaulEvent
 };
