@@ -647,3 +647,17 @@ degrade safely and were left untouched.
   yet. Not blocked on anything else queued above; worth prioritizing
   since it also unblocks the master session's own severity-retirement
   deploy (they said they won't deploy that until this is fixed).
+- **Approved for immediate separate deploy** (master session, 2026-09-17)
+  -- ahead of the batch above, since it unblocks their own work. Deployed
+  via `git cherry-pick 3eb76de` on the VPS, NOT `git pull`, because
+  `d2ec47f` (the blocked zero-risk-counterfactual backend change) sits
+  BETWEEN the VPS's last deployed commit and this one in `main`'s history
+  -- a plain pull would have dragged that blocked commit along with it.
+  **Consequence for the next full batch deploy**: the VPS now has a local
+  commit (cherry-picked `3eb76de`, different hash, same diff) that
+  `origin/main`'s history doesn't contain verbatim -- a plain `git pull`
+  next time will likely NOT fast-forward cleanly. That next deploy needs
+  `git pull --rebase` (or a merge) instead of a bare `pull`, and should
+  double-check `src/pages/dashboard/default.jsx` doesn't end up
+  duplicated/conflicted. Flag this explicitly to whichever session runs
+  that deploy.
