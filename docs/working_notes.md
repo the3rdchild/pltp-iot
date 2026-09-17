@@ -612,3 +612,38 @@ the endpoint itself hasn't been deployed to the VPS yet (bundled for
 tomorrow's deploy per earlier notes). Cannot verify against live data
 until after that deploy; flagged back rather than left silently
 unaddressed.
+
+## Dashboard "Prediksi Resiko" false-"Ideal" bug (2026-09-17)
+
+Found by the master session investigating their own `ai1a.severity`
+retirement (goes NULL for every new row once their worker restarts --
+was quietly computed from an 8-days-stale AI1b forecast, retired
+alongside it). `dashboard/default.jsx`'s home-page "Prediksi Resiko" card
+read `ai1aLiveData.severity` straight into `getPredictionConfig`, whose
+`default:` case returned green "Ideal" for anything unrecognized --
+including `null`. Once severity goes NULL, the card would show "Ideal" in
+green while the real `risk_percentage` right underneath it could be high
+-- not a blank/degraded state, an actively WRONG reassuring one. Two
+other severity consumers (`prediction.jsx` subtitle, `component-overview/
+history.jsx` table column) were independently confirmed to already
+degrade safely and were left untouched.
+
+- **Fix, two parts**: (1) read `risk_label` instead of `severity` --
+  separate, unaffected column (4 tiers: normal/warning/high/critical,
+  confirmed against `AI_Pertasmart_V3/README.md` §6.2/6.3, which
+  explicitly documents this as the intended safe migration path). Added
+  the missing `'high'` case to `getPredictionConfig` (severity only had 3
+  tiers, risk_label has 4 -- `'high'` was falling through to the same bug).
+  (2) fixed the `default:` case itself to return a neutral "Tidak
+  diketahui" (gray) instead of a reassuring green "Ideal" -- defense in
+  depth against any other unexpected value in this field, not just this
+  one retirement.
+- Verified: `vite build` + `eslint` clean. Standalone script exercised all
+  4 `risk_label` values + null/undefined/an unrecognized string against
+  the fixed function -- confirmed none reach the old false-"Ideal" path.
+- Pushed `main` (`3eb76de`). **Backward-compatible, safe to deploy
+  independently** -- `risk_label` is already correctly populated today,
+  unaffected by whether the AI side's severity retirement has happened
+  yet. Not blocked on anything else queued above; worth prioritizing
+  since it also unblocks the master session's own severity-retirement
+  deploy (they said they won't deploy that until this is fixed).
