@@ -49,6 +49,13 @@ const PLAN_REFERENCE_COLOR = '#d97706';
 // than any of those other three kinds of annotation.
 const ZERO_LINE_COLOR = '#8b93a7';
 
+// Pink/rose -- distinct hue from every other color in this file (model
+// blue/violet, amber reference, red event marker, gray 0% scale line), so
+// this counterfactual can never be mistaken for real data, a literature
+// reference, or an event. Thin + semi-transparent (see seriesStrokeWidth/
+// tooltip below) since it's a hypothetical, not a measurement.
+const ZERO_RISK_COUNTERFACTUAL_COLOR = 'rgba(244, 114, 182, 0.55)';
+
 // Collision-aware stacking for xaxis annotation labels. ApexCharts has no
 // built-in overlap avoidance, and a fixed one-off "nudge this label up"
 // doesn't hold once an anchor moves -- exactly what happened when the
@@ -338,16 +345,30 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
   }, [byModel, historyByModel]);
 
   // Raw historical points (cycleIndex kept), COD -> today, one array per
-  // model -- shared source for both the main "historis" line
-  // (insertCycleGaps) and the overhaul-boundary connector series below, so
-  // the two never disagree about where a cycle actually changed.
+  // model -- shared source for the main "historis" line (insertCycleGaps),
+  // the overhaul-boundary connector series, and the zero-risk counterfactual
+  // series below, so none of them can disagree about where a cycle
+  // actually changed.
+  //
+  // zeroRiskY (added 2026-09-17): `zero_risk_failure_pct` is a closed-form
+  // counterfactual -- the curve if turbine_risk_history had read exactly
+  // 0% for the whole history, same age-in-cycle input as `failure_pct` on
+  // the same row, just the exp(-gamma) floor with no real risk trajectory
+  // added on top. NOT "uncorrected"/"before direction annotation" -- don't
+  // conflate with this file's raw/adjusted distinction, which is a
+  // different axis entirely. Schema-nullable and expected absent until
+  // the AI side's migration + worker restart land (see
+  // getFailureForecastHistory in externalController.js) -- `?? null`
+  // keeps this component from crashing on rows that don't have it yet;
+  // the series derived from it below simply comes out empty until then.
   const historicalRawPoints = useMemo(() => {
     const out = {};
     models.forEach((model) => {
       out[model] = (historyByModel[model] || []).map((r) => ({
         x: new Date(r.point_date).getTime(),
         y: Number((100 - Number(r.failure_pct)).toFixed(3)),
-        cycleIndex: Number(r.cycle_index ?? 0)
+        cycleIndex: Number(r.cycle_index ?? 0),
+        zeroRiskY: r.zero_risk_failure_pct != null ? Number((100 - Number(r.zero_risk_failure_pct)).toFixed(3)) : null
       }));
     });
     return out;
@@ -372,6 +393,26 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
     const out = {};
     models.forEach((model) => {
       out[model] = buildCycleBoundaryConnectors(historicalRawPoints[model] || []);
+    });
+    return out;
+  }, [historicalRawPoints, models]);
+
+  // Zero-risk counterfactual, HISTORY ONLY (never extended into
+  // projectionSeriesData -- the backend doesn't compute this for the
+  // forward projection, and inventing one here would misrepresent it as
+  // sourced data). Points missing zeroRiskY are dropped rather than
+  // plotted as 0 -- a patchy pre-migration response degrades to "line
+  // partially drawn", not "line drawn wrong". Still cycle-gapped like the
+  // real curve: `zero_risk_failure_pct` is computed from the same
+  // cycle-relative age input as `failure_pct`, so it resets at the same
+  // boundaries.
+  const zeroRiskCounterfactualSeriesData = useMemo(() => {
+    const out = {};
+    models.forEach((model) => {
+      const points = (historicalRawPoints[model] || [])
+        .filter((p) => p.zeroRiskY != null)
+        .map((p) => ({ x: p.x, y: p.zeroRiskY, cycleIndex: p.cycleIndex }));
+      out[model] = insertCycleGaps(points);
     });
     return out;
   }, [historicalRawPoints, models]);
@@ -421,8 +462,9 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
     return out;
   }, [byModel, models, historicalSeriesData, projectionDisplayCutoffMs]);
 
-  // [historis, proyeksi, overhaul-connector] per model -- keep this triple
-  // in sync with the three styling arrays right below, they're positional.
+  // [historis, proyeksi, overhaul-connector, zero-risk-counterfactual] per
+  // model -- keep this quadruple in sync with the three styling arrays
+  // right below, they're positional.
   const series = useMemo(
     () =>
       models.flatMap((model) => {
@@ -430,24 +472,35 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
         return [
           { name: `SoH – ${label} (historis)`, data: historicalSeriesData[model] || [] },
           { name: `SoH – ${label} (proyeksi)`, data: projectionSeriesData[model] || [] },
-          { name: 'Overhaul tercatat', data: overhaulConnectors[model] || [] }
+          { name: 'Overhaul tercatat', data: overhaulConnectors[model] || [] },
+          { name: `SoH – ${label} (hipotetis risk=0%)`, data: zeroRiskCounterfactualSeriesData[model] || [] }
         ];
       }),
-    [models, historicalSeriesData, projectionSeriesData, overhaulConnectors]
+    [models, historicalSeriesData, projectionSeriesData, overhaulConnectors, zeroRiskCounterfactualSeriesData]
   );
 
-  // Per-series styling, in the same [historis, proyeksi, connector] triple
-  // as `series` above -- same model color both data halves, dashed only for
-  // proyeksi (same "solid observed + dashed predicted" convention as the
-  // TDS AI2 overlay in RealTimeDataChart.jsx); the connector always gets
-  // OVERHAUL_CONNECTOR_COLOR regardless of model, since it marks an event,
-  // not model output.
+  // Per-series styling, in the same [historis, proyeksi, connector,
+  // zero-risk] quadruple as `series` above -- same model color both data
+  // halves, dashed only for proyeksi (same "solid observed + dashed
+  // predicted" convention as the TDS AI2 overlay in
+  // RealTimeDataChart.jsx); the connector always gets
+  // OVERHAUL_CONNECTOR_COLOR (marks an event, not model output); the
+  // zero-risk counterfactual always gets ZERO_RISK_COUNTERFACTUAL_COLOR
+  // (a hypothetical, not model output either), thin and semi-transparent
+  // so it reads as background context, never competing with the real
+  // curve for attention.
   const seriesColors = useMemo(
-    () => models.flatMap((model) => [MODEL_COLORS[model] || '#9ca3af', MODEL_COLORS[model] || '#9ca3af', OVERHAUL_CONNECTOR_COLOR]),
+    () =>
+      models.flatMap((model) => [
+        MODEL_COLORS[model] || '#9ca3af',
+        MODEL_COLORS[model] || '#9ca3af',
+        OVERHAUL_CONNECTOR_COLOR,
+        ZERO_RISK_COUNTERFACTUAL_COLOR
+      ]),
     [models]
   );
-  const seriesDashArray = useMemo(() => models.flatMap(() => [0, 6, 0]), [models]);
-  const seriesStrokeWidth = useMemo(() => models.flatMap(() => [3, 2, 4]), [models]);
+  const seriesDashArray = useMemo(() => models.flatMap(() => [0, 6, 0, 2]), [models]);
+  const seriesStrokeWidth = useMemo(() => models.flatMap(() => [3, 2, 4, 1.5]), [models]);
 
   // Vertical dashed line per model at its own eta_date, when the horizon
   // returned actually reaches it AND it falls within the displayed window
@@ -565,14 +618,18 @@ const FailureForecastChart = ({ rows = [], historyRows = [], loading = false }) 
   // expand, and only when the data actually goes there.
   const yAxisBounds = useMemo(() => {
     const values = models
-      .flatMap((model) => [...(historicalSeriesData[model] || []), ...(projectionSeriesData[model] || [])])
+      .flatMap((model) => [
+        ...(historicalSeriesData[model] || []),
+        ...(projectionSeriesData[model] || []),
+        ...(zeroRiskCounterfactualSeriesData[model] || [])
+      ])
       .map((p) => p.y)
       .filter((v) => v != null && Number.isFinite(v));
     const dataMin = values.length ? Math.min(...values) : 0;
     const min = Math.min(0, dataMin);
     const padding = min < 0 ? Math.abs(min) * 0.08 : 0;
     return { min: Math.floor(min - padding), max: 100 };
-  }, [models, historicalSeriesData, projectionSeriesData]);
+  }, [models, historicalSeriesData, projectionSeriesData, zeroRiskCounterfactualSeriesData]);
 
   // Contract §1.3: an overdue cycle (failure_pct > 100) is a real, expected
   // reading, not a bug -- but showing it bare risks reading as "the turbine

@@ -1605,11 +1605,24 @@ const getFailureForecastData = async (req, res) => {
 // append-only, even though "the past" sounds like it shouldn't change --
 // risk_ref drifts slowly as turbine_risk_history grows, so history is
 // recomputed every run to stay consistent with the projection).
+//
+// ⚠️ `zero_risk_failure_pct` (added 2026-09-17, migration PENDING on the
+// AI side as of this commit -- DO NOT DEPLOY until they confirm it's
+// live, or this query 500s on the missing column) is a counterfactual:
+// the closed-form curve if turbine_risk_history had read exactly 0% for
+// the whole history, aligned point-for-point with `failure_pct` on the
+// same row (same age-in-cycle input, just risk=0 instead of the real
+// trajectory). It's the mathematical floor from `exp(-gamma)` alone, not
+// "uncorrected"/"no direction annotation" -- don't conflate it with the
+// raw/adjusted distinction elsewhere in this file. Schema-nullable but
+// expected to always be populated once the AI side's worker restarts;
+// FE must tolerate it being absent until then (see
+// FailureForecastChart.jsx).
 const getFailureForecastHistory = async (req, res) => {
   try {
     const sql = `
       SELECT model, cycle_index, cycle_anchor, point_date, segment, failure_pct,
-             risk_ref, history_source, generated_at
+             zero_risk_failure_pct, risk_ref, history_source, generated_at
       FROM failure_forecast_history
       WHERE generated_at = (SELECT MAX(generated_at) FROM failure_forecast_history)
       ORDER BY model, cycle_index, point_date
