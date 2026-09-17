@@ -567,3 +567,48 @@ that clarification.**
   found.
 - Pushed `main` (`3539b6e`). **NOT deployed** -- bundled with the 0%
   reference line + Turbine Risk History chart for tomorrow's deploy.
+
+## Zero-risk counterfactual line on SoH history (2026-09-17)
+
+New second line on the SoH chart, **history only**: "what SoH would look
+like if `turbine_risk_history` had read exactly 0% the whole time" (the
+closed-form `exp(-gamma)` floor, no real risk trajectory added). NOT the
+raw/adjusted distinction used elsewhere in this file -- different axis of
+meaning entirely, don't conflate the two when touching this area again.
+
+- Backend: `getFailureForecastHistory` SELECTs the new
+  `zero_risk_failure_pct` column. **🚨 HARD BLOCKER, not just a bundling
+  preference like the other pending items above**: the AI side's
+  migration for this column is still pending their own review. Deploying
+  this specific commit (`d2ec47f`) before that migration lands will
+  **break `GET /api/external/failure-forecast/history` entirely** (missing-
+  column 500), not just leave the new line undrawn -- do NOT deploy this
+  ahead of that migration under any circumstance, unlike the other queued
+  items which are safe to deploy independently of each other.
+- Frontend: `FailureForecastChart.jsx`'s `historicalRawPoints` carries the
+  new `zeroRiskY` (tolerant of the column being absent via `?? null`);
+  `zeroRiskCounterfactualSeriesData` mirrors the real curve's cycle-gap
+  handling but is NEVER extended into the projection (backend doesn't
+  compute this counterfactual for the forward projection). New
+  `ZERO_RISK_COUNTERFACTUAL_COLOR` (semi-transparent pink/rose, thin
+  stroke) gives it its own visual identity distinct from every other
+  color already used on this chart.
+- Verified: `vite build` + `eslint` clean, backend `node --check` clean.
+  Standalone script confirmed both the pre-migration (column absent ->
+  empty series, no crash) and post-migration (populated -> correct
+  cycle-gap) cases before committing.
+- Pushed `main` (`d2ec47f`). **NOT deployed** -- see hard blocker above;
+  wait for explicit AI-side migration confirmation, not just "tomorrow's
+  batch" timing.
+
+## Turbine Risk History live-data verification -- still outstanding
+
+Flagged honestly when the chart was built (2026-09-16): this session has
+no direct DB access, so `GET /api/external/turbine-risk-history`'s query
+construction was verified by mirroring the already-proven `ai1a` pattern
+exactly, NOT by hitting real data. The master session asked for this
+verification as a priority item (2026-09-17) -- **still blocked**, because
+the endpoint itself hasn't been deployed to the VPS yet (bundled for
+tomorrow's deploy per earlier notes). Cannot verify against live data
+until after that deploy; flagged back rather than left silently
+unaddressed.
