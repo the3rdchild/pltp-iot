@@ -33,7 +33,19 @@ export default defineConfig(({ mode }) => {
     },
     preview: {
       open: true,
-      host: true
+      host: true,
+      // Tunnel (cloudflared/ngrok) mengirim Host header asing; tanpa ini Vite 6
+      // membalas "Blocked request. This host is not allowed."
+      allowedHosts: ['.trycloudflare.com', '.ngrok-free.app', '.ts.net'],
+      // `preview` tidak mewarisi server.proxy, padahal apiConfig.json memakai
+      // baseURL relatif '/api'. Default ke API produksi supaya preview build
+      // menampilkan data nyata; override dengan VITE_PROXY_TARGET untuk backend lokal.
+      proxy: {
+        '/api': {
+          target: process.env.VITE_PROXY_TARGET || env.VITE_PROXY_TARGET || 'https://pertasmart.unpad.ac.id',
+          changeOrigin: true
+        }
+      }
     },
     define: {
       global: 'window'

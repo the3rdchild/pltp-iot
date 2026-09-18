@@ -10,8 +10,8 @@
   },
   "scripts": {
     "start": "vite",
-    "build": "vite build",
-    "build-stage": "env-cmd -f .env.qa vite build",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 vite build",
+    "build-stage": "NODE_OPTIONS=--max-old-space-size=4096 env-cmd -f .env.qa vite build",
     "preview": "vite preview",
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
     "lint:fix": "eslint --fix \"src/**/*.{js,jsx,ts,tsx}\"",
