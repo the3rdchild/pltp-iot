@@ -3,6 +3,7 @@ import { lazy } from 'react';
 
 // layout dan halaman
 import DashboardLayout from 'layout/Dashboard';
+import RootLayout from 'layout/Root';
 import AuthLayout from 'layout/Auth';
 import DashboardDefault from 'pages/dashboard/default';
 import History from 'pages/component-overview/history';
@@ -55,301 +56,308 @@ const LoginPage = Loadable(lazy(() => import('pages/auth/Login')));
 
 const router = createBrowserRouter([
   {
-    path: '/',
-    element: <HomePage />
-  },
-  {
-    path: '/about',
-    element: <AboutPage />
-  },
-  {
-    path: '/login',
-    element: <AuthLayout />,
+    // Pathless layout route: matches nothing itself, it just puts every
+    // route below it inside RootLayout so scroll handling is applied once.
+    element: <RootLayout />,
     children: [
       {
-        index: true,
-        element: <LoginPage />
-      }
-    ]
-  },
-  // No /register: accounts are provisioned by hand in the database. Anyone
-  // arriving at the old URL gets the login form rather than a dead route.
-  {
-    path: '/register',
-    element: <Navigate to="/login" replace />
-  },
-  {
-    path: '/dashboard',
-    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
-    children: [
-      {
-        index: true,
-        element: <DashboardDefault />
+        path: '/',
+        element: <HomePage />
       },
       {
-        path: 'typography',
-        element: <Typography />
+        path: '/about',
+        element: <AboutPage />
       },
       {
-        path: 'color',
-        element: <Color />
-      }
-    ]
-  },
-  //Analytics Pages
-  {
-    path: '/dryness',
-    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
-    children: [
+        path: '/login',
+        element: <AuthLayout />,
+        children: [
+          {
+            index: true,
+            element: <LoginPage />
+          }
+        ]
+      },
+      // No /register: accounts are provisioned by hand in the database. Anyone
+      // arriving at the old URL gets the login form rather than a dead route.
       {
-        index: true,
-        element: <Dryness />
-      }
-    ]
-  },
-  {
-    path: '/ncg',
-    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
-    children: [
-      {
-        index: true,
-        element: <NCG />
-      }
-    ]
-  },
-  {
-    path: '/tds',
-    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
-    children: [
-      {
-        index: true,
-        element: <TDS />
-      }
-    ]
-  },
-  {
-    path: '/ptf',
-    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
-    children: [
-      {
-        index: true,
-        element: <PTF />
-      }
-    ]
-  },
-  {
-    path: '/power',
-    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
-    children: [
-      {
-        index: true,
-        element: <Power />
-      }
-    ]
-  },
-  {
-    path: '/prediction',
-    element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
-    children: [
-      {
-        index: true,
-        element: <Prediction />
-      }
-    ]
-  },
-  // Admin Pages
-  //
-  // Grouped under one subtree so the privilege boundary is a single guard
-  // instead of three that have to be kept in agreement. The server enforces the
-  // same boundary independently (see backend middleware requireRole) -- this
-  // only decides what gets rendered.
-  {
-    path: '/admin',
-    element: (
-      // One login page; the role on the signed-in account decides what opens.
-      // A viewer reaching here gets AdminRequired rather than the pages.
-      <ProtectedRoute requireRole="admin">
-        <DashboardLayout />
-      </ProtectedRoute>
-    ),
-    children: [
-      {
-        index: true,
-        element: <Navigate to="/admin/configuration" replace />
+        path: '/register',
+        element: <Navigate to="/login" replace />
       },
       {
-        path: 'dataInput',
-        element: <DataInput />
+        path: '/dashboard',
+        element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
+        children: [
+          {
+            index: true,
+            element: <DashboardDefault />
+          },
+          {
+            path: 'typography',
+            element: <Typography />
+          },
+          {
+            path: 'color',
+            element: <Color />
+          }
+        ]
+      },
+      //Analytics Pages
+      {
+        path: '/dryness',
+        element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
+        children: [
+          {
+            index: true,
+            element: <Dryness />
+          }
+        ]
       },
       {
-        path: 'calibration',
-        element: <Calibration />
+        path: '/ncg',
+        element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
+        children: [
+          {
+            index: true,
+            element: <NCG />
+          }
+        ]
       },
       {
-        path: 'configuration',
-        element: <Configuration />
-      }
-    ]
-  },
-  // Old top-level URLs kept as redirects so existing bookmarks and any links
-  // already handed out keep working.
-  { path: '/dataInput', element: <Navigate to="/admin/dataInput" replace /> },
-  { path: '/calibration', element: <Navigate to="/admin/calibration" replace /> },
-  { path: '/configuration', element: <Navigate to="/admin/configuration" replace /> },
+        path: '/tds',
+        element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
+        children: [
+          {
+            index: true,
+            element: <TDS />
+          }
+        ]
+      },
+      {
+        path: '/ptf',
+        element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
+        children: [
+          {
+            index: true,
+            element: <PTF />
+          }
+        ]
+      },
+      {
+        path: '/power',
+        element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
+        children: [
+          {
+            index: true,
+            element: <Power />
+          }
+        ]
+      },
+      {
+        path: '/prediction',
+        element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
+        children: [
+          {
+            index: true,
+            element: <Prediction />
+          }
+        ]
+      },
+      // Admin Pages
+      //
+      // Grouped under one subtree so the privilege boundary is a single guard
+      // instead of three that have to be kept in agreement. The server enforces the
+      // same boundary independently (see backend middleware requireRole) -- this
+      // only decides what gets rendered.
+      {
+        path: '/admin',
+        element: (
+          // One login page; the role on the signed-in account decides what opens.
+          // A viewer reaching here gets AdminRequired rather than the pages.
+          <ProtectedRoute requireRole="admin">
+            <DashboardLayout />
+          </ProtectedRoute>
+        ),
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/admin/configuration" replace />
+          },
+          {
+            path: 'dataInput',
+            element: <DataInput />
+          },
+          {
+            path: 'calibration',
+            element: <Calibration />
+          },
+          {
+            path: 'configuration',
+            element: <Configuration />
+          }
+        ]
+      },
+      // Old top-level URLs kept as redirects so existing bookmarks and any links
+      // already handed out keep working.
+      { path: '/dataInput', element: <Navigate to="/admin/dataInput" replace /> },
+      { path: '/calibration', element: <Navigate to="/admin/calibration" replace /> },
+      { path: '/configuration', element: <Navigate to="/admin/configuration" replace /> },
 
-  //articles (public)
-  {
-    path:'/cara-kerja-pltp',
-    element: <CaraKerjaPLTP />
-  },
-  {
-    path:'/artikel-tds',
-    element: <TDSArticle />
-  },
-  {
-    path:'/artikel-dryness',
-    element: <DrynessFractionArticle />
-  },
-  {
-    path:'/artikel-ncg',
-    element: <NCGArticle />
-  },
-  // /misi-kami was a placeholder that only ever rendered "under construction".
-  // The About page now covers that ground, so the old URL points there rather
-  // than at an empty screen.
-  { path: '/misi-kami', element: <Navigate to="/about" replace /> },
-  {
-    path: '/unit-pemantauan',
-    element: <UnitPemantauan />
-  },
-  {
-    path:'/artikel-AI1',
-    element: <AnalisisAI1 />
-  },
-  {
-    path:'/artikel-AI2',
-    element: <AnalisisAI2 />
-  },
-  {
-    path:'/artikel-SamplingTDS',
-    element: <SamplingTDS />
-  },
-  {
-    path:'/artikel-SamplingDryness',
-    element: <SamplingDryness />
-  },
-  {
-    path:'/artikel-SamplingNCG',
-    element: <SamplingNCG />
-  },
+      //articles (public)
+      {
+        path:'/cara-kerja-pltp',
+        element: <CaraKerjaPLTP />
+      },
+      {
+        path:'/artikel-tds',
+        element: <TDSArticle />
+      },
+      {
+        path:'/artikel-dryness',
+        element: <DrynessFractionArticle />
+      },
+      {
+        path:'/artikel-ncg',
+        element: <NCGArticle />
+      },
+      // /misi-kami was a placeholder that only ever rendered "under construction".
+      // The About page now covers that ground, so the old URL points there rather
+      // than at an empty screen.
+      { path: '/misi-kami', element: <Navigate to="/about" replace /> },
+      {
+        path: '/unit-pemantauan',
+        element: <UnitPemantauan />
+      },
+      {
+        path:'/artikel-AI1',
+        element: <AnalisisAI1 />
+      },
+      {
+        path:'/artikel-AI2',
+        element: <AnalisisAI2 />
+      },
+      {
+        path:'/artikel-SamplingTDS',
+        element: <SamplingTDS />
+      },
+      {
+        path:'/artikel-SamplingDryness',
+        element: <SamplingDryness />
+      },
+      {
+        path:'/artikel-SamplingNCG',
+        element: <SamplingNCG />
+      },
 
-  // ==============================|| TEST ENVIRONMENT ROUTES ||============================== //
-  // Test environment with simulated data - mirrors all production routes under /test
-  {
-    path: '/test',
-    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
-    children: [
+      // ==============================|| TEST ENVIRONMENT ROUTES ||============================== //
+      // Test environment with simulated data - mirrors all production routes under /test
       {
-        index: true,
-        element: <Navigate to="/test/dashboard" replace />
+        path: '/test',
+        element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/test/dashboard" replace />
+          },
+          {
+            path: 'dashboard',
+            element: <DashboardDefault />
+          },
+          {
+            path: 'simulation',
+            element: <SimulationPage />
+          },
+          {
+            path: 'typography',
+            element: <Typography />
+          },
+          {
+            path: 'color',
+            element: <Color />
+          }
+        ]
+      },
+      // Test Analytics Pages
+      {
+        path: '/test/dryness',
+        element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+        children: [
+          {
+            index: true,
+            element: <Dryness />
+          }
+        ]
       },
       {
-        path: 'dashboard',
-        element: <DashboardDefault />
+        path: '/test/ncg',
+        element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+        children: [
+          {
+            index: true,
+            element: <NCG />
+          }
+        ]
       },
       {
-        path: 'simulation',
-        element: <SimulationPage />
+        path: '/test/tds',
+        element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+        children: [
+          {
+            index: true,
+            element: <TDS />
+          }
+        ]
       },
       {
-        path: 'typography',
-        element: <Typography />
+        path: '/test/ptf',
+        element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+        children: [
+          {
+            index: true,
+            element: <PTF />
+          }
+        ]
       },
       {
-        path: 'color',
-        element: <Color />
-      }
-    ]
-  },
-  // Test Analytics Pages
-  {
-    path: '/test/dryness',
-    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
-    children: [
-      {
-        index: true,
-        element: <Dryness />
-      }
-    ]
-  },
-  {
-    path: '/test/ncg',
-    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
-    children: [
-      {
-        index: true,
-        element: <NCG />
-      }
-    ]
-  },
-  {
-    path: '/test/tds',
-    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
-    children: [
-      {
-        index: true,
-        element: <TDS />
-      }
-    ]
-  },
-  {
-    path: '/test/ptf',
-    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
-    children: [
-      {
-        index: true,
-        element: <PTF />
-      }
-    ]
-  },
-  {
-    path: '/test/prediction',
-    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
-    children: [
-      {
-        index: true,
-        element: <Prediction />
-      }
-    ]
-  },
-  // Test Admin Pages -- mirrors /admin so the sandbox keeps matching production
-  // URL for URL. No guard here on purpose: /test runs entirely on simulated
-  // data from TestDataProvider and never touches the real API.
-  {
-    path: '/test/admin',
-    element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
-    children: [
-      {
-        index: true,
-        element: <Navigate to="/test/admin/configuration" replace />
+        path: '/test/prediction',
+        element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+        children: [
+          {
+            index: true,
+            element: <Prediction />
+          }
+        ]
       },
+      // Test Admin Pages -- mirrors /admin so the sandbox keeps matching production
+      // URL for URL. No guard here on purpose: /test runs entirely on simulated
+      // data from TestDataProvider and never touches the real API.
       {
-        path: 'dataInput',
-        element: <DataInput />
+        path: '/test/admin',
+        element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/test/admin/configuration" replace />
+          },
+          {
+            path: 'dataInput',
+            element: <DataInput />
+          },
+          {
+            path: 'calibration',
+            element: <Calibration />
+          },
+          {
+            path: 'configuration',
+            element: <Configuration />
+          }
+        ]
       },
-      {
-        path: 'calibration',
-        element: <Calibration />
-      },
-      {
-        path: 'configuration',
-        element: <Configuration />
-      }
+      { path: '/test/dataInput', element: <Navigate to="/test/admin/dataInput" replace /> },
+      { path: '/test/calibration', element: <Navigate to="/test/admin/calibration" replace /> },
+      { path: '/test/configuration', element: <Navigate to="/test/admin/configuration" replace /> }
     ]
-  },
-  { path: '/test/dataInput', element: <Navigate to="/test/admin/dataInput" replace /> },
-  { path: '/test/calibration', element: <Navigate to="/test/admin/calibration" replace /> },
-  { path: '/test/configuration', element: <Navigate to="/test/admin/configuration" replace /> }
+  }
 ]);
 
 export default router;
