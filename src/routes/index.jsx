@@ -7,6 +7,7 @@ import AuthLayout from 'layout/Auth';
 import DashboardDefault from 'pages/dashboard/default';
 import History from 'pages/component-overview/history';
 import HomePage from 'pages/home/home';
+import AboutPage from 'pages/home/about';
 import Loadable from 'components/Loadable';
 import Typography from 'pages/component-overview/typography';
 import Color from 'pages/component-overview/color';
@@ -56,7 +57,11 @@ const LoginPage = Loadable(lazy(() => import('pages/auth/Login')));
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <HomePage />,
+    element: <HomePage />
+  },
+  {
+    path: '/about',
+    element: <AboutPage />
   },
   {
     path: '/login',

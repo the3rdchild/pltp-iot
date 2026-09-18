@@ -1,0 +1,90 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(20px, 3vw, 32px);
+}
+
+.card {
+  position: relative;
+  isolation: isolate;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(24px, 3vw, 34px);
+  border-radius: var(--ls-radius);
+  overflow: hidden;
+  color: #fff;
+}
+
+.card img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to top, rgba(10, 22, 34, 0.92) 0%, rgba(10, 22, 34, 0.5) 45%, rgba(10, 22, 34, 0.15) 100%);
+}
+
+/* A site without a dashboard yet is desaturated rather than dressed up like
+   the live one. */
+.pending img {
+  filter: grayscale(0.55);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: var(--ls-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  margin: 0 0 auto;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(6px);
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4ade80;
+}
+
+.pending .statusDot {
+  background: var(--ls-ink-200);
+}
+
+.region {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--ls-small);
+  color: #bccbd7;
+  margin: 24px 0 6px;
+}
+
+.name {
+  font-size: clamp(1.25rem, 1.05rem + 0.7vw, 1.625rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 20px;
+}
+
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

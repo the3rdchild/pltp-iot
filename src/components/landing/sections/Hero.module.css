@@ -1,0 +1,164 @@
+.hero {
+  position: relative;
+  isolation: isolate;
+  background: var(--ls-ink-900);
+  color: #fff;
+  overflow: hidden;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+
+.backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 65%;
+}
+
+/* Two overlays rather than one flat scrim: a vertical wash keeps the photo
+   readable at the edges, and a horizontal one darkens only the side the
+   headline sits on, so the plant stays visible. */
+.backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, rgba(10, 22, 34, 0.94) 0%, rgba(10, 22, 34, 0.82) 42%, rgba(10, 22, 34, 0.35) 100%),
+    linear-gradient(to bottom, rgba(10, 22, 34, 0.5) 0%, rgba(10, 22, 34, 0) 35%, rgba(10, 22, 34, 0.7) 100%);
+}
+
+.inner {
+  max-width: var(--ls-max);
+  margin-inline: auto;
+  padding: clamp(72px, 11vw, 148px) var(--ls-gutter) 0;
+}
+
+.copy {
+  max-width: 40rem;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  font-size: var(--ls-eyebrow);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: #e8eef3;
+  margin: 0 0 26px;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ls-energy);
+  box-shadow: 0 0 0 3px rgba(217, 122, 21, 0.25);
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: var(--ls-display);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.04;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.titleAccent {
+  color: var(--ls-energy);
+}
+
+.lead {
+  font-size: var(--ls-lead);
+  line-height: 1.7;
+  color: #c9d6e0;
+  margin: 24px 0 0;
+  max-width: 34rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 34px;
+}
+
+/* --- Stats ribbon -------------------------------------------------------- */
+
+.stats {
+  list-style: none;
+  padding: 0;
+  margin-top: clamp(56px, 8vw, 96px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.stat {
+  padding: 26px 24px 30px;
+  border-right: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.stat:first-child {
+  padding-left: 0;
+}
+
+.stat:last-child {
+  border-right: none;
+}
+
+.statValue {
+  display: block;
+  font-size: clamp(1.75rem, 1.2rem + 1.8vw, 2.5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: #fff;
+}
+
+.statLabel {
+  display: block;
+  margin-top: 9px;
+  font-size: var(--ls-small);
+  color: #a9bbc9;
+}
+
+@media (max-width: 760px) {
+  .backdrop::after {
+    background: linear-gradient(to bottom, rgba(10, 22, 34, 0.9) 0%, rgba(10, 22, 34, 0.86) 55%, rgba(10, 22, 34, 0.94) 100%);
+  }
+
+  .stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stat {
+    padding: 18px 0;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  .stat:last-child {
+    border-bottom: none;
+  }
+
+  .statValue {
+    min-width: 3.5rem;
+  }
+
+  .statLabel {
+    margin-top: 0;
+  }
+}

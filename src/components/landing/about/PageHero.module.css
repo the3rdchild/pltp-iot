@@ -1,0 +1,38 @@
+.hero {
+  background: var(--ls-ink-900);
+  color: #fff;
+  padding-block: clamp(56px, 8vw, 104px);
+}
+
+.inner {
+  max-width: var(--ls-max);
+  margin-inline: auto;
+  padding-inline: var(--ls-gutter);
+}
+
+.eyebrow {
+  font-size: var(--ls-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ls-energy);
+  margin: 0 0 16px;
+}
+
+.title {
+  font-size: clamp(2rem, 1.3rem + 2.8vw, 3.25rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  margin: 0;
+  max-width: 20ch;
+  text-wrap: balance;
+}
+
+.lead {
+  font-size: var(--ls-lead);
+  line-height: 1.7;
+  color: var(--ls-ink-200);
+  margin: 22px 0 0;
+  max-width: 38rem;
+}

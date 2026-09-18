@@ -1,0 +1,56 @@
+/*
+ * Design tokens for the public site (landing + about).
+ *
+ * Plain global stylesheet on purpose: CSS Modules scope class names, not
+ * custom properties, so the shared scale has to live somewhere unscoped.
+ * Nothing here selects an element, so importing it cannot restyle the
+ * dashboard -- the `--ls-` prefix (landing system) keeps the names clear of
+ * anything MUI defines.
+ */
+
+:root {
+  /* Ink: the navy the brand already used, extended into a usable ramp. */
+  --ls-ink-900: #0a1622;
+  --ls-ink-800: #102438;
+  --ls-ink-700: #1b3a57;
+  --ls-ink-600: #2c4f70;
+  --ls-ink-500: #3d5a75;
+  --ls-ink-400: #5b7690;
+  --ls-ink-300: #7c93a8;
+  --ls-ink-200: #a8b8c6;
+
+  /* Surfaces */
+  --ls-paper: #ffffff;
+  --ls-paper-alt: #f4f7f9;
+  --ls-paper-warm: #faf7f3;
+  --ls-line: #e3e9ef;
+  --ls-line-strong: #c9d5df;
+
+  /* Steam teal carries the product; heat amber is the sparing accent. */
+  --ls-accent: #0e7c86;
+  --ls-accent-dark: #0a5a62;
+  --ls-accent-soft: #e4f2f3;
+  --ls-energy: #d97a15;
+  --ls-energy-soft: #fcf0e2;
+
+  /* Type */
+  --ls-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ls-display: clamp(2.25rem, 1.15rem + 3.7vw, 3.75rem);
+  --ls-h2: clamp(1.75rem, 1.15rem + 2vw, 2.5rem);
+  --ls-h3: clamp(1.125rem, 1.02rem + 0.35vw, 1.3125rem);
+  --ls-lead: clamp(1.0625rem, 1rem + 0.3vw, 1.1875rem);
+  --ls-body: 1rem;
+  --ls-small: 0.875rem;
+  --ls-eyebrow: 0.75rem;
+
+  /* Layout */
+  --ls-max: 1180px;
+  --ls-gutter: clamp(20px, 5vw, 40px);
+  --ls-section-y: clamp(64px, 7vw, 108px);
+
+  /* Depth: hairlines first, shadow only where something really floats. */
+  --ls-radius: 14px;
+  --ls-radius-sm: 8px;
+  --ls-shadow: 0 1px 2px rgba(10, 22, 34, 0.04), 0 8px 24px rgba(10, 22, 34, 0.06);
+  --ls-shadow-lift: 0 2px 4px rgba(10, 22, 34, 0.06), 0 16px 40px rgba(10, 22, 34, 0.1);
+}

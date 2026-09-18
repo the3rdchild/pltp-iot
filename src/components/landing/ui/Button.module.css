@@ -1,0 +1,114 @@
+.base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 13px 24px;
+  font-family: inherit;
+  font-size: var(--ls-small);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.base:focus-visible {
+  outline: 2px solid var(--ls-accent);
+  outline-offset: 3px;
+}
+
+.base:active {
+  transform: translateY(1px);
+}
+
+.primary {
+  background: var(--ls-accent);
+  color: #fff;
+}
+
+.primary:hover {
+  background: var(--ls-accent-dark);
+}
+
+.secondary {
+  background: transparent;
+  border-color: var(--ls-line-strong);
+  color: var(--ls-ink-800);
+}
+
+.secondary:hover {
+  border-color: var(--ls-ink-700);
+  background: var(--ls-paper-alt);
+}
+
+/* For use on the dark bands and over the hero photo. */
+.onDark {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.onDark:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* --- Text link with a nudging arrow ------------------------------------- */
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--ls-small);
+  font-weight: 600;
+  color: var(--ls-accent);
+  text-decoration: none;
+  transition: color 160ms ease;
+}
+
+.link:hover {
+  color: var(--ls-accent-dark);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--ls-accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.link svg {
+  transition: transform 160ms ease;
+}
+
+.link:hover svg {
+  transform: translateX(3px);
+}
+
+.linkOnDark {
+  color: var(--ls-energy);
+}
+
+.linkOnDark:hover {
+  color: #f0a14a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .base,
+  .link,
+  .link svg {
+    transition: none;
+  }
+
+  .link:hover svg,
+  .base:active {
+    transform: none;
+  }
+}

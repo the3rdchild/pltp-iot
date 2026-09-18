@@ -1,0 +1,109 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(24px, 3vw, 40px);
+  align-items: start;
+}
+
+.group {
+  background: var(--ls-paper);
+  border: 1px solid var(--ls-line);
+  border-radius: var(--ls-radius);
+  overflow: hidden;
+}
+
+.groupHead {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: clamp(20px, 2.4vw, 26px);
+  border-bottom: 1px solid var(--ls-line);
+  background: var(--ls-paper-alt);
+}
+
+.groupLogo {
+  height: 40px;
+  width: auto;
+  max-width: 96px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.groupName {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ls-ink-900);
+  margin: 0;
+}
+
+.groupCount {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--ls-ink-300);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.member {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 14px;
+  border-radius: var(--ls-radius-sm);
+}
+
+.member:hover {
+  background: var(--ls-paper-alt);
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--ls-ink-800);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.name {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ls-ink-900);
+  line-height: 1.4;
+}
+
+.role {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--ls-ink-300);
+  line-height: 1.4;
+}
+
+/* Only roles that are not plain membership get the accent -- highlighting
+   every line would highlight nothing. */
+.roleLead {
+  color: var(--ls-accent);
+  font-weight: 600;
+}
+
+@media (max-width: 820px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

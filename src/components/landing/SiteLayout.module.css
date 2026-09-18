@@ -1,0 +1,18 @@
+.page {
+  font-family: var(--ls-font);
+  font-size: var(--ls-body);
+  line-height: 1.6;
+  color: var(--ls-ink-800);
+  background: var(--ls-paper);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Anchors land below the sticky header instead of underneath it. */
+.page :global(section[id]) {
+  scroll-margin-top: 84px;
+}
+
+.page img {
+  max-width: 100%;
+}

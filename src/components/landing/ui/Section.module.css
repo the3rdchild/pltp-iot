@@ -1,0 +1,85 @@
+.section {
+  padding-block: var(--ls-section-y);
+  position: relative;
+}
+
+/* Background bands. Alternating them is what gives the page a rhythm --
+   without it every section reads as the same slab of white. */
+.paper {
+  background: var(--ls-paper);
+}
+
+.alt {
+  background: var(--ls-paper-alt);
+}
+
+.ink {
+  background: var(--ls-ink-900);
+  color: #fff;
+}
+
+.container {
+  max-width: var(--ls-max);
+  margin-inline: auto;
+  padding-inline: var(--ls-gutter);
+}
+
+/* --- Section heading ---------------------------------------------------- */
+
+.head {
+  max-width: 46rem;
+  margin-bottom: clamp(32px, 4vw, 56px);
+}
+
+.headWide {
+  max-width: none;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--ls-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ls-accent);
+  margin: 0 0 14px;
+}
+
+.eyebrow::before {
+  content: '';
+  width: 22px;
+  height: 1px;
+  background: currentColor;
+}
+
+.ink .eyebrow {
+  color: var(--ls-energy);
+}
+
+.title {
+  font-size: var(--ls-h2);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  color: var(--ls-ink-900);
+  margin: 0;
+  text-wrap: balance;
+}
+
+.ink .title {
+  color: #fff;
+}
+
+.lead {
+  font-size: var(--ls-lead);
+  line-height: 1.65;
+  color: var(--ls-ink-500);
+  margin: 18px 0 0;
+  max-width: 40rem;
+}
+
+.ink .lead {
+  color: var(--ls-ink-200);
+}
