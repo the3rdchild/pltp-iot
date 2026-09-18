@@ -1,18 +1,18 @@
-import drynessImage from 'assets/images/dryness.png';
-import ncgImage from 'assets/images/ncg.png';
-import tdsImage from 'assets/images/tds.png';
-import samplingDrynessImage from 'assets/images/DrynessFraction.jpg';
-import samplingNcgImage from 'assets/images/sampelncg.png';
-import samplingTdsImage from 'assets/images/SC4500.png';
+import drynessImage from 'assets/images/dryness.webp';
+import ncgImage from 'assets/images/ncg.webp';
+import tdsImage from 'assets/images/tds.webp';
+import samplingDrynessImage from 'assets/images/DrynessFraction.webp';
+import samplingNcgImage from 'assets/images/sampelncg.webp';
+import samplingTdsImage from 'assets/images/SC4500.webp';
 import ai1Image from 'assets/images/articles/AI1/isolation_forest_concept.jpg';
 import ai2Image from 'assets/images/articles/AI2/lstm_architecture.jpg';
 import kamojangImage from 'pages/home/images/kamojang.webp';
-import ulubeluImage from 'pages/home/images/ulubelu.jpg';
-import hachLogo from 'assets/images/LOGOHach.png';
-import honeywellLogo from 'assets/images/LOGOHW.png';
-import pertaminaLogo from 'assets/images/LOGOPertamina.png';
-import pgeLogo from 'assets/images/LOGOPGE.png';
-import unpadLogo from 'assets/images/logo-unpad1.png';
+import ulubeluImage from 'pages/home/images/ulubelu.webp';
+import hachLogo from 'assets/images/LOGOHach.webp';
+import honeywellLogo from 'assets/images/LOGOHW.webp';
+import pertaminaLogo from 'assets/images/LOGOPertamina.webp';
+import pgeLogo from 'assets/images/LOGOPGE.webp';
+import unpadLogo from 'assets/images/logo-unpad1.webp';
 
 import { ClockIcon, LeafIcon, PulseIcon, ShieldIcon, UsersIcon } from '../icons';
 

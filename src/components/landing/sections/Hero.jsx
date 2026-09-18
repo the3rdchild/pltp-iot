@@ -1,4 +1,4 @@
-import heroImage from 'assets/images/landing_page_image.jpg';
+import heroImage from 'assets/images/landing_page_image.webp';
 
 import { heroStats } from '../data/content';
 import { Button } from '../ui/Button';
@@ -10,7 +10,7 @@ export default function Hero() {
       <div className={styles.backdrop}>
         {/* LCP element: eagerly fetched, and decorative -- the headline in
             front of it already says what it shows. */}
-        <img src={heroImage} alt="" fetchPriority="high" decoding="async" />
+        <img src={heroImage} alt="" fetchpriority="high" decoding="async" />
       </div>
 
       <div className={styles.inner}>

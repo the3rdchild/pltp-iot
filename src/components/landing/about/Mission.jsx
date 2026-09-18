@@ -1,4 +1,4 @@
-import engineerImage from 'assets/images/landing_page_image_2.png';
+import engineerImage from 'assets/images/landing_page_image_2.webp';
 
 import { missionPillars } from '../data/content';
 import { Section, SectionHead } from '../ui/Section';

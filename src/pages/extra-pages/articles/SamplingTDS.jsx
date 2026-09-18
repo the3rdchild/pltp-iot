@@ -6,7 +6,7 @@ import pltpSystemImg from '/src/assets/images/articles/tds/pltp_system_diagram.p
 import silicaDepositsImg from '/src/assets/images/articles/tds/silica_deposits_blade.jpg';
 import monitoringSystemImg from '/src/assets/images/articles/tds/monitoring_system_panel.jpg';
 import pertasmartLogo from '/src/assets/images/articles/Pertasmart4x1.svg';
-import sc4500Img from '/src/assets/images/SC4500.png';
+import sc4500Img from '/src/assets/images/SC4500.webp';
 
 export default function SamplingTDS() {
   const navigate = useNavigate();

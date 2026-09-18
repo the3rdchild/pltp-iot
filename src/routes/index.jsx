@@ -28,7 +28,6 @@ import SimulationPage from 'pages/test/simulation';
 import { TestDataProvider } from 'contexts/TestDataContext';
 
 //artikel umum
-import MisiKami from 'pages/extra-pages/articles/MisiKami';
 import CaraKerjaPLTP from 'pages/extra-pages/articles/CaraKerjaPLTP';
 
 //artikel Pentingnya Memantau Kualitas Uap yang Masuk Turbin
@@ -215,10 +214,10 @@ const router = createBrowserRouter([
     path:'/artikel-ncg',
     element: <NCGArticle />
   },
-  {
-    path:'/misi-kami',
-    element: <MisiKami />
-  },
+  // /misi-kami was a placeholder that only ever rendered "under construction".
+  // The About page now covers that ground, so the old URL points there rather
+  // than at an empty screen.
+  { path: '/misi-kami', element: <Navigate to="/about" replace /> },
   {
     path: '/unit-pemantauan',
     element: <UnitPemantauan />

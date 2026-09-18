@@ -1,4 +1,4 @@
-import pltpImage from 'assets/images/PLTPKMJ.jpg';
+import pltpImage from 'assets/images/PLTPKMJ.webp';
 
 import { pltpSteps } from '../data/content';
 import { ArrowLink } from '../ui/Button';

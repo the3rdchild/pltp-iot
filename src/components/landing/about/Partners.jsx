@@ -1,4 +1,4 @@
-import indonesiaMap from 'assets/images/Indonesiaku.png';
+import indonesiaMap from 'assets/images/Indonesiaku.webp';
 
 import PartnerLogos from '../ui/PartnerLogos';
 import { Section, SectionHead } from '../ui/Section';
