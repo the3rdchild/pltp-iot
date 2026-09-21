@@ -17,22 +17,22 @@ export default function Hero() {
         <div className={styles.copy}>
           <p className={styles.eyebrow}>
             <span className={styles.dot} />
-            Riset bersama Pertamina &amp; Universitas Padjadjaran
+            Riset kolaboratif PT Pertamina dan Universitas Padjadjaran
           </p>
 
           <h1 className={styles.title}>
-            Mutu uap PLTP, terbaca <span className={styles.titleAccent}>setiap saat</span>.
+            Pemantauan kualitas dan kemurnian uap PLTP secara <span className={styles.titleAccent}>kontinu</span>
           </h1>
 
           <p className={styles.lead}>
-            PertaSmart membaca kualitas dan kemurnian uap yang masuk turbin secara langsung di lapangan — tanpa menunggu hasil laboratorium
-            minggu depan.
+            PertaSmart mengukur parameter mutu uap langsung pada jalur produksi PLTP. Kondisi uap yang memasuki turbin dapat diketahui
+            setiap saat tanpa menunggu hasil analisis laboratorium.
           </p>
 
           <div className={styles.actions}>
             <Button href="/login">Masuk Dashboard</Button>
             <Button href="#parameter" variant="onDark">
-              Lihat yang dipantau
+              Parameter yang dipantau
             </Button>
           </div>
         </div>

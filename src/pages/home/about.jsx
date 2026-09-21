@@ -14,8 +14,8 @@ export default function About() {
     <SiteLayout>
       <PageHero
         eyebrow="Tentang"
-        title="Riset yang dipasang di pembangkit, bukan berhenti di laporan"
-        lead="PertaSmart lahir dari kerja sama PT Pertamina dan Universitas Padjadjaran untuk memantau mutu uap PLTP secara langsung."
+        title="Penerapan hasil riset pada operasi pembangkit panas bumi"
+        lead="PertaSmart dikembangkan melalui kerja sama PT Pertamina dan Universitas Padjadjaran untuk memantau kualitas dan kemurnian uap PLTP secara kontinu."
       />
       <Mission />
       <Team />

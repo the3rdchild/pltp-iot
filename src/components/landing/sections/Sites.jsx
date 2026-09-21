@@ -7,7 +7,7 @@ import styles from './Sites.module.css';
 export default function Sites() {
   return (
     <Section id="lokasi" tone="paper">
-      <SectionHead eyebrow="Lokasi" title="Terpasang di dua lapangan panas bumi" />
+      <SectionHead eyebrow="Lokasi" title="Implementasi pada dua lapangan panas bumi" />
 
       <div className={styles.grid}>
         {sites.map((site) => (

@@ -13,7 +13,7 @@ export default function SiteFooter() {
           <div className={styles.about}>
             <img src={pertasmartLogo} alt="PertaSmart" className={styles.logo} />
             <p className={styles.blurb}>
-              Sistem pemantauan mutu dan kemurnian uap PLTP, hasil riset bersama PT Pertamina dan Universitas Padjadjaran.
+              Sistem pemantauan kualitas dan kemurnian uap PLTP, hasil riset bersama PT Pertamina dan Universitas Padjadjaran.
             </p>
             <p className={styles.contact}>
               PT Pertamina Geothermal Energy · Universitas Padjadjaran
@@ -37,8 +37,8 @@ export default function SiteFooter() {
         </div>
 
         <div className={styles.bottom}>
-          <p>© {new Date().getFullYear()} PertaSmart — PT Pertamina & Universitas Padjadjaran.</p>
-          <p>Steam Quality &amp; Purity Online Monitoring System</p>
+          <p>© {new Date().getFullYear()} PertaSmart. PT Pertamina dan Universitas Padjadjaran.</p>
+          <p>Online Steam Quality and Purity Monitoring Smart System</p>
         </div>
       </div>
     </footer>

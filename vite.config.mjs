@@ -14,6 +14,10 @@ export default defineConfig(({ mode }) => {
       // this sets a default port to 3000
       port: PORT,
       host: true,
+      // Tunnel (cloudflared/ngrok) mengirim Host header asing; tanpa ini Vite 6
+      // membalas "Blocked request. This host is not allowed." Dev server kena
+      // ini juga, bukan cuma `preview`.
+      allowedHosts: ['.noouoops.my.id', '.trycloudflare.com', '.ngrok-free.app', '.ts.net'],
       // Proxy relative /api calls (axios apiClient baseURL, raw fetch() in
       // hooks like useAi1Data/useAi2Data) to the local backend in dev.
       //
@@ -36,7 +40,7 @@ export default defineConfig(({ mode }) => {
       host: true,
       // Tunnel (cloudflared/ngrok) mengirim Host header asing; tanpa ini Vite 6
       // membalas "Blocked request. This host is not allowed."
-      allowedHosts: ['.trycloudflare.com', '.ngrok-free.app', '.ts.net'],
+      allowedHosts: ['.noouoops.my.id', '.trycloudflare.com', '.ngrok-free.app', '.ts.net'],
       // `preview` tidak mewarisi server.proxy, padahal apiConfig.json memakai
       // baseURL relatif '/api'. Default ke API produksi supaya preview build
       // menampilkan data nyata; override dengan VITE_PROXY_TARGET untuk backend lokal.

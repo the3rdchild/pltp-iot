@@ -85,6 +85,7 @@
 }
 
 .link svg {
+  flex: none;
   transition: transform 160ms ease;
 }
 

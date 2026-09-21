@@ -7,9 +7,9 @@ export default function Comparison() {
   return (
     <Section id="mengapa" tone="paper">
       <SectionHead
-        eyebrow="Mengapa ini penting"
-        title="Dulu menunggu seminggu. Sekarang tahu saat itu juga."
-        lead="Uap yang kotor atau terlalu basah menggerus sudu turbin dari dalam. Dengan cara lama, kerusakan itu baru ketahuan setelah terjadi."
+        eyebrow="Latar belakang"
+        title="Keterbatasan pengukuran berbasis sampel berkala"
+        lead="Kandungan pengotor dan fraksi air pada uap menimbulkan deposisi serta erosi pada sudu turbin. Pada praktik pengambilan sampel berkala, penyimpangan tersebut baru teridentifikasi setelah dampaknya terjadi."
       />
 
       <div className={styles.grid}>

@@ -7,19 +7,23 @@ import styles from './Mission.module.css';
 export default function Mission() {
   return (
     <Section id="misi" tone="paper">
-      <SectionHead eyebrow="Misi kami" title="Supaya keputusan di lapangan tidak lagi menunggu" />
+      <SectionHead eyebrow="Tujuan" title="Mendukung pengambilan keputusan operasi berbasis data terkini" />
 
       <div className={styles.layout}>
         <div className={styles.prose}>
           <p>
-            Sebuah pembangkit panas bumi berjalan di atas satu asumsi: uap yang masuk turbin cukup bersih dan cukup kering. Selama puluhan
-            tahun, asumsi itu diperiksa seminggu sekali lewat sampel yang dibawa ke laboratorium.
+            Operasi pembangkit listrik tenaga panas bumi bertumpu pada asumsi bahwa uap yang memasuki turbin memiliki tingkat kemurnian dan
+            kekeringan yang memadai. Verifikasi terhadap asumsi tersebut selama ini dilakukan melalui pengambilan sampel berkala yang
+            dianalisis di laboratorium.
           </p>
           <p>
-            PertaSmart memindahkan pemeriksaan itu ke jalur pipanya langsung. Sensor membaca mutu uap terus-menerus, angkanya masuk ke satu
-            dashboard, dan model AI menandai pola yang menyimpang sebelum sempat jadi kerusakan.
+            PertaSmart memindahkan proses verifikasi tersebut ke jalur pipa produksi. Sensor mengukur parameter kualitas uap secara kontinu,
+            hasil pengukuran dihimpun pada satu dashboard, dan model kecerdasan buatan menandai pola yang menyimpang sebelum berkembang
+            menjadi kerusakan.
           </p>
-          <p>Sistem ini dikembangkan bersama oleh PT Pertamina dan Universitas Padjadjaran, dan sudah berjalan di PLTP Kamojang.</p>
+          <p>
+            Sistem ini dikembangkan bersama oleh PT Pertamina dan Universitas Padjadjaran serta telah diimplementasikan di PLTP Kamojang.
+          </p>
         </div>
 
         <figure className={styles.figure}>

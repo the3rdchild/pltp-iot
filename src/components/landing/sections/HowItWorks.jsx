@@ -9,9 +9,9 @@ export default function HowItWorks() {
   return (
     <Section id="cara-kerja" tone="ink">
       <SectionHead
-        eyebrow="Latar belakang"
-        title="Bagaimana panas bumi berubah jadi listrik"
-        lead="Empat langkah, berulang terus-menerus. Uap yang bermasalah di langkah kedua adalah yang paling mahal akibatnya."
+        eyebrow="Prinsip kerja"
+        title="Konversi energi panas bumi menjadi energi listrik"
+        lead="Proses berlangsung dalam empat tahap yang berulang. Penyimpangan kualitas uap pada tahap kedua menimbulkan konsekuensi kerusakan yang paling besar."
       />
 
       <div className={styles.layout}>
@@ -37,7 +37,7 @@ export default function HowItWorks() {
 
           <div className={styles.more}>
             <ArrowLink href="/cara-kerja-pltp" onDark>
-              Baca penjelasan lengkapnya
+              Uraian lengkap proses PLTP
             </ArrowLink>
           </div>
         </div>

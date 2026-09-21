@@ -7,8 +7,8 @@ export default function Team() {
     <Section id="tim" tone="alt">
       <SectionHead
         eyebrow="Tim riset"
-        title="Orang-orang di balik sistemnya"
-        lead="Pengembangan Online Steam Quality-Purity Monitoring Smart System di lapangan panas bumi."
+        title="Peneliti dan pelaksana pengembangan"
+        lead="Pengembangan Online Steam Quality and Purity Monitoring Smart System pada lapangan panas bumi."
       />
 
       <div className={styles.grid}>

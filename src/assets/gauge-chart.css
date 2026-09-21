@@ -100,8 +100,12 @@
     display: block;
     }
 
-    /* Make SVG take full area */
-    svg { width:100%; height:100%; display:block; overflow:visible; }
+    /* Make SVG take full area.
+       Scoped to .gauge on purpose: as a bare `svg` selector this applied to
+       every SVG in the app, and an author rule beats the width/height
+       presentation attributes an icon sets, so each landing-page icon was
+       stretched to fill whatever box held it. */
+    .gauge svg { width:100%; height:100%; display:block; overflow:visible; }
 
     /* subtle style for inner dashed arc */
     .inner-arc { stroke: #d0d0d0; opacity: 0.9; stroke-linecap: butt; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.06)); }

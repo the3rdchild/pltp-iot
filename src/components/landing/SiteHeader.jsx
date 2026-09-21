@@ -73,7 +73,7 @@ export default function SiteHeader() {
     <>
       <header className={`${styles.header} ${scrolled ? styles.scrolled : ''}`}>
         <div className={styles.bar}>
-          <Link to="/" className={styles.brand} aria-label="PertaSmart — beranda">
+          <Link to="/" className={styles.brand} aria-label="Beranda PertaSmart">
             <img src={pertasmartLogo} alt="PertaSmart" className={styles.brandLogo} />
           </Link>
 

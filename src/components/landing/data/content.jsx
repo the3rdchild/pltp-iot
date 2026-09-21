@@ -19,8 +19,8 @@ import { ClockIcon, LeafIcon, PulseIcon, ShieldIcon, UsersIcon } from '../icons'
 /* --- Hero ---------------------------------------------------------------- */
 
 export const heroStats = [
-  { value: '24/7', label: 'Uap dipantau tanpa jeda' },
-  { value: '3', label: 'Parameter mutu uap diukur' },
+  { value: '24/7', label: 'Pengukuran berlangsung tanpa jeda' },
+  { value: '3', label: 'Parameter kualitas uap yang diukur' },
   { value: '2', label: 'Lapangan panas bumi' }
 ];
 
@@ -29,24 +29,24 @@ export const heroStats = [
 export const comparison = [
   {
     kind: 'before',
-    label: 'Cara lama',
-    title: 'Sampel diambil seminggu sekali',
+    label: 'Pengambilan sampel berkala',
+    title: 'Pengukuran dilakukan satu kali dalam sepekan',
     points: [
-      'Petugas mengambil sampel uap secara manual di lapangan.',
-      'Hasilnya baru diketahui setelah dianalisis di laboratorium.',
-      'Naik-turun kadar pengotor di antara dua pengambilan tidak terlihat.',
-      'Ketika hasilnya keluar, uap yang bermasalah sudah lama melewati turbin.'
+      'Sampel uap diambil secara manual pada titik pengukuran di lapangan.',
+      'Hasil pengukuran baru diperoleh setelah proses analisis laboratorium selesai.',
+      'Fluktuasi kadar pengotor di antara dua waktu pengambilan tidak terekam.',
+      'Uap dengan kualitas menyimpang telah melewati turbin sebelum hasil analisis tersedia.'
     ]
   },
   {
     kind: 'after',
-    label: 'Dengan PertaSmart',
-    title: 'Uap dibaca terus-menerus',
+    label: 'Pemantauan daring PertaSmart',
+    title: 'Pengukuran berlangsung secara kontinu',
     points: [
-      'Sensor membaca mutu uap langsung di jalur pipa.',
-      'Angkanya muncul di dashboard saat itu juga.',
-      'Pola dan siklus kemunculan pengotor terekam utuh.',
-      'AI menandai kejanggalan sebelum sempat merusak turbin.'
+      'Sensor mengukur parameter kualitas uap langsung pada jalur pipa produksi.',
+      'Hasil pengukuran ditampilkan pada dashboard secara waktu nyata.',
+      'Pola dan periodisitas kemunculan pengotor terekam secara utuh.',
+      'Model kecerdasan buatan menandai anomali sebelum berkembang menjadi kerusakan.'
     ]
   }
 ];
@@ -60,18 +60,18 @@ export const parameters = [
     full: 'Total Dissolved Solid',
     image: tdsImage,
     alt: 'Ilustrasi pengukuran total dissolved solid',
-    summary: 'Seberapa banyak zat padat yang ikut terlarut dalam uap.',
-    detail: 'Kalau kadarnya tinggi, padatan itu terbawa masuk dan mengendap di sudu turbin.',
+    summary: 'Konsentrasi zat padat terlarut yang terbawa bersama aliran uap.',
+    detail: 'Konsentrasi yang tinggi menyebabkan deposisi padatan pada sudu turbin dan menurunkan efisiensi konversi energi.',
     href: '/artikel-tds'
   },
   {
     index: '02',
     name: 'Dryness Fraction',
-    full: 'Kekeringan uap',
+    full: 'Fraksi kekeringan uap',
     image: drynessImage,
     alt: 'Ilustrasi pengukuran dryness fraction',
-    summary: 'Seberapa kering uap yang mengalir ke turbin.',
-    detail: 'Butiran air yang lolos akan menghantam sudu berulang kali dan mengikisnya.',
+    summary: 'Proporsi fase uap terhadap keseluruhan aliran yang memasuki turbin.',
+    detail: 'Butiran air yang terbawa aliran menimbulkan erosi pada permukaan sudu turbin.',
     href: '/artikel-dryness'
   },
   {
@@ -80,8 +80,8 @@ export const parameters = [
     full: 'Non Condensable Gas',
     image: ncgImage,
     alt: 'Ilustrasi pengukuran non condensable gas',
-    summary: 'Gas yang tidak bisa diembunkan, seperti CO₂ dan H₂S.',
-    detail: 'Gas ini menurunkan kinerja kondensor dan memicu korosi pada peralatan.',
+    summary: 'Fraksi gas yang tidak terkondensasi, terutama CO₂ dan H₂S.',
+    detail: 'Akumulasi gas ini menaikkan tekanan kondensor dan memicu korosi pada peralatan.',
     href: '/artikel-ncg'
   }
 ];
@@ -89,14 +89,26 @@ export const parameters = [
 /* --- Cara kerja PLTP ----------------------------------------------------- */
 
 export const pltpSteps = [
-  { step: '01', title: 'Uap naik dari reservoir', text: 'Panas magma memasak air bawah tanah menjadi uap bertekanan tinggi.' },
-  { step: '02', title: 'Uap memutar turbin', text: 'Uap dialirkan ke permukaan lewat sumur produksi, lalu mendorong sudu turbin.' },
+  {
+    step: '01',
+    title: 'Pembentukan uap di reservoir',
+    text: 'Panas dari aktivitas magmatik memanaskan air tanah hingga terbentuk uap bertekanan tinggi.'
+  },
+  {
+    step: '02',
+    title: 'Ekspansi uap pada turbin',
+    text: 'Uap dialirkan ke permukaan melalui sumur produksi, kemudian berekspansi dan memutar sudu turbin.'
+  },
   {
     step: '03',
-    title: 'Generator menghasilkan listrik',
-    text: 'Putaran turbin memutar generator yang mengubahnya menjadi energi listrik.'
+    title: 'Pembangkitan energi listrik',
+    text: 'Poros turbin memutar generator sehingga energi mekanik dikonversi menjadi energi listrik.'
   },
-  { step: '04', title: 'Air dikembalikan ke bumi', text: 'Uap sisa diembunkan, airnya diinjeksikan lagi agar siklusnya berkelanjutan.' }
+  {
+    step: '04',
+    title: 'Reinjeksi kondensat',
+    text: 'Uap keluaran turbin dikondensasikan, lalu kondensatnya diinjeksikan kembali ke reservoir untuk menjaga kesinambungan siklus.'
+  }
 ];
 
 /* --- Teknik pengambilan sampel ------------------------------------------- */
@@ -106,21 +118,21 @@ export const samplingMethods = [
     title: 'Sampling TDS',
     image: samplingTdsImage,
     alt: 'Perangkat analyzer SC4500',
-    text: 'Analyzer SC4500 mengukur kadar padatan terlarut langsung dari aliran uap, tanpa menunggu antrean laboratorium.',
+    text: 'Analyzer SC4500 mengukur konsentrasi padatan terlarut langsung dari aliran uap tanpa melalui tahap analisis laboratorium.',
     href: '/artikel-SamplingTDS'
   },
   {
     title: 'Sampling Dryness Fraction',
     image: samplingDrynessImage,
     alt: 'Peralatan pengukuran dryness fraction di lapangan',
-    text: 'Uap dikondensasikan terkendali untuk menakar berapa bagian yang benar-benar kering sebelum masuk turbin.',
+    text: 'Uap dikondensasikan secara terkendali untuk menentukan proporsi fase uap sebelum memasuki turbin.',
     href: '/artikel-SamplingDryness'
   },
   {
     title: 'Sampling NCG',
     image: samplingNcgImage,
     alt: 'Pengambilan sampel non condensable gas',
-    text: 'Gas dipisahkan dari uap dan ditakar proporsinya untuk mengetahui beban kerja kondensor.',
+    text: 'Gas dipisahkan dari aliran uap dan diukur proporsinya untuk mengetahui beban operasi kondensor.',
     href: '/artikel-SamplingNCG'
   }
 ];
@@ -130,18 +142,18 @@ export const samplingMethods = [
 export const aiModels = [
   {
     tag: 'AI 1',
-    title: 'Deteksi anomali & status turbin',
+    title: 'Deteksi anomali dan klasifikasi status operasi',
     image: ai1Image,
     alt: 'Diagram konsep isolation forest untuk deteksi anomali',
-    text: 'Membaca 12 parameter operasi sekaligus, mencari pola yang menyimpang, lalu menyimpulkan tingkat risikonya: rendah, sedang, atau tinggi.',
+    text: 'Model mengolah 12 parameter operasi secara simultan untuk mengidentifikasi pola yang menyimpang, kemudian mengklasifikasikan tingkat risiko ke dalam kategori rendah, sedang, dan tinggi.',
     href: '/artikel-AI1'
   },
   {
     tag: 'AI 2',
-    title: 'Sensor virtual dryness & NCG',
+    title: 'Sensor virtual untuk dryness fraction dan NCG',
     image: ai2Image,
     alt: 'Diagram arsitektur jaringan LSTM',
-    text: 'Memperkirakan nilai dryness dan NCG dari parameter yang sudah terukur, sehingga tidak setiap angka perlu menunggu pengambilan sampel.',
+    text: 'Model mengestimasi nilai dryness fraction dan NCG berdasarkan parameter operasi yang telah terukur, sehingga kedua nilai tersebut tersedia tanpa bergantung pada pengambilan sampel.',
     href: '/artikel-AI2'
   }
 ];
@@ -161,7 +173,7 @@ export const sites = [
     name: 'PLTP Ulubelu Unit 3',
     region: 'Tanggamus, Lampung',
     image: ulubeluImage,
-    status: 'Dalam penyiapan',
+    status: 'Tahap penyiapan',
     active: false,
     href: null
   }
@@ -182,28 +194,28 @@ export const partners = [
 export const missionPillars = [
   {
     icon: <PulseIcon size={22} />,
-    title: 'Data yang sampai tepat waktu',
-    text: 'Operator tidak perlu menebak kondisi uap di antara dua jadwal sampling. Angkanya ada, setiap saat.'
+    title: 'Ketersediaan data secara kontinu',
+    text: 'Kondisi uap di antara dua jadwal pengambilan sampel tidak lagi menjadi bagian yang tidak terukur.'
   },
   {
     icon: <ShieldIcon size={22} />,
-    title: 'Turbin yang lebih panjang umurnya',
-    text: 'Pengotor yang terdeteksi lebih awal berarti perbaikan kecil hari ini, bukan penggantian sudu tahun depan.'
+    title: 'Perpanjangan umur pakai turbin',
+    text: 'Deteksi dini terhadap pengotor memungkinkan tindakan perawatan dilakukan sebelum kerusakan sudu meluas.'
   },
   {
     icon: <ClockIcon size={22} />,
-    title: 'Keputusan yang lebih cepat',
-    text: 'Tren dan peringatan tersaji dalam satu layar, sehingga tindakan bisa diambil tanpa menunggu laporan.'
+    title: 'Respons operasi yang lebih cepat',
+    text: 'Tren pengukuran dan peringatan tersaji pada satu antarmuka sehingga tindakan korektif tidak bergantung pada laporan berkala.'
   },
   {
     icon: <LeafIcon size={22} />,
-    title: 'Operasi yang berkelanjutan',
-    text: 'Pembangkit yang efisien membakar lebih sedikit sumber daya untuk listrik yang sama.'
+    title: 'Efisiensi operasi yang berkelanjutan',
+    text: 'Kualitas uap yang terjaga mempertahankan efisiensi konversi energi pada setiap satuan daya yang dibangkitkan.'
   },
   {
     icon: <UsersIcon size={22} />,
-    title: 'Riset yang dipakai di lapangan',
-    text: 'Kampus dan industri mengerjakannya bersama, sehingga hasilnya tidak berhenti sebagai laporan penelitian.'
+    title: 'Penerapan hasil riset di lapangan',
+    text: 'Keterlibatan perguruan tinggi dan industri mengarahkan hasil penelitian pada penerapan langsung di unit pembangkit.'
   }
 ];
 
@@ -247,6 +259,6 @@ export const getInitials = (name) => {
     .split(' ')
     .filter((word) => word && !word.endsWith('.'));
 
-  if (words.length === 0) return '–';
+  if (words.length === 0) return '?';
   return (words[0][0] + (words.length > 1 ? words[words.length - 1][0] : '')).toUpperCase();
 };

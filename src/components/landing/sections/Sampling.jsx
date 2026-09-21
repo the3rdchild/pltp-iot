@@ -7,9 +7,9 @@ export default function Sampling() {
   return (
     <Section id="sampling" tone="paper">
       <SectionHead
-        eyebrow="Di lapangan"
-        title="Bagaimana angkanya diambil"
-        lead="Setiap parameter punya cara pengukurannya sendiri. Inilah yang jadi rujukan sekaligus bahan pembanding untuk model AI."
+        eyebrow="Metode pengukuran"
+        title="Prosedur pengambilan data lapangan"
+        lead="Setiap parameter memiliki prosedur pengukuran tersendiri. Hasilnya berfungsi sebagai data rujukan sekaligus data pembanding bagi model kecerdasan buatan."
       />
 
       <ul className={styles.list}>
@@ -22,7 +22,7 @@ export default function Sampling() {
             <div>
               <h3 className={styles.title}>{method.title}</h3>
               <p className={styles.text}>{method.text}</p>
-              <ArrowLink href={method.href}>Lihat prosedurnya</ArrowLink>
+              <ArrowLink href={method.href}>Prosedur lengkap</ArrowLink>
             </div>
           </li>
         ))}

@@ -7,9 +7,9 @@ export default function Parameters() {
   return (
     <Section id="parameter" tone="alt">
       <SectionHead
-        eyebrow="Yang dipantau"
-        title="Tiga angka yang menentukan umur turbin"
-        lead="Masing-masing menceritakan hal berbeda tentang uap yang sedang mengalir ke turbin."
+        eyebrow="Parameter"
+        title="Tiga parameter penentu keandalan turbin"
+        lead="Setiap parameter merepresentasikan aspek yang berbeda dari kondisi uap yang memasuki turbin."
       />
 
       <div className={styles.grid}>
@@ -30,7 +30,7 @@ export default function Parameters() {
               <p className={styles.detail}>{item.detail}</p>
 
               <div className={styles.foot}>
-                <ArrowLink href={item.href}>Pelajari {item.name}</ArrowLink>
+                <ArrowLink href={item.href}>Uraian {item.name}</ArrowLink>
               </div>
             </div>
           </article>

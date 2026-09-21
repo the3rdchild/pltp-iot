@@ -7,9 +7,9 @@ export default function AiAnalysis() {
   return (
     <Section id="ai" tone="alt">
       <SectionHead
-        eyebrow="Analisis"
-        title="Dua model yang membaca datanya"
-        lead="Angka mentah saja belum menjelaskan apa-apa. Dua model ini yang mengubahnya jadi peringatan dan perkiraan."
+        eyebrow="Analisis data"
+        title="Dua model analisis data pengukuran"
+        lead="Data hasil pengukuran diolah lebih lanjut agar dapat digunakan sebagai dasar peringatan dini dan estimasi parameter."
       />
 
       <div className={styles.grid}>
@@ -25,7 +25,7 @@ export default function AiAnalysis() {
               <p className={styles.text}>{model.text}</p>
 
               <div className={styles.foot}>
-                <ArrowLink href={model.href}>Cara kerjanya</ArrowLink>
+                <ArrowLink href={model.href}>Uraian model</ArrowLink>
               </div>
             </div>
           </article>

@@ -76,6 +76,10 @@
   margin: 24px 0 6px;
 }
 
+.region svg {
+  flex: none;
+}
+
 .name {
   font-size: clamp(1.25rem, 1.05rem + 0.7vw, 1.625rem);
   font-weight: 700;

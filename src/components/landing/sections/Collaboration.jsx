@@ -9,11 +9,11 @@ export default function Collaboration() {
       <div className={styles.head}>
         <SectionHead
           eyebrow="Kolaborasi"
-          title="Dikerjakan bersama industri dan kampus"
-          lead="Operator pembangkit, peneliti, dan penyedia instrumentasi mengerjakan sistem ini di satu meja yang sama."
+          title="Kolaborasi industri dan perguruan tinggi"
+          lead="Pengembangan sistem melibatkan operator pembangkit, peneliti perguruan tinggi, dan penyedia instrumentasi."
         />
         <div className={styles.more}>
-          <ArrowLink href="/about">Kenali tim risetnya</ArrowLink>
+          <ArrowLink href="/about">Susunan tim riset</ArrowLink>
         </div>
       </div>
 
