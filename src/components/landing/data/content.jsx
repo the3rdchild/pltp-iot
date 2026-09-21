@@ -145,7 +145,7 @@ export const aiModels = [
     title: 'Deteksi anomali dan klasifikasi status operasi',
     image: ai1Image,
     alt: 'Diagram konsep isolation forest untuk deteksi anomali',
-    text: 'Model mengolah 12 parameter operasi secara simultan untuk mengidentifikasi pola yang menyimpang, kemudian mengklasifikasikan tingkat risiko ke dalam kategori rendah, sedang, dan tinggi.',
+    text: 'Model mengekstraksi lima ciri statistik dari 14 parameter operasi pada setiap jendela 60 menit, kemudian menilai seberapa jauh pola tersebut menyimpang dari pola operasi normal historis.',
     href: '/artikel-AI1'
   },
   {
@@ -153,7 +153,7 @@ export const aiModels = [
     title: 'Sensor virtual untuk dryness fraction dan NCG',
     image: ai2Image,
     alt: 'Diagram arsitektur jaringan LSTM',
-    text: 'Model mengestimasi nilai dryness fraction dan NCG berdasarkan parameter operasi yang telah terukur, sehingga kedua nilai tersebut tersedia tanpa bergantung pada pengambilan sampel.',
+    text: 'Model mengestimasi nilai dryness fraction dan NCG dari parameter tekanan, temperatur, dan TDS. Estimasi ini berstatus penunjang: sampling laboratorium tetap menjadi acuan untuk keputusan operasi.',
     href: '/artikel-AI2'
   }
 ];

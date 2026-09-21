@@ -1,6 +1,13 @@
 .hero {
   position: relative;
   isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  /* Fills the screen below the sticky header. `svh` rather than `vh` so a
+     phone's retracting browser chrome cannot make this taller than what is
+     actually visible. min-height only ever grows the hero, so a viewport too
+     short for the copy still scrolls normally. */
+  min-height: calc(100svh - var(--ls-header-h));
   background: var(--ls-ink-900);
   color: #fff;
   overflow: hidden;
@@ -31,6 +38,10 @@
 }
 
 .inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   max-width: var(--ls-max);
   margin-inline: auto;
   padding: clamp(72px, 11vw, 148px) var(--ls-gutter) 0;
@@ -38,6 +49,9 @@
 
 .copy {
   max-width: 40rem;
+  /* The guaranteed gap above the stats. Free space beyond it is taken by the
+     ribbon's `margin-top: auto`, so a tall screen spreads rather than pads. */
+  margin-bottom: clamp(56px, 8vw, 96px);
 }
 
 .eyebrow {
@@ -97,7 +111,7 @@
 .stats {
   list-style: none;
   padding: 0;
-  margin-top: clamp(56px, 8vw, 96px);
+  margin-top: auto;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   border-top: 1px solid rgba(255, 255, 255, 0.16);

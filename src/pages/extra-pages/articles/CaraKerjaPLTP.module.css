@@ -1,0 +1,154 @@
+/* --- Tahapan proses ------------------------------------------------------ */
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Alternating image side, the same rhythm the sampling section on the landing
+   page uses, so a reader arriving from there stays in one visual language. */
+.step {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(24px, 4vw, 56px);
+  align-items: center;
+  padding-block: clamp(28px, 4vw, 44px);
+  border-top: 1px solid var(--ls-line);
+}
+
+.step:last-child {
+  border-bottom: 1px solid var(--ls-line);
+}
+
+.step:nth-child(even) .figure {
+  order: 2;
+}
+
+.figure {
+  margin: 0;
+  border-radius: var(--ls-radius);
+  overflow: hidden;
+  background: var(--ls-paper-alt);
+}
+
+.figure img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 3;
+  object-fit: cover;
+}
+
+.marker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--ls-eyebrow);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ls-accent);
+  margin: 0 0 12px;
+}
+
+.markerNumber {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--ls-accent-soft);
+  color: var(--ls-accent-dark);
+  font-size: 0.75rem;
+  letter-spacing: 0;
+}
+
+.stepTitle {
+  font-size: var(--ls-h3);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ls-ink-900);
+  margin: 0;
+}
+
+.stepText {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: var(--ls-ink-500);
+  margin: 12px 0 0;
+  max-width: 34rem;
+}
+
+/* --- Keunggulan ---------------------------------------------------------- */
+
+.advantages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(16px, 2vw, 24px);
+}
+
+.advantage {
+  padding: clamp(20px, 2.4vw, 28px);
+  border: 1px solid var(--ls-line);
+  border-radius: var(--ls-radius);
+  background: var(--ls-paper);
+}
+
+.advantageIcon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--ls-radius-sm);
+  background: var(--ls-accent-soft);
+  color: var(--ls-accent);
+  margin-bottom: 16px;
+}
+
+.advantageTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ls-ink-900);
+  margin: 0;
+}
+
+.advantageText {
+  font-size: var(--ls-small);
+  line-height: 1.65;
+  color: var(--ls-ink-500);
+  margin: 8px 0 0;
+}
+
+.more {
+  margin-top: clamp(32px, 4vw, 48px);
+}
+
+@media (max-width: 900px) {
+  .advantages {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .step,
+  .step:nth-child(even) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .step:nth-child(even) .figure {
+    order: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .advantages {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

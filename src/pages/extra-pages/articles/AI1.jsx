@@ -1,658 +1,319 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Container,
-  Box,
-  Typography,
-  Slider,
-  Button,
-  ButtonGroup,
-  Chip,
-  CircularProgress,
-  Paper,
-  Divider,
-  Alert
-} from '@mui/material';
-import Grid from '@mui/material/Grid';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Area,
-  ReferenceLine
-} from 'recharts';
-import {
-  Warning as WarningIcon,
-  CheckCircle as CheckIcon,
-  Error as ErrorIcon
-} from '@mui/icons-material';
+import featureImportanceImg from 'assets/images/articles/AI1/feature_importance_chart.jpg';
+import isolationForestImg from 'assets/images/articles/AI1/isolation_forest_concept.jpg';
 
-const AI1 = () => {
-  // ========== SENSOR RANGES & CONFIG ==========
-  const sensorRanges = {
-    temperature: { min: 150, max: 300, normal: [180, 250], unit: '°C', label: 'Temperature' },
-    pressure: { min: 5, max: 30, normal: [10, 25], unit: 'bar', label: 'Pressure' },
-    flow_rate: { min: 100, max: 300, normal: [140, 280], unit: 't/h', label: 'Flow Rate' },
-    gen_voltage: { min: 12, max: 18, normal: [13, 17], unit: 'kV', label: 'Generator Voltage' },
-    gen_reactive_power: { min: 5, max: 20, normal: [6, 18], unit: 'MVAR', label: 'Reactive Power' },
-    gen_output: { min: 20, max: 60, normal: [25, 55], unit: 'MW', label: 'Generator Output' },
-    gen_power_factor: { min: 0.85, max: 1.0, normal: [0.9, 0.98], unit: '', label: 'Power Factor' },
-    gen_frequency: { min: 49.5, max: 50.5, normal: [49.8, 50.2], unit: 'Hz', label: 'Frequency' },
-    speed_detection: { min: 2900, max: 3100, normal: [2950, 3100], unit: 'rpm', label: 'Speed' },
-    MCV_L: { min: 40, max: 100, normal: [45, 95], unit: '%', label: 'MCV Left' },
-    MCV_R: { min: 40, max: 100, normal: [45, 95], unit: '%', label: 'MCV Right' },
-    TDS: { min: 300, max: 1200, normal: [400, 1000], unit: 'ppm', label: 'TDS' }
-  };
+import ArticleBody from 'components/landing/article/ArticleBody';
+import ArticleLayout from 'components/landing/article/ArticleLayout';
+import Callout from 'components/landing/article/Callout';
+import Citation from 'components/landing/article/Citation';
+import Figure from 'components/landing/article/Figure';
+import References from 'components/landing/article/References';
+import prose from 'components/landing/article/Prose.module.css';
 
-  // ========== PRESET SCENARIOS ==========
-  const presets = {
-    normal: {
-      temperature: 215,
-      pressure: 17.5,
-      flow_rate: 210,
-      gen_voltage: 15,
-      gen_reactive_power: 12,
-      gen_output: 40,
-      gen_power_factor: 0.94,
-      gen_frequency: 50.0,
-      speed_detection: 3025,
-      MCV_L: 70,
-      MCV_R: 70,
-      TDS: 700
-    },
-    warning: {
-      temperature: 265,
-      pressure: 24,
-      flow_rate: 275,
-      gen_voltage: 16.5,
-      gen_reactive_power: 17,
-      gen_output: 52,
-      gen_power_factor: 0.91,
-      gen_frequency: 50.15,
-      speed_detection: 3080,
-      MCV_L: 90,
-      MCV_R: 88,
-      TDS: 950
-    },
-    critical: {
-      temperature: 285,
-      pressure: 27,
-      flow_rate: 290,
-      gen_voltage: 17.5,
-      gen_reactive_power: 19,
-      gen_output: 58,
-      gen_power_factor: 0.88,
-      gen_frequency: 50.35,
-      speed_detection: 3095,
-      MCV_L: 97,
-      MCV_R: 96,
-      TDS: 1150
-    }
-  };
+const sections = [
+  { id: 'pendahuluan', label: 'Pendahuluan' },
+  { id: 'isolation-forest', label: 'Isolation Forest' },
+  { id: 'overall-risk', label: 'Overall Risk History' },
+  { id: 'anotasi', label: 'Anotasi arah parameter' },
+  { id: 'turbine-risk', label: 'Turbine Risk History' },
+  { id: 'soh', label: 'State of Health turbin' },
+  { id: 'kesimpulan', label: 'Kesimpulan' },
+  { id: 'dafpus', label: 'Daftar pustaka' }
+];
 
-  // ========== STATE ==========
-  const [sensorValues, setSensorValues] = useState(presets.normal);
-  const [predictionResult, setPredictionResult] = useState(null);
-  const [forecast, setForecast] = useState([]);
-  const [isCalculating, setIsCalculating] = useState(false);
+// Tabel 5.28: profil skor risiko Turbine Risk History per rezim operasi.
+const regimes = [
+  { regime: 'Beban penuh stabil', score: '4% sampai 15%' },
+  { regime: 'Penurunan beban ringan, di dalam window latih', score: '30% sampai 32%' },
+  { regime: 'Separuh beban berkelanjutan setelah pemadaman', score: '70% sampai 75%' },
+  { regime: 'Window kondisi berhenti operasi (425 window)', score: '83,0% rata-rata' }
+];
 
-  // ========== HELPER FUNCTIONS ==========
-  const calculateDeviation = (value, normalMin, normalMax) => {
-    const midPoint = (normalMin + normalMax) / 2;
-    const range = normalMax - normalMin;
-    
-    if (value >= normalMin && value <= normalMax) {
-      const distanceFromMid = Math.abs(value - midPoint);
-      const normalizedDistance = distanceFromMid / (range / 2);
-      return normalizedDistance * 0.3;
-    }
-    
-    if (value < normalMin) {
-      const rawDeviation = (normalMin - value) / normalMin;
-      return Math.min(1, 0.3 + rawDeviation * 2);
-    }
-    
-    const rawDeviation = (value - normalMax) / normalMax;
-    return Math.min(1, 0.3 + rawDeviation * 2);
-  };
+// Tabel 5.29: laju deteksi anomali sintetis satu-parameter.
+const detection = [
+  { kind: 'Spike', turbine: '100%', overall: '4,5%' },
+  { kind: 'Drift', turbine: '100%', overall: '6,0%' },
+  { kind: 'Stuck-at', turbine: '100%', overall: '6,5%' },
+  { kind: 'Dropout', turbine: '100%', overall: '5,0%' }
+];
 
-  const isInNormalRange = (sensor, value) => {
-    const range = sensorRanges[sensor].normal;
-    return value >= range[0] && value <= range[1];
-  };
+const references = [
+  {
+    author: 'PT Pertamina dan Universitas Padjadjaran.',
+    title: 'Laporan Termin 4 Bab 5: Pengembangan Online Steam Quality and Purity Monitoring Smart System',
+    source: 'Laporan Penelitian',
+    year: 2026
+  },
+  {
+    author: 'Liu, F. T., Ting, K. M., Zhou, Z. H.',
+    title: 'Isolation Forest',
+    source: 'Proceedings of the 8th IEEE International Conference on Data Mining',
+    year: 2008
+  },
+  {
+    author: 'Cox, D. R.',
+    title: 'Regression Models and Life-Tables',
+    source: 'Journal of the Royal Statistical Society, Series B, 34(2)',
+    year: 1972
+  },
+  { author: 'Abernethy, R. B.', title: 'The New Weibull Handbook', source: 'Edisi kelima', year: 2006 },
+  {
+    author: 'Chandola, V., Banerjee, A., Kumar, V.',
+    title: 'Anomaly Detection: A Survey',
+    source: 'ACM Computing Surveys, 41(3)',
+    year: 2009
+  }
+];
 
-  const calculateAnomalyScore = (sensors) => {
-    let deviationCount = 0;
-    Object.keys(sensorRanges).forEach(key => {
-      const range = sensorRanges[key].normal;
-      if (sensors[key] < range[0] || sensors[key] > range[1]) {
-        deviationCount++;
-      }
-    });
-    return -0.1 - (deviationCount * 0.15);
-  };
+// ==============================|| ARTICLE - AI 1 ||============================== //
 
-  const estimateFailure = (riskScore) => {
-    if (riskScore > 0.8) return Math.max(1, Math.floor((1 - riskScore) * 12));
-    if (riskScore > 0.6) return Math.max(3, Math.floor((1 - riskScore) * 24));
-    return Math.max(12, Math.floor((1 - riskScore) * 48));
-  };
-
-  // ========== AI #1a: CURRENT RISK PREDICTION ==========
-  const predictCurrentRisk = (sensors) => {
-    let riskScore = 0;
-
-    riskScore += calculateDeviation(sensors.pressure, 10, 25) * 0.18;
-    riskScore += calculateDeviation(sensors.gen_output, 25, 55) * 0.15;
-    riskScore += calculateDeviation(sensors.temperature, 180, 250) * 0.14;
-    riskScore += calculateDeviation(sensors.flow_rate, 140, 280) * 0.12;
-    riskScore += calculateDeviation(sensors.TDS, 400, 1000) * 0.11;
-    riskScore += calculateDeviation(sensors.gen_voltage, 13, 17) * 0.09;
-    riskScore += calculateDeviation(sensors.MCV_L, 45, 95) * 0.08;
-    riskScore += calculateDeviation(sensors.MCV_R, 45, 95) * 0.08;
-    riskScore += calculateDeviation(sensors.gen_frequency, 49.8, 50.2) * 0.05;
-
-    riskScore = Math.min(1.0, riskScore);
-
-    let status, color, icon;
-    if (riskScore < 0.05) {
-      status = 'NORMAL';
-      color = '#48bb78';
-      icon = <CheckIcon sx={{ fontSize: 40, color: '#48bb78' }} />;
-    } else if (riskScore < 0.75) {
-      status = 'WARNING';
-      color = '#f59e0b';
-      icon = <WarningIcon sx={{ fontSize: 40, color: '#f59e0b' }} />;
-    } else {
-      status = 'CRITICAL';
-      color = '#dc2626';
-      icon = <ErrorIcon sx={{ fontSize: 40, color: '#dc2626' }} />;
-    }
-
-    const anomalyScore = calculateAnomalyScore(sensors);
-    const anomalyDetected = anomalyScore < -0.5;
-
-    return {
-      riskScore,
-      riskPercentage: riskScore * 100,
-      status,
-      color,
-      icon,
-      anomalyDetected,
-      anomalyScore,
-      estimatedFailureMonths: estimateFailure(riskScore)
-    };
-  };
-
-  // ========== AI #1b: 30-DAY FORECAST ==========
-  const forecastRisk = (currentRisk, sensors) => {
-    const forecast = [];
-    let currentScore = currentRisk.riskScore;
-
-    for (let day = 1; day <= 30; day++) {
-      const trend = currentScore > 0.3 ? 0.01 : 0.005;
-      const noise = (Math.random() - 0.5) * 0.02;
-      currentScore = Math.min(1.0, Math.max(0, currentScore + trend + noise));
-
-      const uncertainty = 0.05 * (day / 30);
-
-      forecast.push({
-        day,
-        riskScore: currentScore,
-        lowerBound: Math.max(0, currentScore - uncertainty),
-        upperBound: Math.min(1, currentScore + uncertainty),
-        status: currentScore < 0.05 ? 'normal' : (currentScore < 0.75 ? 'warning' : 'critical')
-      });
-    }
-
-    return forecast;
-  };
-
-  // ========== EVENT HANDLERS ==========
-  const updateSensor = (sensor, value) => {
-    setSensorValues(prev => ({
-      ...prev,
-      [sensor]: value
-    }));
-  };
-
-  const loadPreset = (presetName) => {
-    setSensorValues(presets[presetName]);
-    setPredictionResult(null);
-    setForecast([]);
-  };
-
-  const handlePredict = () => {
-    setIsCalculating(true);
-    
-    setTimeout(() => {
-      const currentRisk = predictCurrentRisk(sensorValues);
-      const riskForecast = forecastRisk(currentRisk, sensorValues);
-      
-      setPredictionResult(currentRisk);
-      setForecast(riskForecast);
-      setIsCalculating(false);
-    }, 800);
-  };
-
-  // ========== RENDER ==========
+export default function AI1() {
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ mb: 4, textAlign: 'center' }}>
-        <Typography variant="h3" gutterBottom sx={{ fontWeight: 700, color: '#1e293b' }}>
-          AI #1: Risk Prediction System
-        </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 800, mx: 'auto' }}>
-          Sistem prediksi risiko kerusakan turbin menggunakan <strong>Random Forest</strong> untuk analisis real-time 
-          dan <strong>LSTM</strong> untuk forecasting 30 hari ke depan
-        </Typography>
-      </Box>
+    <ArticleLayout
+      eyebrow="Analisis data"
+      title="Deteksi anomali dan penilaian risiko turbin"
+      lead="Tiga modul berbasis Isolation Forest dan model hazard Weibull yang mengubah data operasi menjadi skor risiko."
+    >
+      <ArticleBody sections={sections}>
+        <section id="pendahuluan" className={prose.prose}>
+          <h2>Pendahuluan</h2>
+          <p>
+            Lapisan analisis risiko pada sistem pemantauan terdiri atas tiga modul yang saling terkait. Overall Risk History menilai
+            keseluruhan kondisi operasi unit, Turbine Risk History menilai kualitas uap yang memasuki turbin, dan State of Health Turbin
+            menerjemahkan skor risiko tersebut menjadi laju penuaan terhadap siklus overhaul rencana.
+            <Citation num={1} />
+          </p>
+        </section>
 
-      {/* ========== INTERACTIVE SIMULATOR ========== */}
-      <Paper elevation={3} sx={{ p: 4, mb: 6, bgcolor: '#f8fafc', borderRadius: 3 }}>
-        <Box sx={{ mb: 3, textAlign: 'center' }}>
-          <Typography variant="h4" gutterBottom sx={{ fontWeight: 600 }}>
-            🎮 Interactive Risk Simulator
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Ubah parameter sensor di bawah untuk melihat prediksi risiko secara real-time
-          </Typography>
-        </Box>
+        <section id="isolation-forest" className={prose.prose}>
+          <h2>Isolation Forest sebagai detektor anomali</h2>
+          <p>
+            Isolation Forest merupakan metode deteksi anomali tanpa supervisi yang bekerja dengan mengisolasi titik data melalui pemisahan
+            acak berulang. Titik yang menyimpang dari mayoritas data memerlukan lebih sedikit pemisahan untuk terisolasi, sehingga panjang
+            lintasan rata-ratanya pada kumpulan pohon acak menjadi lebih pendek. Panjang lintasan inilah yang dikonversi menjadi skor
+            anomali.
+            <Citation num={2} />
+          </p>
+          <p>
+            Metode ini dipilih karena tidak memerlukan label kegagalan, yang memang tidak tersedia pada unit yang belum pernah mengalami
+            kegagalan dalam rentang data yang ada.
+            <Citation num={5} />
+          </p>
 
-        <Grid container spacing={4}>
-          {/* LEFT: Input Panel */}
-          <Grid size={{ xs: 12, md: 6 }} sx={{ minHeight: 700 }}>
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                📊 Sensor Parameters
-              </Typography>
-              
-              {/* Preset Buttons */}
-              <ButtonGroup fullWidth sx={{ mb: 3 }}>
-                <Button 
-                  variant={JSON.stringify(sensorValues) === JSON.stringify(presets.normal) ? 'contained' : 'outlined'}
-                  onClick={() => loadPreset('normal')}
-                  sx={{ bgcolor: JSON.stringify(sensorValues) === JSON.stringify(presets.normal) ? '#48bb78' : 'transparent' }}
-                >
-                  ✓ Normal
-                </Button>
-                <Button 
-                  variant={JSON.stringify(sensorValues) === JSON.stringify(presets.warning) ? 'contained' : 'outlined'}
-                  onClick={() => loadPreset('warning')}
-                  sx={{ bgcolor: JSON.stringify(sensorValues) === JSON.stringify(presets.warning) ? '#f59e0b' : 'transparent' }}
-                >
-                  ⚠ Warning
-                </Button>
-                <Button 
-                  variant={JSON.stringify(sensorValues) === JSON.stringify(presets.critical) ? 'contained' : 'outlined'}
-                  onClick={() => loadPreset('critical')}
-                  sx={{ bgcolor: JSON.stringify(sensorValues) === JSON.stringify(presets.critical) ? '#dc2626' : 'transparent' }}
-                >
-                  ⛔ Critical
-                </Button>
-              </ButtonGroup>
-            </Box>
+          <Figure
+            src={isolationForestImg}
+            alt="Diagram konsep Isolation Forest"
+            caption="Gambar 1. Konsep isolasi titik anomali melalui pemisahan acak berulang."
+          />
+        </section>
 
-            {/* Sliders - 2 COLUMNS */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              {Object.keys(sensorRanges).map((sensor) => {
-                const config = sensorRanges[sensor];
-                const value = sensorValues[sensor];
-                const inRange = isInNormalRange(sensor, value);
+        <section id="overall-risk" className={prose.prose}>
+          <h2>Overall Risk History</h2>
+          <p>
+            Modul ini menarik window data 60 menit untuk 14 parameter sensor SCADA setiap 60 detik melalui API. Siklus dibatalkan apabila
+            window tidak lengkap atau mengandung nilai kosong, dan dilewati apabila waktu sensor belum bergerak maju dari siklus sebelumnya.
+            Window yang lolos dinormalisasi, diekstraksi menjadi fitur, dinilai oleh model, dikonversi menjadi skor risiko, lalu disimpan.
+            <Citation num={1} />
+          </p>
+          <p>
+            Ekstraksi fitur mengambil lima ciri statistik dari setiap parameter, yaitu rata-rata, standar deviasi, nilai minimum, nilai
+            maksimum, dan laju perubahan. Dengan 14 parameter, setiap window menghasilkan 70 fitur turunan. Model Isolation Forest kemudian
+            membandingkan pola 70 fitur tersebut terhadap pola yang teramati selama periode operasi normal historis.
+          </p>
 
-                return (
-                  <Grid key={sensor} size={{ xs: 6 }}>
-                    <Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, fontSize: '0.8rem' }}>
-                          {config.label}
-                        </Typography>
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            fontWeight: 600,
-                            fontSize: '0.8rem',
-                            color: inRange ? '#48bb78' : '#dc2626'
-                          }}
-                        >
-                          {value.toFixed(1)} {config.unit}
-                        </Typography>
-                      </Box>
-                      <Slider
-                        value={value}
-                        onChange={(e, val) => updateSensor(sensor, val)}
-                        min={config.min}
-                        max={config.max}
-                        step={sensor === 'gen_power_factor' ? 0.01 : 0.1}
-                        marks={[
-                          { value: config.normal[0], label: '' },
-                          { value: config.normal[1], label: '' }
-                        ]}
-                        valueLabelDisplay="auto"
-                        sx={{
-                          color: inRange ? '#48bb78' : '#dc2626',
-                          '& .MuiSlider-track': {
-                            height: 5
-                          },
-                          '& .MuiSlider-thumb': {
-                            width: 14,
-                            height: 14
-                          }
-                        }}
-                      />
-                    </Box>
-                  </Grid>
-                );
-              })}
-            </Grid>
+          <Callout label="Makna skor risiko" tone="warning">
+            <p>
+              Skor risiko adalah ukuran seberapa jauh pola statistik satu window menyimpang dari pola operasi normal historis. Skor tinggi
+              berarti kombinasi pembacaan sensor pada periode tersebut secara statistik tidak biasa dibandingkan riwayat operasi normal.
+              Angka ini bukan diagnosis kerusakan fisik yang spesifik, dan tidak boleh dibaca sebagai penunjuk komponen tertentu yang sedang
+              rusak.
+            </p>
+          </Callout>
 
-            {/* Predict Button */}
-            <Button 
-              variant="contained" 
-              size="large" 
-              fullWidth
-              onClick={handlePredict}
-              disabled={isCalculating}
-              sx={{ 
-                mt: 2, 
-                py: 1.5,
-                bgcolor: '#2563eb',
-                '&:hover': { bgcolor: '#1d4ed8' }
-              }}
-            >
-              {isCalculating ? 'Calculating...' : 'Predict Risk'}
-            </Button>
-          </Grid>
+          <Figure
+            src={featureImportanceImg}
+            alt="Diagram kontribusi parameter terhadap skor risiko"
+            caption="Gambar 2. Kontribusi relatif parameter terhadap skor risiko yang dihasilkan."
+          />
+        </section>
 
-          {/* RIGHT: Output Panel */}
-          <Grid size={{ xs: 12, md: 6 }} sx={{ minHeight: 700, display: 'flex', flexDirection: 'column' }}>
-            {predictionResult ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                {/* Current Risk Display */}
-                <Paper 
-                  elevation={2} 
-                  sx={{ 
-                    p: 3, 
-                    mb: 3, 
-                    textAlign: 'center',
-                    bgcolor: 'white',
-                    borderRadius: 2,
-                    border: `3px solid ${predictionResult.color}`
-                  }}
-                >
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-                    AI #1a: Current Risk Assessment
-                  </Typography>
-                  
-                  {/* LAYOUT HORIZONTAL */}
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
-                    {/* LEFT: Circular Progress */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-                        <CircularProgress
-                          variant="determinate"
-                          value={predictionResult.riskPercentage}
-                          size={160}
-                          thickness={6}
-                          sx={{ color: predictionResult.color }}
-                        />
-                        <Box
-                          sx={{
-                            top: 0,
-                            left: 0,
-                            bottom: 0,
-                            right: 0,
-                            position: 'absolute',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          {predictionResult.icon}
-                          <Typography variant="h4" sx={{ fontWeight: 700, color: predictionResult.color }}>
-                            {predictionResult.riskPercentage.toFixed(1)}%
-                          </Typography>
-                        </Box>
-                      </Box>
+        <section id="anotasi" className={prose.prose}>
+          <h2>Lapisan anotasi arah parameter</h2>
+          <p>
+            Isolation Forest bersifat simetris dan tidak memiliki pengetahuan bawaan mengenai arah yang menguntungkan atau merugikan untuk
+            tiap parameter. Akibatnya, penurunan TDS yang secara proses justru menguntungkan tetap dapat ditandai sebagai kondisi tidak
+            normal. Lapisan anotasi arah parameter dibangun untuk mengatasi keterbatasan ini.
+            <Citation num={1} />
+          </p>
+          <p>
+            Lapisan ini menandai parameter penggerak beserta arahnya dan menghasilkan kolom skor terkoreksi pada tabel terpisah, tanpa
+            mengubah skor asli sama sekali. Pemisahan ini penting agar jejak audit skor asli tetap utuh.
+          </p>
+          <p>
+            Seluruh 70.611 baris riwayat yang tersedia telah dianotasi. Dari 8.245 window yang memiliki TDS sebagai parameter penggerak,
+            4.626 window tanpa penggerak pendamping seluruhnya lolos gate koreksi, 2.033 dari 3.619 window dengan penggerak pendamping ikut
+            lolos, dan 1.586 window dibatalkan oleh penggerak pendamping yang arahnya terkonfirmasi merugikan. Secara keseluruhan, 6.659
+            dari 8.245 window atau 80,8% lolos gate koreksi.
+          </p>
+        </section>
 
-                      <Chip 
-                        label={predictionResult.status}
-                        sx={{ 
-                          fontSize: 16,
-                          fontWeight: 600,
-                          bgcolor: predictionResult.color,
-                          color: 'white',
-                          mt: 2
-                        }}
-                      />
-                    </Box>
+        <section id="turbine-risk" className={prose.prose}>
+          <h2>Turbine Risk History</h2>
+          <p>
+            Modul ini menjalankan model Isolation Forest terpisah pada enam parameter kualitas uap, menghasilkan 30 fitur turunan per
+            window. Pembagian datanya terdiri atas 7.370 window latih, 1.698 window validasi, dan 1.021 window uji.
+            <Citation num={1} />
+          </p>
+          <p>
+            Laju positif palsu tercatat sebesar 0,98% pada blok latih dan 6,48% pada blok validasi, tetapi mencapai 100% pada blok uji.
+            Nilai terakhir tersebut bukan indikasi model yang rusak. Seluruh blok uji jatuh pada periode setelah pemadaman penuh, ketika
+            unit menyala kembali di sekitar separuh beban. Pergeseran rezim operasinya terukur pada nilai rata-rata fitur, yaitu laju alir
+            yang turun dari 0,828 menjadi 0,208 dan temperatur yang turun dari 0,796 menjadi 0,223 pada skala ternormalisasi yang sama.
+            Model menandai seluruh blok uji sebagai tidak normal karena blok tersebut memang tidak menyerupai kondisi operasi mana pun yang
+            pernah dilihatnya.
+          </p>
+          <p>
+            Laju positif palsu karena itu bukan ukuran yang informatif untuk modul ini pada data yang tersedia. Sebagai gantinya digunakan
+            profil skor risiko harian per rezim operasi.
+          </p>
 
-                    {/* RIGHT: Info */}
-                    <Box sx={{ textAlign: 'left', flex: 1 }}>
-                      <Box sx={{ mb: 2 }}>
-                        {predictionResult.anomalyDetected ? (
-                          <Alert severity="warning" sx={{ fontSize: 12 }}>
-                            ⚠️ Anomaly Detected (Score: {predictionResult.anomalyScore.toFixed(2)})
-                          </Alert>
-                        ) : (
-                          <Alert severity="success" sx={{ fontSize: 12 }}>
-                            ✓ No Anomaly Detected
-                          </Alert>
-                        )}
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        📅 Estimated time to failure: <strong>{predictionResult.estimatedFailureMonths} months</strong>
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Paper>
+          <div className={prose.tableWrap}>
+            <table className={prose.table}>
+              <caption className={prose.caption}>Tabel 1. Profil skor risiko Turbine Risk History per rezim operasi.</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Rezim operasi</th>
+                  <th scope="col">Rentang skor risiko rata-rata harian</th>
+                </tr>
+              </thead>
+              <tbody>
+                {regimes.map((row) => (
+                  <tr key={row.regime}>
+                    <th scope="row">{row.regime}</th>
+                    <td>{row.score}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-                {/* 30-Day Forecast Chart */}
-                <Paper elevation={2} sx={{ p: 3, bgcolor: 'white', borderRadius: 2, flex: 1 }}>
-                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                    AI #1b: 30-Day Risk Forecast
-                  </Typography>
-                  
-                  <ResponsiveContainer width="100%" height={280}>
-                    <LineChart data={forecast} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis 
-                        dataKey="day" 
-                        label={{ value: 'Days Ahead', position: 'insideBottom', offset: -5 }}
-                        stroke="#64748b"
-                      />
-                      <YAxis 
-                        label={{ value: 'Risk Score', angle: -90, position: 'insideLeft' }}
-                        domain={[0, 1]}
-                        stroke="#64748b"
-                      />
-                      <Tooltip 
-                        contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0' }}
-                        formatter={(value) => value.toFixed(2)}
-                      />
-                      
-                      <Area 
-                        type="monotone" 
-                        dataKey="upperBound" 
-                        stroke="none" 
-                        fill="#93c5fd" 
-                        fillOpacity={0.3}
-                      />
-                      <Area 
-                        type="monotone" 
-                        dataKey="lowerBound" 
-                        stroke="none" 
-                        fill="#93c5fd" 
-                        fillOpacity={0.3}
-                      />
-                      
-                      <Line 
-                        type="monotone" 
-                        dataKey="riskScore" 
-                        stroke="#2563eb" 
-                        strokeWidth={3}
-                        dot={{ r: 2 }}
-                        activeDot={{ r: 5 }}
-                        animationDuration={1000}
-                      />
-                      
-                      <ReferenceLine 
-                        y={0.05} 
-                        stroke="#48bb78" 
-                        strokeDasharray="5 5"
-                      />
-                      <ReferenceLine 
-                        y={0.75} 
-                        stroke="#dc2626" 
-                        strokeDasharray="5 5"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+          <p>
+            Profil tersebut menunjukkan modul ini memisahkan rezim operasi dengan urutan yang masuk akal secara fisis. Beban penuh stabil
+            menghasilkan skor rendah, penurunan beban ringan menaikkannya secara moderat, sedangkan kondisi separuh beban dan berhenti
+            operasi menghasilkan skor tinggi yang bertahan. Urutan inilah yang membuat keluarannya layak dipakai sebagai penggerak laju
+            penuaan.
+          </p>
 
-                  {/* Threshold Info - ALIGNED */}
-                  <Box sx={{ mt: 1, mb: 2, display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <svg width="24" height="3">
-                        <line x1="0" y1="1.5" x2="24" y2="1.5" stroke="#48bb78" strokeWidth="2" strokeDasharray="3 3" />
-                      </svg>
-                      <Typography variant="caption" sx={{ fontSize: 10, color: '#48bb78', fontWeight: 600 }}>
-                        Normal (&lt;0.05)
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <svg width="24" height="3">
-                        <line x1="0" y1="1.5" x2="24" y2="1.5" stroke="#dc2626" strokeWidth="2" strokeDasharray="3 3" />
-                      </svg>
-                      <Typography variant="caption" sx={{ fontSize: 10, color: '#dc2626', fontWeight: 600 }}>
-                        Critical (&gt;0.75)
-                      </Typography>
-                    </Box>
-                  </Box>
+          <h3>Deteksi anomali sintetis</h3>
+          <p>
+            Pengujian dilakukan dengan 200 sampel per jenis gangguan yang dibangun dari blok uji, menggunakan pengali delapan kali standar
+            deviasi untuk spike dan lima kali untuk drift.
+          </p>
 
-                  {/* Forecast Summary */}
-                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-around' }}>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="caption" color="text.secondary">Day 7</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {forecast[6]?.riskScore.toFixed(2)} ({forecast[6]?.status})
-                      </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="caption" color="text.secondary">Day 15</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {forecast[14]?.riskScore.toFixed(2)} ({forecast[14]?.status})
-                      </Typography>
-                    </Box>
-                    <Box sx={{ textAlign: 'center' }}>
-                      <Typography variant="caption" color="text.secondary">Day 30</Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {forecast[29]?.riskScore.toFixed(2)} ({forecast[29]?.status})
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Paper>
-              </Box>
-            ) : (
-              <Box 
-                sx={{ 
-                  flex: 1,
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  bgcolor: '#e2e8f0',
-                  borderRadius: 2,
-                  p: 4,
-                  textAlign: 'center'
-                }}
-              >
-                <Box>
-                  <Typography variant="h5" color="text.secondary" gutterBottom>
-                    👈 Adjust sensors & click Predict
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Hasil prediksi akan muncul di sini
-                  </Typography>
-                </Box>
-              </Box>
-            )}
-          </Grid>
-        </Grid>
-      </Paper>
+          <div className={prose.tableWrap}>
+            <table className={prose.table}>
+              <caption className={prose.caption}>Tabel 2. Laju deteksi anomali sintetis satu parameter pada kedua modul.</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Jenis anomali</th>
+                  <th scope="col">Turbine Risk History (6 parameter)</th>
+                  <th scope="col">Overall Risk History (14 parameter)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detection.map((row) => (
+                  <tr key={row.kind}>
+                    <th scope="row">{row.kind}</th>
+                    <td>{row.turbine}</td>
+                    <td>{row.overall}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-      {/* ========== PENJELASAN AI #1a ========== */}
-      <Box sx={{ mb: 6 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: '#1e293b' }}>
-          🤖 AI #1a: Current Risk Assessment
-        </Typography>
-        <Typography variant="body1" paragraph sx={{ color: '#475569', lineHeight: 1.8 }}>
-          Sistem ini menggunakan <strong>Random Forest Classifier</strong> untuk menganalisis kondisi turbin saat ini 
-          berdasarkan 12 parameter sensor. Random Forest bekerja seperti "voting system" dari ratusan decision trees 
-          yang masing-masing memberikan prediksi, lalu hasilnya digabungkan untuk menghasilkan prediksi final yang lebih akurat.
-        </Typography>
-        <Typography variant="body1" paragraph sx={{ color: '#475569', lineHeight: 1.8 }}>
-          <strong>Output yang dihasilkan:</strong>
-        </Typography>
-        <Box component="ul" sx={{ color: '#475569', lineHeight: 1.8, pl: 4 }}>
-          <li><strong>Risk Score (0-100%):</strong> Probabilitas terjadinya kerusakan dalam waktu dekat</li>
-          <li><strong>Status:</strong> Normal (&lt;5%), Warning (5-75%), atau Critical (&gt;75%)</li>
-          <li><strong>Anomaly Detection:</strong> Menggunakan Isolation Forest untuk mendeteksi pola tidak normal yang mungkin belum pernah terjadi sebelumnya</li>
-          <li><strong>Estimated Failure Time:</strong> Perkiraan berapa bulan lagi turbin akan mengalami masalah serius</li>
-        </Box>
-        <Typography variant="body1" paragraph sx={{ color: '#475569', lineHeight: 1.8 }}>
-          Parameter dengan pengaruh terbesar: <strong>Pressure (18%)</strong>, <strong>Generator Output (15%)</strong>, 
-          dan <strong>Temperature (14%)</strong>. Artinya, perubahan pada parameter ini paling berdampak pada risk score.
-        </Typography>
-      </Box>
+          <Callout label="Interpretasi" tone="warning">
+            <p>
+              Selisih pada Tabel 2 tidak boleh dibaca sebagai bukti bahwa Turbine Risk History merupakan detektor yang lebih baik.
+              Perbedaannya berasal dari proporsi fitur yang terganggu, bukan dari mutu model. Mengganggu satu parameter pada modul ini
+              berarti mengganggu satu dari enam masukannya, sedangkan pada Overall Risk History hanya satu dari empat belas. Konsekuensinya
+              berlaku dua arah: modul dengan masukan sedikit lebih peka terhadap gangguan satu sensor, tetapi juga lebih rentan menandai
+              perubahan rezim operasi yang sah sebagai anomali.
+            </p>
+          </Callout>
 
-      {/* ========== PENJELASAN AI #1b ========== */}
-      <Box sx={{ mb: 6 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: '#1e293b' }}>
-          📈 AI #1b: 30-Day Risk Forecasting
-        </Typography>
-        <Typography variant="body1" paragraph sx={{ color: '#475569', lineHeight: 1.8 }}>
-          Berbeda dengan AI #1a yang hanya melihat kondisi "sekarang", AI #1b menggunakan <strong>LSTM (Long Short-Term Memory)</strong> 
-          untuk memprediksi bagaimana risiko akan berubah dalam 30 hari ke depan. LSTM adalah jenis neural network yang bisa 
-          "mengingat" pola historis dan memprediksi trend masa depan.
-        </Typography>
-        <Typography variant="body1" paragraph sx={{ color: '#475569', lineHeight: 1.8 }}>
-          <strong>Kenapa pakai LSTM, bukan Random Forest?</strong> Karena Random Forest bagus untuk snapshot (foto satu waktu), 
-          tapi tidak bisa melihat "cerita" dari data time-series. LSTM bisa menangkap pola seperti "jika pressure naik terus 
-          selama 3 hari, biasanya akan terjadi X dalam 2 minggu ke depan".
-        </Typography>
-        <Typography variant="body1" paragraph sx={{ color: '#475569', lineHeight: 1.8 }}>
-          <strong>Cara kerja forecasting:</strong> LSTM menganalisis historical risk scores 30 hari terakhir, lalu memprediksi 
-          30 hari ke depan secara rekursif (hari ke-1 dipakai untuk prediksi hari ke-2, dst). Area berwarna biru di chart 
-          menunjukkan "confidence interval" - semakin jauh prediksi, semakin lebar intervalnya karena uncertainty meningkat.
-        </Typography>
-        <Typography variant="body1" paragraph sx={{ color: '#475569', lineHeight: 1.8 }}>
-          <strong>Use case praktis:</strong> AI #1a untuk <em>immediate alert</em> ("turbine dalam bahaya sekarang!"), 
-          sedangkan AI #1b untuk <em>maintenance planning</em> ("dalam 2 minggu risiko akan naik, schedule maintenance sekarang").
-        </Typography>
-      </Box>
+          <p>
+            Terdapat satu keterbatasan tambahan. Dua dari enam masukan modul ini, yaitu Dryness Fraction dan NCG, hampir sepenuhnya dapat
+            dijelaskan oleh empat masukan lainnya. Regresi linear terhadap rata-rata tekanan, temperatur, dan TDS per window menghasilkan
+            koefisien determinasi 0,991 untuk Dryness Fraction dan 0,985 untuk NCG. Hal ini wajar karena kedua nilai tersebut memang
+            diprediksi dari ketiga parameter itu oleh modul sensor virtual. Keduanya tetap disertakan karena keenam parameter dipilih atas
+            dasar perannya dalam kualitas uap, tetapi klaim bahwa modul ini menilai enam sumber informasi yang independen tidak dapat
+            dipertahankan.
+          </p>
+        </section>
 
-      {/* ========== KESIMPULAN ========== */}
-      <Box sx={{ mb: 6 }}>
-        <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: '#1e293b' }}>
-          💡 Kesimpulan
-        </Typography>
-        <Typography variant="body1" paragraph sx={{ color: '#475569', lineHeight: 1.8 }}>
-          Sistem AI #1 memberikan <strong>two-layer protection</strong>: deteksi real-time (AI #1a) untuk mencegah kerusakan 
-          mendadak, dan forecasting (AI #1b) untuk perencanaan maintenance yang lebih efektif. Kombinasi kedua AI ini 
-          membantu operator PLTP mengambil keputusan yang lebih proaktif dan data-driven.
-        </Typography>
-        <Alert severity="info" sx={{ mt: 2 }}>
-          <strong>Catatan:</strong> Simulator di atas menggunakan simplified logic untuk demo purposes. 
-          Model AI real di production menggunakan training data dari ribuan jam operasional turbin dan 
-          lebih kompleks dalam feature engineering-nya.
-        </Alert>
-      </Box>
-    </Container>
+        <section id="soh" className={prose.prose}>
+          <h2>State of Health turbin</h2>
+          <p>
+            Modul ini menjawab satu pertanyaan perawatan yang konkret, yaitu apakah overhaul mayor berikutnya perlu dimajukan, dengan
+            horizon kerja sepanjang satu siklus overhaul rencana. Panjang siklus rencana yang digunakan adalah empat tahun, dengan rentang
+            yang masih dapat dipertanggungjawabkan dua sampai enam tahun, disusun dari beberapa PLTP yang berbeda.
+            <Citation num={1} />
+          </p>
+          <p>
+            Keluarannya dinyatakan sebagai State of Health, yaitu persentase sisa jatah siklus berjalan pada skala 0 sampai 100. Nilai 100
+            berarti siklus baru saja dimulai, sedangkan nilai 0 berarti jatah siklus telah habis. Perlu ditegaskan bahwa nilai 0 berarti
+            waktunya dilakukan Turn Around, bukan berarti turbin telah rusak.
+          </p>
+
+          <Callout label="Status validasi" tone="warning">
+            <p>
+              Modul ini bukan model machine learning yang divalidasi terhadap kejadian kegagalan, melainkan model heuristik rekayasa
+              keandalan yang dikalibrasi dari angka industri. Unit yang dipantau belum pernah mengalami kegagalan dalam rentang data yang
+              tersedia, dan dari tiga overhaul yang tercatat hanya satu yang terjadi ketika data sensor sudah ada. Seluruh angka yang
+              dihasilkan karena itu hanya boleh dibaca sebagai perbandingan skenario relatif, bukan prediksi yang tervalidasi.
+            </p>
+          </Callout>
+
+          <h3>Bentuk model</h3>
+          <p>
+            Model berbentuk fungsi hazard Weibull yang dipercepat oleh skor Turbine Risk History melalui suku Cox proportional hazards.
+            Parameter bentuk Weibull ditetapkan sebesar 2,5 secara a priori mengikuti teknik Weibayes, karena tidak tersedia kejadian
+            kegagalan untuk mengestimasinya.
+            <Citation num={4} />
+            Koefisien Cox ditetapkan sebesar logaritma natural dari 2, dikalibrasi agar kedua model berimpit ketika skor risiko berada pada
+            dua kali nilai acuannya.
+            <Citation num={3} />
+          </p>
+          <p>
+            Penuaan diakumulasi sebagai integrasi umur efektif tertimbang waktu nyata antar sampel, bukan tertimbang jumlah baris, sehingga
+            hasilnya tidak berubah ketika cadence data berubah. Uji invariansi cadence mengonfirmasi hal ini: sinyal fisis yang sama
+            disampling per satu menit, dua menit, satu jam, dan satu hari menghasilkan penuaan yang identik sampai orde 1e-12 relatif.
+          </p>
+          <p>
+            Uji mandiri utama modul ini membandingkan dua skenario pembebanan dengan rata-rata skor risiko tertimbang waktu yang identik
+            sebesar 23,33%, yaitu skenario berdenyut berupa empat jam pada skor 90% dan 20 jam pada skor 10%, melawan kondisi rata yang
+            setara. Model yang peka terhadap bentuk sebaran seharusnya menilai skenario berdenyut lebih merusak, dan pengujian ini digunakan
+            untuk memverifikasi sifat tersebut.
+          </p>
+        </section>
+
+        <section id="kesimpulan" className={prose.prose}>
+          <h2>Kesimpulan</h2>
+          <p>
+            Ketiga modul bekerja pada tingkat abstraksi yang berbeda. Overall Risk History memberikan gambaran menyeluruh kondisi operasi
+            dengan 14 parameter, Turbine Risk History memberikan sensitivitas lebih tinggi pada enam parameter kualitas uap, dan State of
+            Health Turbin menerjemahkan skor risiko menjadi laju penuaan terhadap siklus overhaul rencana.
+          </p>
+          <p>
+            Keterbatasan masing-masing modul telah terdokumentasi dan perlu diperhatikan saat membaca keluarannya. Skor risiko merupakan
+            ukuran penyimpangan statistik, bukan diagnosis kerusakan. Sensitivitas Turbine Risk History yang lebih tinggi berasal dari
+            jumlah masukan yang lebih sedikit, bukan dari mutu model. State of Health Turbin merupakan model heuristik yang belum divalidasi
+            terhadap kejadian kegagalan.
+          </p>
+        </section>
+
+        <References entries={references} />
+      </ArticleBody>
+    </ArticleLayout>
   );
-};
-
-export default AI1;
+}

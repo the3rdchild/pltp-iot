@@ -1,1451 +1,465 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import ncgCompositionChart from 'assets/images/articles/ncg/ncg_composition_chart.jpg';
+import turbineCorrosionNcg from 'assets/images/articles/ncg/turbine_corrosion_ncg.jpg';
+import abatementSystem from 'assets/images/articles/ncg/abatement_system.jpg';
+import ncgEfficiencyImpact from 'assets/images/articles/ncg/ncg_efficiency_impact.jpg';
 
-// Import gambar dari folder ncg
-import ncgCompositionChart from '/src/assets/images/articles/ncg/ncg_composition_chart.jpg';
-import turbineCorrosionNcg from '/src/assets/images/articles/ncg/turbine_corrosion_ncg.jpg';
-import abatementSystem from '/src/assets/images/articles/ncg/abatement_system.jpg';
-import ncgEfficiencyImpact from '/src/assets/images/articles/ncg/ncg_efficiency_impact.jpg';
-import pertasmartLogo from '/src/assets/images/articles/Pertasmart4x1.svg';
+import ArticleBody from 'components/landing/article/ArticleBody';
+import ArticleLayout from 'components/landing/article/ArticleLayout';
+import Callout from 'components/landing/article/Callout';
+import Citation from 'components/landing/article/Citation';
+import Figure from 'components/landing/article/Figure';
+import References from 'components/landing/article/References';
+import prose from 'components/landing/article/Prose.module.css';
+
+const sections = [
+  { id: 'pendahuluan', label: 'Pendahuluan' },
+  { id: 'komposisi', label: 'Komposisi NCG' },
+  { id: 'dampak', label: 'Dampak operasional' },
+  { id: 'studi', label: 'Studi lapangan' },
+  { id: 'teknologi', label: 'Teknologi pengendalian' },
+  { id: 'kesimpulan', label: 'Kesimpulan' },
+  { id: 'dafpus', label: 'Daftar pustaka' }
+];
+
+const composition = [
+  { gas: 'CO₂ (karbon dioksida)', share: '85 sampai 95%' },
+  { gas: 'H₂S (hidrogen sulfida)', share: '1 sampai 3%' },
+  { gas: 'NH₃ (amonia)', share: 'sekitar 0,1%' },
+  { gas: 'Gas lain (N₂, CH₄, Ar, H₂)', share: '1 sampai 5%' }
+];
+
+const impact = [
+  { content: '5%', loss: '4 sampai 5%' },
+  { content: '10%', loss: '8 sampai 10%' },
+  { content: '25%', loss: 'hingga 22%' }
+];
+
+const references = [
+  {
+    author: 'Gokcen, G., Yıldırım, N.',
+    title: 'Effect of Non-Condensable Gases on geothermal power plant performance',
+    source: 'Semantic Scholar',
+    year: 2016
+  },
+  { author: 'Cengic, I., Soldo, V.', title: 'Environmental Impact of Geothermal Power Plants', source: 'Hrcak Journal', year: 2018 },
+  {
+    author: 'ThinkGeoEnergy.',
+    title: 'Treating non-condensable gases (NCG) of geothermal plants: experience by Mannvit',
+    source: 'ThinkGeoEnergy',
+    year: 2019
+  },
+  {
+    author: '',
+    title: 'Possibilities Study of a Non-condensable Gas Exhaust System',
+    source: 'Journal of Geoscience, Engineering, Environment, and Technology (JGEET)',
+    year: 2024
+  },
+  {
+    author: 'World Bank ESMAP.',
+    title: 'Geothermal handbook: Planning and financing power generation',
+    source: 'ESMAP Technical Report',
+    year: 2012
+  },
+  { author: '', title: 'Journal of Geoscience, Engineering, Environment, and Technology', source: 'JGEET UIR, Vol. 9', year: 2024 },
+  {
+    author: 'JICA.',
+    title: 'Preparatory Survey for Lumut Balai Geothermal Project in the Republic of Indonesia',
+    source: 'JICA Report',
+    year: 2012
+  },
+  {
+    author: 'Nogara, J. dkk.',
+    title: 'The influence of non-condensable gases on the net work produced by a geothermal power plant',
+    source: 'Applied Energy',
+    year: 1982
+  },
+  { author: 'EPRI.', title: 'Corrosion of Materials Used in Geothermal Power Production', source: 'EPRI Technical Report', year: 2016 },
+  {
+    author: 'Nogara, J., Zarrouk, S. J.',
+    title: 'Corrosion in geothermal environment: Part 1',
+    source: 'Renewable and Sustainable Energy Reviews',
+    year: 2018
+  },
+  { author: 'EPRI.', title: 'Materials Degradation and Failure Mechanisms in Geothermal Power Systems', source: 'EPRI Report', year: 2016 },
+  { author: 'Bertani, R., Thain, I.', title: 'Geothermal power generating plant CO₂ emission survey', source: 'IGA News', year: 2002 },
+  {
+    author: 'Bloomfield, K. K., Moore, J. N., Neilson, R. M.',
+    title: 'Geothermal Energy Reduces Greenhouse Gases',
+    source: 'Geothermal Resources Council Bulletin',
+    year: 2003
+  },
+  { author: 'Putra, A. D.', title: 'Analisis Dispersi H₂S dan NH₃ dari PLTP Kamojang', source: 'Digital Library ITB', year: 2016 },
+  {
+    author: 'PT SMI.',
+    title: 'Environmental and Social Impact Assessment: Waesano GEUDP Project',
+    source: 'PT SMI Documentation',
+    year: 2019
+  },
+  {
+    author: 'Star Energy Geothermal.',
+    title: 'Wayang Windu Sustainability Report 2016',
+    source: 'Star Energy Corporate Report',
+    year: 2016
+  },
+  {
+    author: 'Kilgour, G. dkk.',
+    title: 'Non-condensable gas reinjection at the Te Huka geothermal power plant',
+    source: 'Geothermal Resources Council Transactions',
+    year: 2016
+  },
+  {
+    author: 'McNamara, D. D. dkk.',
+    title: 'Non Condensable Gas Reinjection Trial at Ngatamariki Geothermal Field',
+    source: 'New Zealand Geothermal Workshop',
+    year: 2022
+  },
+  {
+    author: 'Sterzinger, G., Taylor, M.',
+    title: 'Sustainable removal of non-condensable gases from geothermal plants',
+    source: 'Renewable and Sustainable Energy Reviews',
+    year: 2013
+  },
+  { author: 'KROHNE.', title: 'Gas analysis systems for geothermal power generation', source: 'KROHNE Technical Documentation', year: 2020 }
+];
+
+// ==============================|| ARTICLE - NCG ||============================== //
 
 export default function NCGArticle() {
-  const navigate = useNavigate();
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
-  const [activeSection, setActiveSection] = React.useState('');
-
-  // Scroll to reference function
-  const scrollToRef = (refNumber) => {
-    const element = document.getElementById(`ref-${refNumber}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Highlight effect
-      element.style.backgroundColor = '#fef3c7';
-      setTimeout(() => {
-        element.style.backgroundColor = 'transparent';
-      }, 2000);
-    }
-  };
-
-  // Scroll to section function
-  const scrollToSection = (sectionId) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setActiveSection(sectionId);
-      setIsSidebarOpen(false);
-    }
-  };
-
-  // Reference component
-  const Ref = ({ num }) => (
-    <sup 
-      onClick={() => scrollToRef(num)}
-      style={{
-        color: '#2563eb',
-        cursor: 'pointer',
-        fontWeight: '600',
-        transition: 'all 0.2s ease',
-        display: 'inline-block'
-      }}
-      onMouseEnter={(e) => {
-        e.target.style.color = '#1e40af';
-        e.target.style.transform = 'scale(1.15)';
-      }}
-      onMouseLeave={(e) => {
-        e.target.style.color = '#2563eb';
-        e.target.style.transform = 'scale(1)';
-      }}
-    >
-      [{num}]
-    </sup>
-  );
-
-  // Navigation sections
-  const sections = [
-    { id: 'intro', label: 'Pendahuluan' },
-    { id: 'definisi', label: 'Definisi & Komposisi' },
-    { id: 'dampak', label: 'Dampak NCG' },
-    { id: 'studi', label: 'Studi Lapangan' },
-    { id: 'teknologi', label: 'Teknologi Pengendalian' },
-    { id: 'kesimpulan', label: 'Kesimpulan' },
-    { id: 'dafpus', label: 'Daftar Pustaka' }
-  ];
-
   return (
-    <>
-      <style jsx>{`
-      /* Footer */
-      .footer {
-        background: #0f1729;
-        color: white;
-        padding: 48px 0;
-      }
-      .footer-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 32px;
-        margin-bottom: 32px;
-      }
-      .footer-logos {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-      .footer-logo {
-        height: 32px;
-        width: auto;
-      }
-      .footer-text {
-        font-size: 0.875rem;
-        color: rgba(255, 255, 255, 0.7);
-        line-height: 1.6;
-      }
-      .footer-heading {
-        font-weight: 700;
-        margin-bottom: 16px;
-      }
-      .footer-links {
-        list-style: none;
-        padding: 0;
-      }
-      .footer-links li {
-        margin-bottom: 8px;
-      }
-      .footer-links a {
-        color: rgba(255, 255, 255, 0.7);
-        text-decoration: none;
-        font-size: 0.875rem;
-        transition: color 0.3s ease;
-      }
-      .footer-links a:hover {
-        color: white;
-      }
-      .footer-bottom {
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        padding-top: 32px;
-        text-align: center;
-      }
-      .footer-bottom p {
-        font-size: 0.875rem;
-        color: rgba(255, 255, 255, 0.6);
-      }
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 20px;
-      }
-    `}</style>
-
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f1729 0%, #1a2642 50%, #0f1729 100%)',
-      padding: '40px 20px',
-      position: 'relative'
-    }}>
-      {/* Fixed Back Button */}
-      <button
-        onClick={() => navigate(-1)}
-        style={{
-          position: 'fixed',
-          top: '24px',
-          left: '24px',
-          background: 'rgba(37, 99, 235, 0.9)',
-          border: 'none',
-          color: 'white',
-          padding: '12px 24px',
-          borderRadius: '50px',
-          cursor: 'pointer',
-          fontSize: '14px',
-          fontWeight: '600',
-          backdropFilter: 'blur(10px)',
-          transition: 'all 0.3s ease',
-          zIndex: 1002,
-          boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.background = 'rgba(37, 99, 235, 1)';
-          e.target.style.transform = 'translateX(-5px)';
-          e.target.style.boxShadow = '0 6px 20px rgba(37, 99, 235, 0.4)';
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = 'rgba(37, 99, 235, 0.9)';
-          e.target.style.transform = 'translateX(0)';
-          e.target.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.3)';
-        }}
-      >
-        ← Kembali
-      </button>
-
-      {/* Hamburger Menu */}
-      <div 
-        style={{
-          position: 'fixed',
-          top: '24px',
-          right: '24px',
-          width: '40px',
-          height: '40px',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          gap: '6px',
-          cursor: 'pointer',
-          zIndex: 1002,
-          padding: '8px',
-          borderRadius: '8px',
-          background: 'rgba(26, 38, 66, 0.8)',
-          backdropFilter: 'blur(10px)',
-          transition: 'all 0.3s ease'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(37, 99, 235, 0.9)';
-          setIsSidebarOpen(true);
-        }}
-      >
-        <div style={{ width: '24px', height: '3px', background: 'white', borderRadius: '2px', transition: 'all 0.3s ease' }}></div>
-        <div style={{ width: '24px', height: '3px', background: 'white', borderRadius: '2px', transition: 'all 0.3s ease' }}></div>
-        <div style={{ width: '24px', height: '3px', background: 'white', borderRadius: '2px', transition: 'all 0.3s ease' }}></div>
-      </div>
-
-      {/* Sidebar Navigation */}
-      <div 
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: isSidebarOpen ? 0 : '-280px',
-          width: '280px',
-          height: '100vh',
-          background: 'rgba(26, 38, 66, 0.98)',
-          backdropFilter: 'blur(20px)',
-          zIndex: 1001,
-          transition: 'right 0.3s ease',
-          boxShadow: '-2px 0 20px rgba(0, 0, 0, 0.3)',
-          padding: '80px 24px 24px 24px',
-          overflowY: 'auto'
-        }}
-        onMouseLeave={() => setIsSidebarOpen(false)}
-      >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {sections.map((section) => (
-            <div
-              key={section.id}
-              onClick={() => scrollToSection(section.id)}
-              style={{
-                color: 'white',
-                textDecoration: 'none',
-                padding: '16px 20px',
-                borderRadius: '8px',
-                fontWeight: '500',
-                fontSize: '0.95rem',
-                transition: 'all 0.3s ease',
-                display: 'block',
-                cursor: 'pointer',
-                background: activeSection === section.id ? 'rgba(37, 99, 235, 0.2)' : 'transparent'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(37, 99, 235, 0.2)';
-                e.currentTarget.style.color = '#60a5fa';
-                e.currentTarget.style.transform = 'translateX(-8px)';
-              }}
-              onMouseLeave={(e) => {
-                if (activeSection !== section.id) {
-                  e.currentTarget.style.background = 'transparent';
-                }
-                e.currentTarget.style.color = 'white';
-                e.currentTarget.style.transform = 'translateX(0)';
-              }}
-            >
-              {section.label}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{
-        maxWidth: '900px',
-        margin: '0 auto',
-        background: 'white',
-        borderRadius: '20px',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-        overflow: 'hidden'
-      }}>
-        {/* Header Section */}
-        <div id="intro" style={{
-          background: 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',
-          padding: '80px 40px 60px 40px',
-          textAlign: 'center',
-          position: 'relative'
-        }}>
-          <h1 style={{
-            fontSize: '42px',
-            fontWeight: '800',
-            color: 'white',
-            marginBottom: '15px',
-            textShadow: '2px 2px 4px rgba(0,0,0,0.2)',
-            lineHeight: '1.2'
-          }}>
-            Non Condensable Gas (NCG)
-          </h1>
-          <p style={{
-            fontSize: '20px',
-            color: 'rgba(255,255,255,0.9)',
-            fontWeight: '500',
-            marginTop: '10px'
-          }}>
-            Pembunuh Senyap yang Merampas 22% Efisiensi dan Menggerogoti Turbin dari Dalam
+    <ArticleLayout
+      eyebrow="Parameter uap"
+      title="Non Condensable Gas (NCG)"
+      lead="Pengaruh gas yang tidak terkondensasi terhadap kinerja kondensor, laju korosi material, dan emisi pembangkit."
+    >
+      <ArticleBody sections={sections}>
+        <section id="pendahuluan" className={prose.prose}>
+          <h2>Gas yang tidak terkondensasi dalam aliran uap</h2>
+          <p>
+            Parameter operasi seperti tekanan, temperatur, dan laju alir dapat berada dalam rentang normal sementara kinerja unit menurun.
+            Salah satu penyebabnya adalah <strong>Non Condensable Gas (NCG)</strong>, yaitu gas yang mengalir bersama uap tetapi tidak
+            terkondensasi pada kondisi kerja kondensor.
+            <Citation num={1} />
           </p>
-        </div>
+          <p>
+            Studi eksperimental menunjukkan bahwa kenaikan kandungan NCG sebesar 1% menurunkan daya turbin hingga 0,86%. Pada kandungan NCG
+            sebesar 25%, penurunan efisiensi total mencapai 22%, yang pada unit berkapasitas 110 MW setara dengan kehilangan keluaran
+            sekitar 24 MW.
+            <Citation num={2} />
+          </p>
 
-        {/* Content Section */}
-        <div style={{ padding: '50px 60px' }}>
-          
-          {/* Opening - The Invisible Enemy */}
-          <section style={{ marginBottom: '40px' }}>
-            <h2 style={{
-              fontSize: '28px',
-              fontWeight: '700',
-              color: '#1a2642',
-              marginBottom: '20px',
-              borderLeft: '5px solid #2563eb',
-              paddingLeft: '15px'
-            }}>
-              Musuh Tak Terlihat dalam Setiap Aliran Uap
-            </h2>
-            
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '15px'
-            }}>
-              Saat operator PLTP memantau parameter operasional — tekanan, temperatur, flow rate — 
-              semuanya tampak normal. Namun ada ancaman tersembunyi yang tidak tertangkap oleh mata 
-              telanjang: <strong>Non Condensable Gas (NCG)</strong>. Gas-gas ini — terutama CO₂ dan H₂S — 
-              mengalir bersama uap, tidak terlihat, tidak berbau pada konsentrasi rendah, tetapi secara 
-              diam-diam menggerogoti efisiensi turbin dan mempercepat korosi material.<Ref num={1} />
+          <Callout label="Definisi">
+            <p>
+              NCG adalah gas yang tidak dapat dikondensasikan pada tekanan dan temperatur kerja kondensor. Berbeda dengan uap air yang
+              berubah menjadi kondensat, NCG tetap berada dalam fase gas dan terakumulasi di dalam sistem. Akumulasi tersebut membentuk
+              lapisan penghambat perpindahan panas dan menurunkan derajat vakum kondensor.
             </p>
+          </Callout>
+        </section>
 
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '15px'
-            }}>
-              Studi eksperimental menunjukkan dampak yang mengejutkan: <strong>peningkatan konten NCG 
-              hanya 1% dapat menurunkan daya turbin hingga 0.86%</strong>. Pada konsentrasi 25% NCG, 
-              penurunan efisiensi total mencapai <strong>22%</strong> — setara dengan kehilangan 24 MW 
-              dari turbin 110 MW, atau cukup energi untuk 18,000 rumah!<Ref num={2} />
-            </p>
+        <section id="komposisi" className={prose.prose}>
+          <h2>Komposisi NCG</h2>
+          <p>
+            NCG pada PLTP berasal dari fluida geotermal yang terperangkap dalam reservoir. Komposisinya bervariasi mengikuti karakteristik
+            reservoir, dengan proporsi tipikal sebagai berikut.
+            <Citation num={3} />
+            <Citation num={4} />
+          </p>
 
-            <div style={{
-              background: 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',
-              padding: '20px 25px',
-              borderRadius: '12px',
-              marginTop: '25px'
-            }}>
-              <p style={{
-                fontSize: '15px',
-                lineHeight: '1.7',
-                color: 'white',
-                margin: 0,
-                fontWeight: '500'
-              }}>
-                <strong>☁️ Apa itu NCG?</strong><br/>
-                Non Condensable Gas adalah gas yang tidak dapat dikondensasikan pada tekanan dan 
-                temperatur kerja kondenser. Berbeda dengan uap air yang berubah menjadi kondensat, 
-                NCG tetap dalam fase gas dan "menumpuk" di sistem, menciptakan thermal blanket yang 
-                menghambat perpindahan panas dan menurunkan vacuum condenser — kunci efisiensi turbin.
-              </p>
-            </div>
-          </section>
-
-          {/* Definisi & Komposisi */}
-          <section id="definisi" style={{ marginBottom: '40px' }}>
-            <h2 style={{
-              fontSize: '28px',
-              fontWeight: '700',
-              color: '#1a2642',
-              marginBottom: '20px',
-              borderLeft: '5px solid #2563eb',
-              paddingLeft: '15px'
-            }}>
-              Komposisi NCG: Siapa Pelakunya?
-            </h2>
-
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '15px'
-            }}>
-              NCG di PLTP berasal dari fluida geothermal yang terperangkap di reservoir selama jutaan 
-              tahun. Komposisinya bervariasi tergantung karakteristik reservoir, tetapi umumnya 
-              didominasi oleh beberapa gas utama:<Ref num={3} /><Ref num={4} />
-            </p>
-
-            <div style={{
-              background: '#f7fafc',
-              padding: '25px',
-              borderRadius: '12px',
-              marginBottom: '20px'
-            }}>
-              <h4 style={{
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#1a2642',
-                marginBottom: '15px'
-              }}>
-                🧪 Komposisi Tipikal NCG di PLTP Indonesia
-              </h4>
-              
-              <div style={{ marginBottom: '10px' }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '5px'
-                }}>
-                  <span style={{ fontSize: '15px', color: '#4a5568', fontWeight: '500' }}>
-                    CO₂ (Karbon Dioksida)
-                  </span>
-                  <span style={{ fontSize: '15px', color: '#2563eb', fontWeight: '700' }}>
-                    85-95%
-                  </span>
-                </div>
-                <div style={{
-                  height: '8px',
-                  background: '#e2e8f0',
-                  borderRadius: '4px',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    width: '92%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, #2563eb, #1e40af)',
-                    borderRadius: '4px'
-                  }}></div>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '5px'
-                }}>
-                  <span style={{ fontSize: '15px', color: '#4a5568', fontWeight: '500' }}>
-                    H₂S (Hidrogen Sulfida)
-                  </span>
-                  <span style={{ fontSize: '15px', color: '#2563eb', fontWeight: '700' }}>
-                    1-3%
-                  </span>
-                </div>
-                <div style={{
-                  height: '8px',
-                  background: '#e2e8f0',
-                  borderRadius: '4px',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    width: '2%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, #dc2626, #991b1b)',
-                    borderRadius: '4px'
-                  }}></div>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '5px'
-                }}>
-                  <span style={{ fontSize: '15px', color: '#4a5568', fontWeight: '500' }}>
-                    NH₃ (Amonia)
-                  </span>
-                  <span style={{ fontSize: '15px', color: '#2563eb', fontWeight: '700' }}>
-                    ~0.1%
-                  </span>
-                </div>
-                <div style={{
-                  height: '8px',
-                  background: '#e2e8f0',
-                  borderRadius: '4px',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    width: '0.5%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, #16a34a, #15803d)',
-                    borderRadius: '4px'
-                  }}></div>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '10px' }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '5px'
-                }}>
-                  <span style={{ fontSize: '15px', color: '#4a5568', fontWeight: '500' }}>
-                    Gas Lain (N₂, CH₄, Ar, H₂)
-                  </span>
-                  <span style={{ fontSize: '15px', color: '#2563eb', fontWeight: '700' }}>
-                    1-5%
-                  </span>
-                </div>
-                <div style={{
-                  height: '8px',
-                  background: '#e2e8f0',
-                  borderRadius: '4px',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    width: '3%',
-                    height: '100%',
-                    background: 'linear-gradient(90deg, #9333ea, #7e22ce)',
-                    borderRadius: '4px'
-                  }}></div>
-                </div>
-              </div>
-            </div>
-
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '15px'
-            }}>
-              <strong>Catatan Penting:</strong> Meskipun CO₂ mendominasi secara kuantitas, H₂S 
-              yang hanya 1-3% justru paling berbahaya karena sifatnya yang sangat korosif terhadap 
-              logam dan toksik terhadap manusia (berbau busuk pada konsentrasi sangat rendah, 
-              kemudian merusak indera penciuman pada konsentrasi tinggi — making it invisible killer).<Ref num={5} />
-            </p>
-          </section>
-
-          {/* Gambar: NCG Composition Chart */}
-          <div style={{
-            borderRadius: '15px',
-            overflow: 'hidden',
-            marginBottom: '40px',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
-          }}>
-            <img 
-              src={ncgCompositionChart} 
-              alt="Diagram komposisi NCG di berbagai PLTP"
-              style={{
-                width: '100%',
-                height: 'auto',
-                display: 'block'
-              }}
-            />
-            <div style={{
-              background: '#f7fafc',
-              padding: '12px 20px',
-              fontSize: '13px',
-              color: '#718096',
-              fontStyle: 'italic',
-              textAlign: 'center'
-            }}>
-              Gambar 1: Variasi komposisi NCG di berbagai lapangan geothermal
-            </div>
+          <div className={prose.tableWrap}>
+            <table className={prose.table}>
+              <caption className={prose.caption}>Tabel 1. Komposisi tipikal NCG pada PLTP di Indonesia.</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Komponen</th>
+                  <th scope="col">Proporsi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {composition.map((row) => (
+                  <tr key={row.gas}>
+                    <th scope="row">{row.gas}</th>
+                    <td>{row.share}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          {/* Dampak NCG */}
-          <section id="dampak" style={{ marginBottom: '40px' }}>
-            <h2 style={{
-              fontSize: '28px',
-              fontWeight: '700',
-              color: '#1a2642',
-              marginBottom: '25px',
-              borderLeft: '5px solid #2563eb',
-              paddingLeft: '15px'
-            }}>
-              Triple Threat: Tiga Cara NCG Menghancurkan PLTP
-            </h2>
+          <p>
+            Meskipun CO<sub>2</sub> mendominasi secara kuantitas, H<sub>2</sub>S dengan proporsi 1 sampai 3% merupakan komponen yang paling
+            kritis karena bersifat sangat korosif terhadap logam sekaligus toksik. Pada konsentrasi tinggi, gas ini melumpuhkan indra
+            penciuman sehingga keberadaannya tidak lagi terdeteksi secara sensorik.
+            <Citation num={5} />
+          </p>
 
-            {/* A. Penurunan Efisiensi */}
-            <div style={{ marginBottom: '30px' }}>
-              <h3 style={{
-                fontSize: '22px',
-                fontWeight: '600',
-                color: '#1a2642',
-                marginBottom: '15px'
-              }}>
-                A. Penurunan Efisiensi Turbin: Thermal Blanket Effect
-              </h3>
-              
-              <p style={{
-                fontSize: '16px',
-                lineHeight: '1.8',
-                color: '#4a5568',
-                marginBottom: '12px'
-              }}>
-                NCG menciptakan "thermal blanket" (selimut termal) pada permukaan kondenser yang 
-                menghambat perpindahan panas dari uap ke cooling water. Mekanismenya:<Ref num={6} />
-              </p>
+          <Figure
+            src={ncgCompositionChart}
+            alt="Diagram komposisi NCG pada beberapa lapangan panas bumi"
+            caption="Gambar 1. Variasi komposisi NCG pada beberapa lapangan panas bumi."
+          />
+        </section>
 
-              <ul style={{
-                fontSize: '16px',
-                lineHeight: '1.8',
-                color: '#4a5568',
-                paddingLeft: '40px',
-                marginBottom: '15px'
-              }}>
-                <li><strong>NCG bersifat inert:</strong> Tidak menghasilkan energi kerja saat melewati 
-                turbin, hanya "menumpang" dalam aliran uap.</li>
-                <li><strong>Menurunkan tekanan parsial uap:</strong> Dengan adanya NCG, tekanan parsial 
-                uap di condenser turun, meningkatkan back pressure turbin.</li>
-                <li><strong>Menghambat kondensasi:</strong> Layer NCG pada tube condenser bertindak 
-                sebagai insulator, memperlambat transfer panas.</li>
-                <li><strong>Degradasi vacuum:</strong> Akumulasi NCG merusak vacuum condenser, 
-                mengurangi driving force ekspansi uap di turbin.<Ref num={7} /></li>
-              </ul>
+        <section id="dampak" className={prose.prose}>
+          <h2>Tiga dampak operasional</h2>
 
-              <div style={{
-                background: '#fff5f5',
-                border: '2px solid #2563eb',
-                padding: '20px',
-                borderRadius: '12px',
-                marginTop: '20px'
-              }}>
-                <p style={{
-                  fontSize: '15px',
-                  lineHeight: '1.7',
-                  color: '#1a2642',
-                  margin: 0,
-                  fontWeight: '600'
-                }}>
-                  ⚠️ <strong>Data Eksperimental:</strong> Penelitian menunjukkan hubungan non-linear 
-                  antara NCG dan efisiensi. Pada NCG content:
-                  <br/>• 5% → Penurunan efisiensi ~4-5%
-                  <br/>• 10% → Penurunan efisiensi ~8-10%
-                  <br/>• 25% → Penurunan efisiensi hingga <strong>22%</strong>
-                  <br/><br/>
-                  Untuk PLTP 110 MW, penurunan 22% berarti kehilangan 24 MW output — kerugian 
-                  revenue lebih dari $2 juta/tahun (asumsi $0.08/kWh, capacity factor 85%)!<Ref num={2} />
-                </p>
-              </div>
-            </div>
+          <h3>Penurunan efisiensi melalui efek selimut termal</h3>
+          <p>
+            NCG membentuk lapisan penghambat pada permukaan kondensor yang menghalangi perpindahan panas dari uap ke air pendingin.
+            Mekanismenya berlangsung melalui empat jalur.
+            <Citation num={6} />
+          </p>
+          <ul>
+            <li>
+              <strong>Sifat inert.</strong> NCG tidak menghasilkan kerja ketika melewati turbin, tetapi tetap terbawa dalam aliran uap.
+            </li>
+            <li>
+              <strong>Penurunan tekanan parsial uap.</strong> Keberadaan NCG menurunkan tekanan parsial uap di kondensor sehingga tekanan
+              balik turbin meningkat.
+            </li>
+            <li>
+              <strong>Hambatan kondensasi.</strong> Lapisan NCG pada tube kondensor berperan sebagai isolator yang memperlambat perpindahan
+              panas.
+            </li>
+            <li>
+              <strong>Degradasi vakum.</strong> Akumulasi NCG menurunkan derajat vakum kondensor sehingga gaya dorong ekspansi uap pada
+              turbin berkurang.
+              <Citation num={7} />
+            </li>
+          </ul>
 
-            {/* B. Korosi & Erosi */}
-            <div style={{ marginBottom: '30px' }}>
-              <h3 style={{
-                fontSize: '22px',
-                fontWeight: '600',
-                color: '#1a2642',
-                marginBottom: '15px'
-              }}>
-                B. Korosi Akselerasi: Serangan Kimia dari Dalam
-              </h3>
-              
-              <p style={{
-                fontSize: '16px',
-                lineHeight: '1.8',
-                color: '#4a5568',
-                marginBottom: '12px'
-              }}>
-                H₂S dan CO₂ dalam NCG adalah agen korosif yang sangat agresif, terutama pada suhu 
-                tinggi dan kondisi basah:<Ref num={8} />
-              </p>
-
-              <p style={{
-                fontSize: '16px',
-                lineHeight: '1.8',
-                color: '#4a5568',
-                marginBottom: '12px'
-              }}>
-                <strong>• Korosi H₂S (Sulfide Stress Cracking):</strong> H₂S bereaksi dengan baja 
-                membentuk iron sulfide (FeS) yang rapuh dan merusak struktur kristal logam. Pada 
-                konsentrasi tinggi, dapat menyebabkan <em>hydrogen embrittlement</em> — logam menjadi 
-                getas dan mudah retak.<Ref num={9} />
-              </p>
-
-              <p style={{
-                fontSize: '16px',
-                lineHeight: '1.8',
-                color: '#4a5568',
-                marginBottom: '12px'
-              }}>
-                <strong>• Korosi CO₂ (Carbonic Acid Attack):</strong> CO₂ larut dalam kondensat 
-                membentuk asam karbonat (H₂CO₃) yang menurunkan pH hingga 3-4. Pada pH rendah, laju 
-                korosi meningkat eksponensial, mengikis material turbin, pipa, dan heat exchanger.<Ref num={10} />
-              </p>
-
-              <p style={{
-                fontSize: '16px',
-                lineHeight: '1.8',
-                color: '#4a5568',
-                marginBottom: '12px'
-              }}>
-                <strong>• Synergistic Effect:</strong> Kombinasi H₂S + CO₂ + O₂ dalam kondisi basah 
-                menciptakan lingkungan ultra-korosif. Laju korosi bisa mencapai <strong>10-50x lipat</strong> 
-                dibandingkan dengan hanya satu jenis gas. Mikrostruktur material mengalami pitting, 
-                cracking, dan bahkan spalling (pengelupasan material).<Ref num={11} />
-              </p>
-
-              <div style={{
-                background: '#fef3c7',
-                padding: '20px 25px',
-                borderRadius: '12px',
-                marginTop: '20px'
-              }}>
-                <p style={{
-                  fontSize: '15px',
-                  lineHeight: '1.7',
-                  color: '#78350f',
-                  margin: 0,
-                  fontWeight: '500'
-                }}>
-                  <strong>💀 Case Study - Silent Killer:</strong> Sudu turbin yang terlihat normal 
-                  dari luar bisa mengalami <em>internal corrosion</em> yang parah akibat NCG. Pada 
-                  beberapa kasus, sudu tiba-tiba patah saat operasi — menyebabkan unplanned shutdown, 
-                  kerusakan sekunder pada turbin, dan kerugian jutaan dollar. Inilah mengapa monitoring 
-                  NCG dan corrosion management sangat kritis!
-                </p>
-              </div>
-            </div>
-
-            {/* C. Dampak Lingkungan */}
-            <div style={{ marginBottom: '30px' }}>
-              <h3 style={{
-                fontSize: '22px',
-                fontWeight: '600',
-                color: '#1a2642',
-                marginBottom: '15px'
-              }}>
-                C. Dampak Lingkungan: Dari PLTP ke Atmosfer
-              </h3>
-              
-              <p style={{
-                fontSize: '16px',
-                lineHeight: '1.8',
-                color: '#4a5568',
-                marginBottom: '12px'
-              }}>
-                NCG yang tidak tertangani dengan baik menjadi sumber emisi greenhouse gas dan 
-                polutan udara:<Ref num={12} />
-              </p>
-
-              <p style={{
-                fontSize: '16px',
-                lineHeight: '1.8',
-                color: '#4a5568',
-                marginBottom: '12px'
-              }}>
-                <strong>• Emisi CO₂:</strong> Meskipun PLTP lebih bersih dari fossil fuel, emisi CO₂ 
-                dari NCG tetap signifikan — berkisar 50-200 g CO₂/kWh tergantung konten NCG reservoir. 
-                PLTP dengan NCG tinggi bisa mendekati 50% emisi dari gas-fired power plant.<Ref num={13} />
-              </p>
-
-              <p style={{
-                fontSize: '16px',
-                lineHeight: '1.8',
-                color: '#4a5568',
-                marginBottom: '12px'
-              }}>
-                <strong>• Emisi H₂S:</strong> Gas berbau "telur busuk" ini sangat toksik dan berdampak 
-                pada kesehatan masyarakat sekitar. WHO menetapkan batas 0.005 ppm untuk exposure jangka 
-                panjang. Banyak PLTP harus memasang scrubber dan monitoring station untuk memenuhi 
-                regulasi.<Ref num={14} />
-              </p>
-
-              <p style={{
-                fontSize: '16px',
-                lineHeight: '1.8',
-                color: '#4a5568',
-                marginBottom: '12px'
-              }}>
-                <strong>• Regulasi Ketat:</strong> Indonesia, seperti negara lain, memiliki regulasi 
-                ketat tentang emisi dari PLTP. Pelanggaran bisa mengakibatkan denda, forced shutdown, 
-                bahkan pencabutan izin operasi. Ini mendorong adopsi teknologi NCG removal yang lebih 
-                canggih.<Ref num={15} />
-              </p>
-            </div>
-          </section>
-
-          {/* Gambar: Turbine Corrosion */}
-          <div style={{
-            borderRadius: '15px',
-            overflow: 'hidden',
-            marginBottom: '40px',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
-          }}>
-            <img 
-              src={turbineCorrosionNcg} 
-              alt="Korosi parah pada turbin akibat H₂S dan CO₂"
-              style={{
-                width: '100%',
-                height: 'auto',
-                display: 'block'
-              }}
-            />
-            <div style={{
-              background: '#f7fafc',
-              padding: '12px 20px',
-              fontSize: '13px',
-              color: '#718096',
-              fontStyle: 'italic',
-              textAlign: 'center'
-            }}>
-              Gambar 2: Kerusakan korosi mikro dan pitting pada sudu turbin akibat NCG
-            </div>
+          <div className={prose.tableWrap}>
+            <table className={prose.table}>
+              <caption className={prose.caption}>Tabel 2. Hubungan kandungan NCG terhadap penurunan efisiensi turbin.</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Kandungan NCG</th>
+                  <th scope="col">Penurunan efisiensi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {impact.map((row) => (
+                  <tr key={row.content}>
+                    <th scope="row">{row.content}</th>
+                    <td>{row.loss}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+          <p>
+            Hubungan antara kandungan NCG dan penurunan efisiensi bersifat nonlinear, sehingga kenaikan kandungan pada rentang tinggi
+            memberikan dampak yang jauh lebih besar daripada pada rentang rendah.
+            <Citation num={2} />
+          </p>
 
-          {/* Studi Lapangan */}
-          <section id="studi" style={{ marginBottom: '40px' }}>
-            <h2 style={{
-              fontSize: '28px',
-              fontWeight: '700',
-              color: '#1a2642',
-              marginBottom: '25px',
-              borderLeft: '5px solid #2563eb',
-              paddingLeft: '15px'
-            }}>
-              Pengalaman Lapangan: Dari Indonesia hingga Selandia Baru
-            </h2>
+          <h3>Akselerasi korosi</h3>
+          <p>
+            H<sub>2</sub>S dan CO<sub>2</sub> merupakan agen korosif yang agresif, terutama pada temperatur tinggi dan kondisi basah.
+            <Citation num={8} />
+          </p>
+          <ul>
+            <li>
+              <strong>
+                Korosi oleh H<sub>2</sub>S.
+              </strong>{' '}
+              Gas ini bereaksi dengan baja membentuk iron sulfide yang rapuh dan merusak struktur kristal logam. Pada konsentrasi tinggi
+              dapat terjadi <em>hydrogen embrittlement</em>, yaitu logam menjadi getas dan mudah retak.
+              <Citation num={9} />
+            </li>
+            <li>
+              <strong>
+                Korosi oleh CO<sub>2</sub>.
+              </strong>{' '}
+              Gas ini larut dalam kondensat membentuk asam karbonat yang menurunkan pH hingga 3 sampai 4. Pada pH rendah, laju korosi
+              meningkat secara eksponensial.
+              <Citation num={10} />
+            </li>
+            <li>
+              <strong>Efek sinergis.</strong> Kombinasi H<sub>2</sub>S, CO<sub>2</sub>, dan O<sub>2</sub> pada kondisi basah menghasilkan
+              lingkungan yang jauh lebih korosif daripada masing-masing gas secara terpisah, dengan bentuk kerusakan berupa pitting,
+              perambatan retak, dan pengelupasan material.
+              <Citation num={11} />
+            </li>
+          </ul>
 
-            <div style={{
-              background: '#f7fafc',
-              padding: '25px',
-              borderRadius: '12px',
-              marginBottom: '20px',
-              borderLeft: '4px solid #2563eb'
-            }}>
-              <h4 style={{ 
-                fontSize: '18px', 
-                fontWeight: '600', 
-                color: '#1a2642',
-                marginBottom: '12px'
-              }}>
-                📍 PLTP Wayang Windu (Jawa Barat) — 227 MW
-              </h4>
-              <p style={{
-                fontSize: '15px',
-                lineHeight: '1.7',
-                color: '#4a5568',
-                margin: 0
-              }}>
-                Salah satu PLTP terbesar di Indonesia ini menghadapi tantangan NCG content 1.0-1.2% 
-                dari total steam. <strong>Solusi yang diterapkan:</strong> Gas removal system dengan 
-                ejector vakum untuk mengekstrak NCG dari condenser, kemudian sebagian direinjeksikan 
-                ke reservoir bersama brine. Hasilnya: <strong>emisi H₂S turun hingga 95%</strong>, 
-                efisiensi turbin meningkat 3-4%, dan compliance terhadap environmental regulations 
-                terjaga.<Ref num={3} /><Ref num={16} />
-              </p>
-            </div>
-
-            <div style={{
-              background: '#f7fafc',
-              padding: '25px',
-              borderRadius: '12px',
-              marginBottom: '20px',
-              borderLeft: '4px solid #2563eb'
-            }}>
-              <h4 style={{ 
-                fontSize: '18px', 
-                fontWeight: '600', 
-                color: '#1a2642',
-                marginBottom: '12px'
-              }}>
-                📍 PLTP Kamojang (Jawa Barat) — 235 MW
-              </h4>
-              <p style={{
-                fontSize: '15px',
-                lineHeight: '1.7',
-                color: '#4a5568',
-                margin: 0
-              }}>
-                Studi dispersi emisi H₂S dan NH₃ menunjukkan bahwa tanpa sistem abatement yang 
-                memadai, konsentrasi H₂S di area pemukiman sekitar bisa melebihi batas WHO. Implementasi 
-                <strong> H₂S scrubber dengan caustic soda</strong> berhasil menurunkan emisi hingga 
-                memenuhi standar nasional. Monitoring continuous dengan sensor elektrokimia memastikan 
-                compliance real-time.<Ref num={14} />
-              </p>
-            </div>
-
-            <div style={{
-              background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(30, 64, 175, 0.05) 100%)',
-              padding: '25px',
-              borderRadius: '12px',
-              marginBottom: '20px',
-              borderLeft: '4px solid #48bb78'
-            }}>
-              <h4 style={{ 
-                fontSize: '18px', 
-                fontWeight: '600', 
-                color: '#1a2642',
-                marginBottom: '12px'
-              }}>
-                📍 Te Huka (Selandia Baru) — Pioneering NCG Reinjection ⭐
-              </h4>
-              <p style={{
-                fontSize: '15px',
-                lineHeight: '1.7',
-                color: '#4a5568',
-                margin: 0
-              }}>
-                <strong>Game changer dalam pengelolaan NCG!</strong> Te Huka mengimplementasikan 
-                <em>full NCG reinjection</em> — semua NCG yang diekstrak dari condenser direinjeksikan 
-                ke reservoir dalam bentuk terlarut bersama condensate. <strong>Hasil spektakuler:</strong> 
-                Emisi CO₂ dan H₂S turun hingga <strong>hampir nol</strong>, pressure reservoir terjaga, 
-                dan tidak ada masalah korosi jangka panjang setelah 5+ tahun operasi. Model ini menjadi 
-                <em>best practice</em> global untuk NCG management.<Ref num={17} />
-              </p>
-            </div>
-
-            <div style={{
-              background: '#f7fafc',
-              padding: '25px',
-              borderRadius: '12px',
-              marginBottom: '20px',
-              borderLeft: '4px solid #9333ea'
-            }}>
-              <h4 style={{ 
-                fontSize: '18px', 
-                fontWeight: '600', 
-                color: '#1a2642',
-                marginBottom: '12px'
-              }}>
-                📍 Ngatamariki (Selandia Baru) — NCG Reinjection Trial
-              </h4>
-              <p style={{
-                fontSize: '15px',
-                lineHeight: '1.7',
-                color: '#4a5568',
-                margin: 0
-              }}>
-                Trial NCG reinjection dengan <strong>monitoring corrosion coupon</strong> selama 12 bulan 
-                menunjukkan: corrosion rate rendah (0.1-0.3 mm/year), scaling terbatas pada compound 
-                antimon/arsenik yang bisa dikontrol dengan chemical treatment. Kesimpulan: NCG reinjection 
-                aman dan sustainable untuk long-term operation.<Ref num={18} />
-              </p>
-            </div>
-
-            <div style={{
-              background: '#fffaf0',
-              padding: '20px 25px',
-              borderRadius: '12px',
-              marginTop: '25px'
-            }}>
-              <p style={{
-                fontSize: '15px',
-                lineHeight: '1.7',
-                color: '#744210',
-                margin: 0,
-                fontWeight: '500'
-              }}>
-                <strong>💡 Pembelajaran Global:</strong> Pengelolaan NCG yang efektif bukan hanya 
-                soal teknologi, tetapi juga <strong>integrated approach</strong>: monitoring real-time, 
-                regulasi yang clear, dan commitment untuk sustainability. PLTP yang berhasil adalah 
-                yang treating NCG sebagai resource to manage, bukan waste to discard!
-              </p>
-            </div>
-          </section>
-
-          {/* Gambar: NCG Efficiency Impact */}
-          <div style={{
-            borderRadius: '15px',
-            overflow: 'hidden',
-            marginBottom: '40px',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
-          }}>
-            <img 
-              src={ncgEfficiencyImpact} 
-              alt="Grafik dampak NCG content terhadap efisiensi turbin"
-              style={{
-                width: '100%',
-                height: 'auto',
-                display: 'block'
-              }}
-            />
-            <div style={{
-              background: '#f7fafc',
-              padding: '12px 20px',
-              fontSize: '13px',
-              color: '#718096',
-              fontStyle: 'italic',
-              textAlign: 'center'
-            }}>
-              Gambar 3: Hubungan non-linear antara NCG content dan penurunan efisiensi turbin
-            </div>
-          </div>
-
-          {/* Teknologi Pengendalian */}
-          <section id="teknologi" style={{ marginBottom: '40px' }}>
-            <h2 style={{
-              fontSize: '28px',
-              fontWeight: '700',
-              color: '#1a2642',
-              marginBottom: '25px',
-              borderLeft: '5px solid #2563eb',
-              paddingLeft: '15px'
-            }}>
-              Teknologi Pengendalian NCG: From Extraction to Reinjection
-            </h2>
-
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '20px'
-            }}>
-              Pengelolaan NCG memerlukan sistem terintegrasi yang mencakup extraction, treatment, 
-              dan disposal/reinjection. Berikut teknologi state-of-the-art yang digunakan di PLTP modern:
+          <Callout label="Konsekuensi" tone="warning">
+            <p>
+              Korosi internal akibat NCG dapat berlangsung pada sudu turbin yang secara visual masih tampak normal. Kegagalan sudu yang
+              terjadi mendadak saat operasi menimbulkan penghentian tidak terencana serta kerusakan sekunder pada komponen turbin lainnya.
             </p>
+          </Callout>
 
-            <h4 style={{
-              fontSize: '20px',
-              fontWeight: '600',
-              color: '#1a2642',
-              marginBottom: '15px',
-              marginTop: '30px'
-            }}>
-              🔧 1. NCG Extraction System
-            </h4>
+          <h3>Dampak lingkungan</h3>
+          <p>
+            NCG yang tidak dikelola menjadi sumber emisi gas rumah kaca dan polutan udara.
+            <Citation num={12} />
+          </p>
+          <ul>
+            <li>
+              <strong>
+                Emisi CO<sub>2</sub>.
+              </strong>{' '}
+              Meskipun PLTP lebih bersih dibandingkan pembangkit berbahan bakar fosil, emisi CO<sub>2</sub> dari NCG berkisar 50 sampai 200
+              g CO<sub>2</sub> per kWh bergantung pada kandungan NCG reservoir.
+              <Citation num={13} />
+            </li>
+            <li>
+              <strong>
+                Emisi H<sub>2</sub>S.
+              </strong>{' '}
+              Gas ini bersifat toksik dan berdampak pada kesehatan masyarakat sekitar. WHO menetapkan batas paparan jangka panjang sebesar
+              0,005 ppm, sehingga banyak unit memerlukan scrubber dan stasiun pemantauan emisi.
+              <Citation num={14} />
+            </li>
+            <li>
+              <strong>Kepatuhan regulasi.</strong> Indonesia menerapkan regulasi emisi untuk PLTP, dan pelanggaran dapat berakibat pada
+              sanksi administratif hingga penghentian operasi.
+              <Citation num={15} />
+            </li>
+          </ul>
 
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '12px'
-            }}>
-              <strong>Steam Jet Ejector:</strong> Menggunakan high-pressure steam untuk menciptakan 
-              vacuum yang mengekstrak NCG dari condenser. Multi-stage ejector (3-4 stages) dapat 
-              menurunkan tekanan condenser hingga 0.1 bar absolute, meningkatkan efisiensi turbin 
-              secara signifikan. Keuntungan: no moving parts, reliable, low maintenance.<Ref num={19} />
-            </p>
+          <Figure
+            src={turbineCorrosionNcg}
+            alt="Korosi dan pitting pada sudu turbin akibat NCG"
+            caption="Gambar 2. Korosi mikro dan pitting pada sudu turbin akibat paparan NCG."
+          />
+        </section>
 
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '12px'
-            }}>
-              <strong>Liquid Ring Vacuum Pump:</strong> Alternatif mechanical extraction dengan 
-              efisiensi lebih tinggi untuk NCG content &gt;5%. Menggunakan rotating impeller dan 
-              sealing liquid untuk create vacuum. Trade-off: higher capital cost dan maintenance, 
-              tetapi electricity consumption lebih rendah daripada ejector.<Ref num={6} />
-            </p>
+        <section id="studi" className={prose.prose}>
+          <h2>Studi lapangan</h2>
 
-            <h4 style={{
-              fontSize: '20px',
-              fontWeight: '600',
-              color: '#1a2642',
-              marginBottom: '15px',
-              marginTop: '30px'
-            }}>
-              🧪 2. H₂S Abatement Plant
-            </h4>
+          <h3>PLTP Wayang Windu, Jawa Barat, 227 MW</h3>
+          <p>
+            Unit ini menghadapi kandungan NCG sebesar 1,0 sampai 1,2% dari total uap. Sistem gas removal dengan ejektor vakum digunakan
+            untuk mengekstraksi NCG dari kondensor, dan sebagian direinjeksikan ke reservoir bersama brine. Emisi H<sub>2</sub>S turun
+            hingga 95%, efisiensi turbin meningkat 3 sampai 4%, dan kepatuhan terhadap regulasi lingkungan terpenuhi.
+            <Citation num={3} />
+            <Citation num={16} />
+          </p>
 
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '12px'
-            }}>
-              <strong>Caustic Scrubbing:</strong> NCG dialirkan melalui packed tower dengan caustic 
-              soda (NaOH) spray yang menyerap H₂S membentuk sodium sulfide (Na₂S). Efficiency removal 
-              &gt;95%, meeting environmental regulations. Produk samping Na₂S bisa dijual atau 
-              direinjeksikan.<Ref num={3} />
-            </p>
+          <h3>PLTP Kamojang, Jawa Barat, 235 MW</h3>
+          <p>
+            Studi dispersi emisi H<sub>2</sub>S dan NH<sub>3</sub> menunjukkan bahwa tanpa sistem abatement yang memadai, konsentrasi H
+            <sub>2</sub>S di area permukiman sekitar dapat melampaui batas WHO. Penerapan scrubber H<sub>2</sub>S berbasis caustic soda
+            menurunkan emisi hingga memenuhi standar nasional, dengan pemantauan kontinu menggunakan sensor elektrokimia.
+            <Citation num={14} />
+          </p>
 
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '12px'
-            }}>
-              <strong>SulfaTreat Process:</strong> Menggunakan iron oxide bed untuk adsorb H₂S. 
-              Advantages: simpler operation, no liquid waste. Disadvantages: memerlukan regeneration 
-              atau replacement bed secara periodik. Cocok untuk low H₂S content (&lt;100 ppm).
-            </p>
+          <h3>PLTP Te Huka, Selandia Baru</h3>
+          <p>
+            Unit ini menerapkan reinjeksi NCG secara menyeluruh, yaitu seluruh NCG yang diekstraksi dari kondensor direinjeksikan ke
+            reservoir dalam bentuk terlarut bersama kondensat. Emisi CO<sub>2</sub> dan H<sub>2</sub>S menurun hingga mendekati nol, tekanan
+            reservoir terjaga, dan tidak ditemukan permasalahan korosi setelah lebih dari lima tahun operasi.
+            <Citation num={17} />
+          </p>
 
-            <h4 style={{
-              fontSize: '20px',
-              fontWeight: '600',
-              color: '#1a2642',
-              marginBottom: '15px',
-              marginTop: '30px'
-            }}>
-              💉 3. NCG Reinjection Technology
-            </h4>
+          <h3>PLTP Ngatamariki, Selandia Baru</h3>
+          <p>
+            Uji coba reinjeksi NCG dengan pemantauan corrosion coupon selama 12 bulan menunjukkan laju korosi yang rendah, yaitu 0,1 sampai
+            0,3 mm per tahun, dengan scaling terbatas pada senyawa antimon dan arsenik yang dapat dikendalikan melalui perlakuan kimia.
+            <Citation num={18} />
+          </p>
 
-            <div style={{
-              background: 'linear-gradient(135deg, #2563eb 0%, #1e40af 100%)',
-              padding: '30px',
-              borderRadius: '15px',
-              marginTop: '25px',
-              marginBottom: '25px'
-            }}>
-              <h4 style={{
-                fontSize: '20px',
-                fontWeight: '600',
-                color: 'white',
-                marginBottom: '20px'
-              }}>
-                🌟 Game Changer: Total NCG Reinjection
-              </h4>
+          <Figure
+            src={ncgEfficiencyImpact}
+            alt="Grafik hubungan kandungan NCG dan efisiensi turbin"
+            caption="Gambar 3. Hubungan nonlinear antara kandungan NCG dan penurunan efisiensi turbin."
+          />
+        </section>
 
-              <div style={{
-                background: 'rgba(255,255,255,0.15)',
-                padding: '15px 20px',
-                borderRadius: '10px',
-                marginBottom: '15px',
-                backdropFilter: 'blur(10px)'
-              }}>
-                <p style={{
-                  fontSize: '15px',
-                  lineHeight: '1.7',
-                  color: 'white',
-                  margin: 0
-                }}>
-                  <strong>• Dissolution in Condensate:</strong> NCG dilarutkan dalam condensate 
-                  dengan tekanan tinggi (20-40 bar) sebelum reinjection
-                </p>
-              </div>
+        <section id="teknologi" className={prose.prose}>
+          <h2>Teknologi pengendalian</h2>
+          <p>Pengelolaan NCG memerlukan sistem terintegrasi yang mencakup ekstraksi, pengolahan, serta pembuangan atau reinjeksi.</p>
 
-              <div style={{
-                background: 'rgba(255,255,255,0.15)',
-                padding: '15px 20px',
-                borderRadius: '10px',
-                marginBottom: '15px',
-                backdropFilter: 'blur(10px)'
-              }}>
-                <p style={{
-                  fontSize: '15px',
-                  lineHeight: '1.7',
-                  color: 'white',
-                  margin: 0
-                }}>
-                  <strong>• Reinjection Wells:</strong> Condensate + NCG terlarut diinjeksikan ke 
-                  peripheral wells, menjaga pressure reservoir dan mineral precipitation
-                </p>
-              </div>
+          <h3>Sistem ekstraksi</h3>
+          <p>
+            <strong>Steam jet ejector.</strong> Memanfaatkan uap bertekanan tinggi untuk membentuk vakum yang mengekstraksi NCG dari
+            kondensor. Ejektor bertingkat tiga hingga empat dapat menurunkan tekanan kondensor hingga 0,1 bar absolut. Keunggulannya adalah
+            ketiadaan komponen bergerak sehingga kebutuhan pemeliharaannya rendah.
+            <Citation num={19} />
+          </p>
+          <p>
+            <strong>Liquid ring vacuum pump.</strong> Alternatif ekstraksi mekanis dengan efisiensi lebih tinggi untuk kandungan NCG di atas
+            5%. Konsekuensinya adalah biaya kapital dan pemeliharaan yang lebih tinggi, dengan konsumsi listrik yang lebih rendah
+            dibandingkan ejektor.
+            <Citation num={6} />
+          </p>
 
-              <div style={{
-                background: 'rgba(255,255,255,0.15)',
-                padding: '15px 20px',
-                borderRadius: '10px',
-                backdropFilter: 'blur(10px)'
-              }}>
-                <p style={{
-                  fontSize: '15px',
-                  lineHeight: '1.7',
-                  color: 'white',
-                  margin: 0
-                }}>
-                  <strong>• Zero Emission:</strong> Dengan full reinjection, emisi CO₂ dan H₂S 
-                  praktis nol — truly clean geothermal energy!<Ref num={17} />
-                </p>
-              </div>
-            </div>
+          <h3>
+            Sistem abatement H<sub>2</sub>S
+          </h3>
+          <p>
+            <strong>Caustic scrubbing.</strong> NCG dialirkan melalui packed tower dengan semprotan natrium hidroksida yang menyerap H
+            <sub>2</sub>S membentuk natrium sulfida. Efisiensi penyisihannya melampaui 95%.
+            <Citation num={3} />
+          </p>
+          <p>
+            <strong>Proses SulfaTreat.</strong> Menggunakan bed iron oxide untuk menyerap H<sub>2</sub>S. Pengoperasiannya lebih sederhana
+            dan tidak menghasilkan limbah cair, tetapi memerlukan regenerasi atau penggantian bed secara periodik, sehingga sesuai untuk
+            kandungan H<sub>2</sub>S di bawah 100 ppm.
+          </p>
 
-            <h4 style={{
-              fontSize: '20px',
-              fontWeight: '600',
-              color: '#1a2642',
-              marginBottom: '15px',
-              marginTop: '30px'
-            }}>
-              📊 4. Monitoring & Control System
-            </h4>
+          <h3>Reinjeksi NCG</h3>
+          <ol>
+            <li>
+              <strong>Pelarutan dalam kondensat.</strong> NCG dilarutkan dalam kondensat pada tekanan 20 sampai 40 bar sebelum diinjeksikan.
+            </li>
+            <li>
+              <strong>Sumur reinjeksi.</strong> Kondensat beserta NCG terlarut diinjeksikan melalui sumur periferal untuk menjaga tekanan
+              reservoir.
+            </li>
+            <li>
+              <strong>Penurunan emisi.</strong> Dengan reinjeksi menyeluruh, emisi CO<sub>2</sub> dan H<sub>2</sub>S dapat ditekan hingga
+              mendekati nol.
+              <Citation num={17} />
+            </li>
+          </ol>
 
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '12px'
-            }}>
-              <strong>Online Gas Analyzers:</strong> Continuous monitoring NCG composition (CO₂, H₂S, 
-              NH₃) dengan Gas Chromatography atau Infrared analyzers. Data real-time untuk optimize 
-              extraction dan treatment process.<Ref num={20} />
-            </p>
+          <h3>Sistem pemantauan</h3>
+          <p>
+            <strong>Analyzer gas daring.</strong> Pemantauan kontinu komposisi NCG menggunakan kromatografi gas atau analyzer inframerah,
+            dengan data waktu nyata untuk mengoptimalkan proses ekstraksi dan pengolahan.
+            <Citation num={20} />
+          </p>
+          <p>
+            <strong>Corrosion coupon dan sensor.</strong> Pemantauan laju korosi pada lokasi kritis seperti tube kondensor, perpipaan, dan
+            turbin, sehingga degradasi material terdeteksi sebelum menimbulkan kegagalan.
+          </p>
 
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '12px'
-            }}>
-              <strong>Corrosion Coupons & Sensors:</strong> Monitoring corrosion rate pada critical 
-              locations (condenser tubes, piping, turbine). Early detection prevents catastrophic 
-              failures.
-            </p>
+          <Figure
+            src={abatementSystem}
+            alt="Skema sistem ekstraksi, abatement, dan reinjeksi NCG"
+            caption="Gambar 4. Skema sistem ekstraksi, abatement, dan reinjeksi NCG."
+          />
+        </section>
 
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '12px'
-            }}>
-              <strong>SCADA Integration:</strong> Sistem SMART (System Monitoring Analysis Real Time) 
-              mengintegrasikan semua sensor untuk provide operator dengan complete situational awareness 
-              dan enable predictive maintenance.
-            </p>
-          </section>
+        <section id="kesimpulan" className={prose.prose}>
+          <h2>Kesimpulan</h2>
+          <p>
+            NCG merupakan bagian inheren dari operasi PLTP yang tidak dapat dihilangkan, tetapi dapat dikelola. Dampaknya mencakup penurunan
+            efisiensi hingga 22%, percepatan korosi pada material turbin, serta konsekuensi lingkungan apabila tidak ditangani.
+          </p>
+          <p>
+            Pengalaman operasi di Indonesia maupun internasional menunjukkan bahwa pengelolaan NCG secara terintegrasi, mulai dari ekstraksi
+            hingga reinjeksi, tidak hanya memenuhi ketentuan regulasi tetapi juga memberikan manfaat berupa kenaikan efisiensi, penurunan
+            biaya pemeliharaan, dan perpanjangan umur pakai turbin.
+          </p>
 
-          {/* Gambar: Abatement System */}
-          <div style={{
-            borderRadius: '15px',
-            overflow: 'hidden',
-            marginBottom: '40px',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
-          }}>
-            <img 
-              src={abatementSystem} 
-              alt="Sistem abatement dan reinjection NCG"
-              style={{
-                width: '100%',
-                height: 'auto',
-                display: 'block'
-              }}
-            />
-            <div style={{
-              background: '#f7fafc',
-              padding: '12px 20px',
-              fontSize: '13px',
-              color: '#718096',
-              fontStyle: 'italic',
-              textAlign: 'center'
-            }}>
-              Gambar 4: Skema lengkap sistem extraction, abatement, dan reinjection NCG
-            </div>
-          </div>
+          <Callout label="Poin utama">
+            <ul>
+              <li>Pemantauan komposisi NCG dan tekanan kondensor secara kontinu merupakan dasar bagi deteksi dini.</li>
+              <li>Sistem ekstraksi bertingkat atau kombinasi ejektor dan pompa memberikan efisiensi penyisihan yang optimal.</li>
+              <li>
+                Abatement H<sub>2</sub>S diperlukan untuk memenuhi ketentuan emisi yang berlaku.
+              </li>
+              <li>Reinjeksi NCG terbukti dapat menekan emisi hingga mendekati nol tanpa menimbulkan masalah korosi jangka panjang.</li>
+              <li>Program pengelolaan korosi berupa inspeksi berkala dan pemantauan coupon diperlukan pada area berisiko tinggi.</li>
+            </ul>
+          </Callout>
+        </section>
 
-          {/* Kesimpulan */}
-          <section id="kesimpulan" style={{ marginBottom: '40px' }}>
-            <h2 style={{
-              fontSize: '28px',
-              fontWeight: '700',
-              color: '#1a2642',
-              marginBottom: '20px',
-              borderLeft: '5px solid #48bb78',
-              paddingLeft: '15px'
-            }}>
-              Kesimpulan: NCG Management sebagai Kunci Sustainability PLTP
-            </h2>
-
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '15px'
-            }}>
-              Non Condensable Gas adalah tantangan inheren dalam operasi PLTP geothermal yang tidak 
-              bisa dihindari, tetapi harus dikelola dengan baik. Dampaknya triple threat — menurunkan 
-              efisiensi hingga 22%, mengakselerasi korosi material turbin, dan menciptakan environmental 
-              liability jika tidak ditangani.
-            </p>
-
-            <p style={{
-              fontSize: '16px',
-              lineHeight: '1.8',
-              color: '#4a5568',
-              marginBottom: '15px'
-            }}>
-              Pengalaman dari PLTP Indonesia dan global menunjukkan bahwa <strong>integrated NCG 
-              management</strong> — dari extraction, treatment, hingga reinjection — bukan hanya 
-              memenuhi regulasi, tetapi juga <strong>menguntungkan secara ekonomi</strong>: efisiensi 
-              meningkat, maintenance cost turun, dan umur turbin lebih panjang.
-            </p>
-
-            <div style={{
-              background: 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)',
-              padding: '30px',
-              borderRadius: '15px',
-              marginTop: '30px',
-              boxShadow: '0 10px 30px rgba(72,187,120,0.3)'
-            }}>
-              <h4 style={{
-                fontSize: '20px',
-                fontWeight: '700',
-                color: 'white',
-                marginBottom: '15px',
-                textAlign: 'center'
-              }}>
-                🎯 Best Practices untuk Operator PLTP Indonesia
-              </h4>
-              <ul style={{
-                fontSize: '15px',
-                lineHeight: '1.9',
-                color: 'white',
-                marginTop: '15px',
-                paddingLeft: '20px'
-              }}>
-                <li><strong>Prioritas #1: Monitoring Continuous</strong> — Real-time NCG composition & condenser pressure untuk early detection</li>
-                <li><strong>Invest in Extraction System</strong> — Multi-stage ejector atau hybrid ejector-pump untuk optimal efficiency</li>
-                <li><strong>H₂S Abatement is Non-Negotiable</strong> — Caustic scrubbing untuk compliance dengan environmental regulations</li>
-                <li><strong>Consider NCG Reinjection</strong> — Model Te Huka menunjukkan zero-emission is achievable dan sustainable</li>
-                <li><strong>Corrosion Management Program</strong> — Regular inspection, coupon monitoring, material upgrade untuk high-risk areas</li>
-                <li><strong>Operator Training</strong> — NCG management memerlukan specialized knowledge; invest in people!</li>
-              </ul>
-            </div>
-
-            <div style={{
-              background: '#e0f2fe',
-              padding: '25px',
-              borderRadius: '12px',
-              marginTop: '30px'
-            }}>
-              <p style={{
-                fontSize: '15px',
-                lineHeight: '1.7',
-                color: '#075985',
-                margin: 0,
-                fontWeight: '500'
-              }}>
-                <strong>🔮 Future Outlook:</strong> Dengan semakin ketatnya regulasi emisi dan 
-                meningkatnya awareness terhadap carbon footprint, NCG reinjection akan menjadi 
-                <strong> standard practice</strong> di semua PLTP baru. Teknologi seperti direct 
-                contact condenser dan enhanced dissolution system sedang dikembangkan untuk membuat 
-                reinjection lebih ekonomis. Indonesia, sebagai negara dengan potensi geothermal 
-                terbesar di dunia, harus leading the way dalam clean geothermal technology!
-              </p>
-            </div>
-          </section>
-
-          {/* Daftar Pustaka */}
-          <section id="dafpus" style={{ 
-            marginTop: '50px',
-            paddingTop: '30px',
-            borderTop: '3px solid #e2e8f0'
-          }}>
-            <h2 style={{
-              fontSize: '24px',
-              fontWeight: '700',
-              color: '#1a2642',
-              marginBottom: '25px'
-            }}>
-              Daftar Pustaka
-            </h2>
-
-            <div style={{
-              fontSize: '14px',
-              lineHeight: '1.8',
-              color: '#4a5568'
-            }}>
-              <p id="ref-1" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [1] Gokcen, G., Yıldırım, N. "Effect of Non-Condensable Gases on geothermal power plant performance". 
-                <em>Semantic Scholar</em>, 2016.
-              </p>
-
-              <p id="ref-2" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [2] Cengic, I., Soldo, V. "Environmental Impact of Geothermal Power Plants". 
-                <em>Hrcak Journal</em>, 2018.
-              </p>
-
-              <p id="ref-3" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [3] ThinkGeoEnergy. "Treating non-condensable gases (NCG) of geothermal plants - experience by Mannvit". 
-                <em>ThinkGeoEnergy</em>, 2019.
-              </p>
-
-              <p id="ref-4" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [4] "Possibilities Study of a Non-condensable Gas Exhaust System". 
-                <em>Journal of Geoscience, Engineering, Environment, and Technology (JGEET)</em>, 2024.
-              </p>
-
-              <p id="ref-5" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [5] World Bank ESMAP. "Geothermal handbook: Planning and financing power generation". 
-                <em>ESMAP Technical Report</em>, 2012.
-              </p>
-
-              <p id="ref-6" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [6] "Journal of Geoscience, Engineering, Environment, and Technology". 
-                <em>JGEET UIR</em>, Vol. 9, 2024.
-              </p>
-
-              <p id="ref-7" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [7] JICA. "Preparatory Survey for Lumut Balai Geothermal Project in the Republic of Indonesia". 
-                <em>JICA Report</em>, 2012.
-              </p>
-
-              <p id="ref-8" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [8] Nogara, J. et al. "The influence of non-condensable gases on the net work produced by a geothermal power plant". 
-                <em>ScienceDirect - Applied Energy</em>, 1982.
-              </p>
-
-              <p id="ref-9" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [9] EPRI. "Corrosion of Materials Used in Geothermal Power Production". 
-                <em>EPRI Technical Report</em>, 2016.
-              </p>
-
-              <p id="ref-10" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [10] Nogara, J., Zarrouk, S.J. "Corrosion in geothermal environment: Part 1". 
-                <em>Renewable and Sustainable Energy Reviews</em>, 2018.
-              </p>
-
-              <p id="ref-11" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [11] EPRI. "Materials Degradation and Failure Mechanisms in Geothermal Power Systems". 
-                <em>EPRI Report</em>, 2016.
-              </p>
-
-              <p id="ref-12" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [12] Bertani, R., Thain, I. "Geothermal power generating plant CO₂ emission survey". 
-                <em>IGA News</em>, 2002.
-              </p>
-
-              <p id="ref-13" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [13] Bloomfield, K.K., Moore, J.N., Neilson, R.M. "Geothermal Energy Reduces Greenhouse Gases". 
-                <em>Geothermal Resources Council Bulletin</em>, 2003.
-              </p>
-
-              <p id="ref-14" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [14] Putra, A.D. "Analisis Dispersi H₂S dan NH₃ dari PLTP Kamojang". 
-                <em>Digital Library ITB</em>, 2016.
-              </p>
-
-              <p id="ref-15" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [15] PT SMI. "Environmental and Social Impact Assessment (ESIA) - Waesano GEUDP Project". 
-                <em>PT SMI Documentation</em>, 2019.
-              </p>
-
-              <p id="ref-16" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [16] Star Energy Geothermal. "Wayang Windu Sustainability Report 2016". 
-                <em>Star Energy Corporate Report</em>, 2016.
-              </p>
-
-              <p id="ref-17" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [17] Kilgour, G. et al. "Non-condensable gas reinjection at the Te Huka geothermal power plant". 
-                <em>Geothermal Resources Council Transactions</em>, 2016.
-              </p>
-
-              <p id="ref-18" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [18] McNamara, D.D. et al. "Non Condensable Gas Reinjection Trial at Ngatamariki Geothermal Field". 
-                <em>New Zealand Geothermal Workshop</em>, 2022.
-              </p>
-
-              <p id="ref-19" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [19] Sterzinger, G., Taylor, M. "Sustainable removal of non-condensable gases from geothermal plants". 
-                <em>Renewable and Sustainable Energy Reviews</em>, 2013.
-              </p>
-
-              <p id="ref-20" style={{ marginBottom: '10px', paddingLeft: '20px', textIndent: '-20px', transition: 'background-color 0.5s ease' }}>
-                [20] KROHNE. "Gas analysis systems for geothermal power generation". 
-                <em>KROHNE Technical Documentation</em>, 2020.
-                </p>
-            </div>
-          </section>
-        </div>
-      </div>
-    </div>
-
-    {/* Footer */}
-    <footer className="footer">
-      <div className="container">
-        <div className="footer-bottom">
-          <p>&copy; {new Date().getFullYear()} SMART System - PT. Pertamina & UNPAD. All rights reserved.</p>
-        </div>
-      </div>
-    </footer>
-    </>
+        <References entries={references} />
+      </ArticleBody>
+    </ArticleLayout>
   );
 }

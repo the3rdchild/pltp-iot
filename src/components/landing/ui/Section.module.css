@@ -47,11 +47,15 @@
   margin: 0 0 14px;
 }
 
+/* A four-point star rather than the 22px rule this used to draw: at eyebrow
+   size the rule read as an em dash sitting in front of every section title. */
 .eyebrow::before {
   content: '';
-  width: 22px;
-  height: 1px;
+  flex: none;
+  width: 9px;
+  height: 9px;
   background: currentColor;
+  clip-path: polygon(50% 0%, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0% 50%, 40% 40%);
 }
 
 .ink .eyebrow {

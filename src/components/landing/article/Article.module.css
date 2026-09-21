@@ -1,0 +1,217 @@
+/*
+ * Reference-style article: a sticky contents rail beside a single column of
+ * prose. The articles used to hide their contents behind a sidebar that only
+ * opened on hover, so on a phone there was no way to see the structure at all.
+ * Here the rail is plain anchor links, and below 1040px it becomes a short
+ * list at the top of the page.
+ */
+
+.layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: start;
+}
+
+.toc {
+  position: sticky;
+  top: calc(var(--ls-header-h) + 24px);
+}
+
+.tocHeading {
+  font-size: var(--ls-eyebrow);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ls-ink-400);
+  margin: 0 0 14px;
+}
+
+.tocList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 1px solid var(--ls-line);
+}
+
+.tocLink {
+  display: block;
+  padding: 7px 0 7px 16px;
+  margin-left: -1px;
+  border-left: 1px solid transparent;
+  font-size: var(--ls-small);
+  line-height: 1.45;
+  color: var(--ls-ink-500);
+  text-decoration: none;
+}
+
+.tocLink:hover {
+  color: var(--ls-accent);
+  border-left-color: var(--ls-accent);
+}
+
+.tocLink:focus-visible {
+  outline: 2px solid var(--ls-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.body {
+  min-width: 0;
+}
+
+/* Sections inside the body get their own scroll offset: the shared rule in
+   SiteLayout only reaches top-level `section[id]`. */
+.body section[id] {
+  scroll-margin-top: calc(var(--ls-header-h) + 20px);
+}
+
+.body > section + section {
+  margin-top: clamp(40px, 5vw, 64px);
+}
+
+/* --- Callout ------------------------------------------------------------- */
+
+.callout {
+  padding: 20px 22px;
+  border-radius: var(--ls-radius);
+  border: 1px solid var(--ls-line);
+  border-left: 3px solid var(--ls-accent);
+  background: var(--ls-paper-alt);
+}
+
+.calloutWarning {
+  border-left-color: var(--ls-energy);
+  background: var(--ls-energy-soft);
+}
+
+.calloutLabel {
+  display: block;
+  font-size: var(--ls-eyebrow);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ls-accent-dark);
+  margin: 0 0 8px;
+}
+
+.calloutWarning .calloutLabel {
+  color: #a4560c;
+}
+
+.calloutBody {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: var(--ls-ink-700);
+}
+
+.calloutBody > * + * {
+  margin-top: 10px;
+}
+
+/* --- Citations and references -------------------------------------------- */
+
+.citation {
+  font-size: 0.72em;
+  font-weight: 600;
+  vertical-align: super;
+  line-height: 0;
+  color: var(--ls-accent);
+  text-decoration: none;
+  padding: 0 1px;
+}
+
+.citation:hover {
+  color: var(--ls-accent-dark);
+  text-decoration: underline;
+}
+
+.citation:focus-visible {
+  outline: 2px solid var(--ls-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.references {
+  margin-top: clamp(40px, 5vw, 64px);
+  padding-top: clamp(28px, 3vw, 40px);
+  border-top: 1px solid var(--ls-line);
+}
+
+.referencesHeading {
+  font-size: var(--ls-h3);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ls-ink-900);
+  margin: 0 0 20px;
+}
+
+.referenceList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: reference;
+}
+
+.reference {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 4px;
+  padding: 8px 6px;
+  border-radius: var(--ls-radius-sm);
+  font-size: var(--ls-small);
+  line-height: 1.7;
+  color: var(--ls-ink-500);
+  scroll-margin-top: calc(var(--ls-header-h) + 20px);
+}
+
+/* Highlights the entry someone just jumped to, replacing the inline style the
+   old pages mutated directly on the DOM node. */
+.reference:target {
+  background: var(--ls-energy-soft);
+}
+
+.referenceNumber {
+  font-weight: 700;
+  color: var(--ls-ink-400);
+}
+
+.reference cite {
+  font-style: italic;
+}
+
+@media (max-width: 1040px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+
+  .toc {
+    position: static;
+    padding: 18px 20px;
+    border: 1px solid var(--ls-line);
+    border-radius: var(--ls-radius);
+    background: var(--ls-paper-alt);
+  }
+
+  .tocList {
+    columns: 2;
+    column-gap: 24px;
+    border-left: none;
+  }
+
+  .tocLink {
+    padding-left: 0;
+    border-left: none;
+  }
+
+  .tocLink:hover {
+    border-left-color: transparent;
+  }
+}
+
+@media (max-width: 560px) {
+  .tocList {
+    columns: 1;
+  }
+}

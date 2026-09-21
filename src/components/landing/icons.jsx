@@ -91,6 +91,13 @@ export const LeafIcon = (props) => (
   </Icon>
 );
 
+export const SearchIcon = (props) => (
+  <Icon {...props}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="m20 20-3.6-3.6" />
+  </Icon>
+);
+
 export const MapPinIcon = (props) => (
   <Icon {...props}>
     <path d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z" />

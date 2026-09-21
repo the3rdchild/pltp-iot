@@ -44,6 +44,7 @@
   --ls-eyebrow: 0.75rem;
 
   /* Layout */
+  --ls-header-h: 71px;
   --ls-max: 1180px;
   --ls-gutter: clamp(20px, 5vw, 40px);
   --ls-section-y: clamp(64px, 7vw, 108px);
