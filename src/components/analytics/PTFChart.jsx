@@ -544,14 +544,6 @@ const PTFChart = ({
         theme: 'light',
         shared: true,
         intersect: false,
-        // Per-series `markers.size` (the array form just below/above, used
-        // only while the lab overlay is on) makes ApexCharts anchor the
-        // tooltip to a marker, and it then stops tracking the pointer.
-        // Confirmed by range: on 'now' the overlay is off, `markers.size` is
-        // the scalar 0, and the tooltip tracks correctly; on 1h/1d and wider
-        // it is an array and the tooltip sticks. The five charts in this
-        // folder that never use the array form were never affected.
-        followCursor: true,
         x: { show: true },
         y: {
           formatter: (value, { seriesIndex, w }) => {
