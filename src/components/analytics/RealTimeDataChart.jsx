@@ -649,16 +649,6 @@ const RealTimeDataChart = ({
     chart.render();
     chartInstanceRef.current = chart;
 
-    // TEMPORARY diagnostic for the stuck-tooltip bug. apexcharts is imported
-    // as a module and only registers itself globally when chart.id is set, so
-    // there is otherwise no way to inspect its internals. Gated behind an
-    // explicit ?chartdebug in the URL rather than import.meta.env.DEV, because
-    // the bug only reproduces against production data. Nothing is exposed
-    // unless someone asks for it by hand. Remove once the cause is known.
-    if (typeof window !== 'undefined' && window.location.search.includes('chartdebug')) {
-      window.__tdsChart = chart;
-    }
-
     return () => {
       if (chartInstanceRef.current) {
         chartInstanceRef.current.destroy();
