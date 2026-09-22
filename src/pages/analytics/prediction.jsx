@@ -1,11 +1,13 @@
-import { Box, Typography, Chip, Tooltip, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { Box, Typography, Chip, Tooltip } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import MainCard from 'components/MainCard';
-import { AnalyticsHeader, RiskChart, FailureForecastChart, FAILURE_FORECAST_MODEL_LABELS } from '../../components/analytics';
+import { AnalyticsHeader, RiskChart, FailureForecastChart, FAILURE_FORECAST_MODEL_LABELS, OverhaulResetControl } from '../../components/analytics';
 import { useAi1aData } from '../../hooks/useAi1Data';
 import { useFailureForecastData } from '../../hooks/useFailureForecastData';
 import { useFailureForecastHistory } from '../../hooks/useFailureForecastHistory';
+import { useFailureForecastOverhaul } from '../../hooks/useFailureForecastOverhaul';
+import { useTurbineRiskHistory } from '../../hooks/useTurbineRiskHistory';
 
 // icons
 import PsychologyIcon from '@mui/icons-material/Psychology';
@@ -153,20 +155,37 @@ function StatTile({ title, subtitle, value, unit, icon, accent, chip, chipColor 
  * ------------------------------------------------------------------ */
 
 const AIAnalytics = () => {
-  // Which ai1a source table drives every AI1a tile/chart/table below --
-  // 'ai1a' (production, 65-feature) or 'ai1a_shadow' (comparison run,
-  // 70-feature/has TDS). See AI1A_SOURCE_TABLES in
-  // backend/controllers/externalController.js for why 'ai1a_shadow' is
-  // readable through this page at all. FE-only state, not persisted --
-  // no existing convention in this codebase for persisting a view toggle
-  // like this, and the toggle resetting to Produksi on reload is fine.
-  const [ai1aVariant, setAi1aVariant] = useState('ai1a');
-
   // liveData is null whenever the newest row is older than 10 minutes
   // (see hooks/useAi1Data.js) -- that null IS the "waiting for data" signal.
-  const { liveData: ai1aLive, history: ai1aHistory, loading: ai1aLoading } = useAi1aData(3000, ai1aVariant);
-  const { rows: failureForecastRows, loading: failureForecastLoading } = useFailureForecastData();
-  const { rows: failureForecastHistoryRows, loading: failureForecastHistoryLoading } = useFailureForecastHistory();
+  //
+  // Always reads 'ai1a' (production) -- the "Produksi"/"Shadow 70" toggle
+  // that used to sit above the risk chart was removed 2026-09-16: AI1a-70
+  // was promoted to production the same day, so AI1A_SHADOW_DIRS is now
+  // empty on the VPS and 'ai1a_shadow' would only ever show frozen/stale
+  // data, never a live comparison. See AI1A_SOURCE_TABLES in
+  // backend/controllers/externalController.js if a shadow arm is ever
+  // reintroduced.
+  const { liveData: ai1aLive, history: ai1aHistory, loading: ai1aLoading } = useAi1aData(3000);
+  const {
+    rows: failureForecastRows,
+    loading: failureForecastLoading,
+    refetch: refetchFailureForecastData
+  } = useFailureForecastData();
+  const {
+    rows: failureForecastHistoryRows,
+    loading: failureForecastHistoryLoading,
+    refetch: refetchFailureForecastHistory
+  } = useFailureForecastHistory();
+  const { events: overhaulEvents, loading: overhaulLoading, refetch: refetchOverhaulEvents } = useFailureForecastOverhaul();
+
+  // After a reset/undo settles (OverhaulResetControl's own poll confirms the
+  // AI-side worker's on-demand recompute landed, or times out and falls
+  // back to the normal ~60s cadence) -- refreshes the two chart data hooks
+  // together so the caller doesn't need to know there are two of them.
+  const refreshFailureForecastChart = useCallback(() => {
+    refetchFailureForecastData();
+    refetchFailureForecastHistory();
+  }, [refetchFailureForecastData, refetchFailureForecastHistory]);
 
   const [sensorRows, setSensorRows] = useState([]);
 
@@ -240,7 +259,7 @@ const AIAnalytics = () => {
       const pointsParam = range === 'now' ? '' : `&points=${AI1A_CHART_POINTS}`;
 
       fetch(
-        `/api/external/ai1a?start_date=${encodeURIComponent(startIso)}&end_date=${encodeURIComponent(endIso)}${pointsParam}&source_table=${ai1aVariant}`
+        `/api/external/ai1a?start_date=${encodeURIComponent(startIso)}&end_date=${encodeURIComponent(endIso)}${pointsParam}`
       )
         .then((r) => r.json())
         .then((json) => {
@@ -258,7 +277,7 @@ const AIAnalytics = () => {
       cancelled = true;
       clearInterval(id);
     };
-  }, [ai1aSelection, ai1aVariant]);
+  }, [ai1aSelection]);
 
   const ai1aChart = useMemo(() => {
     // Before the first range fetch resolves, fall back to useAi1aData's
@@ -284,20 +303,54 @@ const AIAnalytics = () => {
   const currentRisk = toNum(ai1aLive?.risk_percentage);
   const isAnomaly = ai1aLive ? ai1aLive.is_anomaly === true || ai1aLive.is_anomaly === 't' : null;
 
+  /* --- Turbine Risk History: separate 6-steam-quality-parameter model ---
+   * A DIFFERENT Isolation Forest from AI1a (6 steam-quality parameters --
+   * TDS/pressure/temperature/flow_rate are real sensor readings, dryness/
+   * NCG are AI2 model OUTPUTS, not sensor readings) -- this is also the
+   * model that anchors the failure-forecast SoH curve below. Range-fetch
+   * logic lives in useTurbineRiskHistory (factored out since it's the
+   * second chart needing the same range-selector + bucketing shape ai1a
+   * already has above). risk_percentage here is `adjusted_risk_percentage`
+   * from the backend -- ALWAYS populated on the row itself (no separate
+   * annotation join needed, unlike ai1a), same "direction-corrected"
+   * meaning as ai1a's own adjusted values. */
+  const [turbineRiskSelection, setTurbineRiskSelection] = useState({ range: '1d', custom: null });
+  const handleTurbineRiskRangeChange = useCallback((range, custom) => {
+    setTurbineRiskSelection({ range, custom: custom ?? null });
+  }, []);
+  const { rows: turbineRiskRows } = useTurbineRiskHistory(turbineRiskSelection);
+
+  const turbineRiskChart = useMemo(() => {
+    const rows = turbineRiskRows.filter((r) => toNum(r.risk_percentage) !== null);
+    const lows = rows.map((r) => toNum(r.risk_percentage_min)).filter((v) => v !== null);
+    const highs = rows.map((r) => toNum(r.risk_percentage_max)).filter((v) => v !== null);
+    return {
+      series: rows.map((r) => toNum(r.risk_percentage)),
+      categories: rows.map((r) => fmtClock(r.timestamp)),
+      timestamps: rows.map((r) => r.timestamp),
+      extremes: lows.length > 0 && highs.length > 0 ? { min: Math.min(...lows), max: Math.max(...highs) } : null
+    };
+  }, [turbineRiskRows]);
+
   /* --- Failure forecast: turbine State-of-Health projection ------- */
 
   // Summary for the stat tile above: the anchor (today) row per model plus
-  // whichever model's ETA comes soonest. rows arrive ordered by
-  // (model, projection_date) server-side, so the first row seen per model
-  // is that model's anchor point.
+  // whichever model's target Turn Around comes soonest. Explicitly filtered
+  // to track='as_is' (16 Sep 2026 contract change) -- rows now also include
+  // a 'scheduled' what-if track, and its anchor row starts a fresh
+  // hypothetical cycle at failure_pct=0, which would look like "perfect
+  // health" here if it slipped through. `health`/`worstHealth` are NEVER
+  // clamped: an overdue cycle correctly pushes this negative.
   const failureForecastSummary = useMemo(() => {
     const anchors = [];
     const seen = new Set();
-    failureForecastRows.forEach((r) => {
-      if (seen.has(r.model)) return;
-      seen.add(r.model);
-      anchors.push({ model: r.model, health: 100 - toNum(r.today_failure_pct), etaDate: r.eta_date });
-    });
+    failureForecastRows
+      .filter((r) => (r.track ?? 'as_is') === 'as_is')
+      .forEach((r) => {
+        if (seen.has(r.model)) return;
+        seen.add(r.model);
+        anchors.push({ model: r.model, health: 100 - toNum(r.today_failure_pct), etaDate: r.eta_date });
+      });
 
     const worst = anchors.reduce(
       (min, a) => (a.health !== null && (min === null || a.health < min.health) ? a : min),
@@ -307,7 +360,14 @@ const AIAnalytics = () => {
       .filter((a) => a.etaDate)
       .reduce((min, a) => (min === null || new Date(a.etaDate) < new Date(min.etaDate) ? a : min), null);
 
-    return { worstHealth: worst?.health ?? null, soonestEta: soonestEta?.etaDate ?? null, soonestModel: soonestEta?.model ?? null };
+    return {
+      worstHealth: worst?.health ?? null,
+      soonestEta: soonestEta?.etaDate ?? null,
+      soonestModel: soonestEta?.model ?? null,
+      // Contract WAJIB #5: eta_date CAN be in the past for an overdue
+      // as_is cycle -- that's a real "TA is due" reading, not stale data.
+      soonestEtaOverdue: soonestEta?.etaDate ? new Date(soonestEta.etaDate).getTime() < Date.now() : false
+    };
   }, [failureForecastRows]);
 
   /* --- render ----------------------------------------------------- */
@@ -316,19 +376,7 @@ const AIAnalytics = () => {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 1.5 }}>
-        <AnalyticsHeader title="Risk Analytics" subtitle="Anomaly Detection & Risk Forecast" />
-        <ToggleButtonGroup
-          size="small"
-          exclusive
-          value={ai1aVariant}
-          onChange={(_e, next) => { if (next) setAi1aVariant(next); }}
-          sx={{ mb: 1 }}
-        >
-          <ToggleButton value="ai1a" sx={{ textTransform: 'none', px: 2 }}>Produksi</ToggleButton>
-          <ToggleButton value="ai1a_shadow" sx={{ textTransform: 'none', px: 2 }}>Shadow 70</ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
+      <AnalyticsHeader title="Risk Analytics" subtitle="Anomaly Detection & Risk Forecast" />
 
       {/* ---------------- status tiles ---------------- */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -369,14 +417,14 @@ const AIAnalytics = () => {
 
         <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
           <StatTile
-            title="State of Health Turbin"
+            title="SoH Siklus Overhaul Berjalan"
             subtitle={
               failureForecastLoading
                 ? 'Memuat proyeksi...'
                 : failureForecastSummary.soonestEta
-                  ? `ETA overhaul terdekat: ${fmtDateFull(failureForecastSummary.soonestEta)} (${
-                      FAILURE_FORECAST_MODEL_LABELS[failureForecastSummary.soonestModel] || failureForecastSummary.soonestModel
-                    })`
+                  ? `${failureForecastSummary.soonestEtaOverdue ? 'Target TA (sudah lewat)' : 'Target Turn Around terdekat'}: ${fmtDateFull(
+                      failureForecastSummary.soonestEta
+                    )} (${FAILURE_FORECAST_MODEL_LABELS[failureForecastSummary.soonestModel] || failureForecastSummary.soonestModel})`
                   : 'Belum tercapai dalam horizon proyeksi'
             }
             value={failureForecastSummary.worstHealth === null ? null : fmtNum(failureForecastSummary.worstHealth, 1)}
@@ -390,7 +438,7 @@ const AIAnalytics = () => {
       {/* ---------------- chart 1: AI1a direction-adjusted ---------------- */}
       <Box sx={{ mb: 3 }}>
         <RiskChart
-          title="Adjusted Risk History"
+          title="Overall Risk History"
           subtitle="Risk percentage per window waktu dari anomaly detection, sudah dikoreksi arah proses - bukan angka mentah"
           badge="ADJUSTED"
           badgeColor="warning"
@@ -407,12 +455,40 @@ const AIAnalytics = () => {
         />
       </Box>
 
+      {/* ---------------- chart 1b: Turbine Risk History (separate model) ---------------- */}
+      <Box sx={{ mb: 3 }}>
+        <RiskChart
+          title="Turbine Risk History"
+          subtitle="Risk score dari 6 parameter kualitas uap (Isolation Forest terpisah dari Overall Risk History), sudah dikoreksi arah proses - bukan angka mentah"
+          badge="ADJUSTED"
+          badgeColor="warning"
+          series={turbineRiskChart.series}
+          categories={turbineRiskChart.categories}
+          timestamps={turbineRiskChart.timestamps}
+          seriesExtremes={turbineRiskChart.extremes}
+          showRangeSelector
+          onRangeChange={handleTurbineRiskRangeChange}
+          color="#0d9488"
+          chartType="area"
+          yAxisMax={100}
+          emptyMessage="Belum ada data turbine risk history"
+          footnote="Model terpisah dari Overall Risk History -- 6 parameter kualitas uap (TDS/pressure/temperature/flow_rate dari sensor asli, dryness dari output Dryness Prediction & NCG dari output NCG Prediction, bukan sensor langsung). Keterbatasan: window latih baru ~37 hari (jauh lebih pendek dari Overall Risk History); dryness & NCG hampir redundan dengan pressure/temperature/TDS (R² ~0,99), jadi menambah sangat sedikit informasi baru; anotasi arah proses cuma punya aturan untuk TDS/dryness/NCG -- pressure/temperature/flow_rate sengaja tanpa verdict baik/buruk."
+        />
+      </Box>
+
       {/* ---------------- chart 2: failure forecast (State of Health) ---------------- */}
       <Box sx={{ mb: 3 }}>
         <FailureForecastChart
           rows={failureForecastRows}
           historyRows={failureForecastHistoryRows}
           loading={failureForecastLoading || failureForecastHistoryLoading}
+        />
+        <OverhaulResetControl
+          events={overhaulEvents}
+          loading={overhaulLoading}
+          onChanged={refetchOverhaulEvents}
+          currentGeneratedAt={failureForecastRows[0]?.generated_at ?? null}
+          onProjectionRefresh={refreshFailureForecastChart}
         />
       </Box>
 

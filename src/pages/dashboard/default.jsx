@@ -190,7 +190,7 @@ function MobileLayout({
               )}
               {!usingAi1a && (
                 <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center', mt: 0.5 }}>
-                  Data AI belum tersedia — estimasi dari ambang sensor
+                  Data Overall Risk History belum tersedia — estimasi dari ambang sensor
                 </Typography>
               )}
             </Box>
@@ -539,7 +539,7 @@ function DesktopLayout({
                   )}
                   {!usingAi1a && (
                     <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center', mt: 0.5, fontSize: '0.65rem', lineHeight: 1.2 }}>
-                      Data AI belum tersedia — estimasi dari ambang sensor
+                      Data Overall Risk History belum tersedia — estimasi dari ambang sensor
                     </Typography>
                   )}
                 </Box>
@@ -806,20 +806,39 @@ export default function DashboardDefault() {
         return { label: pred.toLowerCase() === 'normal' ? 'Normal' : 'Ideal', color: '#22c55e', bgColor: '#22c55e15' };
       case 'warning':
         return { label: 'Warning', color: '#f59e0b', bgColor: '#f59e0b15' };
+      case 'high':
+        return { label: 'High', color: '#f97316', bgColor: '#f9731615' };
       case 'critical':
       case 'abnormal':
         return { label: pred.toLowerCase() === 'critical' ? 'Critical' : 'Abnormal', color: '#ef4444', bgColor: '#ef444415' };
       default:
-        return { label: 'Ideal', color: '#22c55e', bgColor: '#22c55e15' };
+        // Unknown/missing input (a retired field gone NULL, a value this
+        // switch doesn't recognize yet, or no data at all) must NEVER fall
+        // through to a reassuring green "Ideal" -- that's exactly the
+        // false-safe bug found 2026-09-17 when `ai1a.severity` started
+        // going NULL (worker retirement) while this still read `severity`:
+        // the card kept showing "Ideal" in green with a possibly-high
+        // risk_percentage sitting right underneath it. An honest "unknown"
+        // state is the only safe default for a risk indicator.
+        return { label: 'Tidak diketahui', color: '#94a3b8', bgColor: '#94a3b815' };
     }
   };
 
-  // Prefer real AI1a output (severity + risk_percentage); when AI1a data is
-  // missing or stale (see useAi1aData's 10-min freshness check on created_at),
-  // fall back to the sensor-threshold estimate below rather than showing a
-  // frozen/last-known AI value as if it were current.
+  // Prefer real AI1a output (risk_label + risk_percentage); when AI1a data
+  // is missing or stale (see useAi1aData's 10-min freshness check on
+  // created_at), fall back to the sensor-threshold estimate below rather
+  // than showing a frozen/last-known AI value as if it were current.
+  //
+  // Reads `risk_label`, NOT `severity` -- `severity` was retired 17 Sep
+  // 2026 (goes NULL for every new row; AI_Pertasmart_V3 workers/jobs_ai1.py
+  // computed it from an AI1b forecast that was itself 8 days stale, and
+  // AI1b was retired alongside it). `risk_label` is a SEPARATE, unchanged
+  // column (4 tiers: normal/warning/high/critical, lowercase, same as
+  // before the AI1b retirement -- confirmed against AI_Pertasmart_V3's own
+  // README.md §6.2/6.3, which explicitly recommends this exact switch so
+  // neither side has to wait on the other's deploy).
   const usingAi1a = !!ai1aLiveData;
-  const riskPrediction = usingAi1a ? ai1aLiveData.severity : getOverallRiskPrediction();
+  const riskPrediction = usingAi1a ? ai1aLiveData.risk_label : getOverallRiskPrediction();
   const riskPercentage = usingAi1a && ai1aLiveData.risk_percentage != null ? parseFloat(ai1aLiveData.risk_percentage) : null;
 
   const predConfig = getPredictionConfig(riskPrediction);

@@ -108,12 +108,71 @@ const axisSpread = (values, mins, maxs) => [
   ...maxs.filter(v => v != null)
 ];
 
-// Given the observed data range, returns the y-axis [min, max] to render.
-// With no fixed baseline (yAxisMin/yAxisMax undefined), pads 1% around the
-// observed data like before. With a baseline given, the axis sticks to
-// exactly that range -- it only grows past the baseline on whichever side
-// the data actually exceeds it, so a metric that's normally flat (e.g.
-// dryness hovering near 100%) doesn't get a misleadingly zoomed-in axis.
+// Rounds `range` to a "nice" leading digit (1, 2, 5, or 10 times a power of
+// ten) -- the classic nice-numbers algorithm (Sparkfun/Graphics Gems). Used
+// so an auto-scaled axis lands on tick values an operator actually
+// recognises (0.05, 0.1, 0.5, 5, ...) instead of whatever raw fraction the
+// data happens to produce.
+const niceNumber = (range, round) => {
+  if (!(range > 0)) return 1;
+  const exponent = Math.floor(Math.log10(range));
+  const fraction = range / 10 ** exponent;
+  let niceFraction;
+  if (round) {
+    if (fraction < 1.5) niceFraction = 1;
+    else if (fraction < 3) niceFraction = 2;
+    else if (fraction < 7) niceFraction = 5;
+    else niceFraction = 10;
+  } else if (fraction <= 1) {
+    niceFraction = 1;
+  } else if (fraction <= 2) {
+    niceFraction = 2;
+  } else if (fraction <= 5) {
+    niceFraction = 5;
+  } else {
+    niceFraction = 10;
+  }
+  return niceFraction * 10 ** exponent;
+};
+
+// Auto-scaled axis bounds (the "no fixed baseline" case): snaps the observed
+// min/max to a nice tick spacing derived from their OWN span, with half a
+// tick of headroom on each side -- not a flat +/-1% floored/ceiled to the
+// nearest integer (the old behavior), which works for a 0-100 metric but
+// rounds a small-magnitude one (e.g. NCG, ~0.2wt%) straight to a [0, 1] axis
+// that looks just as flat as no scaling at all. See NCG.jsx, 2026-09-15
+// (dosen feedback: NCG's line read as flat because the axis was ~5x wider
+// than the data's actual fluctuation).
+//
+// Known limitation, not currently hit: for data with a span that's a large
+// fraction of its own magnitude (e.g. 3-95), the nice-numbers rounding can
+// push the axis below 0 or well past the data even for a metric that can't
+// go negative. Not worked around here since every OTHER Ai2Chart caller
+// passes a fixed yAxisMin/yAxisMax (this path is NCG-only today) -- flag it
+// if a future no-baseline caller has that shape of data.
+const NICE_TICK_COUNT = 5;
+const niceAxisBounds = (dataMin, dataMax) => {
+  const min = dataMin ?? 0;
+  const max = dataMax ?? 100;
+  const rawSpan = max - min;
+  // Flat/near-flat data (span 0 -- a single point, or a truly constant
+  // reading): synthesize a span from the value's own magnitude instead of a
+  // fixed number, so a small-magnitude metric doesn't get a huge axis.
+  const span = rawSpan > 0 ? rawSpan : (Math.abs(max) || Math.abs(min) || 1) * 0.1;
+  const niceRange = niceNumber(span, false);
+  const step = niceNumber(niceRange / (NICE_TICK_COUNT - 1), true);
+  const niceMin = Math.floor((min - step * 0.5) / step) * step;
+  const niceMax = Math.ceil((max + step * 0.5) / step) * step;
+  return { min: niceMin, max: niceMax, tickAmount: Math.round((niceMax - niceMin) / step) };
+};
+
+// Given the observed data range, returns the y-axis [min, max] (and, for the
+// auto-scaled case, tickAmount) to render. With a fixed baseline given
+// (yAxisMin/yAxisMax), the axis sticks to exactly that range -- it only
+// grows past the baseline on whichever side the data actually exceeds it,
+// so a metric that's normally flat (e.g. dryness hovering near 100%)
+// doesn't get a misleadingly zoomed-in axis. With no baseline, the axis
+// auto-fits the currently-displayed data via niceAxisBounds above.
 const computeYRange = (vals, yAxisMin, yAxisMax) => {
   const dataMin = vals.length ? Math.min(...vals) : null;
   const dataMax = vals.length ? Math.max(...vals) : null;
@@ -121,13 +180,12 @@ const computeYRange = (vals, yAxisMin, yAxisMax) => {
   if (yAxisMin != null && yAxisMax != null) {
     return {
       min: dataMin != null && dataMin < yAxisMin ? dataMin : yAxisMin,
-      max: dataMax != null && dataMax > yAxisMax ? dataMax : yAxisMax
+      max: dataMax != null && dataMax > yAxisMax ? dataMax : yAxisMax,
+      tickAmount: undefined
     };
   }
 
-  const min = dataMin ?? 0;
-  const max = dataMax ?? 100;
-  return { min: Math.floor(min * 0.99), max: Math.ceil(max * 1.01) };
+  return niceAxisBounds(dataMin, dataMax);
 };
 
 // Chart numbers are capped at 2 decimals app-wide; `decimals` may ask for fewer.
@@ -137,9 +195,13 @@ const MAX_DECIMALS = 2;
 // replaces the `yaxis` branch wholesale, so updates that sent only {min, max}
 // dropped this formatter and the axis fell back to raw floats
 // (e.g. "1.000000000000000000" on the NCG chart).
-const buildYAxis = ({ min, max, decimals, unit, yAxisTitle }) => ({
+const buildYAxis = ({ min, max, decimals, unit, yAxisTitle, tickAmount }) => ({
   min,
   max,
+  // Only set when niceAxisBounds computed one (the auto-scaled/no-baseline
+  // case) -- omitted for a fixed baseline so ApexCharts keeps picking its
+  // own tick count there, same as before this change.
+  ...(tickAmount != null ? { tickAmount } : {}),
   labels: {
     style: { colors: '#86868b', fontSize: '11px' },
     formatter: v => (v != null && Number.isFinite(v) ? v.toFixed(decimals) + unit : '')
@@ -309,7 +371,7 @@ const Ai2Chart = ({
       TICK_TARGET_MAP[activeRange] ?? 10
     );
     const vals = axisSpread(dataRef.current, minsRef.current, maxsRef.current);
-    const { min: minY, max: maxY } = computeYRange(vals, yAxisMin, yAxisMax);
+    const { min: minY, max: maxY, tickAmount } = computeYRange(vals, yAxisMin, yAxisMax);
 
     // redrawPaths true so the x-axis labels actually follow the new
     // categories -- with it false the axis stays frozen at the values from
@@ -317,7 +379,7 @@ const Ai2Chart = ({
     chartInstanceRef.current.updateOptions(
       {
         xaxis: { categories, title: { text: XAXIS_LABEL_MAP[activeRange] ?? activeRange } },
-        yaxis: buildYAxis({ min: minY, max: maxY, decimals: labelDecimals, unit, yAxisTitle })
+        yaxis: buildYAxis({ min: minY, max: maxY, decimals: labelDecimals, unit, yAxisTitle, tickAmount })
       },
       true,
       false
@@ -363,7 +425,7 @@ const Ai2Chart = ({
     );
 
     const vals = axisSpread(initialData, minsRef.current, maxsRef.current);
-    const { min: minY, max: maxY } = computeYRange(vals, yAxisMin, yAxisMax);
+    const { min: minY, max: maxY, tickAmount } = computeYRange(vals, yAxisMin, yAxisMax);
 
     const options = {
       chart: {
@@ -404,7 +466,7 @@ const Ai2Chart = ({
           style: { color: '#86868b', fontSize: '12px', fontWeight: 400 }
         }
       },
-      yaxis: buildYAxis({ min: minY, max: maxY, decimals: labelDecimals, unit, yAxisTitle }),
+      yaxis: buildYAxis({ min: minY, max: maxY, decimals: labelDecimals, unit, yAxisTitle, tickAmount }),
       grid: {
         borderColor: '#f1f1f1',
         xaxis: { lines: { show: true } },

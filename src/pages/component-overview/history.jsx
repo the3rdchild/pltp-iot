@@ -66,7 +66,7 @@ export default function HistoryTable() {
       {!loading && ai1aByTimestamp.size === 0 && (
         <Box sx={{ mb: 2 }}>
           <Typography variant="caption" color="text.secondary">
-            Data AI1a (severity/risk) belum tersedia — kolom terkait ditampilkan sebagai &ldquo;—&rdquo;.
+            Data Overall Risk History (severity/risk) belum tersedia — kolom terkait ditampilkan sebagai &ldquo;—&rdquo;.
           </Typography>
         </Box>
       )}
@@ -91,9 +91,9 @@ export default function HistoryTable() {
                 <TableCell>TDS (ppm)</TableCell>
                 <TableCell>Gen Output (MW)</TableCell>
                 <TableCell>Current (A)</TableCell>
-                <TableCell>Severity (AI1a)</TableCell>
-                <TableCell>Risk % (AI1a)</TableCell>
-                <TableCell>Anomaly Score (AI1a)</TableCell>
+                <TableCell>Severity (Overall Risk)</TableCell>
+                <TableCell>Risk % (Overall Risk)</TableCell>
+                <TableCell>Anomaly Score (Overall Risk)</TableCell>
               </TableRow>
             </TableHead>
 

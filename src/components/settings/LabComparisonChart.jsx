@@ -62,7 +62,15 @@ const DEFAULT_VISIBLE = 100;
 // the fact that NCG is compared to a prediction, not to a sensor.
 const referenceLabel = (comparedAgainst) => {
   if (!comparedAgainst) return 'Pembanding';
-  return comparedAgainst.startsWith('ai2.') ? 'Prediksi AI' : 'Sensor (rata-rata)';
+  if (comparedAgainst.startsWith('ai2.')) {
+    // `table.column`, e.g. 'ai2.dryness_predict' / 'ai2.ncg_predict' -- name
+    // the specific model (Dryness Prediction / NCG Prediction) instead of a
+    // generic 'Prediksi AI' now that those are the dashboard's official names.
+    if (comparedAgainst.includes('dryness')) return 'Dryness Prediction';
+    if (comparedAgainst.includes('ncg')) return 'NCG Prediction';
+    return 'Prediksi AI';
+  }
+  return 'Sensor (rata-rata)';
 };
 
 /**
@@ -413,6 +421,18 @@ export default function LabComparisonChart() {
   const loading = isAll ? combinedLoading : activeData.loading;
   const error = isAll ? combinedError : activeData.error;
 
+  // Lowercase, mid-sentence form for the "belum mencakup" note below --
+  // referenceLabel's "Dryness Prediction"/"Sensor (rata-rata)" reads oddly
+  // capitalized inside a sentence, so this stays a separate, shorter phrasing
+  // rather than reusing that function's output directly.
+  const comparedNoun = !activeData.comparedAgainst?.startsWith('ai2.')
+    ? 'sensor'
+    : activeData.comparedAgainst.includes('dryness')
+      ? 'Dryness Prediction'
+      : activeData.comparedAgainst.includes('ncg')
+        ? 'NCG Prediction'
+        : 'prediksi AI';
+
   return (
     <MainCard>
       <Stack direction={{ xs: 'column', md: 'row' }} sx={{ alignItems: { md: 'center' }, gap: 2, mb: 2 }}>
@@ -499,7 +519,7 @@ export default function LabComparisonChart() {
       {!isAll && view.unmatched > 0 && view.matched === 0 && !loading && (
         <Alert severity="info" sx={{ mb: 2 }}>
           Tidak ada satu pun sampel yang punya data pembanding. Biasanya ini berarti riwayat{' '}
-          {activeData.comparedAgainst?.startsWith('ai2.') ? 'prediksi AI' : 'sensor'} belum mencakup
+          {comparedNoun} belum mencakup
           tanggal-tanggal sampling tersebut.
         </Alert>
       )}

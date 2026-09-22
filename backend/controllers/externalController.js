@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { query } = require('../config/database');
 const axios = require('axios');
+const crypto = require('crypto');
 
 // Load and parse the tag name mapping from environment variables
 const HONEYWELL_TAGNAME_MAPPING = JSON.parse(process.env.HONEYWELL_TAGNAME_MAPPING || '{}');
@@ -1384,6 +1385,104 @@ const getAi1aDirectionAnnotations = async (req, res) => {
   }
 };
 
+// Model-version prefix filter -- ANY retrain gets a new suffixed
+// model_version (e.g. TRH_v3.0_turbine_risk_history_20260915), and mixing
+// two different model_version values in one chart series would mix two
+// different scoring "rulers" together (same class of bug already handled
+// for ai1a_shadow via AI1A_SHADOW_MODEL_VERSION_PREFIX above). LIKE prefix
+// rather than an exact match so this survives a retrain without a code
+// change.
+const TURBINE_RISK_HISTORY_MODEL_VERSION_PREFIX = 'TRH_v3.0_%';
+
+// Get turbine_risk_history rows -- the 6-steam-quality-parameter
+// Isolation Forest that also anchors the failure-forecast SoH curve (see
+// FailureForecastChart.jsx), read here for its own "risk history" chart
+// (mirrors getAi1aData's shape/bucketing, but simpler: single table, no
+// source_table toggle, no direction_annotation LEFT JOIN needed --
+// adjusted_risk_percentage is ALWAYS populated on the row itself, per
+// AI_Pertasmart_V3 docs/turbine_risk_history_contract_for_beFE.md, even
+// when no correction applied).
+//
+// `"timestamp"` is quoted throughout -- it's a Postgres reserved word as
+// an unquoted identifier.
+//
+// Caveats worth remembering if this data is ever quoted without the FE's
+// own footnote alongside it: training window is only ~37 days (far
+// shorter than AI1a); 2 of the 6 input parameters (dryness, ncg) are AI2
+// MODEL OUTPUTS, not sensor readings, and are ~99% reconstructible from
+// pressure/temperature/TDS (near-redundant, not independent information);
+// direction_flag only has rules for TDS/dryness/ncg -- pressure/
+// temperature/flow_rate deliberately carry no good/bad verdict.
+const getTurbineRiskHistoryData = async (req, res) => {
+  try {
+    const { limit = 50, start_date, end_date, points } = req.query;
+
+    // Bucketed (chart) path -- see resolveBucketing above.
+    const bucketing = (start_date && end_date) ? resolveBucketing(points, start_date, end_date) : null;
+
+    if (bucketing) {
+      const bucket = bucketExpr('"timestamp"', bucketing);
+      const bucketSql = `
+        SELECT
+          ${bucket}                                     AS timestamp,
+          AVG(adjusted_risk_percentage)                 AS risk_percentage,
+          MIN(adjusted_risk_percentage)                 AS risk_percentage_min,
+          MAX(adjusted_risk_percentage)                 AS risk_percentage_max,
+          BOOL_OR(is_anomaly)                           AS is_anomaly,
+          COUNT(*) FILTER (WHERE is_anomaly)::int       AS anomaly_count,
+          MODE() WITHIN GROUP (ORDER BY risk_label)     AS risk_label,
+          MAX(model_version)                            AS model_version,
+          MAX("timestamp")                              AS bucket_last_at,
+          COUNT(*)::int                                 AS data_points
+        FROM turbine_risk_history
+        WHERE model_version LIKE $3 AND "timestamp" >= $1 AND "timestamp" <= $2
+        GROUP BY 1
+        ORDER BY 1 DESC
+      `;
+
+      const bucketResult = await query(bucketSql, [start_date, end_date, TURBINE_RISK_HISTORY_MODEL_VERSION_PREFIX]);
+
+      return res.json({
+        success: true,
+        data: bucketResult.rows,
+        count: bucketResult.rows.length,
+        sampled: true,
+        bucket_seconds: bucketing.bucketSeconds
+      });
+    }
+
+    let sql = `
+      SELECT "timestamp", model_version, risk_percentage, adjusted_risk_percentage,
+             is_anomaly, risk_label
+      FROM turbine_risk_history
+      WHERE model_version LIKE $1
+    `;
+    const params = [TURBINE_RISK_HISTORY_MODEL_VERSION_PREFIX];
+
+    if (start_date && end_date) {
+      params.push(start_date);
+      sql += ` AND "timestamp" >= $${params.length}`;
+      params.push(end_date);
+      sql += ` AND "timestamp" <= $${params.length}`;
+      sql += ` ORDER BY "timestamp" DESC`;
+    } else {
+      params.push(parseInt(limit));
+      sql += ` ORDER BY "timestamp" DESC LIMIT $${params.length}`;
+    }
+
+    const result = await query(sql, params);
+
+    res.json({ success: true, data: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('❌ Error fetching turbine risk history data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch turbine risk history data',
+      error: error.message
+    });
+  }
+};
+
 // Get latest AI1b 30-day risk forecasts
 const getAi1bData = async (req, res) => {
   try {
@@ -1421,17 +1520,26 @@ const getAi1bData = async (req, res) => {
   }
 };
 
-// Get the latest failure-forecast projection (turbine State-of-Health /
-// remaining-life curve, linear + weibull_cox models side by side).
+// Get the latest failure-forecast projection (turbine State-of-Health
+// curve, currently weibull_cox only -- linear was retired from the
+// production worker 15 Sep 2026, see CONTRACT.md).
 //
 // Written by a separate AI-side job (workers/jobs_failure_forecast.py,
-// ~60s cadence) straight from ai1a_shadow -- see
-// docs/failure_forecast_contract_for_beFE.md for the full contract. This
-// replaces the old ai1b-based "Risk Forecast - 30 Hari ke Depan" chart on
-// prediction.jsx: the AI side pivoted from a 30-day risk forecast to a
-// yearly-horizon degradation projection (dosen's "like a phone battery"
-// framing), see CATATAN_KERJA_LAPORAN.md "SCOPE: Pivot 'predict failure'..."
-// (12 Sep 2026).
+// ~60s cadence) -- see AI_Pertasmart_V3
+// simulator/failure-forecast/CONTRACT.md for the full contract (this repo
+// doesn't have its own copy; that file is the source of truth and gets
+// updated in place by the AI side).
+//
+// ⚠️ 16 Sep 2026 contract change: `failure_pct` no longer means "% toward
+// 30-year design life" -- it's now "% of ONE overhaul cycle (~4 years)
+// used up", resetting to 0 at every recorded overhaul. `track` ('as_is' =
+// honest default, no future overhaul assumed; 'scheduled' = "if the cycle
+// is kept" what-if) and `cycle_index` (which cycle a point belongs to) are
+// new columns -- both returned here UNFILTERED; the FE is responsible for
+// filtering to track='as_is' and never connecting points across a
+// cycle_index change (see FailureForecastChart.jsx). Do NOT clamp
+// failure_pct/today_failure_pct anywhere in this response -- values over
+// 100 (an overdue cycle) are correct, not a bug.
 //
 // failure_forecast_projection is REPLACEd whole on every job run (no
 // history accumulation), so "the current projection" is always every row
@@ -1441,11 +1549,11 @@ const getAi1bData = async (req, res) => {
 const getFailureForecastData = async (req, res) => {
   try {
     const sql = `
-      SELECT model, projection_date, failure_pct, today_failure_pct,
+      SELECT model, track, cycle_index, projection_date, failure_pct, today_failure_pct,
              eta_date, risk_ref, overhaul_active_since, generated_at
       FROM failure_forecast_projection
       WHERE generated_at = (SELECT MAX(generated_at) FROM failure_forecast_projection)
-      ORDER BY model, projection_date
+      ORDER BY model, track, cycle_index, projection_date
     `;
     const result = await query(sql);
 
@@ -1468,34 +1576,56 @@ const getFailureForecastData = async (req, res) => {
 };
 
 // Get the historical failure-forecast curve (COD 2015-06-29 -> today),
-// picking up exactly where failure_forecast_projection starts. Same job
-// (workers/jobs_failure_forecast.py) writes both tables every run, sharing
-// generated_at -- see docs/failure_forecast_contract_for_beFE.md.
+// picking up exactly where failure_forecast_projection's track='as_is'
+// starts. Same job (workers/jobs_failure_forecast.py) writes both tables
+// every run, sharing generated_at -- see AI_Pertasmart_V3
+// simulator/failure-forecast/CONTRACT.md.
 //
-// segment discriminates 'nominal' (COD -> first ai1a_shadow sample,
-// 2026-08-05 -- no sensor data exists there so both models fall back to
-// their own built-in nominal-aging assumption) from 'observed' (first
-// sample -> anchor, built from real risk trajectory). Don't infer segment
-// from point_date -- always read the column.
+// segment discriminates 'nominal' (no risk data yet in that cycle -- both
+// models fall back to their own built-in nominal-aging assumption) from
+// 'observed' (real risk trajectory). Don't infer segment from point_date --
+// always read the column. Since 16 Sep 2026 either segment can occur in
+// ANY cycle (cycle_index), not just once at the start of the whole curve.
 //
-// Join contract: the last 'observed' row per model here has failure_pct
-// exactly equal to today_failure_pct on that model's
-// failure_forecast_projection rows, same generated_at -- draw the two
-// tables as one continuous line, style-switching at that join point via
-// segment, never a date comparison.
+// ⚠️ 16 Sep 2026 contract change: `cycle_index`/`cycle_anchor` are new --
+// this curve can now span more than one recorded overhaul cycle, and
+// points from different cycles must NEVER be connected into one line
+// segment (SoH resets to 100% at each cycle boundary; connecting across it
+// draws "damage decreasing" that never happened). See FailureForecastChart
+// .jsx's insertCycleGaps. `failure_pct` here is cycle-relative like
+// projection's -- same "never clamp" rule applies.
+//
+// Join contract: the LAST row per model here (latest point_date) has the
+// SAME cycle_index and failure_pct exactly equal to today_failure_pct on
+// that model's failure_forecast_projection track='as_is' rows, same
+// generated_at -- draw the two tables as one continuous line, style-
+// switching at that join point via segment, never a date comparison.
 //
 // Same REPLACE-per-run policy as failure_forecast_projection (not
 // append-only, even though "the past" sounds like it shouldn't change --
-// risk_ref drifts slowly as ai1a_shadow history grows, so history is
+// risk_ref drifts slowly as turbine_risk_history grows, so history is
 // recomputed every run to stay consistent with the projection).
+//
+// ⚠️ `zero_risk_failure_pct` (added 2026-09-17, migration PENDING on the
+// AI side as of this commit -- DO NOT DEPLOY until they confirm it's
+// live, or this query 500s on the missing column) is a counterfactual:
+// the closed-form curve if turbine_risk_history had read exactly 0% for
+// the whole history, aligned point-for-point with `failure_pct` on the
+// same row (same age-in-cycle input, just risk=0 instead of the real
+// trajectory). It's the mathematical floor from `exp(-gamma)` alone, not
+// "uncorrected"/"no direction annotation" -- don't conflate it with the
+// raw/adjusted distinction elsewhere in this file. Schema-nullable but
+// expected to always be populated once the AI side's worker restarts;
+// FE must tolerate it being absent until then (see
+// FailureForecastChart.jsx).
 const getFailureForecastHistory = async (req, res) => {
   try {
     const sql = `
-      SELECT model, point_date, segment, failure_pct, risk_ref,
-             history_source, generated_at
+      SELECT model, cycle_index, cycle_anchor, point_date, segment, failure_pct,
+             zero_risk_failure_pct, risk_ref, history_source, generated_at
       FROM failure_forecast_history
       WHERE generated_at = (SELECT MAX(generated_at) FROM failure_forecast_history)
-      ORDER BY model, point_date
+      ORDER BY model, cycle_index, point_date
     `;
     const result = await query(sql);
 
@@ -1517,6 +1647,212 @@ const getFailureForecastHistory = async (req, res) => {
   }
 };
 
+// An overhaul can't predate commercial operation -- see
+// argumen_horizon_forecast_kegagalan.md §7.4/§11.5 (AI_Pertasmart_V3 repo):
+// reset is only for a major overhaul/Turn Around AFTER it has actually
+// finished, never a scheduled/future one.
+const OVERHAUL_COD_DATE = new Date('2015-06-29T00:00:00Z');
+
+// Get the full overhaul-event log (failure_forecast_overhaul_event --
+// soft-delete only, see docs/failure_forecast_contract_for_beFE.md §3).
+// Read-only and unauthenticated like every other GET in this file: the FE
+// derives "is there an active event" from the newest row with
+// undone_at IS NULL, so there's no separate /status endpoint to keep in
+// sync with this one.
+const getFailureForecastOverhaulEvents = async (req, res) => {
+  try {
+    const sql = `
+      SELECT id, created_at, undone_at
+      FROM failure_forecast_overhaul_event
+      ORDER BY created_at DESC
+    `;
+    const result = await query(sql);
+    res.json({ success: true, data: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('❌ Error fetching failure forecast overhaul events:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch failure forecast overhaul events',
+      error: error.message
+    });
+  }
+};
+
+// Best-effort trigger telling the AI side's job to recompute the SoH
+// projection RIGHT NOW instead of waiting for its own ~60s cadence -- see
+// simulator/failure-forecast/CONTRACT.md §3.1 (added 2026-09-16, in
+// response to us reporting the stale-chart-after-reset UX gap). Localhost-
+// only, no password by design (only reachable from another process on the
+// same VPS, never from a browser -- our Node backend is that process).
+// Always responds 202 immediately; the actual recompute runs async on
+// their side. Failing this must NEVER fail the write that already
+// succeeded above it -- the normal ~60s worker cadence still picks the
+// change up on its own either way.
+const triggerOverhaulRecompute = async () => {
+  try {
+    await axios.post('http://127.0.0.1:8600/api/overhaul/recompute', null, { timeout: 3000 });
+  } catch (error) {
+    console.error(
+      '⚠️ Overhaul recompute trigger failed (non-fatal -- the ~60s worker cadence will still pick this up):',
+      error.message
+    );
+  }
+};
+
+// Record a completed major overhaul/Turn Around. The next
+// jobs_failure_forecast.py run (~60s, or immediately via
+// triggerOverhaulRecompute below) picks this up as the new SoH anchor.
+//
+// INSERTs directly into the AI-side's Postgres table (same DB already used
+// for failure_forecast_projection/history) rather than proxying to the
+// AI-side's own port-8600 tool -- that tool is internal/password-gated for a
+// different purpose (design confirmed via cross-session handoff from the
+// "Master Session" ai-pertasmart-v3, 2026-09-15). Auth here is this repo's
+// own admin gate (authenticateToken + requireRole('admin'), see
+// backend/routes/external.js), never the AI-side password -- that password
+// is never read, stored, or forwarded by this file.
+//
+// `created_at` IS the effective overhaul date, not a mere insert timestamp
+// (confirmed against AI_Pertasmart_V3/simulator/failure-forecast/backend/app
+// /overhaul_event.py -- effective_anchor_epoch reads created_at as the age-
+// reset point). The AI side's own tool always uses "now"; letting the
+// operator pick a past date here is a pltp-iot-side addition per the
+// dosen's calibration request (argumen_horizon_forecast_kegagalan.md §11.5
+// point 1: default is a MANUAL date, not an automatic/fixed cycle).
+//
+// Known gap: the shared table (schema owned by AI_Pertasmart_V3) has no
+// "recorded by" column, so who pressed the button isn't persisted to the
+// DB -- only logged to this server's console. Flagged, not silently
+// worked around by altering a table another team's worker also reads.
+const createFailureForecastOverhaulEvent = async (req, res) => {
+  try {
+    const { effective_date } = req.body;
+
+    const effectiveAt = effective_date ? new Date(effective_date) : new Date();
+    if (Number.isNaN(effectiveAt.getTime())) {
+      return res.status(400).json({ success: false, message: 'effective_date is not a valid date' });
+    }
+    if (effectiveAt < OVERHAUL_COD_DATE) {
+      return res.status(400).json({
+        success: false,
+        message: `effective_date can't be before commercial operation date (${OVERHAUL_COD_DATE.toISOString().slice(0, 10)})`
+      });
+    }
+    // Small forward tolerance for clock skew -- not a loophole for
+    // "scheduled" overhauls. Reset is only for ones already completed.
+    if (effectiveAt.getTime() > Date.now() + 5 * 60 * 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'effective_date is in the future -- only record an overhaul after it has actually finished'
+      });
+    }
+
+    const id = crypto.randomUUID().replace(/-/g, '');
+    await query('INSERT INTO failure_forecast_overhaul_event (id, created_at, undone_at) VALUES ($1, $2, NULL)', [
+      id,
+      effectiveAt.toISOString()
+    ]);
+
+    console.log(
+      `✅ Overhaul event recorded by user ${req.user?.userId ?? 'unknown'}: id=${id} effective_at=${effectiveAt.toISOString()}`
+    );
+
+    await triggerOverhaulRecompute();
+
+    res.status(201).json({ success: true, data: { id, created_at: effectiveAt.toISOString(), undone_at: null } });
+  } catch (error) {
+    console.error('❌ Error recording failure forecast overhaul event:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to record overhaul event',
+      error: error.message
+    });
+  }
+};
+
+// Undo the most recently recorded ACTIVE overhaul event -- soft-delete only
+// (sets undone_at, never DELETEs the row, per the shared table's own soft-
+// delete contract). Targets only the single newest active row, matching how
+// the AI-side worker itself picks the anchor when more than one is briefly
+// active (overhaul_event.py::latest_active) -- an older active row left
+// behind by a race is not touched here.
+const undoFailureForecastOverhaulEvent = async (req, res) => {
+  try {
+    const result = await query(
+      `UPDATE failure_forecast_overhaul_event
+       SET undone_at = NOW()
+       WHERE id = (
+         SELECT id FROM failure_forecast_overhaul_event
+         WHERE undone_at IS NULL
+         ORDER BY created_at DESC
+         LIMIT 1
+       )
+       RETURNING id, created_at, undone_at`
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(409).json({ success: false, message: 'No active overhaul event to undo' });
+    }
+
+    console.log(`✅ Overhaul event undone by user ${req.user?.userId ?? 'unknown'}: id=${result.rows[0].id}`);
+
+    await triggerOverhaulRecompute();
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('❌ Error undoing failure forecast overhaul event:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to undo overhaul event',
+      error: error.message
+    });
+  }
+};
+
+// Permanently remove an ALREADY-UNDONE overhaul event -- cleanup for
+// test/mistaken entries, requested by the user 2026-09-16 after a test
+// reset+undo left a "Dibatalkan" row with no way to clear it (only
+// undo/soft-delete existed until now).
+//
+// Deliberately narrower than a generic DELETE: an ACTIVE event
+// (undone_at IS NULL) can NEVER be hard-deleted directly here, even by an
+// admin -- it must be undone first (a separate, already-audited step) and
+// only THEN hard-deleted. This preserves the append-only guarantee for
+// real/active data (the shared table's own soft-delete contract, see
+// getFailureForecastOverhaulEvents above) while still giving a way to
+// clear genuine test noise -- two deliberate steps for two different kinds
+// of "this shouldn't be here" (wrong entry -> undo it; already-undone
+// clutter -> hard-delete it).
+const deleteFailureForecastOverhaulEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const existing = await query('SELECT undone_at FROM failure_forecast_overhaul_event WHERE id = $1', [id]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Overhaul event not found' });
+    }
+    if (existing.rows[0].undone_at === null) {
+      return res.status(409).json({
+        success: false,
+        message: 'Cannot hard-delete an ACTIVE overhaul event -- undo it first, then delete'
+      });
+    }
+
+    await query('DELETE FROM failure_forecast_overhaul_event WHERE id = $1', [id]);
+
+    console.log(`✅ Overhaul event hard-deleted by user ${req.user?.userId ?? 'unknown'}: id=${id}`);
+
+    res.json({ success: true, data: { id } });
+  } catch (error) {
+    console.error('❌ Error deleting failure forecast overhaul event:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete overhaul event',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   fetchHoneywellData,
   receiveExternalData,
@@ -1533,6 +1869,11 @@ module.exports = {
   getAi1aData,
   getAi1aDirectionAnnotations,
   getAi1bData,
+  getTurbineRiskHistoryData,
   getFailureForecastData,
-  getFailureForecastHistory
+  getFailureForecastHistory,
+  getFailureForecastOverhaulEvents,
+  createFailureForecastOverhaulEvent,
+  undoFailureForecastOverhaulEvent,
+  deleteFailureForecastOverhaulEvent
 };

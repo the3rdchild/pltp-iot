@@ -16,12 +16,18 @@ const {
   getAi1aData,
   getAi1aDirectionAnnotations,
   getAi1bData,
+  getTurbineRiskHistoryData,
   getFailureForecastData,
-  getFailureForecastHistory
+  getFailureForecastHistory,
+  getFailureForecastOverhaulEvents,
+  createFailureForecastOverhaulEvent,
+  undoFailureForecastOverhaulEvent,
+  deleteFailureForecastOverhaulEvent
 } = require('../controllers/externalController');
 
 // Import API Key authentication middleware
 const { validateApiKey } = require('../middleware/apiKeyAuth');
+const { authenticateToken, requireRole } = require('../middleware/auth');
 const { getLatestMLPredictions } = require('../controllers/dataController');
 
 // POST /api/external/honeywell - Fetch and store data from Honeywell PIMS
@@ -72,6 +78,13 @@ router.get('/ai1a/direction', getAi1aDirectionAnnotations);
 // GET /api/external/ai1b - Get latest AI1b 30-day risk forecasts
 router.get('/ai1b', getAi1bData);
 
+// GET /api/external/turbine-risk-history - Get turbine_risk_history rows
+// (6-steam-quality-parameter Isolation Forest, separate model from AI1a --
+// also anchors the failure-forecast SoH curve). See
+// getTurbineRiskHistoryData in externalController.js for the full contract
+// + caveats (short training window, near-redundant dryness/ncg inputs).
+router.get('/turbine-risk-history', getTurbineRiskHistoryData);
+
 // GET /api/external/failure-forecast - Get latest failure-forecast projection
 // (turbine State-of-Health curve, linear + weibull_cox side by side). See
 // docs/failure_forecast_contract_for_beFE.md.
@@ -82,6 +95,26 @@ router.get('/failure-forecast', getFailureForecastData);
 // shape as /failure-forecast, joins onto it at today_failure_pct. See
 // docs/failure_forecast_contract_for_beFE.md.
 router.get('/failure-forecast/history', getFailureForecastHistory);
+
+// GET /api/external/failure-forecast/overhaul - Get the full overhaul-event
+// log (soft-delete only). Read-only/public, same as the two routes above.
+router.get('/failure-forecast/overhaul', getFailureForecastOverhaulEvents);
+
+// POST /api/external/failure-forecast/overhaul-reset - Record a completed
+// major overhaul/Turn Around (resets the SoH anchor). Admin-only: this is a
+// real, permanently-logged event, not a cosmetic UI action. See
+// getFailureForecastOverhaulEvents/createFailureForecastOverhaulEvent in
+// externalController.js for the full contract.
+router.post('/failure-forecast/overhaul-reset', authenticateToken, requireRole('admin'), createFailureForecastOverhaulEvent);
+
+// POST /api/external/failure-forecast/overhaul-undo - Soft-delete (undo) the
+// most recently recorded active overhaul event. Admin-only, same as above.
+router.post('/failure-forecast/overhaul-undo', authenticateToken, requireRole('admin'), undoFailureForecastOverhaulEvent);
+
+// DELETE /api/external/failure-forecast/overhaul/:id - Permanently remove an
+// ALREADY-UNDONE overhaul event (test/mistaken-entry cleanup). Admin-only.
+// Refuses (409) if the event is still active -- undo it first, then delete.
+router.delete('/failure-forecast/overhaul/:id', authenticateToken, requireRole('admin'), deleteFailureForecastOverhaulEvent);
 
 // Testing endpoints - protected with API Key for security
 router.post('/test', validateApiKey, testConnection); // Test connection and insert sample data

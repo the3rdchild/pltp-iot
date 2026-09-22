@@ -363,6 +363,58 @@ export const getFlowPageData = async (range = '1d', statsOptions = {}) => {
 // ==================== CUSTOM API BUILDER ====================
 
 /**
+ * Record a completed major overhaul/Turn Around -- resets the SoH anchor on
+ * the failure-forecast chart (real, permanently-logged event, not
+ * cosmetic). Admin-only on the backend (authenticateToken +
+ * requireRole('admin')); see backend/controllers/externalController.js.
+ *
+ * @param {string} effectiveDate - 'YYYY-MM-DD', when the overhaul actually finished
+ */
+export const createFailureForecastOverhaulEvent = async (effectiveDate) => {
+  try {
+    const response = await apiClient.post('/external/failure-forecast/overhaul-reset', {
+      effective_date: effectiveDate
+    });
+    return response;
+  } catch (error) {
+    console.error('Error recording overhaul event:', error);
+    throw error;
+  }
+};
+
+/**
+ * Undo the most recently recorded active overhaul event (soft-delete only --
+ * never removes the row). Admin-only on the backend, same as above.
+ */
+export const undoFailureForecastOverhaulEvent = async () => {
+  try {
+    const response = await apiClient.post('/external/failure-forecast/overhaul-undo');
+    return response;
+  } catch (error) {
+    console.error('Error undoing overhaul event:', error);
+    throw error;
+  }
+};
+
+/**
+ * Permanently remove an ALREADY-UNDONE overhaul event (test/mistaken-entry
+ * cleanup). The backend refuses this for a still-active event (undo it
+ * first) -- this call can fail with that 409 by design, not just on a
+ * network error. Admin-only on the backend, same as above.
+ *
+ * @param {string} id
+ */
+export const deleteFailureForecastOverhaulEvent = async (id) => {
+  try {
+    const response = await apiClient.delete(`/external/failure-forecast/overhaul/${encodeURIComponent(id)}`);
+    return response;
+  } catch (error) {
+    console.error('Error deleting overhaul event:', error);
+    throw error;
+  }
+};
+
+/**
  * Generic API call builder
  * Use this for custom endpoints not covered above
  *
@@ -431,6 +483,9 @@ export default {
   getPressurePageData,
   getTemperaturePageData,
   getFlowPageData,
+  createFailureForecastOverhaulEvent,
+  undoFailureForecastOverhaulEvent,
+  deleteFailureForecastOverhaulEvent,
   customAPICall,
   getAPIConfig,
   getAvailableMetrics,

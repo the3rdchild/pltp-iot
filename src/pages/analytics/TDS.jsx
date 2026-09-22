@@ -303,7 +303,7 @@ const TDS = () => {
                 liveValue={tdsValue}
                 labMetric="tds"
                 predictionDataType="tds_predicted"
-                predictionName="Prediksi TDS (AI2)"
+                predictionName="TDS Prediction"
               />
             </Grid>
 
