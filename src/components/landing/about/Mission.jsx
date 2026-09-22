@@ -1,12 +1,12 @@
 import engineerImage from 'assets/images/landing_page_image_2.webp';
 
 import { missionPillars } from '../data/content';
-import { Section, SectionHead } from '../ui/Section';
+import { SectionHead } from '../ui/Section';
 import styles from './Mission.module.css';
 
 export default function Mission() {
   return (
-    <Section id="misi" tone="paper">
+    <section id="misi">
       <SectionHead eyebrow="Tujuan" title="Mendukung pengambilan keputusan operasi berbasis data terkini" />
 
       <div className={styles.layout}>
@@ -40,6 +40,6 @@ export default function Mission() {
           </li>
         ))}
       </ul>
-    </Section>
+    </section>
   );
 }

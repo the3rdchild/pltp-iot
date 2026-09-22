@@ -1,10 +1,10 @@
 import { getInitials, researchTeam } from '../data/content';
-import { Section, SectionHead } from '../ui/Section';
+import { SectionHead } from '../ui/Section';
 import styles from './Team.module.css';
 
 export default function Team() {
   return (
-    <Section id="tim" tone="alt">
+    <section id="tim">
       <SectionHead
         eyebrow="Tim riset"
         title="Peneliti dan pelaksana pengembangan"
@@ -38,6 +38,6 @@ export default function Team() {
           </section>
         ))}
       </div>
-    </Section>
+    </section>
   );
 }

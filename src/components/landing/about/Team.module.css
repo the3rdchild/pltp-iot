@@ -102,7 +102,10 @@
   font-weight: 600;
 }
 
-@media (max-width: 820px) {
+/* Container queries, not media queries: this block now sits in the
+   contents-rail column on /about, so the column's width is what decides the
+   layout. Thresholds are the old viewport ones less the page gutters. */
+@container (max-width: 740px) {
   .grid {
     grid-template-columns: minmax(0, 1fr);
   }

@@ -4,13 +4,20 @@ import turbineImg from 'assets/images/articles/turbine-generator.jpg';
 import coolingTowerImg from 'assets/images/articles/cooling-tower.jpg';
 import powerGridImg from 'assets/images/articles/power-grid.jpg';
 
+import ArticleBody from 'components/landing/article/ArticleBody';
 import ArticleLayout from 'components/landing/article/ArticleLayout';
 import prose from 'components/landing/article/Prose.module.css';
 import { ClockIcon, LeafIcon, MapPinIcon, PulseIcon } from 'components/landing/icons';
 import { ArrowLink } from 'components/landing/ui/Button';
-import { Section, SectionHead } from 'components/landing/ui/Section';
+import { SectionHead } from 'components/landing/ui/Section';
 
 import styles from './CaraKerjaPLTP.module.css';
+
+const sections = [
+  { id: 'pengantar', label: 'Pengantar' },
+  { id: 'tahapan', label: 'Tahapan proses' },
+  { id: 'keunggulan', label: 'Keunggulan' }
+];
 
 const steps = [
   {
@@ -82,8 +89,8 @@ export default function CaraKerjaPLTP() {
       title="Cara kerja pembangkit listrik tenaga panas bumi"
       lead="Konversi energi termal dari reservoir panas bumi menjadi energi listrik, dari sumur produksi hingga jaringan transmisi."
     >
-      <Section id="pengantar" tone="paper">
-        <div className={prose.prose}>
+      <ArticleBody sections={sections} chapters>
+        <section id="pengantar" className={prose.prose}>
           <p>
             Pembangkit listrik tenaga panas bumi (PLTP) mengonversi energi termal yang tersimpan di dalam bumi menjadi energi listrik.
             Proses konversi memanfaatkan uap yang terbentuk secara alami ketika air tanah dipanaskan oleh aktivitas magmatik pada sistem
@@ -94,53 +101,53 @@ export default function CaraKerjaPLTP() {
             langsung dari reservoir dan dikembalikan ke reservoir setelah melewati turbin, sehingga siklusnya dapat dipertahankan dalam
             jangka panjang.
           </p>
-        </div>
-      </Section>
+        </section>
 
-      <Section id="tahapan" tone="alt">
-        <SectionHead
-          eyebrow="Tahapan proses"
-          title="Lima tahap konversi energi"
-          lead="Kualitas uap pada tahap ketiga menentukan sejauh mana energi termal dapat dikonversi tanpa merusak sudu turbin."
-        />
+        <section id="tahapan">
+          <SectionHead
+            eyebrow="Tahapan proses"
+            title="Lima tahap konversi energi"
+            lead="Kualitas uap pada tahap ketiga menentukan sejauh mana energi termal dapat dikonversi tanpa merusak sudu turbin."
+          />
 
-        <ol className={styles.steps}>
-          {steps.map((step) => (
-            <li key={step.number} className={styles.step}>
-              <figure className={styles.figure}>
-                <img src={step.image} alt={step.alt} loading="lazy" />
-              </figure>
+          <ol className={styles.steps}>
+            {steps.map((step) => (
+              <li key={step.number} className={styles.step}>
+                <figure className={styles.figure}>
+                  <img src={step.image} alt={step.alt} loading="lazy" />
+                </figure>
 
-              <div>
-                <p className={styles.marker}>
-                  <span className={styles.markerNumber}>{step.number}</span>
-                  Tahap {step.number}
-                </p>
-                <h3 className={styles.stepTitle}>{step.title}</h3>
-                <p className={styles.stepText}>{step.text}</p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </Section>
+                <div>
+                  <p className={styles.marker}>
+                    <span className={styles.markerNumber}>{step.number}</span>
+                    Tahap {step.number}
+                  </p>
+                  <h3 className={styles.stepTitle}>{step.title}</h3>
+                  <p className={styles.stepText}>{step.text}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
 
-      <Section id="keunggulan" tone="paper">
-        <SectionHead eyebrow="Karakteristik" title="Keunggulan pembangkitan panas bumi" />
+        <section id="keunggulan">
+          <SectionHead eyebrow="Karakteristik" title="Keunggulan pembangkitan panas bumi" />
 
-        <ul className={styles.advantages}>
-          {advantages.map((item) => (
-            <li key={item.title} className={styles.advantage}>
-              <span className={styles.advantageIcon}>{item.icon}</span>
-              <h3 className={styles.advantageTitle}>{item.title}</h3>
-              <p className={styles.advantageText}>{item.text}</p>
-            </li>
-          ))}
-        </ul>
+          <ul className={styles.advantages}>
+            {advantages.map((item) => (
+              <li key={item.title} className={styles.advantage}>
+                <span className={styles.advantageIcon}>{item.icon}</span>
+                <h3 className={styles.advantageTitle}>{item.title}</h3>
+                <p className={styles.advantageText}>{item.text}</p>
+              </li>
+            ))}
+          </ul>
 
-        <div className={styles.more}>
-          <ArrowLink href="/">Kembali ke beranda</ArrowLink>
-        </div>
-      </Section>
+          <div className={styles.more}>
+            <ArrowLink href="/">Kembali ke beranda</ArrowLink>
+          </div>
+        </section>
+      </ArticleBody>
     </ArticleLayout>
   );
 }

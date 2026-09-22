@@ -43,7 +43,7 @@ export default function MainCardAI({ prediction = 'Ideal' }) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: '200px'
+        minHeight: '300px'
       }}
     >
       <Box

@@ -2,7 +2,7 @@ import drynessImage from 'assets/images/dryness.webp';
 import ncgImage from 'assets/images/ncg.webp';
 import tdsImage from 'assets/images/tds.webp';
 import samplingDrynessImage from 'assets/images/DrynessFraction.webp';
-import samplingNcgImage from 'assets/images/sampelncg.webp';
+import samplingNcgImage from 'assets/images/retractable.webp';
 import samplingTdsImage from 'assets/images/SC4500.webp';
 import ai1Image from 'assets/images/articles/AI1/isolation_forest_concept.jpg';
 import ai2Image from 'assets/images/articles/AI2/lstm_architecture.jpg';
@@ -131,7 +131,7 @@ export const samplingMethods = [
   {
     title: 'Sampling NCG',
     image: samplingNcgImage,
-    alt: 'Pengambilan sampel non condensable gas',
+    alt: 'Pemasangan retractable probe pada jalur uap untuk pengambilan sampel non condensable gas',
     text: 'Gas dipisahkan dari aliran uap dan diukur proporsinya untuk mengetahui beban operasi kondensor.',
     href: '/artikel-SamplingNCG'
   }

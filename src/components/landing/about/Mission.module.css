@@ -32,7 +32,10 @@
   width: 100%;
   aspect-ratio: 4 / 5;
   object-fit: cover;
-  object-position: 62% center;
+  /* The 4:5 frame only shows the middle 60% of this 4:3 photo, and the
+     "PLTP KAMOJANG" sign sits at 77-97% of its width. Anything short of the
+     right edge cuts the sign mid-word, so the crop is anchored there. */
+  object-position: 100% center;
 }
 
 .pillars {
@@ -75,7 +78,10 @@
   margin: 0;
 }
 
-@media (max-width: 900px) {
+/* Container queries, not media queries: this block now sits in the
+   contents-rail column on /about, so the column's width is what decides the
+   layout. Thresholds are the old viewport ones less the page gutters. */
+@container (max-width: 820px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -94,7 +100,7 @@
   }
 }
 
-@media (max-width: 560px) {
+@container (max-width: 500px) {
   .pillars {
     grid-template-columns: minmax(0, 1fr);
   }

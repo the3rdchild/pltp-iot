@@ -1,5 +1,5 @@
 /*
- * Reference-style article: a sticky contents rail beside a single column of
+ * Reference-style page: a sticky contents rail beside a single column of
  * prose. The articles used to hide their contents behind a sidebar that only
  * opened on hover, so on a phone there was no way to see the structure at all.
  * Here the rail is plain anchor links, and below 1040px it becomes a short
@@ -50,6 +50,15 @@
   border-left-color: var(--ls-accent);
 }
 
+/* Where the reader currently is, kept in step by `useActiveSection`. It
+   darkens the label rather than only tinting it, so the rail reads as a
+   position indicator and not as a second hover state. */
+.tocLinkActive {
+  color: var(--ls-ink-900);
+  font-weight: 600;
+  border-left-color: var(--ls-accent);
+}
+
 .tocLink:focus-visible {
   outline: 2px solid var(--ls-accent);
   outline-offset: 2px;
@@ -58,6 +67,10 @@
 
 .body {
   min-width: 0;
+  /* Sections in here are laid out against the column, not the viewport: the
+     rail takes roughly 290px out of the page, so a viewport-width breakpoint
+     would keep a four-up grid four-up in a column too narrow for it. */
+  container-type: inline-size;
 }
 
 /* Sections inside the body get their own scroll offset: the shared rule in
@@ -68,6 +81,16 @@
 
 .body > section + section {
   margin-top: clamp(40px, 5vw, 64px);
+}
+
+/* On the pages whose sections are whole chapters rather than steps of one
+   argument -- about, cara kerja PLTP -- the contents rail replaced the
+   alternating background bands. This gives those chapters back the air the
+   bands used to provide, and a rule where the band edge used to fall. */
+.bodyChapters > section + section {
+  margin-top: clamp(56px, 7vw, 96px);
+  padding-top: clamp(56px, 7vw, 96px);
+  border-top: 1px solid var(--ls-line);
 }
 
 /* --- Callout ------------------------------------------------------------- */
@@ -206,6 +229,11 @@
   }
 
   .tocLink:hover {
+    border-left-color: transparent;
+  }
+
+  .tocLinkActive {
+    color: var(--ls-accent);
     border-left-color: transparent;
   }
 }

@@ -1,7 +1,7 @@
 import indonesiaMap from 'assets/images/Indonesiaku.webp';
 
 import PartnerLogos from '../ui/PartnerLogos';
-import { Section, SectionHead } from '../ui/Section';
+import { SectionHead } from '../ui/Section';
 import styles from './Partners.module.css';
 
 const scope = [
@@ -14,7 +14,7 @@ const scope = [
 
 export default function Partners() {
   return (
-    <Section id="mitra" tone="paper">
+    <section id="mitra">
       <SectionHead eyebrow="Mitra" title="Kolaborasi riset antara perguruan tinggi dan industri" />
 
       <div className={styles.layout}>
@@ -41,6 +41,6 @@ export default function Partners() {
       </div>
 
       <PartnerLogos />
-    </Section>
+    </section>
   );
 }

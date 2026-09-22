@@ -129,13 +129,16 @@
   margin-top: clamp(32px, 4vw, 48px);
 }
 
-@media (max-width: 900px) {
+/* These are container queries, not media queries: the page now sits in the
+   contents-rail column, so what matters is the column's width and not the
+   viewport's. The thresholds are the old viewport ones less the gutters. */
+@container (max-width: 820px) {
   .advantages {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 760px) {
+@container (max-width: 680px) {
   .step,
   .step:nth-child(even) {
     grid-template-columns: minmax(0, 1fr);
@@ -147,7 +150,7 @@
   }
 }
 
-@media (max-width: 520px) {
+@container (max-width: 470px) {
   .advantages {
     grid-template-columns: minmax(0, 1fr);
   }
