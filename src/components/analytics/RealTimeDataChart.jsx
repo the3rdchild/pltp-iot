@@ -649,6 +649,12 @@ const RealTimeDataChart = ({
     chart.render();
     chartInstanceRef.current = chart;
 
+    // TEMPORARY, dev only: apexcharts is imported as a module and only
+    // registers itself globally when chart.id is set, so there is otherwise no
+    // way to inspect its internals from the console. Remove once the stuck
+    // tooltip is understood.
+    if (import.meta.env.DEV) window.__tdsChart = chart;
+
     return () => {
       if (chartInstanceRef.current) {
         chartInstanceRef.current.destroy();
