@@ -26,6 +26,11 @@ const LAB_SERIES_COLOR = '#f59e0b';
 const PREDICTION_SERIES_COLOR = '#8b5cf6';
 const PREDICTION_STROKE_COLOR = 'rgba(139, 92, 246, 0.5)';
 
+// Hoisted out of the parameter list on purpose. A default written inline is
+// re-evaluated on every render, producing a new object each time, and this
+// one feeds the dependency array of the effect that builds the chart.
+const DEFAULT_THRESHOLDS = { showMax: true, showMin: true, showAverage: true };
+
 const RealTimeDataChart = ({
   title = 'Real Time Data',
   subtitle = 'Dryness level data chart monthly',
@@ -39,11 +44,7 @@ const RealTimeDataChart = ({
     { name: 'Average', color: '#9ca3af' },
     { name: 'Min', color: '#22c55e' }
   ],
-  thresholds = {
-    showMax: true,
-    showMin: true,
-    showAverage: true
-  },
+  thresholds = DEFAULT_THRESHOLDS,
   showComparison = false, // Show AI vs Field comparison (only for dryness/ncg on 1y+ ranges)
   fetchFromApi = false,  // Fetch real data from API instead of simulation
   liveValue = null,      // Current live value to append in 'now' mode (requires fetchFromApi=true)
@@ -654,7 +655,16 @@ const RealTimeDataChart = ({
         chartInstanceRef.current = null;
       }
     };
-  }, [timeRange, showComparisonData, unit, yAxisTitle, computedXAxisTitle, thresholds, chartRefConfig, dataType, apiTimestamps, labChartData, predictionEnabled, predictionData, predictionName]);
+    // `thresholds` is read field by field rather than by identity. The chart
+    // is destroyed and rebuilt whenever this list changes, so one object
+    // whose identity is fresh each render is enough to tear the chart down on
+    // every render of the parent -- which is what froze the tooltip: TDS.jsx
+    // polls live data every 3s, so the chart under the cursor was replaced
+    // mid-hover and the tooltip stopped tracking. Fields are primitives, so
+    // they compare by value and a caller passing an inline object literal
+    // cannot bring the problem back.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeRange, showComparisonData, unit, yAxisTitle, computedXAxisTitle, thresholds.showMax, thresholds.showMin, thresholds.showAverage, chartRefConfig, dataType, apiTimestamps, labChartData, predictionEnabled, predictionData, predictionName]);
 
   // Update chart data without re-rendering (for smooth updates)
   useEffect(() => {
