@@ -39,18 +39,18 @@ function MobileLayout({
   TITLE_CONFIG
 }) {
   // Extract values from live API data
-  const pressure = parseValue(liveData?.metrics?.pressure?.value, 5.87);
-  const temperature = parseValue(liveData?.metrics?.temperature?.value, 165.2);
-  const flow = parseValue(liveData?.metrics?.flow_rate?.value, 245.71);
-  const tds = parseValue(liveData?.metrics?.tds?.value, NaN);
+  const pressure = parseValue(liveData?.metrics?.pressure?.value, null);
+  const temperature = parseValue(liveData?.metrics?.temperature?.value, null);
+  const flow = parseValue(liveData?.metrics?.flow_rate?.value, null);
+  const tds = parseValue(liveData?.metrics?.tds?.value, null);
   // Use AI2 predictions for dryness and NCG
-  const dryness = ai2Data?.dryness_predict != null ? parseFloat(ai2Data.dryness_predict) : parseValue(liveData?.metrics?.dryness?.value, NaN);
-  const ncg = ai2Data?.ncg_predict != null ? parseFloat(ai2Data.ncg_predict) : parseValue(liveData?.metrics?.ncg?.value, NaN);
-  const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5);
-  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.22);
-  const voltage = parseValue(liveData?.metrics?.voltage?.value, 13.86);
-  const stSpeed = parseValue(liveData?.metrics?.speed?.value, 2998);
-  const current = parseValue(liveData?.metrics?.current?.value, 1377.45);
+  const dryness = ai2Data?.dryness_predict != null ? parseFloat(ai2Data.dryness_predict) : parseValue(liveData?.metrics?.dryness?.value, null);
+  const ncg = ai2Data?.ncg_predict != null ? parseFloat(ai2Data.ncg_predict) : parseValue(liveData?.metrics?.ncg?.value, null);
+  const activePower = parseValue(liveData?.metrics?.active_power?.value, null);
+  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, null);
+  const voltage = parseValue(liveData?.metrics?.voltage?.value, null);
+  const stSpeed = parseValue(liveData?.metrics?.speed?.value, null);
+  const current = parseValue(liveData?.metrics?.current?.value, null);
 
   return (
     <Box sx={{ 
@@ -190,7 +190,7 @@ function MobileLayout({
               )}
               {!usingAi1a && (
                 <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center', mt: 0.5 }}>
-                  Data Overall Risk History belum tersedia — estimasi dari ambang sensor
+                  Data Overall Risk History belum tersedia - estimasi dari ambang sensor
                 </Typography>
               )}
             </Box>
@@ -311,18 +311,18 @@ function DesktopLayout({
   DASHBOARD_CONFIG
 }) {
   // Extract values from live API data
-  const pressure = parseValue(liveData?.metrics?.pressure?.value, 5.87);
-  const temperature = parseValue(liveData?.metrics?.temperature?.value, 165.2);
-  const flow = parseValue(liveData?.metrics?.flow_rate?.value, 245.71);
-  const tds = parseValue(liveData?.metrics?.tds?.value, NaN);
+  const pressure = parseValue(liveData?.metrics?.pressure?.value, null);
+  const temperature = parseValue(liveData?.metrics?.temperature?.value, null);
+  const flow = parseValue(liveData?.metrics?.flow_rate?.value, null);
+  const tds = parseValue(liveData?.metrics?.tds?.value, null);
   // Use AI2 predictions for dryness and NCG
-  const dryness = ai2Data?.dryness_predict != null ? parseFloat(ai2Data.dryness_predict) : parseValue(liveData?.metrics?.dryness?.value, NaN);
-  const ncg = ai2Data?.ncg_predict != null ? parseFloat(ai2Data.ncg_predict) : parseValue(liveData?.metrics?.ncg?.value, NaN);
-  const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5);
-  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.22);
-  const voltage = parseValue(liveData?.metrics?.voltage?.value, 13.86);
-  const stSpeed = parseValue(liveData?.metrics?.speed?.value, 2998);
-  const current = parseValue(liveData?.metrics?.current?.value, 1377.45);
+  const dryness = ai2Data?.dryness_predict != null ? parseFloat(ai2Data.dryness_predict) : parseValue(liveData?.metrics?.dryness?.value, null);
+  const ncg = ai2Data?.ncg_predict != null ? parseFloat(ai2Data.ncg_predict) : parseValue(liveData?.metrics?.ncg?.value, null);
+  const activePower = parseValue(liveData?.metrics?.active_power?.value, null);
+  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, null);
+  const voltage = parseValue(liveData?.metrics?.voltage?.value, null);
+  const stSpeed = parseValue(liveData?.metrics?.speed?.value, null);
+  const current = parseValue(liveData?.metrics?.current?.value, null);
 
   const CARD_CONFIG = {
     sensor: { width: 247, height: 190 },
@@ -336,7 +336,7 @@ function DesktopLayout({
     tds: { top: '12%', left: '4%' },
     dryness: { top: '35%', left: '4%' },
     ncg: { top: '58%', left: '4%' },
-    ai: { top: '77%', left: '4%' },
+    ai: { top: '78%', left: '4%' },
     pressure: { top: '30%', left: '37%' },
     temperature: { top: '53.5%', left: '37%' },
     flow: { top: '77%', left: '37%' },
@@ -547,7 +547,7 @@ function DesktopLayout({
                   )}
                   {!usingAi1a && (
                     <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center', mt: 0.5, fontSize: '0.65rem', lineHeight: 1.2 }}>
-                      Data Overall Risk History belum tersedia — estimasi dari ambang sensor
+                      Data Overall Risk History belum tersedia - estimasi dari ambang sensor
                     </Typography>
                   )}
                 </Box>
@@ -720,15 +720,14 @@ export default function DashboardDefault() {
     );
   }
 
-  // Show error state
+  // A failed fetch no longer replaces the dashboard. It used to render a
+  // message promising "Using fallback values" while showing no cards at all,
+  // which meant the page could only ever be looked at against a live API.
+  // The cards now render and report every missing reading as N/A, so the
+  // layout is visible locally and, in production, an outage reads as an
+  // outage rather than as a blank screen.
   if (error) {
     console.error('Error loading live data:', error);
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-        <Typography color="error">Error loading dashboard data</Typography>
-        <Typography variant="body2" sx={{ mt: 1 }}>Using fallback values</Typography>
-      </Box>
-    );
   }
 
   // Helper function to safely parse numeric values with max 2 decimals
@@ -742,7 +741,10 @@ export default function DashboardDefault() {
 
   // Get risk prediction based on metric values (for test environment)
   const getOverallRiskPrediction = () => {
-    if (!liveData?.metrics) return 'Ideal';
+    // No metrics at all: the sensor-threshold estimate has nothing to work
+    // from, so it must say so. Returning 'Ideal' here put a green, confident
+    // "Ideal" on the risk card whenever the fetch failed.
+    if (!liveData?.metrics) return null;
 
     // For production: use status from API
     if (!isTestEnvironment) {
@@ -798,6 +800,9 @@ export default function DashboardDefault() {
   };
 
   const getPowerStatus = (val, limitKey) => {
+    // Without a reading there is no status to report. Falling through to
+    // 'Normal' here would paint a green badge over missing data.
+    if (val === null || val === undefined || Number.isNaN(val)) return 'N/A';
     const limit = limitData[limitKey];
     if (!limit) return 'Normal';
     if (limit.abnormalLow != null && val < limit.abnormalLow) return 'Abnormal';
@@ -828,7 +833,7 @@ export default function DashboardDefault() {
         // the card kept showing "Ideal" in green with a possibly-high
         // risk_percentage sitting right underneath it. An honest "unknown"
         // state is the only safe default for a risk indicator.
-        return { label: 'Tidak diketahui', color: '#94a3b8', bgColor: '#94a3b815' };
+        return { label: 'N/A', color: '#94a3b8', bgColor: '#94a3b815' };
     }
   };
 

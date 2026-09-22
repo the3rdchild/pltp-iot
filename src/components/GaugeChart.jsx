@@ -255,6 +255,20 @@ const GaugeChart = ({
         return '#ffc14d';
       };
 
+      // No reading available. Every comparison below is false for NaN, so
+      // this used to fall through to the final `else` and label missing data
+      // as an amber "High", on top of printing the literal string "NaN" as
+      // the value. Report it as absent and hide the needle instead.
+      if (cfg.value === null || cfg.value === undefined || isNaN(cfg.value)) {
+        pinEl.style.display = 'none';
+        valueText.textContent = 'N/A';
+        unitText.textContent = '';
+        statusPill.textContent = 'N/A';
+        statusPill.style.background = '#f1f5f9';
+        statusPill.style.color = '#94a3b8';
+        return;
+      }
+
       pinEl.querySelector('.dot').style.background = getCurrentColor(v);
 
       valueText.textContent = (Math.round(cfg.value * 10) / 10).toFixed(1);

@@ -4,6 +4,9 @@ import BoltIcon from '@mui/icons-material/Bolt';
 import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
 import MainCard from 'components/MainCard';
 
+const NO_VALUE_LABEL = 'N/A';
+const NO_VALUE_COLOR = '#94a3b8';
+
 const getStatusColor = (status) => {
   switch (status?.toLowerCase()) {
     case 'normal':
@@ -16,12 +19,22 @@ const getStatusColor = (status) => {
     case 'high':
       return '#ef4444';
     default:
-      return '#22c55e';
+      // Anything unrecognized, N/A included, reads grey. It used to return
+      // green, which meant a missing or unknown status looked like a
+      // confirmed healthy one -- the same false-safe shape as the
+      // `ai1a.severity` bug fixed in 3eb76de.
+      return NO_VALUE_COLOR;
   }
 };
 
+const hasReading = (value) => value !== null && value !== undefined && !Number.isNaN(value);
+
 export default function MetricCard({ label, value, unit, status, linkTo, titleConfig = {}, icon: Icon, iconConfig = {} }) {
-  const statusColor = getStatusColor(status);
+  // No reading means no number and no unit: "N/A MW" would still read as a
+  // measurement. The status badge goes with it, since a status derived from
+  // a value that does not exist is not a status.
+  const available = hasReading(value);
+  const statusColor = getStatusColor(available ? status : NO_VALUE_LABEL);
 
   const defaultTitleStyles = {
     fontSize: '0.75rem',
@@ -76,7 +89,7 @@ export default function MetricCard({ label, value, unit, status, linkTo, titleCo
                   fontSize: '1.75rem'
                 }}
               >
-                {value}
+                {available ? value : NO_VALUE_LABEL}
               </Typography>
               <Typography
                 variant="body2"
@@ -86,7 +99,7 @@ export default function MetricCard({ label, value, unit, status, linkTo, titleCo
                   fontWeight: 400
                 }}
               >
-                {unit}
+                {available ? unit : ''}
               </Typography>
             </Box>
 
@@ -103,7 +116,7 @@ export default function MetricCard({ label, value, unit, status, linkTo, titleCo
                 display: 'inline-block'
               }}
             >
-              {status}
+              {available ? status : NO_VALUE_LABEL}
             </Box>
           </Box>
 
