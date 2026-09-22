@@ -327,7 +327,9 @@ function DesktopLayout({
   const CARD_CONFIG = {
     sensor: { width: 247, height: 190 },
     power: { width: 250, height: 135 },
-    ai: { width: 250, height: 110 }
+    // A minimum, not a fixed height: the AI card grows when the fallback
+    // caption appears. See the Positioned block below for the ceiling.
+    ai: { width: 250, height: 135 }
   };
 
   const POSITIONS = {
@@ -519,8 +521,14 @@ function DesktopLayout({
         </Positioned>
 
         <Positioned pos={POSITIONS.ai}>
-          <Box sx={{ width: `${CARD_CONFIG.ai.width}px`, height: `${CARD_CONFIG.ai.height}px` }}>
-            <MainCard sx={{ width: '100%', height: '100%' }} contentSX={{ p: 1.5 }}>
+          {/* Height is a floor, not a fixed size. At 120px fixed the card clipped
+              its own last line whenever `usingAi1a` was false, because the
+              fallback caption wraps to two lines on a 250px card. Growth is
+              symmetric (Positioned centres on its point), and the NCG gauge
+              above ends at 617px against this card's 693px centre, so the
+              card has room up to 152px before the two touch. */}
+          <Box sx={{ width: `${CARD_CONFIG.ai.width}px`, minHeight: `${CARD_CONFIG.ai.height}px` }}>
+            <MainCard sx={{ width: '100%', minHeight: `${CARD_CONFIG.ai.height}px` }} contentSX={{ p: 1.5 }}>
               <Box>
                 <Link href="/prediction" target="" rel="noopener noreferrer" underline="hover" color="inherit">
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
