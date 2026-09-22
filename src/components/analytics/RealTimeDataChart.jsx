@@ -541,14 +541,12 @@ const RealTimeDataChart = ({
         height: 350,
         toolbar: { show: false },
         zoom: { enabled: false },
-        animations: {
-          enabled: timeRange === 'now' && !showComparisonData,
-          easing: 'linear',
-          dynamicAnimation: {
-            enabled: true,
-            speed: 1000
-          }
-        }
+        // Off everywhere, including 'now'. This used to be the one range that
+        // animated, and the 1000ms dynamic animation redrew the vertical grid
+        // on every appended point, so the gridlines visibly swept across the
+        // plot once a second. Every other range already renders without
+        // animation, so 'now' now matches them: new points appear in place.
+        animations: { enabled: false }
       },
       series: series,
       stroke: {
