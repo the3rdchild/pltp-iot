@@ -661,3 +661,80 @@ degrade safely and were left untouched.
   double-check `src/pages/dashboard/default.jsx` doesn't end up
   duplicated/conflicted. Flag this explicitly to whichever session runs
   that deploy.
+
+## Full batch deploy + landing redesign merge (2026-09-22)
+
+The landing redesign branch (`redesign/landing-page`) landed on `main` and
+the whole accumulated backlog went to prod in one deploy. **Deployed by
+the user; this session prepared the merge and the commands but did not
+run or observe the deploy itself** -- build/`pm2 restart` outcomes are
+not recorded here first-hand.
+
+- Merge `3d355eb`: `origin/main` (29 dashboard/prediction commits) merged
+  into the redesign branch, resolving three conflicts. `components/home/
+  homeData.jsx` kept deleted (the redesign removes the entire old landing
+  page, so `3539b6e`'s rename had no surface left there); `articles/
+  AI1.jsx` + `AI2.jsx` kept the redesign's rewrite (same reason -- both
+  files were replaced wholesale, and the new AI1.jsx already used the
+  thesis-final section names).
+- `9a54490`: the four user-visible strings `3539b6e` never reached,
+  because the redesign was in flight on its own branch -- the two landing
+  AI card tags and the two article menu labels, now "Overall Risk History"
+  and "Dryness & NCG Prediction".
+- `7cbb59b`: `.claude/settings.local.json` added to `.gitignore`.
+
+**Clears the pending-deploy backlog.** Everything previously marked "NOT
+deployed"/"not yet deployed" above is now live: `d4ce8b5`, `434e3fd`,
+`1cf2790`, `3539b6e`, `d2ec47f`, and the overhaul-reset control from
+2026-09-15. Those markers are left as-is -- they were accurate when
+written; this entry is the correction.
+
+**The `d2ec47f` hard blocker was checked, not assumed.** Before the API
+restart, `zero_risk_failure_pct` was confirmed present on
+`failure_forecast_history`, queried through the backend's own pg
+credentials (`DB_*` from `backend/.env`, not `DATABASE_URL` -- that
+variable does not exist in this project). The AI side's migration had
+landed. Had it not, the instruction was to pull and build but leave pm2
+alone, since the running process keeps the old code until restarted.
+
+**The predicted cherry-pick divergence did not materialise as predicted.**
+The previous entry warned the VPS carried a local cherry-picked `3eb76de`
+and that the next `git pull` would not fast-forward. The pull did fail
+with divergent branches, but the VPS's only local commit was `469c520`,
+a `.gitignore` edit -- the cherry-pick was gone by then. Root cause of
+the divergence was therefore a local-only ignore rule, now upstream in
+`7cbb59b`, so the VPS sits exactly on `origin/main` and the next deploy
+fast-forwards again.
+
+**Turbine Risk History live-data verification: DONE, and it found
+something.** The verification flagged as still outstanding above is now
+closed -- `GET /api/external/turbine-risk-history` returns real rows in
+prod, so the query construction (mirrored from the `ai1a` pattern, never
+run against real data until now) is confirmed sound.
+
+What it exposed is upstream of us: **the feed is stale by roughly 22
+hours.** The newest row is `2026-09-21T07:08:00Z`, while
+`failure_forecast_history.generated_at` on the same check reads
+`2026-09-22T05:13:21Z`, so the wall clock was at least that. Consecutive
+rows sit 1 minute apart, so a gap that size is not the normal cadence.
+The endpoint takes no date params by default and runs `ORDER BY
+"timestamp" DESC LIMIT 50`, so that first row really is the table's
+newest -- this is not a read-side artefact. Nothing to fix in this repo;
+it points at the AI side's `turbine_risk_history` writer having stopped
+around 2026-09-21 07:08Z. Raise it with them.
+
+Also noticed on those rows, lower confidence and not chased:
+`adjusted_risk_percentage` equals `risk_percentage` exactly on every row
+returned (74.76/74.76, 75.84/75.84). That may well be normal when no
+adjustment applies, but the raw/adjusted distinction is load-bearing on
+the Overall Risk History chart, so it is worth one confirming glance.
+
+**Worth flagging to the master session:** the admin overhaul-reset control
+(2026-09-15) carried an explicit hold -- "do not push/deploy this without
+checking with them first that the timing still holds". It went out with
+this batch. If that check did not happen, they should be told.
+
+**Not verified:** the landing redesign has had no browser check. No
+headless browser was available to the session that built it, so `/about`,
+`/cara-kerja-pltp`, the article contents rails, and the new Sampling NCG
+photo have only been confirmed via `vite build` + `eslint`.
