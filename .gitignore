@@ -145,3 +145,4 @@ backend/models/FULL-DDL-DB.sql
 backend/models/revisi.md
 PIMS_Honeywell.postman_collection.json
 .claude/settings.json
+.claude/settings.local.json
