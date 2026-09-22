@@ -504,7 +504,6 @@ const RealTimeDataChart = ({
     const overlayStrokeWidth = [];
     const overlayDashArray = [];
     const overlayFillOpacity = [];
-    const overlayMarkerSize = [];
 
     if (labChartData) {
       overlaySeries.push({ name: `Lab ${yAxisTitle}`, data: labChartData });
@@ -512,7 +511,6 @@ const RealTimeDataChart = ({
       overlayStrokeWidth.push(0);
       overlayDashArray.push(0);
       overlayFillOpacity.push(0);
-      overlayMarkerSize.push(6);
     }
     if (predictionEnabled) {
       overlaySeries.push({ name: predictionName, data: predictionData });
@@ -520,7 +518,6 @@ const RealTimeDataChart = ({
       overlayStrokeWidth.push(2);
       overlayDashArray.push(6);
       overlayFillOpacity.push(0);
-      overlayMarkerSize.push(0);
     }
     const hasOverlay = !showComparisonData && overlaySeries.length > 0;
 
@@ -572,10 +569,14 @@ const RealTimeDataChart = ({
         colors: colors
       },
       dataLabels: { enabled: false },
-      markers: {
-        size: hasOverlay ? [0, ...overlayMarkerSize] : 0,
-        hover: { size: 5 }
-      },
+      // Scalar 0, never a per-series array. A per-series array makes some
+      // series draw markers and others not, and every chart in this app that
+      // ends up in that mixed state has a tooltip that stops following the
+      // cursor, while PowerChart, whose three series are all markerless, has
+      // always been fine. The lab sample dots are what needed the array, so
+      // they are not drawn for now; the lab series itself stays, so its value
+      // is still in the tooltip and the legend.
+      markers: { size: 0, hover: { size: 5 } },
       xaxis: {
         categories: categories,
         labels: {
