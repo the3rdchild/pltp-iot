@@ -42,7 +42,9 @@
   color: var(--ls-energy);
   font-size: 0.6875rem;
   font-weight: 700;
-  letter-spacing: 0.1em;
+  /* Loose tracking suited the old "AI 1" code. These are module names now, and
+     a name several words long reads as spaced-out shouting at 0.1em. */
+  letter-spacing: 0.04em;
   margin: 0 0 14px;
 }
 

@@ -21,8 +21,8 @@ export const navItems = [
       { label: 'Sampling TDS', href: '/artikel-SamplingTDS' },
       { label: 'Sampling Dryness', href: '/artikel-SamplingDryness' },
       { label: 'Sampling NCG', href: '/artikel-SamplingNCG' },
-      { label: 'AI 1: Deteksi Anomali', href: '/artikel-AI1' },
-      { label: 'AI 2: Sensor Virtual', href: '/artikel-AI2' }
+      { label: 'Overall Risk History', href: '/artikel-AI1' },
+      { label: 'Dryness & NCG Prediction', href: '/artikel-AI2' }
     ]
   }
 ];

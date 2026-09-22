@@ -141,7 +141,7 @@ export const samplingMethods = [
 
 export const aiModels = [
   {
-    tag: 'AI 1',
+    tag: 'Overall Risk History',
     title: 'Deteksi anomali dan klasifikasi status operasi',
     image: ai1Image,
     alt: 'Diagram konsep isolation forest untuk deteksi anomali',
@@ -149,7 +149,7 @@ export const aiModels = [
     href: '/artikel-AI1'
   },
   {
-    tag: 'AI 2',
+    tag: 'Dryness & NCG Prediction',
     title: 'Sensor virtual untuk dryness fraction dan NCG',
     image: ai2Image,
     alt: 'Diagram arsitektur jaringan LSTM',
