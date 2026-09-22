@@ -628,6 +628,12 @@ const RealTimeDataChart = ({
       tooltip: {
         enabled: true,
         theme: 'light',
+        // These three work as a set, and PTFChart carries the same set for
+        // the same reason. `followCursor` alone was not enough here: without
+        // `shared`/`intersect` the tooltip still resolves per series against
+        // the marker overlay.
+        shared: true,
+        intersect: false,
         // Per-series `markers.size` (the array form just below/above, used
         // only while the lab overlay is on) makes ApexCharts anchor the
         // tooltip to a marker, and it then stops tracking the pointer.
