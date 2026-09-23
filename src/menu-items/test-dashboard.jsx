@@ -86,13 +86,6 @@ const testDashboard = {
           type: 'item',
           url: '/test/ptf',
           icon: icons.DashboardOutlined,
-        },
-        {
-          id: 'test-prediction',
-          title: 'Prediction',
-          type: 'item',
-          url: '/test/prediction',
-          icon: icons.TimelineIcon,
         }
       ]
     },

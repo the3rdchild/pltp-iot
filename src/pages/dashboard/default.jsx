@@ -1,6 +1,5 @@
 // material-ui
-import { Typography, Box, Link, useMediaQuery, useTheme } from '@mui/material';
-import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
+import { Typography, Box, useMediaQuery, useTheme } from '@mui/material';
 import BoltIcon from '@mui/icons-material/Bolt';
 import OfflineBoltIcon from '@mui/icons-material/OfflineBolt';
 
@@ -173,12 +172,7 @@ function MobileLayout({
       <Box sx={{ width: '100%' }}>
         <MainCard sx={{ width: '100%', minHeight: '110px' }} contentSX={{ p: 1.5 }}>
           <Box>
-            <Link href="/prediction" target="" rel="noopener noreferrer" underline="hover" color="inherit">
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Typography sx={TITLE_CONFIG}>Prediksi Resiko</Typography>
-                <ArrowOutwardIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />
-              </Box>
-            </Link>
+            <Typography sx={TITLE_CONFIG}>Prediksi Resiko</Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '60px' }}>
               <Typography variant="h1" sx={{ fontSize: '2.5rem', fontWeight: 700, color: predConfig.color, textAlign: 'center', lineHeight: 1 }}>
                 {predConfig.label}
@@ -329,14 +323,14 @@ function DesktopLayout({
     power: { width: 250, height: 135 },
     // A minimum, not a fixed height: the AI card grows when the fallback
     // caption appears. See the Positioned block below for the ceiling.
-    ai: { width: 250, height: 135 }
+    // ai: { width: 250, height: 135 }
   };
 
   const POSITIONS = {
     tds: { top: '12%', left: '4%' },
     dryness: { top: '35%', left: '4%' },
     ncg: { top: '58%', left: '4%' },
-    ai: { top: '78%', left: '4%' },
+    // ai: { top: '78%', left: '4%' },
     pressure: { top: '30%', left: '37%' },
     temperature: { top: '53.5%', left: '37%' },
     flow: { top: '77%', left: '37%' },
@@ -407,11 +401,15 @@ function DesktopLayout({
           }}
         >
           <line x1="15%" y1="6.8%" x2="22%" y2="6.8%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
-          <line x1="15%" y1="6.8%" x2="15%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+
+          <line x1="15%" y1="6.8%" x2="15%" y2="58%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+
           <line x1="15%" y1="12%" x2="5%" y2="12%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="15%" y1="35%" x2="5%" y2="35%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="15%" y1="58%" x2="5%" y2="58%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
-          <line x1="15%" y1="78%" x2="5%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+
+          {/* <line x1="15%" y1="78%" x2="5%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" /> */}
+
           <line x1="49%" y1="7%" x2="49%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="49%" y1="31%" x2="45%" y2="31%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="49%" y1="55%" x2="45%" y2="55%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
@@ -520,22 +518,17 @@ function DesktopLayout({
           </Box>
         </Positioned>
 
-        <Positioned pos={POSITIONS.ai}>
+        {/* <Positioned pos={POSITIONS.ai}> */}
           {/* Height is a floor, not a fixed size. At 120px fixed the card clipped
               its own last line whenever `usingAi1a` was false, because the
               fallback caption wraps to two lines on a 250px card. Growth is
               symmetric (Positioned centres on its point), and the NCG gauge
               above ends at 617px against this card's 693px centre, so the
               card has room up to 152px before the two touch. */}
-          <Box sx={{ width: `${CARD_CONFIG.ai.width}px`, minHeight: `${CARD_CONFIG.ai.height}px` }}>
+          {/* <Box sx={{ width: `${CARD_CONFIG.ai.width}px`, minHeight: `${CARD_CONFIG.ai.height}px` }}>
             <MainCard sx={{ width: '100%', minHeight: `${CARD_CONFIG.ai.height}px` }} contentSX={{ p: 1.5 }}>
               <Box>
-                <Link href="/prediction" target="" rel="noopener noreferrer" underline="hover" color="inherit">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Typography sx={TITLE_CONFIG}>Prediksi Resiko</Typography>
-                    <ArrowOutwardIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />
-                  </Box>
-                </Link>
+                <Typography sx={TITLE_CONFIG}>Prediksi Resiko</Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '60px' }}>
                   <Typography variant="h1" sx={{ fontSize: '2.5rem', fontWeight: 700, color: predConfig.color, textAlign: 'center', lineHeight: 1 }}>
                     {predConfig.label}
@@ -553,8 +546,8 @@ function DesktopLayout({
                 </Box>
               </Box>
             </MainCard>
-          </Box>
-        </Positioned>
+          </Box> */}
+        {/* </Positioned> */}
 
         <Positioned pos={POSITIONS.flow}>
           <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
@@ -679,8 +672,7 @@ export default function DashboardDefault() {
   // AI2 predictions for dryness and NCG
   const { liveData: ai2LiveData } = useAi2Data();
 
-  // AI1a current risk status. The AI1b 30-day forecast lives on /prediction,
-  // not here.
+  // AI1a current risk status.
   const { liveData: ai1aLiveData } = useAi1aData();
 
   // Calculate scale for desktop layout only

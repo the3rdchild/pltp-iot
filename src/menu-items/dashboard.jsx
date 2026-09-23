@@ -85,13 +85,6 @@ const dashboard = {
           type: 'item',
           url: '/power',
           icon: icons.ThunderboltOutlined,
-        },
-        {
-          id: 'prediction',
-          title: 'Prediction',
-          type: 'item',
-          url: '/prediction',
-          icon: icons.TimelineIcon,
         }
       ]
     },

@@ -19,7 +19,6 @@ import NCG from 'pages/analytics/NCG';
 import TDS from 'pages/analytics/TDS';
 import PTF from 'pages/analytics/ptf'
 import Power from 'pages/analytics/power'
-import Prediction from 'pages/analytics/prediction'
 //settings pages
 import DataInput from 'pages/settings/dataInput'
 import Calibration from 'pages/settings/calibration';
@@ -150,16 +149,6 @@ const router = createBrowserRouter([
           {
             index: true,
             element: <Power />
-          }
-        ]
-      },
-      {
-        path: '/prediction',
-        element: <ProtectedRoute><DashboardLayout /></ProtectedRoute>,
-        children: [
-          {
-            index: true,
-            element: <Prediction />
           }
         ]
       },
@@ -318,16 +307,6 @@ const router = createBrowserRouter([
           }
         ]
       },
-      {
-        path: '/test/prediction',
-        element: <TestDataProvider><DashboardLayout /></TestDataProvider>,
-        children: [
-          {
-            index: true,
-            element: <Prediction />
-          }
-        ]
-      },
       // Test Admin Pages -- mirrors /admin so the sandbox keeps matching production
       // URL for URL. No guard here on purpose: /test runs entirely on simulated
       // data from TestDataProvider and never touches the real API.
@@ -355,7 +334,12 @@ const router = createBrowserRouter([
       },
       { path: '/test/dataInput', element: <Navigate to="/test/admin/dataInput" replace /> },
       { path: '/test/calibration', element: <Navigate to="/test/admin/calibration" replace /> },
-      { path: '/test/configuration', element: <Navigate to="/test/admin/configuration" replace /> }
+      { path: '/test/configuration', element: <Navigate to="/test/admin/configuration" replace /> },
+      // Catch-all: any URL no route above matches (including removed pages
+      // like /prediction) goes back to the landing page instead of the router's
+      // bare "404 Not Found" error screen. Relative "/" so it also works on the
+      // dev server; in production this is https://pertasmart.unpad.ac.id/.
+      { path: '*', element: <Navigate to="/" replace /> }
     ]
   }
 ]);
