@@ -1,5 +1,5 @@
 import sc4500Img from 'assets/images/SC4500.webp';
-import monitoringSystemImg from 'assets/images/articles/tds/monitoring_system_panel.jpg';
+import dashboardImg from 'assets/images/articles/tds/pertasmart_dashboard.webp';
 import pltpSystemImg from 'assets/images/articles/tds/pltp_system_diagram.png';
 
 import ArticleBody from 'components/landing/article/ArticleBody';
@@ -400,8 +400,8 @@ export default function SamplingTDS() {
           </p>
 
           <Figure
-            src={monitoringSystemImg}
-            alt="Panel sistem pemantauan kualitas uap"
+            src={dashboardImg}
+            alt="Tangkapan layar dashboard PertaSmart pada Unit 5 Kamojang yang menampilkan nilai TDS, dryness fraction, NCG, serta parameter tekanan, temperatur, dan daya"
             caption="Gambar 3. Panel sistem pemantauan kualitas uap di lapangan."
           />
         </section>

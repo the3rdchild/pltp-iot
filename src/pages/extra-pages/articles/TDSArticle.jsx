@@ -1,7 +1,7 @@
 import turbineDamageImg from 'assets/images/articles/tds/turbine_damage_before_after.jpg';
 import pltpSystemImg from 'assets/images/articles/tds/pltp_system_diagram.png';
 import silicaDepositsImg from 'assets/images/articles/tds/silica_deposits_blade.jpg';
-import monitoringSystemImg from 'assets/images/articles/tds/monitoring_system_panel.jpg';
+import dashboardImg from 'assets/images/articles/tds/pertasmart_dashboard.webp';
 
 import ArticleBody from 'components/landing/article/ArticleBody';
 import ArticleLayout from 'components/landing/article/ArticleLayout';
@@ -354,8 +354,8 @@ export default function TDSArticle() {
           </ol>
 
           <Figure
-            src={monitoringSystemImg}
-            alt="Panel sistem pemantauan kualitas uap"
+            src={dashboardImg}
+            alt="Tangkapan layar dashboard PertaSmart pada Unit 5 Kamojang yang menampilkan nilai TDS, dryness fraction, NCG, serta parameter tekanan, temperatur, dan daya"
             caption="Gambar 4. Panel sistem pemantauan kualitas uap dan TDS secara daring."
           />
         </section>
