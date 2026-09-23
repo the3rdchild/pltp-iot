@@ -156,12 +156,8 @@ const Dryness = () => {
                     min={limitData.dryness.min}
                     max={limitData.dryness.max}
                     unit={limitData.dryness.unit}
-                    abnormalLow={limitData.dryness.abnormalLow}
-                    warningLow={limitData.dryness.warningLow}
-                    idealLow={limitData.dryness.idealLow}
-                    idealHigh={limitData.dryness.idealHigh}
-                    warningHigh={limitData.dryness.warningHigh}
-                    abnormalHigh={limitData.dryness.abnormalHigh}
+                    lowerLimit={limitData.dryness.lowerLimit}
+                    upperLimit={limitData.dryness.upperLimit}
                     changePct={changePct}
                     withCard={false}
                     sx={{ width: '100%', maxWidth: 360 }}

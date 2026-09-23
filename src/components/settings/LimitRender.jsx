@@ -15,7 +15,7 @@ export const SECTIONS = [
   {
     title: 'TDS (Total Dissolved Solids)',
     description: 'Configure limits for TDS measurements',
-    parameters: ['TDS: Overall', 'tdsCO2', 'tdsArgon', 'tdsMethane', 'tdsMA3', 'tds_honeywell']
+    parameters: ['TDS: Overall']
   },
   {
     title: 'Steam Quality',
@@ -47,11 +47,6 @@ export const SECTIONS = [
 // Display names for parameters
 export const PARAMETER_LABELS = {
   'TDS: Overall': 'TDS Overall',
-  'tdsCO2': 'TDS CO2',
-  'tdsArgon': 'TDS Argon',
-  'tdsMethane': 'TDS Methane (CH4)',
-  'tdsMA3': 'TDS MA3',
-  'tds_honeywell': 'TDS (Honeywell)',
   'dryness': 'Dryness Fraction',
   'ncg': 'NCG (Non-Condensable Gas)',
   'pressure': 'Pressure',
@@ -76,9 +71,18 @@ export const PARAMETER_LABELS = {
   'voltage_u_w': 'Voltage W-U'
 };
 
+const limitFieldSx = {
+  '& .MuiOutlinedInput-root': {
+    '& fieldset': { borderColor: '#22c55e' },
+    '&:hover fieldset': { borderColor: '#16a34a' }
+  }
+};
+
 // Parameter card component
 export const ParameterCard = ({ paramKey, data, onChange }) => {
   const label = PARAMETER_LABELS[paramKey] || paramKey;
+  const lowerInvalid = data.lowerLimit < data.min || data.lowerLimit > data.upperLimit;
+  const upperInvalid = data.upperLimit > data.max || data.upperLimit < data.lowerLimit;
 
   return (
     <MainCard
@@ -133,138 +137,41 @@ export const ParameterCard = ({ paramKey, data, onChange }) => {
           />
         </Grid>
 
-        {/* Threshold fields */}
-        {data.abnormalLow !== undefined && (
-          <Grid size={6}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Abnormal Low"
-              type="number"
-              value={data.abnormalLow}
-              onChange={(e) => onChange(paramKey, 'abnormalLow', parseFloat(e.target.value) || 0)}
-              InputProps={{
-                inputProps: { step: 'any' }
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: '#ef4444' },
-                  '&:hover fieldset': { borderColor: '#dc2626' }
-                }
-              }}
-            />
-          </Grid>
-        )}
-
-        {data.warningLow !== undefined && (
-          <Grid size={6}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Warning Low"
-              type="number"
-              value={data.warningLow}
-              onChange={(e) => onChange(paramKey, 'warningLow', parseFloat(e.target.value) || 0)}
-              InputProps={{
-                inputProps: { step: 'any' }
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: '#f59e0b' },
-                  '&:hover fieldset': { borderColor: '#d97706' }
-                }
-              }}
-            />
-          </Grid>
-        )}
-
-        {data.idealLow !== undefined && (
-          <Grid size={6}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Ideal Low"
-              type="number"
-              value={data.idealLow}
-              onChange={(e) => onChange(paramKey, 'idealLow', parseFloat(e.target.value) || 0)}
-              InputProps={{
-                inputProps: { step: 'any' }
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: '#22c55e' },
-                  '&:hover fieldset': { borderColor: '#16a34a' }
-                }
-              }}
-            />
-          </Grid>
-        )}
-
-        {data.idealHigh !== undefined && (
-          <Grid size={6}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Ideal High"
-              type="number"
-              value={data.idealHigh}
-              onChange={(e) => onChange(paramKey, 'idealHigh', parseFloat(e.target.value) || 0)}
-              InputProps={{
-                inputProps: { step: 'any' }
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: '#22c55e' },
-                  '&:hover fieldset': { borderColor: '#16a34a' }
-                }
-              }}
-            />
-          </Grid>
-        )}
-
-        {data.warningHigh !== undefined && (
-          <Grid size={6}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Warning High"
-              type="number"
-              value={data.warningHigh}
-              onChange={(e) => onChange(paramKey, 'warningHigh', parseFloat(e.target.value) || 0)}
-              InputProps={{
-                inputProps: { step: 'any' }
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: '#f59e0b' },
-                  '&:hover fieldset': { borderColor: '#d97706' }
-                }
-              }}
-            />
-          </Grid>
-        )}
-
-        {data.abnormalHigh !== undefined && (
-          <Grid size={6}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Abnormal High"
-              type="number"
-              value={data.abnormalHigh}
-              onChange={(e) => onChange(paramKey, 'abnormalHigh', parseFloat(e.target.value) || 0)}
-              InputProps={{
-                inputProps: { step: 'any' }
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: '#ef4444' },
-                  '&:hover fieldset': { borderColor: '#dc2626' }
-                }
-              }}
-            />
-          </Grid>
-        )}
+        {/* Lower/Upper limit row. The amber and red bands are derived from
+            these two (see utils/limitZones), so there is nothing else to set.
+            Setting a limit equal to Min/Max switches that side's alarm off. */}
+        <Grid size={6}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Lower Limit"
+            type="number"
+            value={data.lowerLimit}
+            onChange={(e) => onChange(paramKey, 'lowerLimit', parseFloat(e.target.value) || 0)}
+            error={lowerInvalid}
+            helperText={lowerInvalid ? 'Must be between Min and Upper Limit' : ' '}
+            InputProps={{
+              inputProps: { step: 'any' }
+            }}
+            sx={limitFieldSx}
+          />
+        </Grid>
+        <Grid size={6}>
+          <TextField
+            fullWidth
+            size="small"
+            label="Upper Limit"
+            type="number"
+            value={data.upperLimit}
+            onChange={(e) => onChange(paramKey, 'upperLimit', parseFloat(e.target.value) || 0)}
+            error={upperInvalid}
+            helperText={upperInvalid ? 'Must be between Lower Limit and Max' : ' '}
+            InputProps={{
+              inputProps: { step: 'any' }
+            }}
+            sx={limitFieldSx}
+          />
+        </Grid>
       </Grid>
     </MainCard>
   );
@@ -274,33 +181,22 @@ export const ParameterCard = ({ paramKey, data, onChange }) => {
 export const ThresholdLegend = () => (
   <MainCard sx={{ mb: 3 }}>
     <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-      Threshold Legend
+      Limit Zones
     </Typography>
     <Grid container spacing={2}>
-      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 16, height: 16, bgcolor: '#ef4444', borderRadius: 1 }} />
-          <Typography variant="body2">Abnormal (Red Zone)</Typography>
-        </Box>
-      </Grid>
-      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 16, height: 16, bgcolor: '#f59e0b', borderRadius: 1 }} />
-          <Typography variant="body2">Warning (Yellow Zone)</Typography>
-        </Box>
-      </Grid>
-      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 16, height: 16, bgcolor: '#22c55e', borderRadius: 1 }} />
-          <Typography variant="body2">Ideal (Green Zone)</Typography>
-        </Box>
-      </Grid>
-      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 16, height: 16, bgcolor: '#94a3b8', borderRadius: 1 }} />
-          <Typography variant="body2">Min/Max (Range)</Typography>
-        </Box>
-      </Grid>
+      {[
+        ['#22c55e', 'Normal (Green): between Lower and Upper Limit'],
+        ['#f59e0b', 'Warning (Yellow): past a limit, up to halfway toward Min/Max'],
+        ['#ef4444', 'Abnormal (Red): the remaining half toward Min/Max'],
+        ['#94a3b8', 'Limit = Min/Max: that side never alarms']
+      ].map(([color, text]) => (
+        <Grid size={{ xs: 12, sm: 6, md: 3 }} key={color}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 16, height: 16, flexShrink: 0, bgcolor: color, borderRadius: 1 }} />
+            <Typography variant="body2">{text}</Typography>
+          </Box>
+        </Grid>
+      ))}
     </Grid>
   </MainCard>
 );

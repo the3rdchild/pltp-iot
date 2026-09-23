@@ -136,8 +136,8 @@ const Power = () => {
 
   // One row config per parameter — the gauge + 4 StatCards render identically
   // to the Pressure/Temperature/Flow rows in ptf.jsx.
-  // NOTE: reactive_power has no abnormalLow/warningLow in Limit.json — those
-  // zones are simply absent from its gauge (GaugeChart tolerates undefined).
+  // NOTE: reactive_power's lowerLimit equals its min, so its gauge has no
+  // low-side warning/abnormal band.
   const rows = [
     {
       key: 'active-power',
@@ -211,12 +211,8 @@ const Power = () => {
                     min={row.limit.min}
                     max={row.limit.max}
                     unit={row.unitInTitle ? '' : row.limit.unit}
-                    abnormalLow={row.limit.abnormalLow}
-                    warningLow={row.limit.warningLow}
-                    idealLow={row.limit.idealLow}
-                    idealHigh={row.limit.idealHigh}
-                    warningHigh={row.limit.warningHigh}
-                    abnormalHigh={row.limit.abnormalHigh}
+                    lowerLimit={row.limit.lowerLimit}
+                    upperLimit={row.limit.upperLimit}
                     withCard={false}
                     sx={{ width: '100%', maxWidth: 360 }}
                     loading={loading}

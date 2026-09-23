@@ -8,9 +8,9 @@ import { updateLimitDataFromChartConfig, prepareLimitUpdatePayload } from '../ut
  * Links with Limit.json for anomaly detection thresholds
  *
  * When user sets:
- * - Min → updates abnormalLow in Limit.json
- * - Max → updates abnormalHigh in Limit.json
- * - Avg → updates idealLow and idealHigh in Limit.json
+ * - Min → updates lowerLimit in Limit.json
+ * - Max → updates upperLimit in Limit.json
+ * - Avg → chart reference line only, not a limit
  */
 
 const STORAGE_KEY = 'chart_reference_config';
@@ -19,43 +19,19 @@ const STORAGE_KEY = 'chart_reference_config';
 const getDefaultConfig = () => {
   const limits = getLimitData();
 
+  const ref = (limit, fallbackMin, fallbackMax) => {
+    const min = limit?.lowerLimit ?? fallbackMin;
+    const max = limit?.upperLimit ?? fallbackMax;
+    return { enabled: false, min, max, avg: (min + max) / 2 };
+  };
+
   return {
-    pressure: {
-      enabled: false,
-      min: limits.pressure?.abnormalLow || 4,
-      max: limits.pressure?.abnormalHigh || 8,
-      avg: ((limits.pressure?.idealLow || 5.5) + (limits.pressure?.idealHigh || 6.5)) / 2
-    },
-    temperature: {
-      enabled: false,
-      min: limits.temperature?.abnormalLow || 120,
-      max: limits.temperature?.abnormalHigh || 160,
-      avg: ((limits.temperature?.idealLow || 135) + (limits.temperature?.idealHigh || 145)) / 2
-    },
-    flow_rate: {
-      enabled: false,
-      min: limits.flow?.abnormalLow || 240,
-      max: limits.flow?.abnormalHigh || 300,
-      avg: ((limits.flow?.idealLow || 260) + (limits.flow?.idealHigh || 280)) / 2
-    },
-    ncg: {
-      enabled: false,
-      min: limits.ncg?.abnormalLow || 0.5,
-      max: limits.ncg?.abnormalHigh || 2.5,
-      avg: ((limits.ncg?.idealLow || 1.0) + (limits.ncg?.idealHigh || 1.5)) / 2
-    },
-    dryness: {
-      enabled: false,
-      min: limits.dryness?.abnormalLow || 97,
-      max: limits.dryness?.abnormalHigh || 100,
-      avg: ((limits.dryness?.idealLow || 98) + (limits.dryness?.idealHigh || 99.5)) / 2
-    },
-    tds: {
-      enabled: false,
-      min: limits['TDS: Overall']?.abnormalLow || 4,
-      max: limits['TDS: Overall']?.abnormalHigh || 8,
-      avg: ((limits['TDS: Overall']?.idealLow || 5) + (limits['TDS: Overall']?.idealHigh || 7)) / 2
-    }
+    pressure: ref(limits.pressure, 4, 8),
+    temperature: ref(limits.temperature, 120, 160),
+    flow_rate: ref(limits.flow, 240, 300),
+    ncg: ref(limits.ncg, 0.5, 2.5),
+    dryness: ref(limits.dryness, 97, 100),
+    tds: ref(limits['TDS: Overall'], 4, 8)
   };
 };
 

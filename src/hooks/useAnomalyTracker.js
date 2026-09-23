@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import limitsData from '../data/Limit.json';
+import { getLimitData } from '../utils/limitData';
+import { getLimitStatus } from '../utils/limitZones';
 
 /**
  * Detect anomaly status based on value and limits
@@ -8,27 +9,7 @@ import limitsData from '../data/Limit.json';
  * @param {object} limits - Limit thresholds for the metric
  * @returns {string} 'abnormal', 'warning', or 'normal'
  */
-const detectAnomalyStatus = (value, limits) => {
-  if (!limits || value === null || value === undefined) return 'normal';
-
-  // Check for high thresholds
-  if (limits.abnormalHigh !== undefined && value >= limits.abnormalHigh) {
-    return 'abnormal';
-  }
-  if (limits.warningHigh !== undefined && value >= limits.warningHigh) {
-    return 'warning';
-  }
-
-  // Check for low thresholds
-  if (limits.abnormalLow !== undefined && value <= limits.abnormalLow) {
-    return 'abnormal';
-  }
-  if (limits.warningLow !== undefined && value <= limits.warningLow) {
-    return 'warning';
-  }
-
-  return 'normal';
-};
+const detectAnomalyStatus = (value, limits) => getLimitStatus(value, limits).status || 'normal';
 
 /**
  * Custom hook for tracking anomalies in real-time
@@ -52,7 +33,7 @@ export const useAnomalyTracker = (metricKey, currentValue) => {
   const storageKey = `anomaly_history_${metricKey}`;
 
   // Get limits for the metric
-  const limits = limitsData[metricKey] || null;
+  const limits = getLimitData()[metricKey] || null;
 
   /**
    * Load anomaly history from localStorage

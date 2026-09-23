@@ -194,9 +194,9 @@ const ChartReferenceRender = ({ config, onChange, onToggle, onSave, onReset, loa
             <li>
               <strong>Manual Mode:</strong> Use fixed reference values set here. These values also update:
               <ul>
-                <li>Min → abnormalLow threshold</li>
-                <li>Max → abnormalHigh threshold</li>
-                <li>Avg → idealLow and idealHigh range</li>
+                <li>Min → Lower Limit</li>
+                <li>Max → Upper Limit</li>
+                <li>Avg → reference line only</li>
               </ul>
             </li>
             <li>Changes apply to both test and production environments</li>

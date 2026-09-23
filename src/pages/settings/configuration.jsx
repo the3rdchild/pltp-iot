@@ -8,6 +8,7 @@ import { useChartReferenceConfig } from '../../hooks/useChartReferenceConfig';
 
 // Import the initial data
 import initialLimitData from '../../data/Limit.json';
+import { getLimitData } from '../../utils/limitData';
 import initialApiConfig from '../../data/apiConfig.json';
 
 // ==============================|| CONFIGURATION SETTINGS PAGE ||============================== //
@@ -17,10 +18,8 @@ const ConfigurationSettings = () => {
   const [activeTab, setActiveTab] = useState(0);
 
   // State for limit data
-  const [limitData, setLimitData] = useState(() => {
-    const saved = localStorage.getItem('limitData');
-    return saved ? JSON.parse(saved) : initialLimitData;
-  });
+  // getLimitData migrates limits saved in the old six-threshold shape.
+  const [limitData, setLimitData] = useState(getLimitData);
 
   // State for API config
   const [apiConfig, setApiConfig] = useState(() => {
@@ -207,7 +206,7 @@ const ConfigurationSettings = () => {
       await saveChartRefConfig(chartRefConfig);
       setSnackbar({
         open: true,
-        message: 'Chart reference configuration saved successfully! Limit.json thresholds updated.',
+        message: 'Chart reference configuration saved successfully! Lower/upper limits updated.',
         severity: 'success'
       });
     } catch (error) {
@@ -264,7 +263,7 @@ const ConfigurationSettings = () => {
       {activeTab === 0 && (
         <Box>
           <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-            Configure threshold limits for all sensor parameters. Changes will affect gauge displays across all pages.
+            Configure the lower and upper limit for each sensor parameter. Changes will affect gauge displays across all pages.
           </Typography>
           <LimitRender
             limitData={limitData}

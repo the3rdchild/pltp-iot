@@ -357,10 +357,8 @@ const getChartData = async (req, res) => {
         limit: limit ? {
           min: limit.min,
           max: limit.max,
-          warningLow: limit.warningLow,
-          warningHigh: limit.warningHigh,
-          abnormalLow: limit.abnormalLow,
-          abnormalHigh: limit.abnormalHigh
+          lowerLimit: limit.lowerLimit,
+          upperLimit: limit.upperLimit
         } : null,
         chart: chartData
       }
@@ -686,7 +684,7 @@ const getStatsData = async (req, res) => {
         success: true,
         data: {
           metric, summary,
-          limit: limit_info ? { unit: limit_info.unit, min: limit_info.min, max: limit_info.max, warningLow: limit_info.warningLow, warningHigh: limit_info.warningHigh, abnormalLow: limit_info.abnormalLow, abnormalHigh: limit_info.abnormalHigh } : null,
+          limit: limit_info ? { unit: limit_info.unit, min: limit_info.min, max: limit_info.max, lowerLimit: limit_info.lowerLimit, upperLimit: limit_info.upperLimit } : null,
           records: data,
           pagination: { total: totalRecords, limit: parseInt(limit), offset: parseInt(offset), current_page: Math.floor(parseInt(offset) / parseInt(limit)) + 1, total_pages: Math.ceil(totalRecords / parseInt(limit)) }
         }
@@ -770,10 +768,8 @@ const getStatsData = async (req, res) => {
           unit: limit_info.unit,
           min: limit_info.min,
           max: limit_info.max,
-          warningLow: limit_info.warningLow,
-          warningHigh: limit_info.warningHigh,
-          abnormalLow: limit_info.abnormalLow,
-          abnormalHigh: limit_info.abnormalHigh
+          lowerLimit: limit_info.lowerLimit,
+          upperLimit: limit_info.upperLimit
         } : null,
         records: data,
         pagination: {

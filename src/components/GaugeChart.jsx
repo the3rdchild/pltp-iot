@@ -5,6 +5,7 @@ import '../assets/gauge-chart.css';
 import MainCard from './MainCard';
 import { Typography, Box, Link } from '@mui/material';
 import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
+import { getLimitZones, getLimitStatus, LIMIT_COLORS } from '../utils/limitZones';
 
 const GaugeChart = ({
   label,
@@ -14,98 +15,49 @@ const GaugeChart = ({
   unit,
   linkTo,
   titleConfig,
-  abnormalLow,
-  abnormalHigh,
-  warningLow,
-  warningHigh,
-  idealLow,      // NEW
-  idealHigh,     // NEW
+  lowerLimit,
+  upperLimit,
   withCard = true
 }) => {
 
   const gaugeRef = useRef(null);
   const chartId = useRef(`gauge-${Math.random().toString(36).substr(2, 9)}`).current;
 
-  // push(abnormalLow, '#ff4d4d');
-  // push(warningLow, '#ffc14d');
-  // push(warningHigh, '#ffc14d');
-  // push(abnormalHigh, '#ff4d4d');
-
   useEffect(() => {
+    // Zones come from utils/limitZones so the arc, the needle dot and the
+    // status pill all agree with the dashboard and the anomaly counters.
+    const zones = getLimitZones({ min, max, lowerLimit, upperLimit });
+
     const getGradientStops = () => {
-      // helper: clamp numeric offset 0..100
-      const clamp = (n) => Math.max(0, Math.min(100, n));
-    
-      // collect raw stops (numeric offsets)
-      const raw = [];
-      const pushRaw = (val, color) => {
-        if (val === undefined || val === null || isNaN(val)) return;
-        const denom = (max - min) || 1;
-        const offsetNum = ((val - min) / denom) * 100;
-        raw.push({ offset: clamp(Number(offsetNum)), color });
-      };
-    
-      // Follow the requested sequence:
-      // abnormalLow (red) -> warningLow (amber) -> idealLow (green start) ->
-      // idealHigh (green end) -> warningHigh (amber) -> abnormalHigh (red)
-      pushRaw(abnormalLow, '#ff4d4d');    // abnormal low (red)
-      pushRaw(warningLow, '#ffc14d');     // warning low (amber)
-    
-      // ideal boundaries (distinct values)
-      pushRaw(idealLow, '#2CB34A');       // ideal start (green)
-      pushRaw(idealHigh, '#2CB34A');      // ideal end   (green)
-    
-      pushRaw(warningHigh, '#ffc14d');    // warning high (amber)
-      pushRaw(abnormalHigh, '#ff4d4d');   // abnormal high (red)
-    
-      // default gradient when no thresholds provided
-      if (raw.length === 0) {
+      const { normal, warning, abnormal } = LIMIT_COLORS;
+      if (!zones) {
         return [
-          { offset: '0%', color: '#ff4d4d' },
-          { offset: '45%', color: '#ffc14d' },
-          { offset: '100%', color: '#2CB34A' },
+          { offset: '0%', color: normal },
+          { offset: '100%', color: normal }
         ];
       }
-    
-      // priority resolver: green > amber > red
-      const priority = (color) => {
-        const c = String(color).toLowerCase();
-        if (c.includes('22C55E') || c.includes('green')) return 3;
-        if (c.includes('FFC300') || c.includes('ffb') || c.includes('amber')) return 2;
-        if (c.includes('EF4444') || c.includes('#ff4d') || c.includes('red')) return 1;
-        return 2; // neutral default
+      const pct = (val) => {
+        const n = ((val - min) / ((max - min) || 1)) * 100;
+        return Math.max(0, Math.min(100, n));
       };
-    
-      // dedupe by offset: keep highest-priority color for duplicated offsets
-      const map = new Map();
-      raw.forEach(({ offset, color }) => {
-        const key = Number(offset.toFixed(6)); // normalized numeric key
-        const existing = map.get(key);
-        if (!existing) map.set(key, color);
-        else {
-          if (priority(color) > priority(existing)) map.set(key, color);
-        }
-      });
-    
-      // build sorted stops array (numeric), then ensure 0% and 100% are present
-      const entries = Array.from(map.entries())
-        .map(([off, color]) => ({ offset: Number(off), color }))
-        .sort((a, b) => a.offset - b.offset);
-    
-      // if first stop isn't at 0%, add a start using the first color
-      if (entries.length > 0 && entries[0].offset > 0) {
-        entries.unshift({ offset: 0, color: entries[0].color });
+      // red at the scale edge, amber where the red band ends, green from
+      // the limit inwards. A side whose limit sits on the scale edge has no
+      // amber/red band, so it stays green right to the edge.
+      const stops = [];
+      if (zones.hasLow) {
+        stops.push({ offset: 0, color: abnormal });
+        stops.push({ offset: pct(zones.redLow), color: warning });
       }
-      // if last stop isn't at 100%, add an end using the last color
-      if (entries.length > 0 && entries[entries.length - 1].offset < 100) {
-        entries.push({ offset: 100, color: entries[entries.length - 1].color });
+      stops.push({ offset: pct(zones.lower), color: normal });
+      stops.push({ offset: pct(zones.upper), color: normal });
+      if (zones.hasHigh) {
+        stops.push({ offset: pct(zones.redHigh), color: warning });
+        stops.push({ offset: 100, color: abnormal });
       }
-    
-      // finally convert to percent-string stops
-      const stops = entries.map((s) => ({ offset: `${s.offset}%`, color: s.color }));
-    
-      return stops;
-    };                
+      if (stops[0].offset > 0) stops.unshift({ offset: 0, color: stops[0].color });
+      if (stops[stops.length - 1].offset < 100) stops.push({ offset: 100, color: stops[stops.length - 1].color });
+      return stops.map((st) => ({ offset: `${st.offset}%`, color: st.color }));
+    };
 
     const config = {
       value,
@@ -237,24 +189,6 @@ const GaugeChart = ({
       pinEl.style.left = `${px - gaugeRect.left}px`;
       pinEl.style.top = `${py - gaugeRect.top}px`;
 
-      const getCurrentColor = (value) => {
-        if (abnormalLow !== undefined && value < abnormalLow) return '#ff4d4d';
-        if (warningLow !== undefined && value < warningLow) return '#ffc14d'; //yellow
-        if (warningHigh !== undefined && value <= warningHigh) return '#1FED4D'; //strangly here green
-        if (abnormalHigh !== undefined && value > abnormalHigh) return '#ff4d4d';
-
-        // pushRaw(abnormalLow, '#ff4d4d');    // abnormal low (red)
-        // pushRaw(warningLow, '#ffc14d');     // warning low (amber)
-      
-        // // ideal boundaries (distinct values)
-        // pushRaw(idealLow, '#2CB34A');       // ideal start (green)
-        // pushRaw(idealHigh, '#2CB34A');      // ideal end   (green)
-      
-        // pushRaw(warningHigh, '#ffc14d');    // warning high (amber)
-        // pushRaw(abnormalHigh, '#ff4d4d');   // abnormal high (red)
-        return '#ffc14d';
-      };
-
       // No reading available. Every comparison below is false for NaN, so
       // this used to fall through to the final `else` and label missing data
       // as an amber "High", on top of printing the literal string "NaN" as
@@ -269,23 +203,20 @@ const GaugeChart = ({
         return;
       }
 
-      pinEl.querySelector('.dot').style.background = getCurrentColor(v);
+      const { status, side } = getLimitStatus(cfg.value, { min, max, lowerLimit, upperLimit });
+      pinEl.querySelector('.dot').style.background = LIMIT_COLORS[status] || LIMIT_COLORS.normal;
 
       valueText.textContent = (Math.round(cfg.value * 10) / 10).toFixed(1);
       unitText.textContent = unit;
 
-      if (value < warningLow) {
-        statusPill.textContent = 'Low';
-        statusPill.style.background = '#fdecec';
-        statusPill.style.color = '#e24c4c';
-      } else if (value <= warningHigh) {
+      if (status === 'normal' || status === null) {
         statusPill.textContent = 'Normal';
         statusPill.style.background = '#D2FFE2';
         statusPill.style.color = '#22C55E';
       } else {
-        statusPill.textContent = 'High';
-        statusPill.style.background = '#fff5e6';
-        statusPill.style.color = '#ff9f1c';
+        statusPill.textContent = side === 'low' ? 'Low' : 'High';
+        statusPill.style.background = status === 'abnormal' ? '#fdecec' : '#fff5e6';
+        statusPill.style.color = status === 'abnormal' ? '#e24c4c' : '#ff9f1c';
       }
     };
 
@@ -300,7 +231,7 @@ const GaugeChart = ({
     return () => {
       window.removeEventListener('resize', onResize);
     };
-  }, [value, min, max, unit, abnormalLow, abnormalHigh, warningLow, warningHigh, idealLow, idealHigh]);
+  }, [value, min, max, unit, lowerLimit, upperLimit]);
 
   const defaultTitleStyles = {
     fontSize: '1.875rem',
@@ -371,12 +302,8 @@ GaugeChart.propTypes = {
   unit: PropTypes.string,
   linkTo: PropTypes.string,
   titleConfig: PropTypes.object,
-  abnormalLow: PropTypes.number,
-  abnormalHigh: PropTypes.number,
-  warningLow: PropTypes.number,
-  warningHigh: PropTypes.number,
-  idealLow: PropTypes.number,
-  idealHigh: PropTypes.number,
+  lowerLimit: PropTypes.number,
+  upperLimit: PropTypes.number,
   withCard: PropTypes.bool
 };
 

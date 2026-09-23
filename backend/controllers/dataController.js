@@ -622,10 +622,10 @@ const AI2_METRIC_MAP = {
   'ncg': 'ncg_predict'
 };
 
-// Limits for AI2 metrics (mirrors Limit.json)
+// Limits for AI2 metrics (mirrors Limit.json). null = that side never alarms.
 const AI2_METRIC_LIMITS = {
-  'dryness': { warningLow: 97, warningHigh: 100 },
-  'ncg':     { warningLow: null, warningHigh: 5 }
+  'dryness': { lowerLimit: 97, upperLimit: null },
+  'ncg':     { lowerLimit: null, upperLimit: 5 }
 };
 
 /**
@@ -720,7 +720,9 @@ const getMetricStats = async (req, res) => {
 /**
  * GET /api/data/anomaly-counts/:metric
  * Returns anomaly event counts for 12h, 24h, 7d
- * Uses warning thresholds from metric_limits table as anomaly boundary
+ * An anomaly is any reading outside [lower_limit, upper_limit] (warning or
+ * abnormal zone). A limit sitting on the scale edge switches that side off,
+ * matching the gauges.
  */
 const getAnomalyCounts = async (req, res) => {
   try {
@@ -731,8 +733,8 @@ const getAnomalyCounts = async (req, res) => {
       const col = AI2_METRIC_MAP[metric];
       const limits = AI2_METRIC_LIMITS[metric];
       const conditions = [];
-      if (limits.warningLow !== null)  conditions.push(`${col} < ${limits.warningLow}`);
-      if (limits.warningHigh !== null) conditions.push(`${col} > ${limits.warningHigh}`);
+      if (limits.lowerLimit !== null) conditions.push(`${col} < ${limits.lowerLimit}`);
+      if (limits.upperLimit !== null) conditions.push(`${col} > ${limits.upperLimit}`);
 
       if (conditions.length === 0) {
         return res.json({ success: true, metric, data: { last12h: 0, last24h: 0, last7d: 0 } });
@@ -770,7 +772,7 @@ const getAnomalyCounts = async (req, res) => {
 
     // Get limits from metric_limits table
     const limitsResult = await query(
-      'SELECT warning_low, warning_high FROM metric_limits WHERE metric_key = $1',
+      'SELECT min_value, max_value, lower_limit, upper_limit FROM metric_limits WHERE metric_key = $1',
       [metric]
     );
 
@@ -784,20 +786,22 @@ const getAnomalyCounts = async (req, res) => {
     }
 
     const limits = limitsResult.rows[0];
-    const wLow = limits.warning_low;
-    const wHigh = limits.warning_high;
+    const lower = limits.lower_limit;
+    const upper = limits.upper_limit;
+    const hasLow = lower !== null && (limits.min_value === null || lower > limits.min_value);
+    const hasHigh = upper !== null && (limits.max_value === null || upper < limits.max_value);
 
     // Build anomaly condition
     const conditions = [];
-    if (wLow !== null) conditions.push(`(${expr}) < ${wLow}`);
-    if (wHigh !== null) conditions.push(`(${expr}) > ${wHigh}`);
+    if (hasLow) conditions.push(`(${expr}) < ${Number(lower)}`);
+    if (hasHigh) conditions.push(`(${expr}) > ${Number(upper)}`);
 
     if (conditions.length === 0) {
       return res.json({
         success: true,
         metric,
         data: { last12h: 0, last24h: 0, last7d: 0 },
-        message: 'No warning thresholds configured'
+        message: 'No lower/upper limit configured'
       });
     }
 
@@ -819,7 +823,7 @@ const getAnomalyCounts = async (req, res) => {
     res.json({
       success: true,
       metric,
-      limits: { warningLow: wLow, warningHigh: wHigh },
+      limits: { lowerLimit: lower, upperLimit: upper },
       data: {
         last12h: parseInt(row.count_12h) || 0,
         last24h: parseInt(row.count_24h) || 0,
@@ -849,7 +853,7 @@ const getMetricLimits = async (req, res) => {
 /**
  * POST /api/data/metric-limits
  * Save/sync metric limits from frontend settings
- * Body: { limits: { pressure: { unit, min, max, warningLow, warningHigh, ... }, ... } }
+ * Body: { limits: { pressure: { unit, min, max, lowerLimit, upperLimit }, ... } }
  */
 const saveMetricLimits = async (req, res) => {
   try {
@@ -869,20 +873,15 @@ const saveMetricLimits = async (req, res) => {
     for (const [metricKey, config] of Object.entries(limits)) {
       const sql = `
         INSERT INTO metric_limits (metric_key, display_name, unit, min_value, max_value,
-          warning_low, warning_high, abnormal_low, abnormal_high, ideal_low, ideal_high,
-          updated_by, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+          lower_limit, upper_limit, updated_by, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
         ON CONFLICT (metric_key) DO UPDATE SET
           display_name = EXCLUDED.display_name,
           unit = EXCLUDED.unit,
           min_value = EXCLUDED.min_value,
           max_value = EXCLUDED.max_value,
-          warning_low = EXCLUDED.warning_low,
-          warning_high = EXCLUDED.warning_high,
-          abnormal_low = EXCLUDED.abnormal_low,
-          abnormal_high = EXCLUDED.abnormal_high,
-          ideal_low = EXCLUDED.ideal_low,
-          ideal_high = EXCLUDED.ideal_high,
+          lower_limit = EXCLUDED.lower_limit,
+          upper_limit = EXCLUDED.upper_limit,
           updated_by = EXCLUDED.updated_by,
           updated_at = NOW()
       `;
@@ -893,12 +892,8 @@ const saveMetricLimits = async (req, res) => {
         config.unit || null,
         config.min !== undefined ? config.min : null,
         config.max !== undefined ? config.max : null,
-        config.warningLow !== undefined ? config.warningLow : null,
-        config.warningHigh !== undefined ? config.warningHigh : null,
-        config.abnormalLow !== undefined ? config.abnormalLow : null,
-        config.abnormalHigh !== undefined ? config.abnormalHigh : null,
-        config.idealLow !== undefined ? config.idealLow : null,
-        config.idealHigh !== undefined ? config.idealHigh : null,
+        config.lowerLimit !== undefined ? config.lowerLimit : null,
+        config.upperLimit !== undefined ? config.upperLimit : null,
         actorId
       ]);
 

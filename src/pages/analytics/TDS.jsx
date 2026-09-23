@@ -22,11 +22,6 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
 import AddIcon from '@mui/icons-material/Add';
 
-const tdsCO2 = NaN;
-const tdsArgon = NaN;
-const tdsMethane = NaN;
-const tdsMA3 = NaN;
-
 const TDS = () => {
     const [timeRange] = useState('1d');
     const limitData = getLimitData();
@@ -155,9 +150,8 @@ const TDS = () => {
                     min={limitData["TDS: Overall"].min}
                     max={limitData["TDS: Overall"].max}
                     unit={limitData["TDS: Overall"].unit}
-                    idealHigh={limitData["TDS: Overall"].idealHigh}
-                    warningHigh={limitData["TDS: Overall"].warningHigh}
-                    abnormalHigh={limitData["TDS: Overall"].abnormalHigh}
+                    lowerLimit={limitData["TDS: Overall"].lowerLimit}
+                    upperLimit={limitData["TDS: Overall"].upperLimit}
                     withCard={false}
                     sx={{ width: '100%', maxWidth: 280 }}
                     loading={loading}
@@ -180,117 +174,6 @@ const TDS = () => {
                 />
               </Grid>
             ))}
-            {/* <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-              <MainCard
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: '100%',
-                  minHeight: { md: '230px' },
-                }}
-              >
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  <Typography variant="subtitle1" color="textSecondary">TDS: CO₂</Typography>
-                </Box>
-                <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
-                  <GaugeChart
-                    value={tdsCO2}
-                    min={limitData.tdsCO2.min}
-                    max={limitData.tdsCO2.max}
-                    unit={limitData.tdsCO2.unit}
-                    idealHigh={limitData.tdsCO2.idealHigh}
-                    warningHigh={limitData.tdsCO2.warningHigh}
-                    abnormalHigh={limitData.tdsCO2.abnormalHigh}
-                    withCard={false}
-                    sx={{ width: '100%', maxWidth: 200 }}
-                  />
-                </Box>
-              </MainCard>
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-              <MainCard
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: '100%',
-                  minHeight: { md: '230px' },
-                }}
-              >
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  <Typography variant="subtitle1" color="textSecondary">TDS: Argon</Typography>
-                </Box>
-                <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
-                  <GaugeChart
-                    value={tdsArgon}
-                    min={limitData.tdsArgon.min}
-                    max={limitData.tdsArgon.max}
-                    unit={limitData.tdsArgon.unit}
-                    idealHigh={limitData.tdsArgon.idealHigh}
-                    warningHigh={limitData.tdsArgon.warningHigh}
-                    abnormalHigh={limitData.tdsArgon.abnormalHigh}
-                    withCard={false}
-                    sx={{ width: '100%', maxWidth: 200 }}
-                  />
-                </Box>
-              </MainCard>
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-              <MainCard
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: '100%',
-                  minHeight: { md: '230px' },
-                }}
-              >
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  <Typography variant="subtitle1" color="textSecondary">TDS: Methane (CH₄)</Typography>
-                </Box>
-                <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
-                  <GaugeChart
-                    value={tdsMethane}
-                    min={limitData.tdsMethane.min}
-                    max={limitData.tdsMethane.max}
-                    unit={limitData.tdsMethane.unit}
-                    idealHigh={limitData.tdsMethane.idealHigh}
-                    warningHigh={limitData.tdsMethane.warningHigh}
-                    abnormalHigh={limitData.tdsMethane.abnormalHigh}
-                    withCard={false}
-                    sx={{ width: '100%', maxWidth: 200 }}
-                  />
-                </Box>
-              </MainCard>
-            </Grid>
-
-            <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
-              <MainCard
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: '100%',
-                  minHeight: { md: '230px' },
-                }}
-              >
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  <Typography variant="subtitle1" color="textSecondary">TDS: MA3</Typography>
-                </Box>
-                <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 1 }}>
-                  <GaugeChart
-                    value={tdsMA3}
-                    min={limitData.tdsMA3.min}
-                    max={limitData.tdsMA3.max}
-                    unit={limitData.tdsMA3.unit}
-                    idealHigh={limitData.tdsMA3.idealHigh}
-                    warningHigh={limitData.tdsMA3.warningHigh}
-                    abnormalHigh={limitData.tdsMA3.abnormalHigh}
-                    withCard={false}
-                    sx={{ width: '100%', maxWidth: 200 }}
-                  />
-                </Box>
-              </MainCard>
-            </Grid> */}
             
             <Grid size={12} sx={{ mt: { xs: 0, lg: -5 } }}>
               <RealTimeDataChart

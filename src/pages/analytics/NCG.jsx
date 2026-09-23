@@ -160,9 +160,8 @@ const NCG = () => {
                     min={limitData.ncg.min}
                     max={limitData.ncg.max}
                     unit={limitData.ncg.unit}
-                    idealHigh={limitData.ncg.idealHigh}
-                    warningHigh={limitData.ncg.warningHigh}
-                    abnormalHigh={limitData.ncg.abnormalHigh}
+                    lowerLimit={limitData.ncg.lowerLimit}
+                    upperLimit={limitData.ncg.upperLimit}
                     changePct={changePct}
                     withCard={false}
                     sx={{ width: '100%', maxWidth: 360 }}

@@ -21,6 +21,7 @@ import GaugeChart from '../../components/GaugeChart';
 import MetricCard from 'components/cards/MetricCard';
 import MainCard from 'components/MainCard';
 import { getLimitData } from '../../utils/limitData';
+import { getLimitStatus } from '../../utils/limitZones';
 
 // Image import
 import mainImage from './image/main.png';
@@ -68,9 +69,8 @@ function MobileLayout({
           min={limitData["TDS: Overall"].min}
           max={limitData["TDS: Overall"].max}
           unit={limitData["TDS: Overall"].unit}
-          idealHigh={limitData["TDS: Overall"].idealHigh}
-          warningHigh={limitData["TDS: Overall"].warningHigh}
-          abnormalHigh={limitData["TDS: Overall"].abnormalHigh}
+          lowerLimit={limitData["TDS: Overall"].lowerLimit}
+          upperLimit={limitData["TDS: Overall"].upperLimit}
           linkTo="/tds"
           titleConfig={TITLE_CONFIG}
         />
@@ -84,12 +84,8 @@ function MobileLayout({
           min={limitData.dryness.min}
           max={limitData.dryness.max}
           unit={limitData.dryness.unit}
-          abnormalLow={limitData.dryness.abnormalLow}
-          warningLow={limitData.dryness.warningLow}
-          idealLow={limitData.dryness.idealLow}
-          idealHigh={limitData.dryness.idealHigh}
-          warningHigh={limitData.dryness.warningHigh}
-          abnormalHigh={limitData.dryness.abnormalHigh}
+          lowerLimit={limitData.dryness.lowerLimit}
+          upperLimit={limitData.dryness.upperLimit}
           linkTo="/dryness"
           titleConfig={TITLE_CONFIG}
         />
@@ -103,9 +99,8 @@ function MobileLayout({
           min={limitData.ncg.min}
           max={limitData.ncg.max}
           unit={limitData.ncg.unit}
-          idealHigh={limitData.ncg.idealHigh}
-          warningHigh={limitData.ncg.warningHigh}
-          abnormalHigh={limitData.ncg.abnormalHigh}
+          lowerLimit={limitData.ncg.lowerLimit}
+          upperLimit={limitData.ncg.upperLimit}
           linkTo='/ncg'
           titleConfig={TITLE_CONFIG}
         />
@@ -119,12 +114,8 @@ function MobileLayout({
           min={limitData.pressure.min}
           max={limitData.pressure.max}
           unit={limitData.pressure.unit}
-          abnormalLow={limitData.pressure.abnormalLow}
-          warningLow={limitData.pressure.warningLow}
-          idealLow={limitData.pressure.idealLow}
-          idealHigh={limitData.pressure.idealHigh}
-          warningHigh={limitData.pressure.warningHigh}
-          abnormalHigh={limitData.pressure.abnormalHigh}
+          lowerLimit={limitData.pressure.lowerLimit}
+          upperLimit={limitData.pressure.upperLimit}
           linkTo='/ptf'
           titleConfig={TITLE_CONFIG}
         />
@@ -138,12 +129,8 @@ function MobileLayout({
           min={limitData.temperature.min}
           max={limitData.temperature.max}
           unit={limitData.temperature.unit}
-          abnormalLow={limitData.temperature.abnormalLow}
-          warningLow={limitData.temperature.warningLow}
-          idealLow={limitData.temperature.idealLow}
-          idealHigh={limitData.temperature.idealHigh}
-          warningHigh={limitData.temperature.warningHigh}
-          abnormalHigh={limitData.temperature.abnormalHigh}
+          lowerLimit={limitData.temperature.lowerLimit}
+          upperLimit={limitData.temperature.upperLimit}
           linkTo='/ptf'
           titleConfig={TITLE_CONFIG}
         />
@@ -157,12 +144,8 @@ function MobileLayout({
           min={limitData.flow.min}
           max={limitData.flow.max}
           unit={limitData.flow.unit}
-          abnormalLow={limitData.flow.abnormalLow}
-          warningLow={limitData.flow.warningLow}
-          idealLow={limitData.flow.idealLow}
-          idealHigh={limitData.flow.idealHigh}
-          warningHigh={limitData.flow.warningHigh}
-          abnormalHigh={limitData.flow.abnormalHigh}
+          lowerLimit={limitData.flow.lowerLimit}
+          upperLimit={limitData.flow.upperLimit}
           linkTo='/ptf'
           titleConfig={TITLE_CONFIG}
         />
@@ -432,9 +415,8 @@ function DesktopLayout({
               min={limitData["TDS: Overall"].min}
               max={limitData["TDS: Overall"].max}
               unit={limitData["TDS: Overall"].unit}
-              idealHigh={limitData["TDS: Overall"].idealHigh}
-              warningHigh={limitData["TDS: Overall"].warningHigh}
-              abnormalHigh={limitData["TDS: Overall"].abnormalHigh}
+              lowerLimit={limitData["TDS: Overall"].lowerLimit}
+              upperLimit={limitData["TDS: Overall"].upperLimit}
               linkTo="/tds"
               titleConfig={TITLE_CONFIG}
             />
@@ -449,12 +431,8 @@ function DesktopLayout({
               min={limitData.dryness.min}
               max={limitData.dryness.max}
               unit={limitData.dryness.unit}
-              abnormalLow={limitData.dryness.abnormalLow}
-              warningLow={limitData.dryness.warningLow}
-              idealLow={limitData.dryness.idealLow}
-              idealHigh={limitData.dryness.idealHigh}
-              warningHigh={limitData.dryness.warningHigh}
-              abnormalHigh={limitData.dryness.abnormalHigh}
+              lowerLimit={limitData.dryness.lowerLimit}
+              upperLimit={limitData.dryness.upperLimit}
               linkTo="/dryness"
               titleConfig={TITLE_CONFIG}
             />
@@ -469,9 +447,8 @@ function DesktopLayout({
               min={limitData.ncg.min}
               max={limitData.ncg.max}
               unit={limitData.ncg.unit}
-              idealHigh={limitData.ncg.idealHigh}
-              warningHigh={limitData.ncg.warningHigh}
-              abnormalHigh={limitData.ncg.abnormalHigh}
+              lowerLimit={limitData.ncg.lowerLimit}
+              upperLimit={limitData.ncg.upperLimit}
               linkTo='/ncg'
               titleConfig={TITLE_CONFIG}
             />
@@ -486,12 +463,8 @@ function DesktopLayout({
               min={limitData.pressure.min}
               max={limitData.pressure.max}
               unit={limitData.pressure.unit}
-              abnormalLow={limitData.pressure.abnormalLow}
-              warningLow={limitData.pressure.warningLow}
-              idealLow={limitData.pressure.idealLow}
-              idealHigh={limitData.pressure.idealHigh}
-              warningHigh={limitData.pressure.warningHigh}
-              abnormalHigh={limitData.pressure.abnormalHigh}
+              lowerLimit={limitData.pressure.lowerLimit}
+              upperLimit={limitData.pressure.upperLimit}
               linkTo='/ptf'
               titleConfig={TITLE_CONFIG}
             />
@@ -506,12 +479,8 @@ function DesktopLayout({
               min={limitData.temperature.min}
               max={limitData.temperature.max}
               unit={limitData.temperature.unit}
-              abnormalLow={limitData.temperature.abnormalLow}
-              warningLow={limitData.temperature.warningLow}
-              idealLow={limitData.temperature.idealLow}
-              idealHigh={limitData.temperature.idealHigh}
-              warningHigh={limitData.temperature.warningHigh}
-              abnormalHigh={limitData.temperature.abnormalHigh}
+              lowerLimit={limitData.temperature.lowerLimit}
+              upperLimit={limitData.temperature.upperLimit}
               linkTo='/ptf'
               titleConfig={TITLE_CONFIG}
             />
@@ -557,12 +526,8 @@ function DesktopLayout({
               min={limitData.flow.min}
               max={limitData.flow.max}
               unit={limitData.flow.unit}
-              abnormalLow={limitData.flow.abnormalLow}
-              warningLow={limitData.flow.warningLow}
-              idealLow={limitData.flow.idealLow}
-              idealHigh={limitData.flow.idealHigh}
-              warningHigh={limitData.flow.warningHigh}
-              abnormalHigh={limitData.flow.abnormalHigh}
+              lowerLimit={limitData.flow.lowerLimit}
+              upperLimit={limitData.flow.upperLimit}
               linkTo='/ptf'
               titleConfig={TITLE_CONFIG}
             />
@@ -751,39 +716,21 @@ export default function DashboardDefault() {
     let criticalCount = 0;
     let warningCount = 0;
 
-    // Check TDS
-    const tdsVal = parseValue(metrics.tds?.value, 0);
-    if (tdsVal > limitData["TDS: Overall"].abnormalHigh) criticalCount++;
-    else if (tdsVal > limitData["TDS: Overall"].warningHigh) warningCount++;
+    // Same zones as the gauges (utils/limitZones).
+    const tally = (val, limit) => {
+      const { status } = getLimitStatus(val, limit);
+      if (status === 'abnormal') criticalCount++;
+      else if (status === 'warning') warningCount++;
+    };
 
-    // Check Dryness — from ai2 predictions, not sensor_data
-    const drynessVal = ai2LiveData?.dryness_predict != null ? parseFloat(ai2LiveData.dryness_predict) : NaN;
-    if (!isNaN(drynessVal)) {
-      if (drynessVal < limitData.dryness.abnormalLow || drynessVal > limitData.dryness.abnormalHigh) criticalCount++;
-      else if (drynessVal < limitData.dryness.warningLow || drynessVal > limitData.dryness.warningHigh) warningCount++;
-    }
-
-    // Check NCG — from ai2 predictions, not sensor_data
-    const ncgVal = ai2LiveData?.ncg_predict != null ? parseFloat(ai2LiveData.ncg_predict) : NaN;
-    if (!isNaN(ncgVal)) {
-      if (ncgVal > limitData.ncg.abnormalHigh) criticalCount++;
-      else if (ncgVal > limitData.ncg.warningHigh) warningCount++;
-    }
-
-    // Check Pressure
-    const pressureVal = parseValue(metrics.pressure?.value, 0);
-    if (pressureVal < limitData.pressure.abnormalLow || pressureVal > limitData.pressure.abnormalHigh) criticalCount++;
-    else if (pressureVal < limitData.pressure.warningLow || pressureVal > limitData.pressure.warningHigh) warningCount++;
-
-    // Check Temperature
-    const tempVal = parseValue(metrics.temperature?.value, 0);
-    if (tempVal < limitData.temperature.abnormalLow || tempVal > limitData.temperature.abnormalHigh) criticalCount++;
-    else if (tempVal < limitData.temperature.warningLow || tempVal > limitData.temperature.warningHigh) warningCount++;
-
-    // Check Flow
-    const flowVal = parseValue(metrics.flow_rate?.value, 0);
-    if (flowVal < limitData.flow.abnormalLow || flowVal > limitData.flow.abnormalHigh) criticalCount++;
-    else if (flowVal < limitData.flow.warningLow || flowVal > limitData.flow.warningHigh) warningCount++;
+    tally(parseValue(metrics.tds?.value, 0), limitData["TDS: Overall"]);
+    // Dryness and NCG come from ai2 predictions, not sensor_data. A missing
+    // prediction is NaN, which getLimitStatus leaves uncounted.
+    tally(ai2LiveData?.dryness_predict != null ? parseFloat(ai2LiveData.dryness_predict) : NaN, limitData.dryness);
+    tally(ai2LiveData?.ncg_predict != null ? parseFloat(ai2LiveData.ncg_predict) : NaN, limitData.ncg);
+    tally(parseValue(metrics.pressure?.value, 0), limitData.pressure);
+    tally(parseValue(metrics.temperature?.value, 0), limitData.temperature);
+    tally(parseValue(metrics.flow_rate?.value, 0), limitData.flow);
 
     // Determine overall risk: if 2+ critical or 3+ warning → Critical
     if (criticalCount >= 2) return 'Abnormal';
@@ -797,10 +744,9 @@ export default function DashboardDefault() {
     if (val === null || val === undefined || Number.isNaN(val)) return 'N/A';
     const limit = limitData[limitKey];
     if (!limit) return 'Normal';
-    if (limit.abnormalLow != null && val < limit.abnormalLow) return 'Abnormal';
-    if (limit.warningLow != null && val < limit.warningLow) return 'Warning';
-    if (limit.abnormalHigh != null && val > limit.abnormalHigh) return 'Abnormal';
-    if (limit.warningHigh != null && val > limit.warningHigh) return 'Warning';
+    const { status } = getLimitStatus(val, limit);
+    if (status === 'abnormal') return 'Abnormal';
+    if (status === 'warning') return 'Warning';
     return 'Normal';
   };
 

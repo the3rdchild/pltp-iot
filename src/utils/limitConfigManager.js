@@ -4,7 +4,7 @@
  * This syncs chart reference lines (Min/Max/Avg) with anomaly detection thresholds
  */
 
-import initialLimitData from '../data/Limit.json';
+import { getLimitData } from './limitData';
 
 const LIMIT_DATA_KEY = 'limitData';
 
@@ -13,11 +13,10 @@ const LIMIT_DATA_KEY = 'limitData';
  */
 export const getLimitDataFromStorage = () => {
   try {
-    const stored = localStorage.getItem(LIMIT_DATA_KEY);
-    return stored ? JSON.parse(stored) : initialLimitData;
+    return getLimitData();
   } catch (error) {
     console.error('Error loading limit data:', error);
-    return initialLimitData;
+    return {};
   }
 };
 
@@ -38,9 +37,9 @@ export const saveLimitDataToStorage = (limitData) => {
  * Update Limit.json with new chart reference values
  *
  * Mapping:
- * - config.min → abnormalLow
- * - config.max → abnormalHigh
- * - config.avg → idealLow and idealHigh (creates small range around avg)
+ * - config.min → lowerLimit
+ * - config.max → upperLimit
+ * - config.avg → not stored; it is only a reference line on the chart
  */
 export const updateLimitDataFromChartConfig = (chartRefConfig) => {
   const currentLimitData = getLimitDataFromStorage();
@@ -67,25 +66,11 @@ export const updateLimitDataFromChartConfig = (chartRefConfig) => {
 
     // Only update if manual mode is enabled
     if (config.enabled) {
-      // Calculate ideal range (small range around average)
-      // For most metrics, use ±0.5 from average
-      // For dryness (%), use ±0.2
-      const idealRange = chartKey === 'dryness' ? 0.2 : 0.5;
-
       updatedLimitData[limitKey] = {
         ...updatedLimitData[limitKey],
-        abnormalLow: parseFloat(config.min.toFixed(3)),
-        abnormalHigh: parseFloat(config.max.toFixed(3)),
-        idealLow: parseFloat((config.avg - idealRange).toFixed(3)),
-        idealHigh: parseFloat((config.avg + idealRange).toFixed(3))
+        lowerLimit: parseFloat(config.min.toFixed(3)),
+        upperLimit: parseFloat(config.max.toFixed(3))
       };
-
-      console.log(`Updated ${limitKey} thresholds from chart config:`, {
-        abnormalLow: config.min,
-        abnormalHigh: config.max,
-        idealLow: config.avg - idealRange,
-        idealHigh: config.avg + idealRange
-      });
     }
   });
 
@@ -115,13 +100,9 @@ export const prepareLimitUpdatePayload = (chartRefConfig) => {
     const limitKey = metricKeyMap[chartKey];
 
     if (config.enabled && limitKey) {
-      const idealRange = chartKey === 'dryness' ? 0.2 : 0.5;
-
       updates[limitKey] = {
-        abnormalLow: parseFloat(config.min.toFixed(3)),
-        abnormalHigh: parseFloat(config.max.toFixed(3)),
-        idealLow: parseFloat((config.avg - idealRange).toFixed(3)),
-        idealHigh: parseFloat((config.avg + idealRange).toFixed(3))
+        lowerLimit: parseFloat(config.min.toFixed(3)),
+        upperLimit: parseFloat(config.max.toFixed(3))
       };
     }
   });
