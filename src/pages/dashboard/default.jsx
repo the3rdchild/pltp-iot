@@ -1,6 +1,5 @@
 // material-ui
-import { Typography, Box, Link, useMediaQuery, useTheme } from '@mui/material';
-import ArrowOutwardIcon from '@mui/icons-material/ArrowOutward';
+import { Typography, Box, useMediaQuery, useTheme } from '@mui/material';
 import BoltIcon from '@mui/icons-material/Bolt';
 import OfflineBoltIcon from '@mui/icons-material/OfflineBolt';
 
@@ -14,6 +13,7 @@ import { useState, useEffect } from 'react';
 // Real data API hook - test-aware (uses mock data in /test environment)
 import { useLiveData } from '../../hooks/useTestAwareLiveData';
 import { useAi2Data } from '../../hooks/useAi2Data';
+import { useAi1aData } from '../../hooks/useAi1Data';
 import { useLocation } from 'react-router-dom';
 
 // project imports - Individual Cards
@@ -21,6 +21,7 @@ import GaugeChart from '../../components/GaugeChart';
 import MetricCard from 'components/cards/MetricCard';
 import MainCard from 'components/MainCard';
 import { getLimitData } from '../../utils/limitData';
+import { getLimitStatus } from '../../utils/limitZones';
 
 // Image import
 import mainImage from './image/main.png';
@@ -33,21 +34,23 @@ function MobileLayout({
   parseValue,
   getPowerStatus,
   predConfig,
+  riskPercentage,
+  usingAi1a,
   TITLE_CONFIG
 }) {
   // Extract values from live API data
-  const pressure = parseValue(liveData?.metrics?.pressure?.value, 5.87);
-  const temperature = parseValue(liveData?.metrics?.temperature?.value, 165.2);
-  const flow = parseValue(liveData?.metrics?.flow_rate?.value, 245.71);
-  const tds = parseValue(liveData?.metrics?.tds?.value, NaN);
+  const pressure = parseValue(liveData?.metrics?.pressure?.value, null);
+  const temperature = parseValue(liveData?.metrics?.temperature?.value, null);
+  const flow = parseValue(liveData?.metrics?.flow_rate?.value, null);
+  const tds = parseValue(liveData?.metrics?.tds?.value, null);
   // Use AI2 predictions for dryness and NCG
-  const dryness = ai2Data?.dryness_predict != null ? parseFloat(ai2Data.dryness_predict) : parseValue(liveData?.metrics?.dryness?.value, NaN);
-  const ncg = ai2Data?.ncg_predict != null ? parseFloat(ai2Data.ncg_predict) : parseValue(liveData?.metrics?.ncg?.value, NaN);
-  const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5);
-  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.22);
-  const voltage = parseValue(liveData?.metrics?.voltage?.value, 13.86);
-  const stSpeed = parseValue(liveData?.metrics?.speed?.value, 2998);
-  const current = parseValue(liveData?.metrics?.current?.value, 1377.45);
+  const dryness = ai2Data?.dryness_predict != null ? parseFloat(ai2Data.dryness_predict) : parseValue(liveData?.metrics?.dryness?.value, null);
+  const ncg = ai2Data?.ncg_predict != null ? parseFloat(ai2Data.ncg_predict) : parseValue(liveData?.metrics?.ncg?.value, null);
+  const activePower = parseValue(liveData?.metrics?.active_power?.value, null);
+  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, null);
+  const voltage = parseValue(liveData?.metrics?.voltage?.value, null);
+  const stSpeed = parseValue(liveData?.metrics?.speed?.value, null);
+  const current = parseValue(liveData?.metrics?.current?.value, null);
 
   return (
     <Box sx={{ 
@@ -66,9 +69,8 @@ function MobileLayout({
           min={limitData["TDS: Overall"].min}
           max={limitData["TDS: Overall"].max}
           unit={limitData["TDS: Overall"].unit}
-          idealHigh={limitData["TDS: Overall"].idealHigh}
-          warningHigh={limitData["TDS: Overall"].warningHigh}
-          abnormalHigh={limitData["TDS: Overall"].abnormalHigh}
+          lowerLimit={limitData["TDS: Overall"].lowerLimit}
+          upperLimit={limitData["TDS: Overall"].upperLimit}
           linkTo="/tds"
           titleConfig={TITLE_CONFIG}
         />
@@ -82,12 +84,8 @@ function MobileLayout({
           min={limitData.dryness.min}
           max={limitData.dryness.max}
           unit={limitData.dryness.unit}
-          abnormalLow={limitData.dryness.abnormalLow}
-          warningLow={limitData.dryness.warningLow}
-          idealLow={limitData.dryness.idealLow}
-          idealHigh={limitData.dryness.idealHigh}
-          warningHigh={limitData.dryness.warningHigh}
-          abnormalHigh={limitData.dryness.abnormalHigh}
+          lowerLimit={limitData.dryness.lowerLimit}
+          upperLimit={limitData.dryness.upperLimit}
           linkTo="/dryness"
           titleConfig={TITLE_CONFIG}
         />
@@ -101,9 +99,8 @@ function MobileLayout({
           min={limitData.ncg.min}
           max={limitData.ncg.max}
           unit={limitData.ncg.unit}
-          idealHigh={limitData.ncg.idealHigh}
-          warningHigh={limitData.ncg.warningHigh}
-          abnormalHigh={limitData.ncg.abnormalHigh}
+          lowerLimit={limitData.ncg.lowerLimit}
+          upperLimit={limitData.ncg.upperLimit}
           linkTo='/ncg'
           titleConfig={TITLE_CONFIG}
         />
@@ -117,12 +114,8 @@ function MobileLayout({
           min={limitData.pressure.min}
           max={limitData.pressure.max}
           unit={limitData.pressure.unit}
-          abnormalLow={limitData.pressure.abnormalLow}
-          warningLow={limitData.pressure.warningLow}
-          idealLow={limitData.pressure.idealLow}
-          idealHigh={limitData.pressure.idealHigh}
-          warningHigh={limitData.pressure.warningHigh}
-          abnormalHigh={limitData.pressure.abnormalHigh}
+          lowerLimit={limitData.pressure.lowerLimit}
+          upperLimit={limitData.pressure.upperLimit}
           linkTo='/ptf'
           titleConfig={TITLE_CONFIG}
         />
@@ -136,12 +129,8 @@ function MobileLayout({
           min={limitData.temperature.min}
           max={limitData.temperature.max}
           unit={limitData.temperature.unit}
-          abnormalLow={limitData.temperature.abnormalLow}
-          warningLow={limitData.temperature.warningLow}
-          idealLow={limitData.temperature.idealLow}
-          idealHigh={limitData.temperature.idealHigh}
-          warningHigh={limitData.temperature.warningHigh}
-          abnormalHigh={limitData.temperature.abnormalHigh}
+          lowerLimit={limitData.temperature.lowerLimit}
+          upperLimit={limitData.temperature.upperLimit}
           linkTo='/ptf'
           titleConfig={TITLE_CONFIG}
         />
@@ -155,12 +144,8 @@ function MobileLayout({
           min={limitData.flow.min}
           max={limitData.flow.max}
           unit={limitData.flow.unit}
-          abnormalLow={limitData.flow.abnormalLow}
-          warningLow={limitData.flow.warningLow}
-          idealLow={limitData.flow.idealLow}
-          idealHigh={limitData.flow.idealHigh}
-          warningHigh={limitData.flow.warningHigh}
-          abnormalHigh={limitData.flow.abnormalHigh}
+          lowerLimit={limitData.flow.lowerLimit}
+          upperLimit={limitData.flow.upperLimit}
           linkTo='/ptf'
           titleConfig={TITLE_CONFIG}
         />
@@ -170,16 +155,21 @@ function MobileLayout({
       <Box sx={{ width: '100%' }}>
         <MainCard sx={{ width: '100%', minHeight: '110px' }} contentSX={{ p: 1.5 }}>
           <Box>
-            <Link href="/prediction" target="" rel="noopener noreferrer" underline="hover" color="inherit">
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Typography sx={TITLE_CONFIG}>Prediksi Resiko</Typography>
-                <ArrowOutwardIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />
-              </Box>
-            </Link>
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60px' }}>
+            <Typography sx={TITLE_CONFIG}>Prediksi Resiko</Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '60px' }}>
               <Typography variant="h1" sx={{ fontSize: '2.5rem', fontWeight: 700, color: predConfig.color, textAlign: 'center', lineHeight: 1 }}>
                 {predConfig.label}
               </Typography>
+              {riskPercentage != null && (
+                <Typography variant="body2" sx={{ color: predConfig.color, fontWeight: 600, mt: 0.5 }}>
+                  {riskPercentage.toFixed(1)}%
+                </Typography>
+              )}
+              {!usingAi1a && (
+                <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center', mt: 0.5 }}>
+                  Data Overall Risk History belum tersedia - estimasi dari ambang sensor
+                </Typography>
+              )}
             </Box>
           </Box>
         </MainCard>
@@ -199,7 +189,7 @@ function MobileLayout({
             value={activePower}
             unit={limitData.gen_output?.unit || 'MW'}
             status={getPowerStatus(activePower, 'gen_output')}
-            linkTo="#"
+            linkTo="/power"
             titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
             icon={BoltIcon}
             iconConfig={{ size: 32, color: '#ef4444' }}
@@ -213,7 +203,7 @@ function MobileLayout({
             value={reactivePower}
             unit={limitData.reactive_power?.unit || 'MVAR'}
             status={getPowerStatus(reactivePower, 'reactive_power')}
-            linkTo="#"
+            linkTo="/power"
             titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
             icon={FaBolt}
             iconConfig={{ size: 20, color: '#8b5cf6' }}
@@ -227,7 +217,7 @@ function MobileLayout({
             value={voltage}
             unit={limitData.voltage?.unit || 'kV'}
             status={getPowerStatus(voltage, 'voltage')}
-            linkTo="#"
+            linkTo="/power"
             titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
             icon={OfflineBoltIcon}
             iconConfig={{ size: 28, color: '#f59e0b' }}
@@ -241,7 +231,7 @@ function MobileLayout({
             value={stSpeed}
             unit={limitData.speed_detection?.unit || 'RPM'}
             status={getPowerStatus(stSpeed, 'speed_detection')}
-            linkTo="#"
+            linkTo="/power"
             titleConfig={{ ...TITLE_CONFIG, fontSize: '0.875rem' }}
             icon={RiSpeedUpFill}
             iconConfig={{ size: 28, color: '#22c55e' }}
@@ -256,7 +246,7 @@ function MobileLayout({
           value={current}
           unit={limitData.current?.unit || 'A'}
           status={getPowerStatus(current, 'current')}
-          linkTo="#"
+          linkTo="/power"
           titleConfig={TITLE_CONFIG}
           icon={TbCircuitResistor}
           iconConfig={{ size: 32, color: '#3b82f6' }}
@@ -291,35 +281,39 @@ function DesktopLayout({
   parseValue,
   getPowerStatus,
   predConfig,
+  riskPercentage,
+  usingAi1a,
   TITLE_CONFIG,
   scale,
   DASHBOARD_CONFIG
 }) {
   // Extract values from live API data
-  const pressure = parseValue(liveData?.metrics?.pressure?.value, 5.87);
-  const temperature = parseValue(liveData?.metrics?.temperature?.value, 165.2);
-  const flow = parseValue(liveData?.metrics?.flow_rate?.value, 245.71);
-  const tds = parseValue(liveData?.metrics?.tds?.value, NaN);
+  const pressure = parseValue(liveData?.metrics?.pressure?.value, null);
+  const temperature = parseValue(liveData?.metrics?.temperature?.value, null);
+  const flow = parseValue(liveData?.metrics?.flow_rate?.value, null);
+  const tds = parseValue(liveData?.metrics?.tds?.value, null);
   // Use AI2 predictions for dryness and NCG
-  const dryness = ai2Data?.dryness_predict != null ? parseFloat(ai2Data.dryness_predict) : parseValue(liveData?.metrics?.dryness?.value, NaN);
-  const ncg = ai2Data?.ncg_predict != null ? parseFloat(ai2Data.ncg_predict) : parseValue(liveData?.metrics?.ncg?.value, NaN);
-  const activePower = parseValue(liveData?.metrics?.active_power?.value, 32.5);
-  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, 6.22);
-  const voltage = parseValue(liveData?.metrics?.voltage?.value, 13.86);
-  const stSpeed = parseValue(liveData?.metrics?.speed?.value, 2998);
-  const current = parseValue(liveData?.metrics?.current?.value, 1377.45);
+  const dryness = ai2Data?.dryness_predict != null ? parseFloat(ai2Data.dryness_predict) : parseValue(liveData?.metrics?.dryness?.value, null);
+  const ncg = ai2Data?.ncg_predict != null ? parseFloat(ai2Data.ncg_predict) : parseValue(liveData?.metrics?.ncg?.value, null);
+  const activePower = parseValue(liveData?.metrics?.active_power?.value, null);
+  const reactivePower = parseValue(liveData?.metrics?.reactive_power?.value, null);
+  const voltage = parseValue(liveData?.metrics?.voltage?.value, null);
+  const stSpeed = parseValue(liveData?.metrics?.speed?.value, null);
+  const current = parseValue(liveData?.metrics?.current?.value, null);
 
   const CARD_CONFIG = {
     sensor: { width: 247, height: 190 },
     power: { width: 250, height: 135 },
-    ai: { width: 250, height: 110 }
+    // A minimum, not a fixed height: the AI card grows when the fallback
+    // caption appears. See the Positioned block below for the ceiling.
+    // ai: { width: 250, height: 135 }
   };
 
   const POSITIONS = {
     tds: { top: '12%', left: '4%' },
     dryness: { top: '35%', left: '4%' },
     ncg: { top: '58%', left: '4%' },
-    ai: { top: '77%', left: '4%' },
+    // ai: { top: '78%', left: '4%' },
     pressure: { top: '30%', left: '37%' },
     temperature: { top: '53.5%', left: '37%' },
     flow: { top: '77%', left: '37%' },
@@ -390,11 +384,15 @@ function DesktopLayout({
           }}
         >
           <line x1="15%" y1="6.8%" x2="22%" y2="6.8%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
-          <line x1="15%" y1="6.8%" x2="15%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+
+          <line x1="15%" y1="6.8%" x2="15%" y2="58%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+
           <line x1="15%" y1="12%" x2="5%" y2="12%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="15%" y1="35%" x2="5%" y2="35%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="15%" y1="58%" x2="5%" y2="58%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
-          <line x1="15%" y1="78%" x2="5%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
+
+          {/* <line x1="15%" y1="78%" x2="5%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" /> */}
+
           <line x1="49%" y1="7%" x2="49%" y2="78%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="49%" y1="31%" x2="45%" y2="31%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
           <line x1="49%" y1="55%" x2="45%" y2="55%" stroke="#94a3b8" strokeWidth="3" strokeDasharray="5,5" />
@@ -417,9 +415,8 @@ function DesktopLayout({
               min={limitData["TDS: Overall"].min}
               max={limitData["TDS: Overall"].max}
               unit={limitData["TDS: Overall"].unit}
-              idealHigh={limitData["TDS: Overall"].idealHigh}
-              warningHigh={limitData["TDS: Overall"].warningHigh}
-              abnormalHigh={limitData["TDS: Overall"].abnormalHigh}
+              lowerLimit={limitData["TDS: Overall"].lowerLimit}
+              upperLimit={limitData["TDS: Overall"].upperLimit}
               linkTo="/tds"
               titleConfig={TITLE_CONFIG}
             />
@@ -434,12 +431,8 @@ function DesktopLayout({
               min={limitData.dryness.min}
               max={limitData.dryness.max}
               unit={limitData.dryness.unit}
-              abnormalLow={limitData.dryness.abnormalLow}
-              warningLow={limitData.dryness.warningLow}
-              idealLow={limitData.dryness.idealLow}
-              idealHigh={limitData.dryness.idealHigh}
-              warningHigh={limitData.dryness.warningHigh}
-              abnormalHigh={limitData.dryness.abnormalHigh}
+              lowerLimit={limitData.dryness.lowerLimit}
+              upperLimit={limitData.dryness.upperLimit}
               linkTo="/dryness"
               titleConfig={TITLE_CONFIG}
             />
@@ -454,9 +447,8 @@ function DesktopLayout({
               min={limitData.ncg.min}
               max={limitData.ncg.max}
               unit={limitData.ncg.unit}
-              idealHigh={limitData.ncg.idealHigh}
-              warningHigh={limitData.ncg.warningHigh}
-              abnormalHigh={limitData.ncg.abnormalHigh}
+              lowerLimit={limitData.ncg.lowerLimit}
+              upperLimit={limitData.ncg.upperLimit}
               linkTo='/ncg'
               titleConfig={TITLE_CONFIG}
             />
@@ -471,12 +463,8 @@ function DesktopLayout({
               min={limitData.pressure.min}
               max={limitData.pressure.max}
               unit={limitData.pressure.unit}
-              abnormalLow={limitData.pressure.abnormalLow}
-              warningLow={limitData.pressure.warningLow}
-              idealLow={limitData.pressure.idealLow}
-              idealHigh={limitData.pressure.idealHigh}
-              warningHigh={limitData.pressure.warningHigh}
-              abnormalHigh={limitData.pressure.abnormalHigh}
+              lowerLimit={limitData.pressure.lowerLimit}
+              upperLimit={limitData.pressure.upperLimit}
               linkTo='/ptf'
               titleConfig={TITLE_CONFIG}
             />
@@ -491,37 +479,44 @@ function DesktopLayout({
               min={limitData.temperature.min}
               max={limitData.temperature.max}
               unit={limitData.temperature.unit}
-              abnormalLow={limitData.temperature.abnormalLow}
-              warningLow={limitData.temperature.warningLow}
-              idealLow={limitData.temperature.idealLow}
-              idealHigh={limitData.temperature.idealHigh}
-              warningHigh={limitData.temperature.warningHigh}
-              abnormalHigh={limitData.temperature.abnormalHigh}
+              lowerLimit={limitData.temperature.lowerLimit}
+              upperLimit={limitData.temperature.upperLimit}
               linkTo='/ptf'
               titleConfig={TITLE_CONFIG}
             />
           </Box>
         </Positioned>
 
-        <Positioned pos={POSITIONS.ai}>
-          <Box sx={{ width: `${CARD_CONFIG.ai.width}px`, height: `${CARD_CONFIG.ai.height}px` }}>
-            <MainCard sx={{ width: '100%', height: '100%' }} contentSX={{ p: 1.5 }}>
+        {/* <Positioned pos={POSITIONS.ai}> */}
+          {/* Height is a floor, not a fixed size. At 120px fixed the card clipped
+              its own last line whenever `usingAi1a` was false, because the
+              fallback caption wraps to two lines on a 250px card. Growth is
+              symmetric (Positioned centres on its point), and the NCG gauge
+              above ends at 617px against this card's 693px centre, so the
+              card has room up to 152px before the two touch. */}
+          {/* <Box sx={{ width: `${CARD_CONFIG.ai.width}px`, minHeight: `${CARD_CONFIG.ai.height}px` }}>
+            <MainCard sx={{ width: '100%', minHeight: `${CARD_CONFIG.ai.height}px` }} contentSX={{ p: 1.5 }}>
               <Box>
-                <Link href="/prediction" target="" rel="noopener noreferrer" underline="hover" color="inherit">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Typography sx={TITLE_CONFIG}>Prediksi Resiko</Typography>
-                    <ArrowOutwardIcon sx={{ fontSize: '0.8rem', color: 'text.secondary' }} />
-                  </Box>
-                </Link>
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60px' }}>
+                <Typography sx={TITLE_CONFIG}>Prediksi Resiko</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '60px' }}>
                   <Typography variant="h1" sx={{ fontSize: '2.5rem', fontWeight: 700, color: predConfig.color, textAlign: 'center', lineHeight: 1 }}>
                     {predConfig.label}
                   </Typography>
+                  {riskPercentage != null && (
+                    <Typography variant="body2" sx={{ color: predConfig.color, fontWeight: 600, mt: 0.5 }}>
+                      {riskPercentage.toFixed(1)}%
+                    </Typography>
+                  )}
+                  {!usingAi1a && (
+                    <Typography variant="caption" sx={{ color: 'text.secondary', textAlign: 'center', mt: 0.5, fontSize: '0.65rem', lineHeight: 1.2 }}>
+                      Data Overall Risk History belum tersedia - estimasi dari ambang sensor
+                    </Typography>
+                  )}
                 </Box>
               </Box>
             </MainCard>
-          </Box>
-        </Positioned>
+          </Box> */}
+        {/* </Positioned> */}
 
         <Positioned pos={POSITIONS.flow}>
           <Box sx={{ width: `${CARD_CONFIG.sensor.width}px`, height: `${CARD_CONFIG.sensor.height}px` }}>
@@ -531,12 +526,8 @@ function DesktopLayout({
               min={limitData.flow.min}
               max={limitData.flow.max}
               unit={limitData.flow.unit}
-              abnormalLow={limitData.flow.abnormalLow}
-              warningLow={limitData.flow.warningLow}
-              idealLow={limitData.flow.idealLow}
-              idealHigh={limitData.flow.idealHigh}
-              warningHigh={limitData.flow.warningHigh}
-              abnormalHigh={limitData.flow.abnormalHigh}
+              lowerLimit={limitData.flow.lowerLimit}
+              upperLimit={limitData.flow.upperLimit}
               linkTo='/ptf'
               titleConfig={TITLE_CONFIG}
             />
@@ -550,7 +541,7 @@ function DesktopLayout({
               value={activePower}
               unit={limitData.gen_output?.unit || 'MW'}
               status={getPowerStatus(activePower, 'gen_output')}
-              linkTo="#"
+              linkTo="/power"
               titleConfig={TITLE_CONFIG}
               icon={BoltIcon}
               iconConfig={{ size: 39, color: '#ef4444' }}
@@ -565,7 +556,7 @@ function DesktopLayout({
               value={voltage}
               unit={limitData.voltage?.unit || 'kV'}
               status={getPowerStatus(voltage, 'voltage')}
-              linkTo="#"
+              linkTo="/power"
               titleConfig={TITLE_CONFIG}
               icon={OfflineBoltIcon}
               iconConfig={{ size: 32, color: '#f59e0b' }}
@@ -580,7 +571,7 @@ function DesktopLayout({
               value={current}
               unit={limitData.current?.unit || 'A'}
               status={getPowerStatus(current, 'current')}
-              linkTo="#"
+              linkTo="/power"
               titleConfig={TITLE_CONFIG}
               icon={TbCircuitResistor}
               iconConfig={{ size: 32, color: '#3b82f6' }}
@@ -595,7 +586,7 @@ function DesktopLayout({
               value={reactivePower}
               unit={limitData.reactive_power?.unit || 'MVAR'}
               status={getPowerStatus(reactivePower, 'reactive_power')}
-              linkTo="#"
+              linkTo="/power"
               titleConfig={TITLE_CONFIG}
               icon={FaBolt}
               iconConfig={{ size: 25, color: '#8b5cf6' }}
@@ -610,7 +601,7 @@ function DesktopLayout({
               value={stSpeed}
               unit={limitData.speed_detection?.unit || 'RPM'}
               status={getPowerStatus(stSpeed, 'speed_detection')}
-              linkTo="#"
+              linkTo="/power"
               titleConfig={TITLE_CONFIG}
               icon={RiSpeedUpFill}
               iconConfig={{ size: 32, color: '#22c55e' }}
@@ -645,6 +636,9 @@ export default function DashboardDefault() {
 
   // AI2 predictions for dryness and NCG
   const { liveData: ai2LiveData } = useAi2Data();
+
+  // AI1a current risk status.
+  const { liveData: ai1aLiveData } = useAi1aData();
 
   // Calculate scale for desktop layout only
   useEffect(() => {
@@ -683,15 +677,14 @@ export default function DashboardDefault() {
     );
   }
 
-  // Show error state
+  // A failed fetch no longer replaces the dashboard. It used to render a
+  // message promising "Using fallback values" while showing no cards at all,
+  // which meant the page could only ever be looked at against a live API.
+  // The cards now render and report every missing reading as N/A, so the
+  // layout is visible locally and, in production, an outage reads as an
+  // outage rather than as a blank screen.
   if (error) {
     console.error('Error loading live data:', error);
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
-        <Typography color="error">Error loading dashboard data</Typography>
-        <Typography variant="body2" sx={{ mt: 1 }}>Using fallback values</Typography>
-      </Box>
-    );
   }
 
   // Helper function to safely parse numeric values with max 2 decimals
@@ -705,7 +698,10 @@ export default function DashboardDefault() {
 
   // Get risk prediction based on metric values (for test environment)
   const getOverallRiskPrediction = () => {
-    if (!liveData?.metrics) return 'Ideal';
+    // No metrics at all: the sensor-threshold estimate has nothing to work
+    // from, so it must say so. Returning 'Ideal' here put a green, confident
+    // "Ideal" on the risk card whenever the fetch failed.
+    if (!liveData?.metrics) return null;
 
     // For production: use status from API
     if (!isTestEnvironment) {
@@ -720,39 +716,21 @@ export default function DashboardDefault() {
     let criticalCount = 0;
     let warningCount = 0;
 
-    // Check TDS
-    const tdsVal = parseValue(metrics.tds?.value, 0);
-    if (tdsVal > limitData["TDS: Overall"].abnormalHigh) criticalCount++;
-    else if (tdsVal > limitData["TDS: Overall"].warningHigh) warningCount++;
+    // Same zones as the gauges (utils/limitZones).
+    const tally = (val, limit) => {
+      const { status } = getLimitStatus(val, limit);
+      if (status === 'abnormal') criticalCount++;
+      else if (status === 'warning') warningCount++;
+    };
 
-    // Check Dryness — from ai2 predictions, not sensor_data
-    const drynessVal = ai2LiveData?.dryness_predict != null ? parseFloat(ai2LiveData.dryness_predict) : NaN;
-    if (!isNaN(drynessVal)) {
-      if (drynessVal < limitData.dryness.abnormalLow || drynessVal > limitData.dryness.abnormalHigh) criticalCount++;
-      else if (drynessVal < limitData.dryness.warningLow || drynessVal > limitData.dryness.warningHigh) warningCount++;
-    }
-
-    // Check NCG — from ai2 predictions, not sensor_data
-    const ncgVal = ai2LiveData?.ncg_predict != null ? parseFloat(ai2LiveData.ncg_predict) : NaN;
-    if (!isNaN(ncgVal)) {
-      if (ncgVal > limitData.ncg.abnormalHigh) criticalCount++;
-      else if (ncgVal > limitData.ncg.warningHigh) warningCount++;
-    }
-
-    // Check Pressure
-    const pressureVal = parseValue(metrics.pressure?.value, 0);
-    if (pressureVal < limitData.pressure.abnormalLow || pressureVal > limitData.pressure.abnormalHigh) criticalCount++;
-    else if (pressureVal < limitData.pressure.warningLow || pressureVal > limitData.pressure.warningHigh) warningCount++;
-
-    // Check Temperature
-    const tempVal = parseValue(metrics.temperature?.value, 0);
-    if (tempVal < limitData.temperature.abnormalLow || tempVal > limitData.temperature.abnormalHigh) criticalCount++;
-    else if (tempVal < limitData.temperature.warningLow || tempVal > limitData.temperature.warningHigh) warningCount++;
-
-    // Check Flow
-    const flowVal = parseValue(metrics.flow_rate?.value, 0);
-    if (flowVal < limitData.flow.abnormalLow || flowVal > limitData.flow.abnormalHigh) criticalCount++;
-    else if (flowVal < limitData.flow.warningLow || flowVal > limitData.flow.warningHigh) warningCount++;
+    tally(parseValue(metrics.tds?.value, 0), limitData["TDS: Overall"]);
+    // Dryness and NCG come from ai2 predictions, not sensor_data. A missing
+    // prediction is NaN, which getLimitStatus leaves uncounted.
+    tally(ai2LiveData?.dryness_predict != null ? parseFloat(ai2LiveData.dryness_predict) : NaN, limitData.dryness);
+    tally(ai2LiveData?.ncg_predict != null ? parseFloat(ai2LiveData.ncg_predict) : NaN, limitData.ncg);
+    tally(parseValue(metrics.pressure?.value, 0), limitData.pressure);
+    tally(parseValue(metrics.temperature?.value, 0), limitData.temperature);
+    tally(parseValue(metrics.flow_rate?.value, 0), limitData.flow);
 
     // Determine overall risk: if 2+ critical or 3+ warning → Critical
     if (criticalCount >= 2) return 'Abnormal';
@@ -760,30 +738,59 @@ export default function DashboardDefault() {
     return 'Ideal';
   };
 
-  const riskPrediction = getOverallRiskPrediction();
-
   const getPowerStatus = (val, limitKey) => {
+    // Without a reading there is no status to report. Falling through to
+    // 'Normal' here would paint a green badge over missing data.
+    if (val === null || val === undefined || Number.isNaN(val)) return 'N/A';
     const limit = limitData[limitKey];
     if (!limit) return 'Normal';
-    if (limit.abnormalLow != null && val < limit.abnormalLow) return 'Abnormal';
-    if (limit.warningLow != null && val < limit.warningLow) return 'Warning';
-    if (limit.abnormalHigh != null && val > limit.abnormalHigh) return 'Abnormal';
-    if (limit.warningHigh != null && val > limit.warningHigh) return 'Warning';
+    const { status } = getLimitStatus(val, limit);
+    if (status === 'abnormal') return 'Abnormal';
+    if (status === 'warning') return 'Warning';
     return 'Normal';
   };
 
   const getPredictionConfig = (pred) => {
     switch (pred?.toLowerCase()) {
+      case 'normal':
       case 'ideal':
-        return { label: 'Ideal', color: '#22c55e', bgColor: '#22c55e15' };
+        return { label: pred.toLowerCase() === 'normal' ? 'Normal' : 'Ideal', color: '#22c55e', bgColor: '#22c55e15' };
       case 'warning':
         return { label: 'Warning', color: '#f59e0b', bgColor: '#f59e0b15' };
+      case 'high':
+        return { label: 'High', color: '#f97316', bgColor: '#f9731615' };
+      case 'critical':
       case 'abnormal':
-        return { label: 'Abnormal', color: '#ef4444', bgColor: '#ef444415' };
+        return { label: pred.toLowerCase() === 'critical' ? 'Critical' : 'Abnormal', color: '#ef4444', bgColor: '#ef444415' };
       default:
-        return { label: 'Ideal', color: '#22c55e', bgColor: '#22c55e15' };
+        // Unknown/missing input (a retired field gone NULL, a value this
+        // switch doesn't recognize yet, or no data at all) must NEVER fall
+        // through to a reassuring green "Ideal" -- that's exactly the
+        // false-safe bug found 2026-09-17 when `ai1a.severity` started
+        // going NULL (worker retirement) while this still read `severity`:
+        // the card kept showing "Ideal" in green with a possibly-high
+        // risk_percentage sitting right underneath it. An honest "unknown"
+        // state is the only safe default for a risk indicator.
+        return { label: 'N/A', color: '#94a3b8', bgColor: '#94a3b815' };
     }
   };
+
+  // Prefer real AI1a output (risk_label + risk_percentage); when AI1a data
+  // is missing or stale (see useAi1aData's 10-min freshness check on
+  // created_at), fall back to the sensor-threshold estimate below rather
+  // than showing a frozen/last-known AI value as if it were current.
+  //
+  // Reads `risk_label`, NOT `severity` -- `severity` was retired 17 Sep
+  // 2026 (goes NULL for every new row; AI_Pertasmart_V3 workers/jobs_ai1.py
+  // computed it from an AI1b forecast that was itself 8 days stale, and
+  // AI1b was retired alongside it). `risk_label` is a SEPARATE, unchanged
+  // column (4 tiers: normal/warning/high/critical, lowercase, same as
+  // before the AI1b retirement -- confirmed against AI_Pertasmart_V3's own
+  // README.md §6.2/6.3, which explicitly recommends this exact switch so
+  // neither side has to wait on the other's deploy).
+  const usingAi1a = !!ai1aLiveData;
+  const riskPrediction = usingAi1a ? ai1aLiveData.risk_label : getOverallRiskPrediction();
+  const riskPercentage = usingAi1a && ai1aLiveData.risk_percentage != null ? parseFloat(ai1aLiveData.risk_percentage) : null;
 
   const predConfig = getPredictionConfig(riskPrediction);
 
@@ -795,40 +802,46 @@ export default function DashboardDefault() {
   };
 
   return (
-    <Box sx={{
-      position: 'relative',
-      width: '100%',
-      display: 'flex',
-      flexGrow: 1,
-      flexDirection: 'column',
-      overflow: isMobile ? 'auto' : 'hidden',
-      p: 0,
-      pt: isMobile ? 2 : 5,
-      m: 0
-    }}>
-      {isMobile ? (
-        <MobileLayout
-          limitData={limitData}
-          liveData={liveData}
-          ai2Data={ai2LiveData}
-          parseValue={parseValue}
-          getPowerStatus={getPowerStatus}
-          predConfig={predConfig}
-          TITLE_CONFIG={TITLE_CONFIG}
-        />
-      ) : (
-        <DesktopLayout
-          limitData={limitData}
-          liveData={liveData}
-          ai2Data={ai2LiveData}
-          parseValue={parseValue}
-          getPowerStatus={getPowerStatus}
-          predConfig={predConfig}
-          TITLE_CONFIG={TITLE_CONFIG}
-          scale={scale}
-          DASHBOARD_CONFIG={DASHBOARD_CONFIG}
-        />
-      )}
-    </Box>
+    <>
+      <Box sx={{
+        position: 'relative',
+        width: '100%',
+        display: 'flex',
+        flexGrow: 1,
+        flexDirection: 'column',
+        overflow: isMobile ? 'auto' : 'hidden',
+        p: 0,
+        pt: isMobile ? 2 : 5,
+        m: 0
+      }}>
+        {isMobile ? (
+          <MobileLayout
+            limitData={limitData}
+            liveData={liveData}
+            ai2Data={ai2LiveData}
+            parseValue={parseValue}
+            getPowerStatus={getPowerStatus}
+            predConfig={predConfig}
+            riskPercentage={riskPercentage}
+            usingAi1a={usingAi1a}
+            TITLE_CONFIG={TITLE_CONFIG}
+          />
+        ) : (
+          <DesktopLayout
+            limitData={limitData}
+            liveData={liveData}
+            ai2Data={ai2LiveData}
+            parseValue={parseValue}
+            getPowerStatus={getPowerStatus}
+            predConfig={predConfig}
+            riskPercentage={riskPercentage}
+            usingAi1a={usingAi1a}
+            TITLE_CONFIG={TITLE_CONFIG}
+            scale={scale}
+            DASHBOARD_CONFIG={DASHBOARD_CONFIG}
+          />
+        )}
+      </Box>
+    </>
   );
 }

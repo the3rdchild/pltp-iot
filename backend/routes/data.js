@@ -20,7 +20,14 @@ const {
   getStatsData,
   getAggregatedStatsData
 } = require('../controllers/liveDataController');
-const { authenticateToken, optionalAuth } = require('../middleware/auth');
+const {
+  getLabSamples,
+  createLabSample,
+  importLabSamples,
+  getLabComparison,
+  deleteLabSample
+} = require('../controllers/labSampleController');
+const { authenticateToken, optionalAuth, requireRole } = require('../middleware/auth');
 
 // GET /api/data/sensor/latest - Get latest sensor data
 router.get('/sensor/latest', optionalAuth, getLatestSensorData);
@@ -37,8 +44,8 @@ router.get('/ml/latest', optionalAuth, getLatestMLPredictions);
 // GET /api/data/field - Get field data
 router.get('/field', optionalAuth, getFieldData);
 
-// POST /api/data/field - Create field data (requires authentication)
-router.post('/field', authenticateToken, createFieldData);
+// POST /api/data/field - Create field data (admin only)
+router.post('/field', authenticateToken, requireRole('admin'), createFieldData);
 
 // GET /api/data/dashboard/stats - Get dashboard statistics
 router.get('/dashboard/stats', optionalAuth, getDashboardStats);
@@ -71,7 +78,35 @@ router.get('/anomaly-counts/:metric', optionalAuth, getAnomalyCounts);
 // GET /api/data/metric-limits - Get all metric limits
 router.get('/metric-limits', optionalAuth, getMetricLimits);
 
-// POST /api/data/metric-limits - Save/sync metric limits from frontend
-router.post('/metric-limits', optionalAuth, saveMetricLimits);
+// POST /api/data/metric-limits - Save/sync metric limits from frontend (admin only)
+//
+// Was optionalAuth, which accepts an absent token -- i.e. anyone who could
+// reach the API could rewrite every alarm threshold in the database with a
+// single curl. The <ProtectedRoute> around /configuration only ever hid the
+// form; it never guarded this endpoint.
+router.post('/metric-limits', authenticateToken, requireRole('admin'), saveMetricLimits);
+
+// ==================== LAB SAMPLE ROUTES ====================
+// Laboratory readings from /admin/dataInput -- typed in one at a time or
+// imported from CSV. Reads are open like the rest of the dashboard data;
+// writes are admin-only, same as the other privileged endpoints.
+
+// GET /api/data/lab-samples - List lab samples (newest first)
+router.get('/lab-samples', optionalAuth, getLabSamples);
+
+// GET /api/data/lab-samples/comparison - Lab reading vs sensor/AI at sampling time
+//
+// Registered before the ':id' route below would ever be added, so 'comparison'
+// is never swallowed as an id.
+router.get('/lab-samples/comparison', optionalAuth, getLabComparison);
+
+// POST /api/data/lab-samples - Save one reading from the manual form
+router.post('/lab-samples', authenticateToken, requireRole('admin'), createLabSample);
+
+// POST /api/data/lab-samples/import - Bulk import parsed CSV rows
+router.post('/lab-samples/import', authenticateToken, requireRole('admin'), importLabSamples);
+
+// DELETE /api/data/lab-samples/:id - Remove a reading
+router.delete('/lab-samples/:id', authenticateToken, requireRole('admin'), deleteLabSample);
 
 module.exports = router;

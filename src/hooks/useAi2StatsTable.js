@@ -6,8 +6,12 @@ import { useState, useEffect, useCallback } from 'react';
  *
  * Returns rows matching StatisticsTable's column format:
  *   { no, date, minValue, maxValue, average, stdDeviation }
+ *
+ * @param {object|null} dateRange - optional { start_date, end_date } (YYYY-MM-DD)
  */
-export const useAi2StatsTable = (metricColumn = 'ncg_predict') => {
+export const useAi2StatsTable = (metricColumn = 'ncg_predict', dateRange = null) => {
+  const startDate = dateRange?.start_date;
+  const endDate = dateRange?.end_date;
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -16,7 +20,10 @@ export const useAi2StatsTable = (metricColumn = 'ncg_predict') => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/external/ai2/stats?metric=${metricColumn}`);
+      const params = new URLSearchParams({ metric: metricColumn });
+      if (startDate) params.set('start_date', startDate);
+      if (endDate) params.set('end_date', endDate);
+      const res = await fetch(`/api/external/ai2/stats?${params.toString()}`);
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         setData(json.data);
@@ -30,7 +37,7 @@ export const useAi2StatsTable = (metricColumn = 'ncg_predict') => {
     } finally {
       setLoading(false);
     }
-  }, [metricColumn]);
+  }, [metricColumn, startDate, endDate]);
 
   useEffect(() => {
     fetchStats();

@@ -1,0 +1,106 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(16px, 2.5vw, 28px);
+  align-items: start;
+}
+
+.panel {
+  padding: clamp(24px, 3vw, 36px);
+  border-radius: var(--ls-radius);
+  border: 1px solid var(--ls-line);
+  background: var(--ls-paper);
+  height: 100%;
+}
+
+/* The "before" panel is deliberately the duller of the two -- the contrast
+   between them is the argument this section is making. */
+.before {
+  background: var(--ls-paper-alt);
+  border-color: var(--ls-line);
+}
+
+.after {
+  border-color: var(--ls-accent);
+  box-shadow: var(--ls-shadow);
+}
+
+.label {
+  display: inline-block;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: var(--ls-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 16px;
+}
+
+.before .label {
+  background: #e8edf2;
+  color: var(--ls-ink-500);
+}
+
+.after .label {
+  background: var(--ls-accent-soft);
+  color: var(--ls-accent-dark);
+}
+
+.title {
+  font-size: var(--ls-h3);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ls-ink-900);
+  margin: 0 0 20px;
+}
+
+.before .title {
+  color: var(--ls-ink-500);
+}
+
+.points {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.point {
+  display: flex;
+  gap: 12px;
+  font-size: var(--ls-small);
+  line-height: 1.65;
+  color: var(--ls-ink-500);
+}
+
+.marker {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.before .marker {
+  background: #dde4ea;
+  color: var(--ls-ink-400);
+}
+
+.after .marker {
+  background: var(--ls-accent);
+  color: #fff;
+}
+
+.after .point {
+  color: var(--ls-ink-700);
+}
+
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { query } = require('../config/database');
 const axios = require('axios');
+const crypto = require('crypto');
 
 // Load and parse the tag name mapping from environment variables
 const HONEYWELL_TAGNAME_MAPPING = JSON.parse(process.env.HONEYWELL_TAGNAME_MAPPING || '{}');
@@ -901,10 +902,115 @@ const receiveAi2Data = async (req, res) => {
   }
 };
 
+// ---------------------------------------------------------------------------
+// Server-side downsampling for the chart endpoints
+// ---------------------------------------------------------------------------
+// ai1a and ai2 both write about one row per minute, so a "1 month" window is
+// ~43k rows and "all" is unbounded -- every one of them shipped to the browser
+// and then thrown away to draw a chart a few hundred pixels wide. Callers that
+// want a chart now pass ?points=N alongside start_date/end_date and get N
+// time-buckets back instead of raw rows.
+//
+// Opt-in on purpose: without ?points= the response shape is byte-for-byte what
+// it was, so the live gauges (?limit=1), the AI workers and the Postman
+// collection are unaffected.
+//
+// Each bucket carries min/avg/max rather than just avg: these pages exist to
+// spot anomalies, and a one-minute spike inside a 12-hour bucket disappears
+// entirely if you only keep the mean.
+const MAX_BUCKET_POINTS = 2000;
+
+const resolveBucketing = (points, startDate, endDate) => {
+  if (points === undefined || points === null || points === '') return null;
+
+  const requested = parseInt(points, 10);
+  if (!Number.isFinite(requested) || requested < 1) return null;
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+
+  const spanSeconds = (end.getTime() - start.getTime()) / 1000;
+  if (spanSeconds <= 0) return null;
+
+  const capped = Math.min(requested, MAX_BUCKET_POINTS);
+
+  return {
+    points: capped,
+    startEpoch: Math.floor(start.getTime() / 1000),
+    // Floor of 1s: a window narrower than the requested point count would
+    // otherwise generate sub-second buckets, i.e. more rows out than in.
+    bucketSeconds: Math.max(Math.ceil(spanSeconds / capped), 1)
+  };
+};
+
+// Bucket boundaries are anchored to start_date, not to the epoch, so a
+// relative window ("last 24h") keeps its newest bucket flush with `end`
+// instead of ending on a partial bucket that dips as it fills.
+//
+// startEpoch/bucketSeconds are interpolated rather than bound: both are
+// integers produced by Math.floor/Math.ceil over validated finite numbers, and
+// inlining them keeps the expression readable -- same approach as
+// getDirectMetricChartData in liveDataController.
+const bucketExpr = (column, { startEpoch, bucketSeconds }) =>
+  `TO_TIMESTAMP(FLOOR((EXTRACT(EPOCH FROM ${column}) - ${startEpoch}) / ${bucketSeconds}) * ${bucketSeconds} + ${startEpoch})`;
+
 // Get latest AI2 predictions
 const getAi2Data = async (req, res) => {
   try {
-    const { limit = 50, status, start_date, end_date } = req.query;
+    const { limit = 50, status, start_date, end_date, points } = req.query;
+
+    // Bucketed (chart) path -- see resolveBucketing above.
+    const bucketing = (start_date && end_date)
+      ? resolveBucketing(points, start_date, end_date)
+      : null;
+
+    if (bucketing) {
+      const bucket = bucketExpr('processed_at', bucketing);
+      const bucketParams = [start_date, end_date];
+      let statusFilter = '';
+
+      if (status) {
+        bucketParams.push(status);
+        statusFilter = ` AND status = $${bucketParams.length}`;
+      }
+
+      // Column names match the raw shape (dryness_predict, ncg_predict) so the
+      // chart can read either response without branching; the _min/_max pairs
+      // are additive.
+      const bucketSql = `
+        SELECT
+          ${bucket}                                AS processed_at,
+          AVG(dryness_predict)                     AS dryness_predict,
+          MIN(dryness_predict)                     AS dryness_predict_min,
+          MAX(dryness_predict)                     AS dryness_predict_max,
+          AVG(ncg_predict)                         AS ncg_predict,
+          MIN(ncg_predict)                         AS ncg_predict_min,
+          MAX(ncg_predict)                         AS ncg_predict_max,
+          AVG(dryness_confidence)                  AS dryness_confidence,
+          AVG(ncg_confidence)                      AS ncg_confidence,
+          MODE() WITHIN GROUP (ORDER BY status)    AS status,
+          BOOL_OR(status IS DISTINCT FROM 'normal') AS has_anomaly,
+          MAX(model_name)                          AS model_name,
+          MAX(processed_at)                        AS bucket_last_at,
+          MAX(created_at)                          AS created_at,
+          COUNT(*)::int                            AS data_points
+        FROM ai2
+        WHERE processed_at >= $1 AND processed_at <= $2${statusFilter}
+        GROUP BY 1
+        ORDER BY 1 DESC
+      `;
+
+      const bucketResult = await query(bucketSql, bucketParams);
+
+      return res.json({
+        success: true,
+        data: bucketResult.rows,
+        count: bucketResult.rows.length,
+        sampled: true,
+        bucket_seconds: bucketing.bucketSeconds
+      });
+    }
 
     let sql = `SELECT * FROM ai2 WHERE 1=1`;
     const params = [];
@@ -946,7 +1052,7 @@ const getAi2Data = async (req, res) => {
 // Get aggregated daily stats for an ai2 metric (ncg_predict | dryness_predict)
 const getAi2AggregatedStats = async (req, res) => {
   const VALID_AI2_METRICS = ['ncg_predict', 'dryness_predict', 'ncg_confidence', 'dryness_confidence'];
-  const { metric = 'ncg_predict' } = req.query;
+  const { metric = 'ncg_predict', start_date, end_date } = req.query;
 
   if (!VALID_AI2_METRICS.includes(metric)) {
     return res.status(400).json({
@@ -954,6 +1060,18 @@ const getAi2AggregatedStats = async (req, res) => {
       message: `Invalid metric. Valid: ${VALID_AI2_METRICS.join(', ')}`
     });
   }
+
+  // Optional inclusive day filter (YYYY-MM-DD) from the statistics table's
+  // date picker; without it the newest 60 days are returned as before.
+  const isDay = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  if ((start_date && !isDay(start_date)) || (end_date && !isDay(end_date))) {
+    return res.status(400).json({ success: false, message: 'start_date/end_date must be YYYY-MM-DD' });
+  }
+  const params = [];
+  let dayFilter = '';
+  if (start_date) { params.push(start_date); dayFilter += ` AND DATE(processed_at) >= $${params.length}::date`; }
+  if (end_date) { params.push(end_date); dayFilter += ` AND DATE(processed_at) <= $${params.length}::date`; }
+  const rowLimit = params.length > 0 ? 1000 : 60;
 
   try {
     const sql = `
@@ -965,13 +1083,13 @@ const getAi2AggregatedStats = async (req, res) => {
         AVG(${metric})                                        AS avg_value,
         COALESCE(STDDEV(${metric}), 0)                        AS std_dev
       FROM ai2
-      WHERE ${metric} IS NOT NULL AND processed_at IS NOT NULL
+      WHERE ${metric} IS NOT NULL AND processed_at IS NOT NULL${dayFilter}
       GROUP BY DATE(processed_at)
       ORDER BY DATE(processed_at) DESC
-      LIMIT 60
+      LIMIT ${rowLimit}
     `;
 
-    const result = await query(sql);
+    const result = await query(sql, params);
 
     const data = result.rows.map(row => ({
       no:           parseInt(row.no),
@@ -993,6 +1111,748 @@ const getAi2AggregatedStats = async (req, res) => {
   }
 };
 
+// Get latest AI1a anomaly detection results
+//
+// risk_percentage / is_anomaly / severity are the DIRECTION-CORRECTED values
+// where available: LEFT JOINed from ai1a_direction_annotation's
+// adjusted_risk_percentage / adjusted_is_anomaly / adjusted_severity columns,
+// falling back to ai1a's own raw columns when a row hasn't been annotated
+// yet (backfill/live lag) -- see ai1a_direction_annotation in
+// docs/vps_ai_tables.sql. When an annotation row exists but no correction
+// was recommended, the AI side writes the adjusted_* columns as identical
+// copies of the raw values, so a straight COALESCE (fallback on NULL only)
+// is correct here without checking score_adjustment_recommended.
+// anomaly_score and risk_label are NOT corrected by this layer and stay raw.
+//
+// The uncorrected raw values plus the annotation itself (direction_flag,
+// drivers_json) remain available via GET /api/external/ai1a/direction.
+//
+// Response shape/field names are unchanged, but this is NOT a
+// label-neutral change: src/pages/analytics/prediction.jsx labels these
+// values as raw/observed ("Risk Teramati Sekarang", "Nilai observed,
+// bukan prediksi", badge "OBSERVED"). Do not deploy this without the
+// matching FE relabel -- see docs/working_notes.md.
+//
+// FOLLOW-UP (not yet implemented): risk_percentage has no context for
+// consumers without the model's own percentile thresholds -- p90/p99 already
+// exist in AI_Pertasmart_V3/models/ai1a/metadata.json under
+// `full_history_risk_baseline` (currently p90=34.19, p99=55.27; these shift
+// on retrain, D16/D17/D20 -- never hardcode them here or on the frontend).
+// Read that file server-side and include the two values in this response
+// (e.g. `risk_thresholds: { p90, p99 }`) so the frontend can show risk% in
+// context instead of an unqualified number.
+//
+// Which raw table (and matching ai1a_direction_annotation.source_table) to
+// read from -- 'ai1a' (production, 65-feature/13-param, no TDS) or
+// 'ai1a_shadow' (comparison run, 70-feature/14-param, has TDS).
+//
+// DELIBERATE EXCEPTION, read before touching this: AI_Pertasmart_V3/scripts/
+// init_shadow_tables.sql says outright "FE/BE TIDAK PERNAH diarahkan ke
+// tabel ini ... bukan sumber apa pun yang ditampilkan ke pengguna akhir" --
+// ai1a_shadow was designed to never reach an end user. Exposing it through
+// this endpoint (and the Produksi/Shadow 70 toggle on
+// src/pages/analytics/prediction.jsx that calls it) is a deliberate override
+// of that rule, confirmed by the user via the master session (2026-09-04),
+// not an oversight. If that confirmation is ever in doubt, ask before
+// assuming this is safe to extend further (e.g. to other pages/endpoints).
+const AI1A_SOURCE_TABLES = ['ai1a', 'ai1a_shadow'];
+
+// ai1a_shadow carries rows from however many shadow models VPS env
+// AI1A_SHADOW_DIRS lists (currently 'ai1a_70' AND 'ai1a_bootstrap65' run
+// every tick, both INSERT into this one table -- see workers/jobs_ai1.py),
+// distinguished only by model_version =
+// f"AI1a_v3.0_{model_dir.name}_{trained_date}" (_derive_ai1a_model_version).
+// The Produksi/Shadow 70 toggle means the 70-feature/has-TDS variant
+// specifically ('ai1a_70'), so every read of ai1a_shadow below MUST filter
+// to it -- found live in production 2026-09-04 (PR #5 shipped without this
+// filter): the bucketed path AVG()/MODE()s risk_percentage/severity across
+// two unrelated models, and the raw path returns an arbitrary interleaving
+// of both. Prefix match (not exact model_version) so this survives a
+// retrain, same approach as AI1A_SHADOW_FORECAST_PREFIX /
+// _latest_forecast_trend_shadow in jobs_ai1.py.
+const AI1A_SHADOW_MODEL_VERSION_PREFIX = 'AI1a_v3.0_ai1a_70_';
+
+const getAi1aData = async (req, res) => {
+  try {
+    const { limit = 50, start_date, end_date, points, source_table = 'ai1a' } = req.query;
+
+    if (!AI1A_SOURCE_TABLES.includes(source_table)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid source_table. Valid: ${AI1A_SOURCE_TABLES.join(', ')}`
+      });
+    }
+
+    // Bucketed (chart) path -- see resolveBucketing above.
+    const bucketing = (start_date && end_date)
+      ? resolveBucketing(points, start_date, end_date)
+      : null;
+
+    if (bucketing) {
+      const bucket = bucketExpr('a.timestamp', bucketing);
+
+      // is_anomaly is cast rather than used bare so the aggregate works
+      // whether the column is a real boolean or the 't'/'f' text the frontend
+      // also guards against (see prediction.jsx).
+      //
+      // source_table is whitelisted above -- Postgres can't parameterize an
+      // identifier, so it's safe to interpolate directly into FROM here
+      // (same approach as getAi1aDirectionAnnotations below).
+      const bucketParams = [start_date, end_date];
+      let shadowFilterSql = '';
+      if (source_table === 'ai1a_shadow') {
+        bucketParams.push(`${AI1A_SHADOW_MODEL_VERSION_PREFIX}%`);
+        shadowFilterSql = ` AND a.model_version LIKE $${bucketParams.length}`;
+      }
+      bucketParams.push(source_table);
+      const joinParamIndex = bucketParams.length;
+
+      const bucketSql = `
+        SELECT
+          ${bucket}                                     AS timestamp,
+          AVG(COALESCE(d.adjusted_risk_percentage, a.risk_percentage))     AS risk_percentage,
+          MIN(COALESCE(d.adjusted_risk_percentage, a.risk_percentage))     AS risk_percentage_min,
+          MAX(COALESCE(d.adjusted_risk_percentage, a.risk_percentage))     AS risk_percentage_max,
+          AVG(a.anomaly_score)                          AS anomaly_score,
+          MIN(a.anomaly_score)                          AS anomaly_score_min,
+          MAX(a.anomaly_score)                          AS anomaly_score_max,
+          BOOL_OR(COALESCE(d.adjusted_is_anomaly::boolean, a.is_anomaly::boolean))  AS is_anomaly,
+          COUNT(*) FILTER (WHERE COALESCE(d.adjusted_is_anomaly::boolean, a.is_anomaly::boolean))::int AS anomaly_count,
+          MODE() WITHIN GROUP (ORDER BY a.risk_label)   AS risk_label,
+          MODE() WITHIN GROUP (ORDER BY COALESCE(d.adjusted_severity, a.severity)) AS severity,
+          MAX(a.model_version)                          AS model_version,
+          MAX(a.timestamp)                              AS bucket_last_at,
+          MAX(a.created_at)                             AS created_at,
+          COUNT(*)::int                                 AS data_points
+        FROM ${source_table} a
+        LEFT JOIN ai1a_direction_annotation d
+          ON d.source_table = $${joinParamIndex} AND d.source_id = a.id
+        WHERE a.timestamp >= $1 AND a.timestamp <= $2${shadowFilterSql}
+        GROUP BY 1
+        ORDER BY 1 DESC
+      `;
+
+      const bucketResult = await query(bucketSql, bucketParams);
+
+      return res.json({
+        success: true,
+        source_table,
+        data: bucketResult.rows,
+        count: bucketResult.rows.length,
+        sampled: true,
+        bucket_seconds: bucketing.bucketSeconds
+      });
+    }
+
+    let sql = `
+      SELECT a.timestamp, a.model_version, a.anomaly_score,
+             COALESCE(d.adjusted_is_anomaly::boolean, a.is_anomaly::boolean) AS is_anomaly,
+             COALESCE(d.adjusted_risk_percentage, a.risk_percentage) AS risk_percentage,
+             a.risk_label,
+             COALESCE(d.adjusted_severity, a.severity) AS severity,
+             a.created_at
+      FROM ${source_table} a
+      LEFT JOIN ai1a_direction_annotation d
+        ON d.source_table = $1 AND d.source_id = a.id
+      WHERE 1=1
+    `;
+    const params = [source_table];
+
+    if (source_table === 'ai1a_shadow') {
+      params.push(`${AI1A_SHADOW_MODEL_VERSION_PREFIX}%`);
+      sql += ` AND a.model_version LIKE $${params.length}`;
+    }
+
+    if (start_date && end_date) {
+      params.push(start_date);
+      sql += ` AND a.timestamp >= $${params.length}`;
+      params.push(end_date);
+      sql += ` AND a.timestamp <= $${params.length}`;
+      sql += ` ORDER BY a.timestamp DESC`;
+    } else {
+      params.push(parseInt(limit));
+      sql += ` ORDER BY a.timestamp DESC LIMIT $${params.length}`;
+    }
+
+    const result = await query(sql, params);
+
+    res.json({
+      success: true,
+      source_table,
+      data: result.rows,
+      count: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching AI1a data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch AI1a data',
+      error: error.message
+    });
+  }
+};
+
+// Get AI1a anomaly detection results annotated with process direction
+// (kemungkinan_menguntungkan / kemungkinan_merugikan / campuran / ...) from
+// ai1a_direction_annotation, a layer built separately on the AI side that
+// flags whether an anomaly is likely GOOD or BAD for the process -- AI1a
+// itself (Isolation Forest) is a pure statistical detector with no notion
+// of which direction is favorable (e.g. falling TDS gets flagged "anomaly"
+// even though it's process-favorable).
+//
+// Purely additive: does not read from or alter ai1a/ai1a_shadow rows, only
+// joins alongside them via (source_table, source_id).
+//
+// Defaults to source_table='ai1a' (production) because AI1a-70 has not been
+// cut over yet -- production is still on the 65-feature model. See
+// AI1A_SOURCE_TABLES above getAi1aData for why 'ai1a_shadow' is readable
+// here at all (deliberate, confirmed override of init_shadow_tables.sql).
+
+const getAi1aDirectionAnnotations = async (req, res) => {
+  try {
+    const {
+      limit = 50,
+      start_date,
+      end_date,
+      direction_flag,
+      source_table = 'ai1a'
+    } = req.query;
+
+    if (!AI1A_SOURCE_TABLES.includes(source_table)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid source_table. Valid: ${AI1A_SOURCE_TABLES.join(', ')}`
+      });
+    }
+
+    // source_table is whitelisted above -- Postgres can't parameterize an
+    // identifier, so it's safe to interpolate directly into FROM here.
+    let sql = `
+      SELECT
+        a.id, a.timestamp, a.model_version AS ai1a_model_version,
+        a.anomaly_score, a.is_anomaly, a.risk_percentage, a.risk_label,
+        a.severity,
+        d.direction_flag, d.drivers_json,
+        d.model_version AS annotation_model_version,
+        d.config_version, d.created_at AS annotation_created_at
+      FROM ${source_table} a
+      JOIN ai1a_direction_annotation d
+        ON d.source_table = $1 AND d.source_id = a.id
+      WHERE 1=1
+    `;
+    const params = [source_table];
+
+    // Same fix as getAi1aData above -- ai1a_shadow mixes multiple model
+    // variants, see AI1A_SHADOW_MODEL_VERSION_PREFIX.
+    if (source_table === 'ai1a_shadow') {
+      params.push(`${AI1A_SHADOW_MODEL_VERSION_PREFIX}%`);
+      sql += ` AND a.model_version LIKE $${params.length}`;
+    }
+
+    if (direction_flag) {
+      params.push(direction_flag);
+      sql += ` AND d.direction_flag = $${params.length}`;
+    }
+
+    if (start_date && end_date) {
+      params.push(start_date);
+      sql += ` AND a.timestamp >= $${params.length}`;
+      params.push(end_date);
+      sql += ` AND a.timestamp <= $${params.length}`;
+      sql += ` ORDER BY a.timestamp DESC`;
+    } else {
+      params.push(parseInt(limit));
+      sql += ` ORDER BY a.timestamp DESC LIMIT $${params.length}`;
+    }
+
+    const result = await query(sql, params);
+
+    res.json({
+      success: true,
+      source_table,
+      data: result.rows,
+      count: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching AI1a direction annotations:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch AI1a direction annotations',
+      error: error.message
+    });
+  }
+};
+
+// Model-version prefix filter -- ANY retrain gets a new suffixed
+// model_version (e.g. TRH_v3.0_turbine_risk_history_20260915), and mixing
+// two different model_version values in one chart series would mix two
+// different scoring "rulers" together (same class of bug already handled
+// for ai1a_shadow via AI1A_SHADOW_MODEL_VERSION_PREFIX above). LIKE prefix
+// rather than an exact match so this survives a retrain without a code
+// change.
+const TURBINE_RISK_HISTORY_MODEL_VERSION_PREFIX = 'TRH_v3.0_%';
+
+// Get turbine_risk_history rows -- the 6-steam-quality-parameter
+// Isolation Forest that also anchors the failure-forecast SoH curve (see
+// FailureForecastChart.jsx), read here for its own "risk history" chart
+// (mirrors getAi1aData's shape/bucketing, but simpler: single table, no
+// source_table toggle, no direction_annotation LEFT JOIN needed --
+// adjusted_risk_percentage is ALWAYS populated on the row itself, per
+// AI_Pertasmart_V3 docs/turbine_risk_history_contract_for_beFE.md, even
+// when no correction applied).
+//
+// `"timestamp"` is quoted throughout -- it's a Postgres reserved word as
+// an unquoted identifier.
+//
+// Caveats worth remembering if this data is ever quoted without the FE's
+// own footnote alongside it: training window is only ~37 days (far
+// shorter than AI1a); 2 of the 6 input parameters (dryness, ncg) are AI2
+// MODEL OUTPUTS, not sensor readings, and are ~99% reconstructible from
+// pressure/temperature/TDS (near-redundant, not independent information);
+// direction_flag only has rules for TDS/dryness/ncg -- pressure/
+// temperature/flow_rate deliberately carry no good/bad verdict.
+const getTurbineRiskHistoryData = async (req, res) => {
+  try {
+    const { limit = 50, start_date, end_date, points } = req.query;
+
+    // Bucketed (chart) path -- see resolveBucketing above.
+    const bucketing = (start_date && end_date) ? resolveBucketing(points, start_date, end_date) : null;
+
+    if (bucketing) {
+      const bucket = bucketExpr('"timestamp"', bucketing);
+      const bucketSql = `
+        SELECT
+          ${bucket}                                     AS timestamp,
+          AVG(adjusted_risk_percentage)                 AS risk_percentage,
+          MIN(adjusted_risk_percentage)                 AS risk_percentage_min,
+          MAX(adjusted_risk_percentage)                 AS risk_percentage_max,
+          BOOL_OR(is_anomaly)                           AS is_anomaly,
+          COUNT(*) FILTER (WHERE is_anomaly)::int       AS anomaly_count,
+          MODE() WITHIN GROUP (ORDER BY risk_label)     AS risk_label,
+          MAX(model_version)                            AS model_version,
+          MAX("timestamp")                              AS bucket_last_at,
+          COUNT(*)::int                                 AS data_points
+        FROM turbine_risk_history
+        WHERE model_version LIKE $3 AND "timestamp" >= $1 AND "timestamp" <= $2
+        GROUP BY 1
+        ORDER BY 1 DESC
+      `;
+
+      const bucketResult = await query(bucketSql, [start_date, end_date, TURBINE_RISK_HISTORY_MODEL_VERSION_PREFIX]);
+
+      return res.json({
+        success: true,
+        data: bucketResult.rows,
+        count: bucketResult.rows.length,
+        sampled: true,
+        bucket_seconds: bucketing.bucketSeconds
+      });
+    }
+
+    let sql = `
+      SELECT "timestamp", model_version, risk_percentage, adjusted_risk_percentage,
+             is_anomaly, risk_label
+      FROM turbine_risk_history
+      WHERE model_version LIKE $1
+    `;
+    const params = [TURBINE_RISK_HISTORY_MODEL_VERSION_PREFIX];
+
+    if (start_date && end_date) {
+      params.push(start_date);
+      sql += ` AND "timestamp" >= $${params.length}`;
+      params.push(end_date);
+      sql += ` AND "timestamp" <= $${params.length}`;
+      sql += ` ORDER BY "timestamp" DESC`;
+    } else {
+      params.push(parseInt(limit));
+      sql += ` ORDER BY "timestamp" DESC LIMIT $${params.length}`;
+    }
+
+    const result = await query(sql, params);
+
+    res.json({ success: true, data: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('❌ Error fetching turbine risk history data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch turbine risk history data',
+      error: error.message
+    });
+  }
+};
+
+// Get latest AI1b 30-day risk forecasts
+const getAi1bData = async (req, res) => {
+  try {
+    const { limit = 50 } = req.query;
+
+    const sql = `
+      SELECT generated_at, model_version,
+             day_1_risk, day_2_risk, day_3_risk, day_4_risk, day_5_risk,
+             day_6_risk, day_7_risk, day_8_risk, day_9_risk, day_10_risk,
+             day_11_risk, day_12_risk, day_13_risk, day_14_risk, day_15_risk,
+             day_16_risk, day_17_risk, day_18_risk, day_19_risk, day_20_risk,
+             day_21_risk, day_22_risk, day_23_risk, day_24_risk, day_25_risk,
+             day_26_risk, day_27_risk, day_28_risk, day_29_risk, day_30_risk,
+             created_at
+      FROM ai1b
+      ORDER BY generated_at DESC
+      LIMIT $1
+    `;
+
+    const result = await query(sql, [parseInt(limit)]);
+
+    res.json({
+      success: true,
+      data: result.rows,
+      count: result.rows.length
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching AI1b data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch AI1b data',
+      error: error.message
+    });
+  }
+};
+
+// Get the latest failure-forecast projection (turbine State-of-Health
+// curve, currently weibull_cox only -- linear was retired from the
+// production worker 15 Sep 2026, see CONTRACT.md).
+//
+// Written by a separate AI-side job (workers/jobs_failure_forecast.py,
+// ~60s cadence) -- see AI_Pertasmart_V3
+// simulator/failure-forecast/CONTRACT.md for the full contract (this repo
+// doesn't have its own copy; that file is the source of truth and gets
+// updated in place by the AI side).
+//
+// ⚠️ 16 Sep 2026 contract change: `failure_pct` no longer means "% toward
+// 30-year design life" -- it's now "% of ONE overhaul cycle (~4 years)
+// used up", resetting to 0 at every recorded overhaul. `track` ('as_is' =
+// honest default, no future overhaul assumed; 'scheduled' = "if the cycle
+// is kept" what-if) and `cycle_index` (which cycle a point belongs to) are
+// new columns -- both returned here UNFILTERED; the FE is responsible for
+// filtering to track='as_is' and never connecting points across a
+// cycle_index change (see FailureForecastChart.jsx). Do NOT clamp
+// failure_pct/today_failure_pct anywhere in this response -- values over
+// 100 (an overdue cycle) are correct, not a bug.
+//
+// failure_forecast_projection is REPLACEd whole on every job run (no
+// history accumulation), so "the current projection" is always every row
+// sharing the latest generated_at -- no source_table toggle or model-version
+// filter needed here, unlike getAi1aData (the AI side already filtered
+// before writing this table).
+const getFailureForecastData = async (req, res) => {
+  try {
+    const sql = `
+      SELECT model, track, cycle_index, projection_date, failure_pct, today_failure_pct,
+             eta_date, risk_ref, overhaul_active_since, generated_at
+      FROM failure_forecast_projection
+      WHERE generated_at = (SELECT MAX(generated_at) FROM failure_forecast_projection)
+      ORDER BY model, track, cycle_index, projection_date
+    `;
+    const result = await query(sql);
+
+    if (result.rows.length === 0) {
+      return res.status(503).json({
+        success: false,
+        message: 'failure_forecast_projection is empty -- worker may not have run yet'
+      });
+    }
+
+    res.json({ success: true, data: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('❌ Error fetching failure forecast data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch failure forecast data',
+      error: error.message
+    });
+  }
+};
+
+// Get the historical failure-forecast curve (COD 2015-06-29 -> today),
+// picking up exactly where failure_forecast_projection's track='as_is'
+// starts. Same job (workers/jobs_failure_forecast.py) writes both tables
+// every run, sharing generated_at -- see AI_Pertasmart_V3
+// simulator/failure-forecast/CONTRACT.md.
+//
+// segment discriminates 'nominal' (no risk data yet in that cycle -- both
+// models fall back to their own built-in nominal-aging assumption) from
+// 'observed' (real risk trajectory). Don't infer segment from point_date --
+// always read the column. Since 16 Sep 2026 either segment can occur in
+// ANY cycle (cycle_index), not just once at the start of the whole curve.
+//
+// ⚠️ 16 Sep 2026 contract change: `cycle_index`/`cycle_anchor` are new --
+// this curve can now span more than one recorded overhaul cycle, and
+// points from different cycles must NEVER be connected into one line
+// segment (SoH resets to 100% at each cycle boundary; connecting across it
+// draws "damage decreasing" that never happened). See FailureForecastChart
+// .jsx's insertCycleGaps. `failure_pct` here is cycle-relative like
+// projection's -- same "never clamp" rule applies.
+//
+// Join contract: the LAST row per model here (latest point_date) has the
+// SAME cycle_index and failure_pct exactly equal to today_failure_pct on
+// that model's failure_forecast_projection track='as_is' rows, same
+// generated_at -- draw the two tables as one continuous line, style-
+// switching at that join point via segment, never a date comparison.
+//
+// Same REPLACE-per-run policy as failure_forecast_projection (not
+// append-only, even though "the past" sounds like it shouldn't change --
+// risk_ref drifts slowly as turbine_risk_history grows, so history is
+// recomputed every run to stay consistent with the projection).
+//
+// ⚠️ `zero_risk_failure_pct` (added 2026-09-17, migration PENDING on the
+// AI side as of this commit -- DO NOT DEPLOY until they confirm it's
+// live, or this query 500s on the missing column) is a counterfactual:
+// the closed-form curve if turbine_risk_history had read exactly 0% for
+// the whole history, aligned point-for-point with `failure_pct` on the
+// same row (same age-in-cycle input, just risk=0 instead of the real
+// trajectory). It's the mathematical floor from `exp(-gamma)` alone, not
+// "uncorrected"/"no direction annotation" -- don't conflate it with the
+// raw/adjusted distinction elsewhere in this file. Schema-nullable but
+// expected to always be populated once the AI side's worker restarts;
+// FE must tolerate it being absent until then (see
+// FailureForecastChart.jsx).
+const getFailureForecastHistory = async (req, res) => {
+  try {
+    const sql = `
+      SELECT model, cycle_index, cycle_anchor, point_date, segment, failure_pct,
+             zero_risk_failure_pct, risk_ref, history_source, generated_at
+      FROM failure_forecast_history
+      WHERE generated_at = (SELECT MAX(generated_at) FROM failure_forecast_history)
+      ORDER BY model, cycle_index, point_date
+    `;
+    const result = await query(sql);
+
+    if (result.rows.length === 0) {
+      return res.status(503).json({
+        success: false,
+        message: 'failure_forecast_history is empty -- worker may not have run yet'
+      });
+    }
+
+    res.json({ success: true, data: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('❌ Error fetching failure forecast history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch failure forecast history',
+      error: error.message
+    });
+  }
+};
+
+// An overhaul can't predate commercial operation -- see
+// argumen_horizon_forecast_kegagalan.md §7.4/§11.5 (AI_Pertasmart_V3 repo):
+// reset is only for a major overhaul/Turn Around AFTER it has actually
+// finished, never a scheduled/future one.
+const OVERHAUL_COD_DATE = new Date('2015-06-29T00:00:00Z');
+
+// Get the full overhaul-event log (failure_forecast_overhaul_event --
+// soft-delete only, see docs/failure_forecast_contract_for_beFE.md §3).
+// Read-only and unauthenticated like every other GET in this file: the FE
+// derives "is there an active event" from the newest row with
+// undone_at IS NULL, so there's no separate /status endpoint to keep in
+// sync with this one.
+const getFailureForecastOverhaulEvents = async (req, res) => {
+  try {
+    const sql = `
+      SELECT id, created_at, undone_at
+      FROM failure_forecast_overhaul_event
+      ORDER BY created_at DESC
+    `;
+    const result = await query(sql);
+    res.json({ success: true, data: result.rows, count: result.rows.length });
+  } catch (error) {
+    console.error('❌ Error fetching failure forecast overhaul events:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch failure forecast overhaul events',
+      error: error.message
+    });
+  }
+};
+
+// Best-effort trigger telling the AI side's job to recompute the SoH
+// projection RIGHT NOW instead of waiting for its own ~60s cadence -- see
+// simulator/failure-forecast/CONTRACT.md §3.1 (added 2026-09-16, in
+// response to us reporting the stale-chart-after-reset UX gap). Localhost-
+// only, no password by design (only reachable from another process on the
+// same VPS, never from a browser -- our Node backend is that process).
+// Always responds 202 immediately; the actual recompute runs async on
+// their side. Failing this must NEVER fail the write that already
+// succeeded above it -- the normal ~60s worker cadence still picks the
+// change up on its own either way.
+const triggerOverhaulRecompute = async () => {
+  try {
+    await axios.post('http://127.0.0.1:8600/api/overhaul/recompute', null, { timeout: 3000 });
+  } catch (error) {
+    console.error(
+      '⚠️ Overhaul recompute trigger failed (non-fatal -- the ~60s worker cadence will still pick this up):',
+      error.message
+    );
+  }
+};
+
+// Record a completed major overhaul/Turn Around. The next
+// jobs_failure_forecast.py run (~60s, or immediately via
+// triggerOverhaulRecompute below) picks this up as the new SoH anchor.
+//
+// INSERTs directly into the AI-side's Postgres table (same DB already used
+// for failure_forecast_projection/history) rather than proxying to the
+// AI-side's own port-8600 tool -- that tool is internal/password-gated for a
+// different purpose (design confirmed via cross-session handoff from the
+// "Master Session" ai-pertasmart-v3, 2026-09-15). Auth here is this repo's
+// own admin gate (authenticateToken + requireRole('admin'), see
+// backend/routes/external.js), never the AI-side password -- that password
+// is never read, stored, or forwarded by this file.
+//
+// `created_at` IS the effective overhaul date, not a mere insert timestamp
+// (confirmed against AI_Pertasmart_V3/simulator/failure-forecast/backend/app
+// /overhaul_event.py -- effective_anchor_epoch reads created_at as the age-
+// reset point). The AI side's own tool always uses "now"; letting the
+// operator pick a past date here is a pltp-iot-side addition per the
+// dosen's calibration request (argumen_horizon_forecast_kegagalan.md §11.5
+// point 1: default is a MANUAL date, not an automatic/fixed cycle).
+//
+// Known gap: the shared table (schema owned by AI_Pertasmart_V3) has no
+// "recorded by" column, so who pressed the button isn't persisted to the
+// DB -- only logged to this server's console. Flagged, not silently
+// worked around by altering a table another team's worker also reads.
+const createFailureForecastOverhaulEvent = async (req, res) => {
+  try {
+    const { effective_date } = req.body;
+
+    const effectiveAt = effective_date ? new Date(effective_date) : new Date();
+    if (Number.isNaN(effectiveAt.getTime())) {
+      return res.status(400).json({ success: false, message: 'effective_date is not a valid date' });
+    }
+    if (effectiveAt < OVERHAUL_COD_DATE) {
+      return res.status(400).json({
+        success: false,
+        message: `effective_date can't be before commercial operation date (${OVERHAUL_COD_DATE.toISOString().slice(0, 10)})`
+      });
+    }
+    // Small forward tolerance for clock skew -- not a loophole for
+    // "scheduled" overhauls. Reset is only for ones already completed.
+    if (effectiveAt.getTime() > Date.now() + 5 * 60 * 1000) {
+      return res.status(400).json({
+        success: false,
+        message: 'effective_date is in the future -- only record an overhaul after it has actually finished'
+      });
+    }
+
+    const id = crypto.randomUUID().replace(/-/g, '');
+    await query('INSERT INTO failure_forecast_overhaul_event (id, created_at, undone_at) VALUES ($1, $2, NULL)', [
+      id,
+      effectiveAt.toISOString()
+    ]);
+
+    console.log(
+      `✅ Overhaul event recorded by user ${req.user?.userId ?? 'unknown'}: id=${id} effective_at=${effectiveAt.toISOString()}`
+    );
+
+    await triggerOverhaulRecompute();
+
+    res.status(201).json({ success: true, data: { id, created_at: effectiveAt.toISOString(), undone_at: null } });
+  } catch (error) {
+    console.error('❌ Error recording failure forecast overhaul event:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to record overhaul event',
+      error: error.message
+    });
+  }
+};
+
+// Undo the most recently recorded ACTIVE overhaul event -- soft-delete only
+// (sets undone_at, never DELETEs the row, per the shared table's own soft-
+// delete contract). Targets only the single newest active row, matching how
+// the AI-side worker itself picks the anchor when more than one is briefly
+// active (overhaul_event.py::latest_active) -- an older active row left
+// behind by a race is not touched here.
+const undoFailureForecastOverhaulEvent = async (req, res) => {
+  try {
+    const result = await query(
+      `UPDATE failure_forecast_overhaul_event
+       SET undone_at = NOW()
+       WHERE id = (
+         SELECT id FROM failure_forecast_overhaul_event
+         WHERE undone_at IS NULL
+         ORDER BY created_at DESC
+         LIMIT 1
+       )
+       RETURNING id, created_at, undone_at`
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(409).json({ success: false, message: 'No active overhaul event to undo' });
+    }
+
+    console.log(`✅ Overhaul event undone by user ${req.user?.userId ?? 'unknown'}: id=${result.rows[0].id}`);
+
+    await triggerOverhaulRecompute();
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('❌ Error undoing failure forecast overhaul event:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to undo overhaul event',
+      error: error.message
+    });
+  }
+};
+
+// Permanently remove an ALREADY-UNDONE overhaul event -- cleanup for
+// test/mistaken entries, requested by the user 2026-09-16 after a test
+// reset+undo left a "Dibatalkan" row with no way to clear it (only
+// undo/soft-delete existed until now).
+//
+// Deliberately narrower than a generic DELETE: an ACTIVE event
+// (undone_at IS NULL) can NEVER be hard-deleted directly here, even by an
+// admin -- it must be undone first (a separate, already-audited step) and
+// only THEN hard-deleted. This preserves the append-only guarantee for
+// real/active data (the shared table's own soft-delete contract, see
+// getFailureForecastOverhaulEvents above) while still giving a way to
+// clear genuine test noise -- two deliberate steps for two different kinds
+// of "this shouldn't be here" (wrong entry -> undo it; already-undone
+// clutter -> hard-delete it).
+const deleteFailureForecastOverhaulEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const existing = await query('SELECT undone_at FROM failure_forecast_overhaul_event WHERE id = $1', [id]);
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Overhaul event not found' });
+    }
+    if (existing.rows[0].undone_at === null) {
+      return res.status(409).json({
+        success: false,
+        message: 'Cannot hard-delete an ACTIVE overhaul event -- undo it first, then delete'
+      });
+    }
+
+    await query('DELETE FROM failure_forecast_overhaul_event WHERE id = $1', [id]);
+
+    console.log(`✅ Overhaul event hard-deleted by user ${req.user?.userId ?? 'unknown'}: id=${id}`);
+
+    res.json({ success: true, data: { id } });
+  } catch (error) {
+    console.error('❌ Error deleting failure forecast overhaul event:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete overhaul event',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   fetchHoneywellData,
   receiveExternalData,
@@ -1005,5 +1865,15 @@ module.exports = {
   validateSetup,
   receiveAi2Data,
   getAi2Data,
-  getAi2AggregatedStats
+  getAi2AggregatedStats,
+  getAi1aData,
+  getAi1aDirectionAnnotations,
+  getAi1bData,
+  getTurbineRiskHistoryData,
+  getFailureForecastData,
+  getFailureForecastHistory,
+  getFailureForecastOverhaulEvents,
+  createFailureForecastOverhaulEvent,
+  undoFailureForecastOverhaulEvent,
+  deleteFailureForecastOverhaulEvent
 };

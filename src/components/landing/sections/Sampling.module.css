@@ -1,0 +1,69 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Alternating image side. The parameter cards above are a 3-up grid, so this
+   section uses rows instead -- two identical grids back to back is what made
+   the old page feel like one section repeated. */
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: clamp(24px, 4vw, 56px);
+  align-items: center;
+  padding-block: clamp(28px, 4vw, 44px);
+  border-top: 1px solid var(--ls-line);
+}
+
+.row:last-child {
+  border-bottom: 1px solid var(--ls-line);
+}
+
+.row:nth-child(even) .figure {
+  order: 2;
+}
+
+.figure {
+  margin: 0;
+  border-radius: var(--ls-radius);
+  overflow: hidden;
+  background: var(--ls-paper-alt);
+}
+
+.figure img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 3;
+  object-fit: cover;
+}
+
+.title {
+  font-size: var(--ls-h3);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ls-ink-900);
+  margin: 0;
+}
+
+.text {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: var(--ls-ink-500);
+  margin: 12px 0 20px;
+  max-width: 34rem;
+}
+
+@media (max-width: 760px) {
+  .row,
+  .row:nth-child(even) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .row:nth-child(even) .figure {
+    order: 0;
+  }
+}

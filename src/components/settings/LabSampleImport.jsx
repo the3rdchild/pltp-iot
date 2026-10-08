@@ -1,0 +1,377 @@
+// components/settings/LabSampleImport.jsx
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  TextField,
+  Alert,
+  Chip,
+  Stack,
+  Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  IconButton,
+  Tooltip,
+  CircularProgress
+} from '@mui/material';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import DeleteIcon from '@mui/icons-material/Delete';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { parseLabCsv } from '../../utils/labCsv';
+import { formatStoredTimestamp as formatSampledAt } from '../../utils/labOverlay';
+import { importLabSamples, getLabSamples, deleteLabSample } from '../../utils/api';
+
+const PREVIEW_LIMIT = 10;
+const ERROR_PREVIEW_LIMIT = 10;
+
+// Dryness is deliberately not listed: the workflow no longer records it, so it
+// stays out of the preview and the stored table (the DB column remains for
+// historical rows, just in case).
+const METRIC_COLUMNS = [
+  { key: 'pressure', label: 'Pressure' },
+  { key: 'temperature', label: 'Temperature' },
+  { key: 'flow_rate', label: 'Flow' },
+  { key: 'tds', label: 'TDS' },
+  { key: 'ncg', label: 'NCG' }
+];
+
+const formatNumber = (v) => (v === null || v === undefined ? '-' : v);
+
+export default function LabSampleImport() {
+  const fileInputRef = useRef(null);
+
+  // CSV import state
+  const [fileName, setFileName] = useState('');
+  // Fallback result date ('YYYY-MM-DD') applied to every row that carries no
+  // result_date of its own in the CSV.
+  const [resultDate, setResultDate] = useState('');
+  const [parsed, setParsed] = useState(null); // { rows, errors, mapped, ignored }
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null); // { severity, message, errors }
+
+  // Stored samples table state
+  const [samples, setSamples] = useState([]);
+  const [loadingSamples, setLoadingSamples] = useState(true);
+  const [samplesError, setSamplesError] = useState(null);
+  // Paged on the server (limit/offset), so the table can reach every stored
+  // row instead of only the newest handful.
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalSamples, setTotalSamples] = useState(0);
+
+  const refreshSamples = useCallback(async () => {
+    setLoadingSamples(true);
+    setSamplesError(null);
+    try {
+      const res = await getLabSamples({ limit: rowsPerPage, offset: page * rowsPerPage });
+      const rows = res?.data || [];
+      const total = res?.total ?? rows.length;
+      // Deleting the last row on the last page leaves that page empty: step
+      // back one page (which refetches through the effect below).
+      if (rows.length === 0 && page > 0 && total > 0) {
+        setPage(Math.max(0, Math.ceil(total / rowsPerPage) - 1));
+        return;
+      }
+      setSamples(rows);
+      setTotalSamples(total);
+    } catch (error) {
+      setSamplesError(error?.message || 'Gagal memuat data lab');
+    } finally {
+      setLoadingSamples(false);
+    }
+  }, [page, rowsPerPage]);
+
+  useEffect(() => {
+    refreshSamples();
+  }, [refreshSamples]);
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    // allow re-picking the same file
+    e.target.value = '';
+    if (!file) return;
+
+    setImportResult(null);
+    try {
+      const text = await file.text();
+      setFileName(file.name);
+      setParsed(parseLabCsv(text));
+    } catch (error) {
+      setParsed(null);
+      setImportResult({ severity: 'error', message: 'Gagal membaca file', errors: [] });
+    }
+  };
+
+  const handleImport = async () => {
+    if (!parsed || parsed.rows.length === 0) return;
+
+    setImporting(true);
+    setImportResult(null);
+    try {
+      // Strip parser-internal fields before sending. Rows without a result
+      // date of their own fall back to the single date picked above.
+      const rows = parsed.rows.map(({ _dateOnly, _line, ...row }) => ({
+        ...row,
+        result_at: row.result_at ?? (resultDate || null)
+      }));
+      const res = await importLabSamples(rows, fileName);
+      const summary = res?.data;
+      const message = summary
+        ? `${summary.inserted ?? 0} baru, ${summary.updated ?? 0} diperbarui, ${summary.skipped ?? 0} dilewati`
+        : (res?.message || 'Import selesai');
+      setImportResult({
+        severity: summary?.errors?.length ? 'warning' : 'success',
+        message,
+        errors: summary?.errors || []
+      });
+      // Reset selection and refresh stored table
+      setParsed(null);
+      setFileName('');
+      refreshSamples();
+    } catch (error) {
+      setImportResult({
+        severity: 'error',
+        message: error?.message || 'Gagal mengimport data',
+        errors: []
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Hapus data lab ini?')) return;
+    try {
+      await deleteLabSample(id);
+      refreshSamples();
+    } catch (error) {
+      setSamplesError(error?.message || 'Gagal menghapus data');
+    }
+  };
+
+  const mappedEntries = parsed ? Object.entries(parsed.mapped) : [];
+
+  return (
+    <Card sx={{ borderRadius: 2 }} elevation={1}>
+      <CardContent>
+        <Box mb={3}>
+          <Typography variant="h6">Import CSV Data Lab</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Import data sampling lab dari file CSV (kolom: date, pressure, temperature, ncg, tds;
+            kolom result_date opsional — dryness diabaikan)
+          </Typography>
+        </Box>
+
+        <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+          <Button
+            component="label"
+            variant="outlined"
+            startIcon={<UploadFileIcon />}
+          >
+            Pilih File CSV
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              hidden
+              onChange={handleFileChange}
+            />
+          </Button>
+          <TextField
+            size="small"
+            type="date"
+            label="Tanggal Result"
+            value={resultDate}
+            onChange={(e) => setResultDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            helperText="Fallback baris tanpa result_date"
+            sx={{ minWidth: 200 }}
+          />
+          {fileName && (
+            <Typography variant="body2" color="text.secondary">{fileName}</Typography>
+          )}
+        </Stack>
+
+        {parsed && (
+          <Box mt={3}>
+            <Typography variant="body2" gutterBottom>
+              {parsed.rows.length} baris valid, {parsed.errors.length} error
+            </Typography>
+
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
+              {mappedEntries.map(([field, header]) => (
+                <Chip key={field} size="small" color="primary" variant="outlined" label={`${field} ← ${header}`} />
+              ))}
+              {parsed.ignored.map((header) => (
+                <Chip key={header} size="small" variant="outlined" label={`diabaikan: ${header}`} />
+              ))}
+            </Stack>
+
+            {parsed.rows.length > 0 && (
+              <TableContainer sx={{ maxHeight: 300, mb: 2 }}>
+                <Table size="small" stickyHeader>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Tanggal</TableCell>
+                      <TableCell>Tgl Result</TableCell>
+                      {METRIC_COLUMNS.map((col) => (
+                        <TableCell key={col.key} align="right">{col.label}</TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {parsed.rows.slice(0, PREVIEW_LIMIT).map((row) => (
+                      <TableRow key={row._line}>
+                        <TableCell>{formatSampledAt(row.sampled_at)}</TableCell>
+                        <TableCell>{row.result_at || resultDate || '-'}</TableCell>
+                        {METRIC_COLUMNS.map((col) => (
+                          <TableCell key={col.key} align="right">{formatNumber(row[col.key])}</TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+            {parsed.rows.length > PREVIEW_LIMIT && (
+              <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                Menampilkan {PREVIEW_LIMIT} dari {parsed.rows.length} baris valid
+              </Typography>
+            )}
+
+            {parsed.errors.length > 0 && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                <Typography variant="body2" gutterBottom>
+                  {parsed.errors.length} baris bermasalah:
+                </Typography>
+                <Box component="ul" sx={{ m: 0, pl: 2, maxHeight: 150, overflow: 'auto' }}>
+                  {parsed.errors.slice(0, ERROR_PREVIEW_LIMIT).map((err, idx) => (
+                    <li key={idx}>
+                      <Typography variant="caption">
+                        Baris {err.line}: {err.message}
+                      </Typography>
+                    </li>
+                  ))}
+                </Box>
+                {parsed.errors.length > ERROR_PREVIEW_LIMIT && (
+                  <Typography variant="caption">
+                    ... dan {parsed.errors.length - ERROR_PREVIEW_LIMIT} lainnya
+                  </Typography>
+                )}
+              </Alert>
+            )}
+
+            <Button
+              variant="contained"
+              onClick={handleImport}
+              disabled={parsed.rows.length === 0 || importing}
+            >
+              {importing ? 'Mengimport...' : 'Import'}
+            </Button>
+          </Box>
+        )}
+
+        {importResult && (
+          <Alert severity={importResult.severity} sx={{ mt: 2 }} onClose={() => setImportResult(null)}>
+            <Typography variant="body2">{importResult.message}</Typography>
+            {importResult.errors?.length > 0 && (
+              <Box component="ul" sx={{ m: 0, pl: 2, maxHeight: 150, overflow: 'auto' }}>
+                {importResult.errors.map((err, idx) => (
+                  <li key={idx}>
+                    <Typography variant="caption">
+                      Baris {err.row}: {err.message}
+                    </Typography>
+                  </li>
+                ))}
+              </Box>
+            )}
+          </Alert>
+        )}
+
+        <Divider sx={{ my: 3 }} />
+
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+          <Typography variant="h6">Data Lab Tersimpan</Typography>
+          <Tooltip title="Muat ulang">
+            <span>
+              <IconButton size="small" onClick={refreshSamples} disabled={loadingSamples}>
+                <RefreshIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </Box>
+
+        {samplesError && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setSamplesError(null)}>
+            {samplesError}
+          </Alert>
+        )}
+
+        {loadingSamples ? (
+          <Box display="flex" justifyContent="center" py={3}>
+            <CircularProgress size={28} />
+          </Box>
+        ) : totalSamples === 0 ? (
+          <Typography variant="body2" color="text.secondary">Belum ada data lab</Typography>
+        ) : (
+          <TableContainer sx={{ maxHeight: 400 }}>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Tanggal Sampling</TableCell>
+                  <TableCell>Tgl Result</TableCell>
+                  {METRIC_COLUMNS.map((col) => (
+                    <TableCell key={col.key} align="right">{col.label}</TableCell>
+                  ))}
+                  <TableCell>Sumber</TableCell>
+                  <TableCell align="center">Aksi</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {samples.map((row) => (
+                  <TableRow key={row.id}>
+                    <TableCell>{formatSampledAt(row.sampled_at)}</TableCell>
+                    <TableCell>{row.result_at || '-'}</TableCell>
+                    {METRIC_COLUMNS.map((col) => (
+                      <TableCell key={col.key} align="right">{formatNumber(row[col.key])}</TableCell>
+                    ))}
+                    <TableCell>{row.source || '-'}</TableCell>
+                    <TableCell align="center">
+                      <IconButton size="small" color="error" onClick={() => handleDelete(row.id)}>
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+
+        {totalSamples > 0 && (
+          <TablePagination
+            component="div"
+            count={totalSamples}
+            page={page}
+            onPageChange={(_, next) => setPage(next)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            labelRowsPerPage="Rows per-page:"
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
+}

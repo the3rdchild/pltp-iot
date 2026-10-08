@@ -8,12 +8,14 @@ import { useMetricStats } from '../../hooks/useMetricStatistics';
 import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
 import { getLimitData } from '../../utils/limitData';
+import { formatValueWithUnit } from '../../utils/analyticsHelpers';
 
 import {
   AnalyticsHeader,
   StatCard,
   Ai2Chart,
-  StatisticsTable
+  StatisticsTable,
+  Ai2ProvisionalBadge
 } from '../../components/analytics';
 
 // icons
@@ -65,45 +67,48 @@ const Dryness = () => {
         },
         {
             title: 'Minimum',
-            value: `${drynessStats.min24h}%`,
+            value: formatValueWithUnit(drynessStats.min24h, '%'),
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
             iconColor: '#fff',
             additionalData: [
-                { value: `${drynessStats.min12h}%`, timeLabel: '12 Jam terakhir' },
-                { value: `${drynessStats.min24h}%`, timeLabel: '1 hari terakhir' },
-                { value: `${drynessStats.min7d}%`, timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(drynessStats.min12h, '%'), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(drynessStats.min24h, '%'), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(drynessStats.min7d, '%'), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Average',
-            value: `${drynessStats.avg24h}%`,
+            value: formatValueWithUnit(drynessStats.avg24h, '%'),
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
             iconColor: '#fff',
             additionalData: [
-              { value: `${drynessStats.avg12h}%`, timeLabel: '12 Jam terakhir' },
-              { value: `${drynessStats.avg24h}%`, timeLabel: '1 hari terakhir' },
-              { value: `${drynessStats.avg7d}%`, timeLabel: '1 minggu terakhir' }
+              { value: formatValueWithUnit(drynessStats.avg12h, '%'), timeLabel: '12 Jam terakhir' },
+              { value: formatValueWithUnit(drynessStats.avg24h, '%'), timeLabel: '1 hari terakhir' },
+              { value: formatValueWithUnit(drynessStats.avg7d, '%'), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Maximum',
-            value: `${drynessStats.max24h}%`,
+            value: formatValueWithUnit(drynessStats.max24h, '%'),
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
             iconColor: '#fff',
             additionalData: [
-              { value: `${drynessStats.max12h}%`, timeLabel: '12 Jam terakhir' },
-              { value: `${drynessStats.max24h}%`, timeLabel: '1 hari terakhir' },
-              { value: `${drynessStats.max7d}%`, timeLabel: '1 minggu terakhir' }
+              { value: formatValueWithUnit(drynessStats.max12h, '%'), timeLabel: '12 Jam terakhir' },
+              { value: formatValueWithUnit(drynessStats.max24h, '%'), timeLabel: '1 hari terakhir' },
+              { value: formatValueWithUnit(drynessStats.max7d, '%'), timeLabel: '1 minggu terakhir' }
             ]
         }
     ];
 
     return (
         <Box>
-          <AnalyticsHeader title="Dryness" subtitle="Analytic" />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <AnalyticsHeader title="Dryness" subtitle="Analytic" />
+            <Ai2ProvisionalBadge />
+          </Box>
 
           <Grid
             container
@@ -151,12 +156,8 @@ const Dryness = () => {
                     min={limitData.dryness.min}
                     max={limitData.dryness.max}
                     unit={limitData.dryness.unit}
-                    abnormalLow={limitData.dryness.abnormalLow}
-                    warningLow={limitData.dryness.warningLow}
-                    idealLow={limitData.dryness.idealLow}
-                    idealHigh={limitData.dryness.idealHigh}
-                    warningHigh={limitData.dryness.warningHigh}
-                    abnormalHigh={limitData.dryness.abnormalHigh}
+                    lowerLimit={limitData.dryness.lowerLimit}
+                    upperLimit={limitData.dryness.upperLimit}
                     changePct={changePct}
                     withCard={false}
                     sx={{ width: '100%', maxWidth: 360 }}
@@ -191,6 +192,8 @@ const Dryness = () => {
                 unit="%"
                 yAxisTitle="Dryness (%)"
                 color="#3b82f6"
+                yAxisMin={99.86}
+                yAxisMax={99.9}
               />
             </Grid>
 

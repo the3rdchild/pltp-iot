@@ -10,6 +10,8 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
+import Badge from '@mui/material/Badge';
+import Tooltip from '@mui/material/Tooltip';
 
 // project imports
 import IconButton from 'components/@extended/IconButton';
@@ -38,7 +40,7 @@ export default function NavItem({ item, level, isParents = false, setSelectedID 
   };
 
   const Icon = item.icon;
-  const itemIcon = item.icon ? (
+  const baseIcon = item.icon ? (
     <Icon
       style={{
         fontSize: drawerOpen ? '1rem' : '1.25rem',
@@ -48,6 +50,26 @@ export default function NavItem({ item, level, isParents = false, setSelectedID 
   ) : (
     false
   );
+
+  // `protected` items stay visible and clickable for everyone -- the dot marks
+  // a page that needs an admin account, it is not an access check itself. The
+  // real gate is ProtectedRoute's requireRole (and the API behind it).
+  const itemIcon =
+    baseIcon && item.protected ? (
+      <Tooltip title="Butuh akun admin" placement="right" arrow>
+        <Badge
+          color="error"
+          variant="dot"
+          overlap="circular"
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+          sx={{ '& .MuiBadge-badge': { minWidth: 7, height: 7, boxShadow: '0 0 0 1.5px var(--mui-palette-background-paper)' } }}
+        >
+          {baseIcon}
+        </Badge>
+      </Tooltip>
+    ) : (
+      baseIcon
+    );
 
   const { pathname } = useLocation();
   const isSelected = !!matchPath({ path: item?.link ? item.link : item.url, end: false }, pathname);

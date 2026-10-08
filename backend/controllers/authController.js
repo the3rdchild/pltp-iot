@@ -41,6 +41,15 @@ const login = async (req, res) => {
       });
     }
 
+    // Admin sessions are deliberately shorter-lived than viewer ones. There is
+    // one login page and one token, so the role is the only thing separating a
+    // session that can rewrite alarm thresholds from one that can only read --
+    // an unattended browser should not stay privileged for a full day.
+    const expiresIn =
+      user.role === 'admin'
+        ? process.env.ADMIN_TOKEN_EXPIRES_IN || '2h'
+        : process.env.JWT_EXPIRES_IN || '24h';
+
     // Generate JWT token
     const token = jwt.sign(
       {
@@ -49,8 +58,12 @@ const login = async (req, res) => {
         role: user.role
       },
       process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+      { expiresIn }
     );
+
+    // Surfaced so the client can warn before a session lapses mid-edit rather
+    // than letting the user discover it by losing a form submission.
+    const { exp } = jwt.decode(token);
 
     // Return user data and token
     res.json({
@@ -58,6 +71,7 @@ const login = async (req, res) => {
       message: 'Login successful',
       data: {
         token,
+        expiresAt: new Date(exp * 1000).toISOString(),
         user: {
           id: user.id,
           email: user.email,

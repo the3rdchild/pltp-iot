@@ -10,7 +10,9 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     name VARCHAR(255),
-    role VARCHAR(50) DEFAULT 'admin',
+    -- 'viewer' is the safe default: an account created without an explicit
+    -- role must not be an administrator. Grant 'admin' deliberately.
+    role VARCHAR(50) DEFAULT 'viewer' CHECK (role IN ('admin', 'operator', 'viewer')),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -80,9 +82,11 @@ CREATE INDEX IF NOT EXISTS idx_field_data_recorded_at ON field_data(recorded_at 
 CREATE INDEX IF NOT EXISTS idx_ml_predictions_processed_at ON ml_predictions(processed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_ml_predictions_anomaly ON ml_predictions(anomaly_detected);
 
--- Insert default admin user
--- Password: pertasmart.unpad!!2025
--- Hash generated with bcryptjs (will be created by init script)
+-- Insert the seed account.
+-- The password is supplied via SEED_ADMIN_PASSWORD when scripts/initDatabase.js
+-- runs and is substituted for the placeholder below -- it is deliberately not
+-- written down anywhere in this repository.
+-- Role is set explicitly here; the column default is 'viewer'.
 INSERT INTO users (email, password_hash, name, role) 
 VALUES (
     'pertasmart@unpad.ac.id',

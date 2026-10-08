@@ -1,0 +1,67 @@
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(12px, 2vw, 24px);
+}
+
+.item {
+  display: grid;
+  place-items: center;
+  gap: 14px;
+  padding: clamp(20px, 2.4vw, 28px) 16px;
+  background: var(--ls-paper);
+  border: 1px solid var(--ls-line);
+  border-radius: var(--ls-radius);
+  text-align: center;
+}
+
+.logo {
+  height: 42px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  /* Muted by default so five different brand palettes do not fight each
+     other; full colour on hover for recognition. */
+  filter: grayscale(1);
+  opacity: 0.65;
+  transition:
+    filter 220ms ease,
+    opacity 220ms ease;
+}
+
+.item:hover .logo {
+  filter: none;
+  opacity: 1;
+}
+
+.name {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--ls-ink-500);
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .logo {
+    height: 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo {
+    transition: none;
+  }
+}

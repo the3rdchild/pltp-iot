@@ -1,0 +1,131 @@
+import { useState, useEffect } from 'react';
+
+const AI1A_URL = '/api/external/ai1a';
+const AI1B_URL = '/api/external/ai1b';
+
+// Data older than this is considered stale → liveData becomes null
+// (uses created_at, the job execution time - NOT timestamp/generated_at,
+// which are the underlying data/forecast time)
+const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+
+// AI1b only runs once a day (AI1B_INTERVAL=86400 in the worker's .env), unlike
+// ai1a which runs every 60s -- reusing the 10-minute threshold here would mark
+// every valid daily forecast as stale almost immediately after it's produced.
+// 26h gives one hour of slack past the 24h cadence before flagging a genuinely
+// missed run.
+const AI1B_STALE_THRESHOLD_MS = 26 * 60 * 60 * 1000; // 26 hours
+
+const isDataFresh = (row, thresholdMs = STALE_THRESHOLD_MS) => {
+  if (!row?.created_at) return false;
+  return Date.now() - new Date(row.created_at).getTime() < thresholdMs;
+};
+
+/**
+ * Hook to fetch ai1a (anomaly detection / current risk status) from the backend.
+ * - `liveData`: latest single row if fresh (< 10 min old, by created_at), otherwise null
+ * - `history`: last 60 rows in chronological order (fetched once on mount)
+ * - `loading`: true until first live fetch completes
+ *
+ * @param {number} pollInterval
+ * @param {string} sourceTable - 'ai1a' (default, production) or 'ai1a_shadow'
+ *        -- see AI1A_SOURCE_TABLES in backend/controllers/externalController.js
+ *        for why 'ai1a_shadow' is readable here at all.
+ */
+export const useAi1aData = (pollInterval = 3000, sourceTable = 'ai1a') => {
+  const [liveData, setLiveData] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${AI1A_URL}?limit=60&source_table=${sourceTable}`)
+      .then(r => r.json())
+      .then(json => {
+        if (json.success && json.data) {
+          setHistory([...json.data].reverse());
+        }
+      })
+      .catch(err => console.error('ai1a history fetch error:', err));
+  }, [sourceTable]);
+
+  useEffect(() => {
+    // Switching variant should not show the other variant's stale live tile
+    // while the first poll of the new one is in flight.
+    setLoading(true);
+
+    const poll = () => {
+      fetch(`${AI1A_URL}?limit=1&source_table=${sourceTable}`)
+        .then(r => r.json())
+        .then(json => {
+          if (json.success && json.data?.length > 0) {
+            const row = json.data[0];
+            setLiveData(isDataFresh(row) ? row : null);
+          } else {
+            setLiveData(null);
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('ai1a live fetch error:', err);
+          setLiveData(null);
+          setLoading(false);
+        });
+    };
+
+    poll();
+    const id = setInterval(poll, pollInterval);
+    return () => clearInterval(id);
+  }, [pollInterval, sourceTable]);
+
+  return { liveData, history, loading };
+};
+
+/**
+ * Hook to fetch ai1b (30-day risk forecast) from the backend.
+ * - `liveData`: latest forecast row if fresh (< 26h old, by created_at -- see
+ *   AI1B_STALE_THRESHOLD_MS, sized for the daily run cadence), otherwise null
+ * - `history`: last 10 forecast runs in chronological order (fetched once on mount)
+ * - `loading`: true until first live fetch completes
+ */
+export const useAi1bData = (pollInterval = 30000) => {
+  const [liveData, setLiveData] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${AI1B_URL}?limit=10`)
+      .then(r => r.json())
+      .then(json => {
+        if (json.success && json.data) {
+          setHistory([...json.data].reverse());
+        }
+      })
+      .catch(err => console.error('ai1b history fetch error:', err));
+  }, []);
+
+  useEffect(() => {
+    const poll = () => {
+      fetch(`${AI1B_URL}?limit=1`)
+        .then(r => r.json())
+        .then(json => {
+          if (json.success && json.data?.length > 0) {
+            const row = json.data[0];
+            setLiveData(isDataFresh(row, AI1B_STALE_THRESHOLD_MS) ? row : null);
+          } else {
+            setLiveData(null);
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('ai1b live fetch error:', err);
+          setLiveData(null);
+          setLoading(false);
+        });
+    };
+
+    poll();
+    const id = setInterval(poll, pollInterval);
+    return () => clearInterval(id);
+  }, [pollInterval]);
+
+  return { liveData, history, loading };
+};

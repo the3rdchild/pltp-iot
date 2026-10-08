@@ -104,38 +104,41 @@ const PTF = () => {
         },
         {
             title: 'Minimum',
-            value: formatValueWithUnit(pressureStats.min24h, 'barg'),
+            value: formatValueWithUnit(pressureStats.min24h, ''),
+            hoverUnit: 'barg',
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
             iconColor: '#fff',
             additionalData: [
-                { value: formatValueWithUnit(pressureStats.min12h, 'barg'), timeLabel: '12 Jam terakhir' },
-                { value: formatValueWithUnit(pressureStats.min24h, 'barg'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(pressureStats.min7d, 'barg'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(pressureStats.min12h, ''), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(pressureStats.min24h, ''), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(pressureStats.min7d, ''), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Average',
-            value: formatValueWithUnit(pressureStats.avg24h, 'barg'),
+            value: formatValueWithUnit(pressureStats.avg24h, ''),
+            hoverUnit: 'barg',
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
             iconColor: '#fff',
             additionalData: [
-                { value: formatValueWithUnit(pressureStats.avg12h, 'barg'), timeLabel: '12 Jam terakhir' },
-                { value: formatValueWithUnit(pressureStats.avg24h, 'barg'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(pressureStats.avg7d, 'barg'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(pressureStats.avg12h, ''), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(pressureStats.avg24h, ''), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(pressureStats.avg7d, ''), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Maximum',
-            value: formatValueWithUnit(pressureStats.max24h, 'barg'),
+            value: formatValueWithUnit(pressureStats.max24h, ''),
+            hoverUnit: 'barg',
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
             iconColor: '#fff',
             additionalData: [
-                { value: formatValueWithUnit(pressureStats.max12h, 'barg'), timeLabel: '12 Jam terakhir' },
-                { value: formatValueWithUnit(pressureStats.max24h, 'barg'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(pressureStats.max7d, 'barg'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(pressureStats.max12h, ''), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(pressureStats.max24h, ''), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(pressureStats.max7d, ''), timeLabel: '1 minggu terakhir' }
             ]
         }
     ];
@@ -210,38 +213,41 @@ const PTF = () => {
         },
         {
             title: 'Minimum',
-            value: formatValueWithUnit(flowStats.min24h, 't/h'),
+            value: formatValueWithUnit(flowStats.min24h, ''),
+            hoverUnit: 't/h',
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
             iconColor: '#fff',
             additionalData: [
-                { value: formatValueWithUnit(flowStats.min12h, 't/h'), timeLabel: '12 Jam terakhir' },
-                { value: formatValueWithUnit(flowStats.min24h, 't/h'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(flowStats.min7d, 't/h'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(flowStats.min12h, ''), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(flowStats.min24h, ''), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(flowStats.min7d, ''), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Average',
-            value: formatValueWithUnit(flowStats.avg24h, 't/h'),
+            value: formatValueWithUnit(flowStats.avg24h, ''),
+            hoverUnit: 't/h',
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
             iconColor: '#fff',
             additionalData: [
-                { value: formatValueWithUnit(flowStats.avg12h, 't/h'), timeLabel: '12 Jam terakhir' },
-                { value: formatValueWithUnit(flowStats.avg24h, 't/h'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(flowStats.avg7d, 't/h'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(flowStats.avg12h, ''), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(flowStats.avg24h, ''), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(flowStats.avg7d, ''), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Maximum',
-            value: formatValueWithUnit(flowStats.max24h, 't/h'),
+            value: formatValueWithUnit(flowStats.max24h, ''),
+            hoverUnit: 't/h',
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
             iconColor: '#fff',
             additionalData: [
-                { value: formatValueWithUnit(flowStats.max12h, 't/h'), timeLabel: '12 Jam terakhir' },
-                { value: formatValueWithUnit(flowStats.max24h, 't/h'), timeLabel: '1 hari terakhir' },
-                { value: formatValueWithUnit(flowStats.max7d, 't/h'), timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(flowStats.max12h, ''), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(flowStats.max24h, ''), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(flowStats.max7d, ''), timeLabel: '1 minggu terakhir' }
             ]
         }
     ];
@@ -288,12 +294,8 @@ const PTF = () => {
                                 min={limitData.pressure.min}
                                 max={limitData.pressure.max}
                                 unit={limitData.pressure.unit}
-                                abnormalLow={limitData.pressure.abnormalLow}
-                                warningLow={limitData.pressure.warningLow}
-                                idealLow={limitData.pressure.idealLow}
-                                idealHigh={limitData.pressure.idealHigh}
-                                warningHigh={limitData.pressure.warningHigh}
-                                abnormalHigh={limitData.pressure.abnormalHigh}
+                                lowerLimit={limitData.pressure.lowerLimit}
+                                upperLimit={limitData.pressure.upperLimit}
                                 withCard={false}
                                 sx={{ width: '100%', maxWidth: 360 }}
                                 loading={loading}
@@ -309,6 +311,7 @@ const PTF = () => {
                             title={card.title}
                             value={card.value}
                             unit={card.unit}
+                            hoverUnit={card.hoverUnit}
                             icon={card.icon}
                             iconBgColor={card.iconBgColor}
                             iconColor={card.iconColor}
@@ -355,12 +358,8 @@ const PTF = () => {
                                 min={limitData.temperature.min}
                                 max={limitData.temperature.max}
                                 unit={limitData.temperature.unit}
-                                abnormalLow={limitData.temperature.abnormalLow}
-                                warningLow={limitData.temperature.warningLow}
-                                idealLow={limitData.temperature.idealLow}
-                                idealHigh={limitData.temperature.idealHigh}
-                                warningHigh={limitData.temperature.warningHigh}
-                                abnormalHigh={limitData.temperature.abnormalHigh}
+                                lowerLimit={limitData.temperature.lowerLimit}
+                                upperLimit={limitData.temperature.upperLimit}
                                 withCard={false}
                                 sx={{ width: '100%', maxWidth: 360 }}
                                 loading={loading}
@@ -376,6 +375,7 @@ const PTF = () => {
                             title={card.title}
                             value={card.value}
                             unit={card.unit}
+                            hoverUnit={card.hoverUnit}
                             icon={card.icon}
                             iconBgColor={card.iconBgColor}
                             iconColor={card.iconColor}
@@ -422,12 +422,8 @@ const PTF = () => {
                                 min={limitData.flow.min}
                                 max={limitData.flow.max}
                                 unit={limitData.flow.unit}
-                                abnormalLow={limitData.flow.abnormalLow}
-                                warningLow={limitData.flow.warningLow}
-                                idealLow={limitData.flow.idealLow}
-                                idealHigh={limitData.flow.idealHigh}
-                                warningHigh={limitData.flow.warningHigh}
-                                abnormalHigh={limitData.flow.abnormalHigh}
+                                lowerLimit={limitData.flow.lowerLimit}
+                                upperLimit={limitData.flow.upperLimit}
                                 withCard={false}
                                 sx={{ width: '100%', maxWidth: 360 }}
                                 loading={loading}
@@ -443,6 +439,7 @@ const PTF = () => {
                             title={card.title}
                             value={card.value}
                             unit={card.unit}
+                            hoverUnit={card.hoverUnit}
                             icon={card.icon}
                             iconBgColor={card.iconBgColor}
                             iconColor={card.iconColor}

@@ -66,7 +66,38 @@ const optionalAuth = (req, res, next) => {
   }
 };
 
+/**
+ * Role gate. Use AFTER authenticateToken, which is what puts req.user there.
+ *
+ *   router.post('/x', authenticateToken, requireRole('admin'), handler)
+ *
+ * Deliberately fails closed: a token minted before roles existed has no `role`
+ * claim at all, and that must be a refusal, not a pass. Those tokens expire
+ * within JWT_EXPIRES_IN (24h by default) and the next login re-mints them with
+ * the claim present.
+ */
+const requireRole = (...allowedRoles) => (req, res, next) => {
+  if (!req.user) {
+    // Reaching here means the route forgot authenticateToken -- refusing is
+    // the only safe reading, since we have no identity to check.
+    return res.status(401).json({
+      success: false,
+      message: 'Authentication required'
+    });
+  }
+
+  if (!allowedRoles.includes(req.user.role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Insufficient privileges for this action'
+    });
+  }
+
+  next();
+};
+
 module.exports = {
   authenticateToken,
-  optionalAuth
+  optionalAuth,
+  requireRole
 };

@@ -1,0 +1,99 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
+}
+
+.figure {
+  margin: 0;
+  border-radius: var(--ls-radius);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.figure img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.caption {
+  margin: 12px 0 0;
+  font-size: 0.8125rem;
+  color: var(--ls-ink-300);
+}
+
+/* Numbered steps joined by a vertical rule -- reads as a sequence, which a
+   row of equal cards never does. */
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 18px;
+  padding-bottom: 28px;
+}
+
+.step:last-child {
+  padding-bottom: 0;
+}
+
+.step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 21px;
+  top: 40px;
+  bottom: 6px;
+  width: 1px;
+  background: linear-gradient(to bottom, rgba(217, 122, 21, 0.55), rgba(255, 255, 255, 0.12));
+}
+
+.marker {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ls-energy);
+}
+
+.stepTitle {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #fff;
+  margin: 10px 0 0;
+}
+
+.stepText {
+  font-size: var(--ls-small);
+  line-height: 1.65;
+  color: var(--ls-ink-200);
+  margin: 7px 0 0;
+}
+
+.more {
+  margin-top: 32px;
+}
+
+@media (max-width: 880px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .figure img {
+    aspect-ratio: 16 / 9;
+  }
+}

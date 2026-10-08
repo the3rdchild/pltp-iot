@@ -8,9 +8,11 @@ import {
   TextField,
   Typography,
   Button,
-  Stack
+  Alert
 } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import { createLabSample } from '../../utils/api';
+import { parseNumber } from '../../utils/labCsv';
 
 // reference mockup path (local file you uploaded)
 const MOCKUP_PATH = '/mnt/data/1f10e2d7-6b71-4b11-bec0-1c6740e73f52.png';
@@ -73,13 +75,12 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
     flow: '',
     tds: '',
     ncg: '',
-    p1: '',
-    p2: '',
-    t1: '',
-    t2: '',
+    resultDate: '',
     dateObj: null,
     customDateStr: ''
   });
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState(null); // { severity, message }
 
   const handleNumberChange = (e) => {
     const { name, value } = e.target;
@@ -113,22 +114,64 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setFeedback(null);
+
+    if (!form.dateObj) {
+      setFeedback({ severity: 'error', message: 'Tanggal sampling wajib diisi' });
+      return;
+    }
+
     const payload = {
-      pressure: form.pressure,
-      temperature: form.temperature,
-      flow: form.flow,
-      tds: form.tds,
-      ncg: form.ncg,
-      p1: form.p1,
-      p2: form.p2,
-      t1: form.t1,
-      t2: form.t2,
-      timestamp: form.dateObj ? form.dateObj.toISOString() : null,
-      customDateDisplay: form.customDateStr
+      // Wall clock, not toISOString(). The API stores sampled_at as a naive
+      // timestamp and compares it against sensor_data, which also holds
+      // wall-clock readings. Converting to UTC here would file a 09:30 sample
+      // under 02:30 in Jakarta and the comparison window -- fifteen minutes
+      // wide -- would quietly find nothing. toDatetimeLocalValue already
+      // formats the local components, which is exactly what is wanted.
+      sampled_at: toDatetimeLocalValue(form.dateObj),
+      result_at: form.resultDate || null,
+      pressure: parseNumber(form.pressure),
+      temperature: parseNumber(form.temperature),
+      flow_rate: parseNumber(form.flow),
+      tds: parseNumber(form.tds),
+      ncg: parseNumber(form.ncg)
     };
-    console.log('Saving manual lab input ->', payload);
-    alert('Saved (console.log) — ganti dengan logic API/Firestore Anda');
+
+    const hasValue = ['pressure', 'temperature', 'flow_rate', 'tds', 'ncg']
+      .some((key) => payload[key] !== null);
+    if (!hasValue) {
+      setFeedback({ severity: 'error', message: 'Isi minimal satu nilai pengukuran' });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const res = await createLabSample(payload);
+      const inserted = res?.data?.inserted;
+      setFeedback({
+        severity: 'success',
+        message: res?.message || (inserted === false
+          ? 'Data untuk waktu tersebut diperbarui'
+          : 'Data tersimpan')
+      });
+      setForm((p) => ({
+        ...p,
+        pressure: '',
+        temperature: '',
+        flow: '',
+        tds: '',
+        ncg: '',
+        resultDate: ''
+      }));
+    } catch (error) {
+      setFeedback({
+        severity: 'error',
+        message: error?.message || 'Gagal menyimpan data'
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -162,20 +205,16 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
 
           <Grid size={{ xs:12, md: 12}} />
 
-          <Grid size={{ xs:12, md:8 }}>
-            <Typography variant="subtitle2" gutterBottom>Dryness (%)</Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
-              {/* Pill-like editable inputs */}
-              <TextField size="small" variant="outlined" name="p1" value={form.p1} onChange={handleNumberChange} placeholder="P1 (bar)" InputProps={{ sx: { borderRadius: '999px', padding: '6px 12px' } }} sx={{ width: 140 }} />
-              <TextField size="small" variant="outlined" name="p2" value={form.p2} onChange={handleNumberChange} placeholder="P2 (bar)" InputProps={{ sx: { borderRadius: '999px', padding: '6px 12px' } }} sx={{ width: 140 }} />
-              <TextField size="small" variant="outlined" name="t1" value={form.t1} onChange={handleNumberChange} placeholder="T1 (°C)" InputProps={{ sx: { borderRadius: '999px', padding: '6px 12px' } }} sx={{ width: 140 }} />
-              <TextField size="small" variant="outlined" name="t2" value={form.t2} onChange={handleNumberChange} placeholder="T2 (°C)" InputProps={{ sx: { borderRadius: '999px', padding: '6px 12px' } }} sx={{ width: 140 }} />
-            </Stack>
-          </Grid>
+          {feedback && (
+            <Grid size={{ xs: 12 }}>
+              <Alert severity={feedback.severity} onClose={() => setFeedback(null)}>
+                {feedback.message}
+              </Alert>
+            </Grid>
+          )}
 
-          <Grid size={{ xs:12, md:4 }}>
-            
-            <Box display="flex" justifyContent={{ xs: 'flex-start', md: 'flex-end' }} alignItems="center" gap={2}>
+          <Grid size={{ xs:12 }}>
+            <Box display="flex" justifyContent={{ xs: 'flex-start', md: 'flex-end' }} alignItems="center" gap={2} flexWrap="wrap">
               
               <TextField 
               size="small" 
@@ -186,7 +225,19 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
               InputLabelProps={{ shrink: true }} 
               sx={{ minWidth: 260 }} 
               inputProps={{ step: 1 }} 
-              helperText="YYYY-MM-DD HH:MM:SS" />
+              helperText="Waktu ambil sample" />
+
+              <TextField
+                size="small"
+                type="date"
+                label="Tanggal Result"
+                name="resultDate"
+                value={form.resultDate}
+                onChange={(e) => setForm((p) => ({ ...p, resultDate: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
+                helperText="Tanggal hasil lab (opsional)"
+                sx={{ minWidth: 200 }}
+              />
 
               <TextField 
               size="small" 
@@ -197,7 +248,9 @@ export default function DataInputForm({ title, subtitle, mockupUrl }) {
               // helperText="DD:MM:YY-hh:mm:ss" 
               sx={{ minWidth: 220 }} />
 
-              <Button variant="contained" size="medium" onClick={handleSave} sx={{ minWidth: 120 }}>Save</Button>
+              <Button variant="contained" size="medium" onClick={handleSave} disabled={saving} sx={{ minWidth: 120 }}>
+                {saving ? 'Menyimpan...' : 'Save'}
+              </Button>
             </Box>
           </Grid>
 

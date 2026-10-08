@@ -9,7 +9,8 @@ import {
   EditOutlined,
   SlidersOutlined,
   FundViewOutlined,
-  LogoutOutlined
+  LogoutOutlined,
+  ThunderboltOutlined
 } from '@ant-design/icons';
 import TimelineIcon from '@mui/icons-material/Timeline';
 
@@ -25,7 +26,8 @@ const icons = {
   SlidersOutlined,
   FundViewOutlined,
   LogoutOutlined,
-  TimelineIcon
+  TimelineIcon,
+  ThunderboltOutlined
 };
 
 // ==============================|| MENU ITEMS - DASHBOARD ||============================== //
@@ -78,11 +80,11 @@ const dashboard = {
           icon: icons.DashboardOutlined,
         },
         {
-          id: 'prediction',
-          title: 'Prediction',
+          id: 'power',
+          title: 'Power',
           type: 'item',
-          url: '/prediction',
-          icon: icons.TimelineIcon,
+          url: '/power',
+          icon: icons.ThunderboltOutlined,
         }
       ]
     },
@@ -96,21 +98,24 @@ const dashboard = {
           id: 'dataInput',
           title: 'Manual Data Input',
           type: 'item',
-          url: '/dataInput',
+          url: '/admin/dataInput',
+          protected: true,
           icon: icons.EditOutlined,
         },
         {
           id: 'configuration',
           title: 'Configuration',
           type: 'item',
-          url: '/configuration',
+          url: '/admin/configuration',
+          protected: true,
           icon: icons.FundViewOutlined,
         },
         {
           id: 'calibration',
           title: 'Calibration',
           type: 'item',
-          url: '/calibration',
+          url: '/admin/calibration',
+          protected: true,
           icon: icons.SlidersOutlined,
         }
       ]

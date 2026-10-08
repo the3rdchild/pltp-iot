@@ -1,0 +1,28 @@
+.head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: end;
+  margin-bottom: clamp(28px, 3.5vw, 44px);
+}
+
+/* SectionHead carries its own bottom margin; here the grid supplies the
+   spacing instead. */
+.head header {
+  margin-bottom: 0;
+}
+
+.more {
+  padding-bottom: 6px;
+}
+
+@media (max-width: 760px) {
+  .head {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .more {
+    padding-bottom: 0;
+  }
+}

@@ -49,54 +49,40 @@ const DEFAULT_LIMITS = {
     min: 0,
     max: 50000,
     unit: 'W',
-    abnormalLow: 100,
-    warningLow: 500,
-    idealLow: 1000,
-    idealHigh: 40000,
-    warningHigh: 45000,
-    abnormalHigh: 50000
+    lowerLimit: 500,
+    upperLimit: 45000
   },
   voltage: {
     value: 'voltage',
     min: 0,
     max: 500,
     unit: 'V',
-    abnormalLow: 180,
-    warningLow: 200,
-    idealLow: 380,
-    idealHigh: 420,
-    warningHigh: 440,
-    abnormalHigh: 460
+    lowerLimit: 200,
+    upperLimit: 440
   },
   reactive_power: {
     value: 'reactive_power',
     min: 0,
     max: 20000,
     unit: 'VAR',
-    idealHigh: 5000,
-    warningHigh: 10000,
-    abnormalHigh: 15000
+    lowerLimit: 0,
+    upperLimit: 10000
   },
   speed_detection: {
     value: 'speed_detection',
     min: 0,
     max: 5000,
     unit: 'RPM',
-    abnormalLow: 500,
-    warningLow: 1000,
-    idealLow: 2500,
-    idealHigh: 3500,
-    warningHigh: 4000,
-    abnormalHigh: 4500
+    lowerLimit: 1000,
+    upperLimit: 4000
   },
   current: {
     value: 'current',
     min: 0,
     max: 200,
     unit: 'A',
-    idealHigh: 50,
-    warningHigh: 100,
-    abnormalHigh: 150
+    lowerLimit: 0,
+    upperLimit: 100
   }
 };
 
@@ -122,58 +108,59 @@ const getLimitForMetric = (metric) => {
   return null;
 };
 
+// Zones derived from lowerLimit/upperLimit. CommonJS twin of
+// src/utils/limitZones.js -- keep the two in step.
+//
+//   min ── abnormal ── redLow ── warning ── lowerLimit ── normal ── upperLimit ── warning ── redHigh ── abnormal ── max
+//
+// redLow is halfway between min and lowerLimit (redHigh likewise). A limit at
+// or beyond the scale edge switches that side off.
+const isNum = (v) => typeof v === 'number' && !Number.isNaN(v);
+
+const getLimitZones = (limit) => {
+  if (!limit || !isNum(limit.min) || !isNum(limit.max)) return null;
+  const { min, max } = limit;
+  const lower = isNum(limit.lowerLimit) ? limit.lowerLimit : min;
+  const upper = isNum(limit.upperLimit) ? limit.upperLimit : max;
+  const hasLow = lower > min;
+  const hasHigh = upper < max;
+  return {
+    min,
+    max,
+    lower,
+    upper,
+    hasLow,
+    hasHigh,
+    redLow: hasLow ? lower - (lower - min) / 2 : null,
+    redHigh: hasHigh ? upper + (max - upper) / 2 : null
+  };
+};
+
 /**
  * Check anomaly status based on value and limits
  * @param {number} value - the value to check
  * @param {Object} limit - limit configuration object
- * @returns {Object} { status: 'normal'|'warning'|'abnormal'|'ideal', details: string }
+ * @returns {Object} { status: 'normal'|'warning'|'abnormal', details: string }
  */
 const checkAnomalyStatus = (value, limit) => {
-  if (value === null || value === undefined || limit === null) {
+  const z = getLimitZones(limit);
+  if (value === null || value === undefined || !z) {
     return { status: null, details: 'No data or limit available' };
   }
 
-  // Check abnormal low (if exists)
-  if (limit.abnormalLow !== undefined && value < limit.abnormalLow) {
-    return {
-      status: 'abnormal',
-      details: `Value ${value} is below abnormal low threshold (${limit.abnormalLow})`
-    };
+  if (z.hasLow && value < z.lower) {
+    return value < z.redLow
+      ? { status: 'abnormal', details: `Value ${value} is far below lower limit (${z.lower})` }
+      : { status: 'warning', details: `Value ${value} is below lower limit (${z.lower})` };
   }
 
-  // Check warning low (if exists)
-  if (limit.warningLow !== undefined && value < limit.warningLow) {
-    return {
-      status: 'warning',
-      details: `Value ${value} is below warning low threshold (${limit.warningLow})`
-    };
+  if (z.hasHigh && value > z.upper) {
+    return value > z.redHigh
+      ? { status: 'abnormal', details: `Value ${value} is far above upper limit (${z.upper})` }
+      : { status: 'warning', details: `Value ${value} is above upper limit (${z.upper})` };
   }
 
-  // Check abnormal high (if exists)
-  if (limit.abnormalHigh !== undefined && value > limit.abnormalHigh) {
-    return {
-      status: 'abnormal',
-      details: `Value ${value} is above abnormal high threshold (${limit.abnormalHigh})`
-    };
-  }
-
-  // Check warning high (if exists)
-  if (limit.warningHigh !== undefined && value > limit.warningHigh) {
-    return {
-      status: 'warning',
-      details: `Value ${value} is above warning high threshold (${limit.warningHigh})`
-    };
-  }
-
-  // Check if in ideal range
-  const idealLow = limit.idealLow !== undefined ? limit.idealLow : limit.min;
-  const idealHigh = limit.idealHigh !== undefined ? limit.idealHigh : limit.max;
-
-  if (value >= idealLow && value <= idealHigh) {
-    return { status: 'ideal', details: 'Value is within ideal range' };
-  }
-
-  return { status: 'normal', details: 'Value is within normal range' };
+  return { status: 'normal', details: 'Value is within limits' };
 };
 
 /**
@@ -192,10 +179,8 @@ const getMetricAnomalyStatus = (metric, value) => {
       min: limit.min,
       max: limit.max,
       unit: limit.unit,
-      warningLow: limit.warningLow,
-      warningHigh: limit.warningHigh,
-      abnormalLow: limit.abnormalLow,
-      abnormalHigh: limit.abnormalHigh
+      lowerLimit: limit.lowerLimit,
+      upperLimit: limit.upperLimit
     } : null
   };
 };
@@ -203,6 +188,7 @@ const getMetricAnomalyStatus = (metric, value) => {
 module.exports = {
   loadLimits,
   getLimitForMetric,
+  getLimitZones,
   checkAnomalyStatus,
   getMetricAnomalyStatus,
   DEFAULT_LIMITS,

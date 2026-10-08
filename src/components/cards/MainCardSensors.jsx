@@ -6,11 +6,11 @@ import GaugeChart from 'components/GaugeChart';
 
 export default function MainCardSensors({ sensorData }) {
   const {
-    pressure = { value: 1437, min: 222, max: 1778, unit: 'kPa', abnormalLow: 222, warningLow: 444, warningHigh: 1556, abnormalHigh: 1778 },
-    temperature = { value: 131, min: 120, max: 200, unit: '°C', abnormalLow: 120, warningLow: 125, warningHigh: 150, abnormalHigh: 190 },
-    flow = { value: 298, min: 200, max: 288, unit: 't/h', abnormalLow: 200, warningLow: 220, warningHigh: 270, abnormalHigh: 285 },
-    tds = { value: 6.8, min: 0, max: 10, unit: 'ppm', abnormalLow: 0, warningLow: 2, warningHigh: 8, abnormalHigh: 9.5 },
-    dryness = { value: 99.0, min: 80, max: 100.1, unit: '%', abnormalLow: 80, warningLow: 90, warningHigh: 99.5, abnormalHigh: 100 }
+    pressure = { value: 1437, min: 222, max: 1778, unit: 'kPa', lowerLimit: 444, upperLimit: 1556 },
+    temperature = { value: 131, min: 120, max: 200, unit: '°C', lowerLimit: 125, upperLimit: 150 },
+    flow = { value: 298, min: 200, max: 288, unit: 't/h', lowerLimit: 220, upperLimit: 270 },
+    tds = { value: 6.8, min: 0, max: 10, unit: 'ppm', lowerLimit: 2, upperLimit: 8 },
+    dryness = { value: 99.0, min: 80, max: 100.1, unit: '%', lowerLimit: 90, upperLimit: 99.5 }
   } = sensorData || {};
 
   return (
@@ -42,10 +42,8 @@ export default function MainCardSensors({ sensorData }) {
             max={pressure.max}
             unit={pressure.unit}
             paramName="Pressure"
-            abnormalLow={pressure.abnormalLow}
-            warningLow={pressure.warningLow}
-            warningHigh={pressure.warningHigh}
-            abnormalHigh={pressure.abnormalHigh}
+            lowerLimit={pressure.lowerLimit}
+            upperLimit={pressure.upperLimit}
             size={150}
           />
         </Grid>
@@ -56,10 +54,8 @@ export default function MainCardSensors({ sensorData }) {
             max={temperature.max}
             unit={temperature.unit}
             paramName="Temperature"
-            abnormalLow={temperature.abnormalLow}
-            warningLow={temperature.warningLow}
-            warningHigh={temperature.warningHigh}
-            abnormalHigh={temperature.abnormalHigh}
+            lowerLimit={temperature.lowerLimit}
+            upperLimit={temperature.upperLimit}
             size={150}
           />
         </Grid>
@@ -70,10 +66,8 @@ export default function MainCardSensors({ sensorData }) {
             max={flow.max}
             unit={flow.unit}
             paramName="Flow"
-            abnormalLow={flow.abnormalLow}
-            warningLow={flow.warningLow}
-            warningHigh={flow.warningHigh}
-            abnormalHigh={flow.abnormalHigh}
+            lowerLimit={flow.lowerLimit}
+            upperLimit={flow.upperLimit}
             size={150}
           />
         </Grid>
@@ -89,10 +83,8 @@ export default function MainCardSensors({ sensorData }) {
               max={tds.max}
               unit={tds.unit}
               paramName="TDS: Overall"
-              abnormalLow={tds.abnormalLow}
-              warningLow={tds.warningLow}
-              warningHigh={tds.warningHigh}
-              abnormalHigh={tds.abnormalHigh}
+              lowerLimit={tds.lowerLimit}
+              upperLimit={tds.upperLimit}
               size={150}
             />
           </MuiLink>
@@ -104,10 +96,8 @@ export default function MainCardSensors({ sensorData }) {
             max={dryness.max}
             unit={dryness.unit}
             paramName="Dryness Fractions"
-            abnormalLow={dryness.abnormalLow}
-            warningLow={dryness.warningLow}
-            warningHigh={dryness.warningHigh}
-            abnormalHigh={dryness.abnormalHigh}
+            lowerLimit={dryness.lowerLimit}
+            upperLimit={dryness.upperLimit}
             size={150}
           />
         </Grid>

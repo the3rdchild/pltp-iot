@@ -151,6 +151,25 @@ RATE_LIMIT_MAX_REQUESTS=100
 | POST | `/api/auth/login` | User login | No |
 | GET | `/api/auth/verify` | Verify token | Yes |
 
+There is **no registration endpoint** — accounts are created by hand in the
+database. `/register` in the frontend redirects to `/login`.
+
+**One login, role decides what opens.** Everyone signs in at `/login` and gets a
+single bearer token. The `role` on the account is what separates a session that
+can only read from one that can rewrite alarm thresholds:
+
+| Role | Can do |
+|------|--------|
+| `viewer` | Read the dashboard and analytics pages |
+| `operator` | Same as viewer (reserved; no endpoint grants it more yet) |
+| `admin` | Everything, plus the `/admin/*` pages and the admin endpoints below |
+
+Admin sessions are issued with a **shorter lifetime** than the rest —
+`ADMIN_TOKEN_EXPIRES_IN` (default `2h`) instead of `JWT_EXPIRES_IN` (default
+`24h`). With one login page the role is the only thing standing between reading
+and writing, so a privileged session should not survive an unattended browser
+for a full day. `POST /api/auth/login` returns `expiresAt` alongside the token.
+
 ### External Data (Honeywell & Edge Computing)
 
 | Method | Endpoint | Description | Auth Required |
@@ -169,8 +188,47 @@ RATE_LIMIT_MAX_REQUESTS=100
 | GET | `/api/data/sensor/range` | Get data by date range | No |
 | GET | `/api/data/ml/latest` | Get ML predictions | No |
 | GET | `/api/data/field` | Get field data | No |
-| POST | `/api/data/field` | Create field data | Yes |
+| POST | `/api/data/field` | Create field data | Yes — role `admin` |
 | GET | `/api/data/dashboard/stats` | Dashboard statistics | No |
+| GET | `/api/data/metric-limits` | Get alarm thresholds | No |
+| POST | `/api/data/metric-limits` | Save/sync alarm thresholds | Yes — role `admin` |
+
+Endpoints marked **role `admin`** require a bearer token whose account has
+`users.role = 'admin'`; a missing token gets `401`, a valid token on a
+non-admin account gets `403`. The gate lives in `middleware/auth.js`
+(`authenticateToken` + `requireRole`) and is enforced server-side —
+`ProtectedRoute` in the frontend only decides what to render, so it is not a
+substitute for it.
+
+`requireRole` fails closed: an absent or unrecognised `role` claim is refused,
+never waved through.
+
+### Managing accounts
+
+`users.role` defaults to `'viewer'` and there is no registration endpoint —
+accounts are provisioned by hand with `scripts/manage-user.js`:
+
+```bash
+# create an admin
+node scripts/manage-user.js admin@unpad.ac.id --role admin --name "Admin"
+
+# rotate a password / change a role on an existing account
+node scripts/manage-user.js someone@unpad.ac.id --role viewer
+
+# role change only, leave the password alone
+node scripts/manage-user.js someone@unpad.ac.id --role viewer --keep-password
+
+# revoke access without deleting the row
+node scripts/manage-user.js someone@unpad.ac.id --deactivate
+```
+
+The password is prompted for with echo suppressed. It is never accepted as a
+command-line argument — that would put it in shell history and in the process
+list — and never written to a file in this repository. For unattended runs set
+`USER_PASSWORD` in the environment instead.
+
+The same applies to `scripts/initDatabase.js`, which now requires
+`SEED_ADMIN_PASSWORD` rather than carrying a literal.
 
 ## 🧪 Testing Endpoints
 

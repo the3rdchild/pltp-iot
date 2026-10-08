@@ -1,0 +1,130 @@
+/*
+ * Body copy for article pages.
+ *
+ * Articles are read rather than scanned, so the measure is narrower than the
+ * section grid the landing page uses and the vertical rhythm is set once here
+ * instead of per page.
+ */
+
+.prose {
+  max-width: 70ch;
+  font-size: var(--ls-body);
+  line-height: 1.75;
+  color: var(--ls-ink-700);
+}
+
+.prose > * + * {
+  margin-top: 20px;
+}
+
+.prose > :first-child {
+  margin-top: 0;
+}
+
+.prose h2 {
+  font-size: clamp(1.375rem, 1.2rem + 0.7vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--ls-ink-900);
+  margin-top: 0;
+  text-wrap: balance;
+}
+
+.prose h3 {
+  font-size: var(--ls-h3);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ls-ink-900);
+  margin-top: 32px;
+}
+
+.prose h2 + *,
+.prose h3 + * {
+  margin-top: 14px;
+}
+
+.prose strong {
+  font-weight: 600;
+  color: var(--ls-ink-900);
+}
+
+.prose em {
+  font-style: italic;
+}
+
+.prose a {
+  color: var(--ls-accent);
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 22px;
+}
+
+.prose li + li {
+  margin-top: 8px;
+}
+
+.prose li::marker {
+  color: var(--ls-ink-300);
+}
+
+/* Formulae and symbols sit inline in the running text. */
+.prose sub,
+.prose sup {
+  line-height: 0;
+}
+
+/* --- Figures ------------------------------------------------------------- */
+
+.figure {
+  margin: 0;
+  max-width: 70ch;
+}
+
+.figure img {
+  display: block;
+  width: 100%;
+  border-radius: var(--ls-radius);
+  border: 1px solid var(--ls-line);
+  background: var(--ls-paper-alt);
+}
+
+.caption {
+  margin: 12px 0 0;
+  font-size: var(--ls-small);
+  line-height: 1.6;
+  color: var(--ls-ink-400);
+}
+
+/* --- Data table ---------------------------------------------------------- */
+
+.tableWrap {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ls-small);
+}
+
+.table th,
+.table td {
+  padding: 11px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--ls-line);
+}
+
+.table th {
+  font-weight: 700;
+  color: var(--ls-ink-900);
+  background: var(--ls-paper-alt);
+  white-space: nowrap;
+}
+
+.table td {
+  color: var(--ls-ink-600);
+}

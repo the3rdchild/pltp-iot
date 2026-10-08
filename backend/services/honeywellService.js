@@ -1,4 +1,5 @@
 const https = require('https');
+const { query } = require('../config/database');
 
 // TagName mapping dari Honeywell ke column database
 const TAGNAME_TO_COLUMN = {
@@ -15,7 +16,7 @@ const TAGNAME_TO_COLUMN = {
   '5MKA01FE005PVI.PV': 'gen_voltage_v_w',
   '5MKA01FE006PVI.PV': 'gen_voltage_w_u',
   '5LBB31FQ001PVI.PV': 'tds',
-  '5LBB31FT002PVI.PV': 'tempt_tds'
+  '5LBB31FT002PVI.PV': 'temp_tds'
 };
 
 /**
@@ -346,9 +347,153 @@ async function testConnection(tagName = null) {
   }
 }
 
+/**
+ * Insert one or more rows into sensor_data. Idempotent on (timestamp, device_id) -
+ * a re-fetch that lands on the same second as a previous insert is skipped
+ * rather than erroring (matches the sensor_data_timestamp_device_id_key
+ * unique constraint).
+ * @param {Array<Object>} records - Rows shaped like sensor_data columns
+ * @returns {Promise<{inserted: number, skipped: number, total: number}>}
+ */
+async function insertSensorData(records) {
+  let inserted = 0;
+  let skipped = 0;
+
+  for (const r of records) {
+    const result = await query(
+      `INSERT INTO sensor_data (
+         device_id, "timestamp", temperature, pressure, flow_rate,
+         gen_voltage_u_v, gen_voltage_v_w, gen_voltage_w_u,
+         gen_reactive_power, gen_output, gen_frequency, speed_detection,
+         mcv_l, mcv_r, tds, temp_tds, "current"
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+       ON CONFLICT (timestamp, device_id) DO NOTHING
+       RETURNING id`,
+      [
+        r.device_id ?? null,
+        r.timestamp,
+        r.temperature ?? null,
+        r.pressure ?? null,
+        r.flow_rate ?? null,
+        r.gen_voltage_u_v ?? null,
+        r.gen_voltage_v_w ?? null,
+        r.gen_voltage_w_u ?? null,
+        r.gen_reactive_power ?? null,
+        r.gen_output ?? null,
+        r.gen_frequency ?? null,
+        r.speed_detection ?? null,
+        r.mcv_l ?? null,
+        r.mcv_r ?? null,
+        r.tds ?? null,
+        r.temp_tds ?? null,
+        r.current ?? null
+      ]
+    );
+
+    if (result.rows.length > 0) inserted++;
+    else skipped++;
+  }
+
+  return { inserted, skipped, total: records.length };
+}
+
+/**
+ * Fetch one live snapshot from Honeywell PIMS covering all 14 AI feature
+ * tags (TAGNAME_TO_COLUMN) - not just the 10-tag subset used for the
+ * dashboard gauges - and store it as a single sensor_data row.
+ * @returns {Promise<Object>} - Fetch + insert summary
+ */
+async function fetchAndStoreLiveData() {
+  const now = new Date();
+  const startTime = formatToHoneywellTimestamp(new Date(now.getTime() - 300000)); // 5 minutes ago
+  const endTime = formatToHoneywellTimestamp(now);
+  const deviceId = process.env.HONEYWELL_DEVICE_ID || 'honeywell-phd-01';
+
+  const values = {};
+  const errors = [];
+
+  const fetchPromises = Object.entries(TAGNAME_TO_COLUMN).map(async ([tagName, columnName]) => {
+    try {
+      const response = await fetchHoneywellData({
+        TagName: tagName,
+        StartTime: startTime,
+        EndTime: endTime,
+        MaxRows: 1,
+        MinimumConfidence: 50,
+        ReductionData: 'now'
+      });
+
+      const value = response.data?.[0]?.Value?.[0];
+      if (value !== undefined && value !== null) {
+        values[columnName] = parseFloat(value);
+      }
+    } catch (error) {
+      errors.push({ column: columnName, tag: tagName, error: error.message });
+    }
+  });
+
+  await Promise.all(fetchPromises);
+
+  // Calculate current from power + voltage, same logic as the dashboard live path
+  let current = null;
+  if (
+    values.gen_output != null &&
+    values.gen_voltage_u_v != null &&
+    values.gen_voltage_v_w != null &&
+    values.gen_voltage_w_u != null
+  ) {
+    try {
+      const result = computeLineCurrent(
+        {
+          P_MW: values.gen_output,
+          Q_MVar: values.gen_reactive_power ?? null,
+          Vab: values.gen_voltage_u_v,
+          Vbc: values.gen_voltage_v_w,
+          Vca: values.gen_voltage_w_u
+        },
+        { voltageUnit: 'kV' }
+      );
+      current = Math.round(result.I_line_A * 100) / 100;
+    } catch (error) {
+      errors.push({ column: 'current', error: error.message });
+    }
+  }
+
+  const row = {
+    device_id: deviceId,
+    timestamp: now.toISOString(),
+    temperature: values.temperature ?? null,
+    pressure: values.pressure ?? null,
+    flow_rate: values.flow_rate ?? null,
+    gen_voltage_u_v: values.gen_voltage_u_v ?? null,
+    gen_voltage_v_w: values.gen_voltage_v_w ?? null,
+    gen_voltage_w_u: values.gen_voltage_w_u ?? null,
+    gen_reactive_power: values.gen_reactive_power ?? null,
+    gen_output: values.gen_output ?? null,
+    gen_frequency: values.gen_frequency ?? null,
+    speed_detection: values.speed_detection ?? null,
+    mcv_l: values.mcv_l ?? null,
+    mcv_r: values.mcv_r ?? null,
+    tds: values.tds ?? null,
+    temp_tds: values.temp_tds ?? null,
+    current
+  };
+
+  const insertResult = await insertSensorData([row]);
+
+  return {
+    success: true,
+    row,
+    ...insertResult,
+    errors: errors.length > 0 ? errors : undefined
+  };
+}
+
 module.exports = {
   fetchHoneywellData,
   fetchLiveDataForDashboard,
+  fetchAndStoreLiveData,
+  insertSensorData,
   testConnection,
   parseHoneywellTimestamp,
   formatToHoneywellTimestamp,

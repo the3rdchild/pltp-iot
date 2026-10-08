@@ -119,12 +119,24 @@ export const getDashboardStats = async () => {
  * Get chart data for a metric
  * @param {string} metric - metric name
  * @param {string} range - time range (1h, 1d, 7d, 1m, all)
+ * @param {string} [endTime] - optional ISO instant to anchor the bucket
+ *        window to, instead of the server's own NOW(). Pass the SAME value
+ *        for two metrics you intend to overlay on one chart (e.g. a sensor
+ *        + its prediction) so both come back on identical bucket
+ *        boundaries -- otherwise two separate requests each anchor
+ *        independently, and at narrow bucket widths (short ranges) that
+ *        drift is enough to visibly misalign the two series.
  */
-export const getChartData = async (metric, range = '1d') => {
+export const getChartData = async (metric, range = '1d', endTime, startTime) => {
   try {
     const url = buildURL(apiConfig.endpoints.analytics.chartData, { metric });
     const response = await apiClient.get(url, {
-      params: { range }
+      params: {
+        range,
+        ...(endTime ? { end_time: endTime } : {}),
+        // Only meaningful with range='custom' (window = startTime..endTime)
+        ...(startTime ? { start_time: startTime } : {})
+      }
     });
     return response;
   } catch (error) {
@@ -158,16 +170,116 @@ export const getStatsTable = async (metric, options = {}) => {
 };
 
 /**
- * Get aggregated daily statistics (60 rows with min/max/avg/stddev)
+ * Get aggregated daily statistics (min/max/avg/stddev per day)
  * @param {string} metric - metric name
+ * @param {object} options - { start_date, end_date } as YYYY-MM-DD, both optional
  */
-export const getAggregatedStats = async (metric) => {
+export const getAggregatedStats = async (metric, options = {}) => {
   try {
     const url = buildURL('/data/stats/{metric}/aggregated', { metric });
-    const response = await apiClient.get(url);
+    const params = {};
+    if (options.start_date) params.start_date = options.start_date;
+    if (options.end_date) params.end_date = options.end_date;
+    const response = await apiClient.get(url, { params });
     return response;
   } catch (error) {
     console.error(`Error fetching aggregated stats for ${metric}:`, error);
+    throw error;
+  }
+};
+
+// ==================== LAB SAMPLE APIs ====================
+
+/**
+ * Get stored lab samples
+ * @param {object} params - { limit, offset, start_date, end_date }
+ */
+export const getLabSamples = async (params = {}) => {
+  try {
+    const response = await apiClient.get('/data/lab-samples', { params });
+    return response;
+  } catch (error) {
+    console.error('Error fetching lab samples:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create or update one lab sample
+ * @param {object} sample - { sampled_at, result_at?, pressure, temperature, flow_rate, tds, dryness, ncg, notes? }
+ */
+export const createLabSample = async (sample) => {
+  try {
+    const response = await apiClient.post('/data/lab-samples', sample);
+    return response;
+  } catch (error) {
+    console.error('Error creating lab sample:', error);
+    throw error;
+  }
+};
+
+/**
+ * Bulk import lab samples from a parsed CSV
+ * @param {Array} rows - array of sample objects (same shape as createLabSample)
+ * @param {string} sourceFile - original CSV filename
+ */
+export const importLabSamples = async (rows, sourceFile) => {
+  try {
+    const response = await apiClient.post('/data/lab-samples/import', {
+      rows,
+      source_file: sourceFile
+    });
+    return response;
+  } catch (error) {
+    console.error('Error importing lab samples:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete one lab sample by id
+ * @param {number|string} id
+ */
+export const deleteLabSample = async (id) => {
+  try {
+    const response = await apiClient.delete(`/data/lab-samples/${id}`);
+    return response;
+  } catch (error) {
+    console.error(`Error deleting lab sample ${id}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Get lab-vs-sensor comparison series for a metric
+ * @param {string} metric - pressure|temperature|flow_rate|tds|dryness|ncg
+ * @param {object} params - extra query params
+ */
+export const getLabComparison = async (metric, params = {}) => {
+  try {
+    const response = await apiClient.get('/data/lab-samples/comparison', {
+      params: { metric, ...params }
+    });
+    return response;
+  } catch (error) {
+    console.error(`Error fetching lab comparison for ${metric}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Ask the backend to pull the newest readings from Honeywell into sensor_data.
+ *
+ * Used as a fallback when a live window comes back empty. The endpoint is
+ * throttled server-side and may answer `throttled: true` without contacting
+ * PIMS — that is a normal outcome, not a failure.
+ */
+export const syncHoneywellLiveData = async () => {
+  try {
+    const response = await apiClient.post('/honeywell/sync-live');
+    return response.data;
+  } catch (error) {
+    console.error('Error syncing Honeywell live data:', error);
     throw error;
   }
 };
@@ -251,6 +363,58 @@ export const getFlowPageData = async (range = '1d', statsOptions = {}) => {
 // ==================== CUSTOM API BUILDER ====================
 
 /**
+ * Record a completed major overhaul/Turn Around -- resets the SoH anchor on
+ * the failure-forecast chart (real, permanently-logged event, not
+ * cosmetic). Admin-only on the backend (authenticateToken +
+ * requireRole('admin')); see backend/controllers/externalController.js.
+ *
+ * @param {string} effectiveDate - 'YYYY-MM-DD', when the overhaul actually finished
+ */
+export const createFailureForecastOverhaulEvent = async (effectiveDate) => {
+  try {
+    const response = await apiClient.post('/external/failure-forecast/overhaul-reset', {
+      effective_date: effectiveDate
+    });
+    return response;
+  } catch (error) {
+    console.error('Error recording overhaul event:', error);
+    throw error;
+  }
+};
+
+/**
+ * Undo the most recently recorded active overhaul event (soft-delete only --
+ * never removes the row). Admin-only on the backend, same as above.
+ */
+export const undoFailureForecastOverhaulEvent = async () => {
+  try {
+    const response = await apiClient.post('/external/failure-forecast/overhaul-undo');
+    return response;
+  } catch (error) {
+    console.error('Error undoing overhaul event:', error);
+    throw error;
+  }
+};
+
+/**
+ * Permanently remove an ALREADY-UNDONE overhaul event (test/mistaken-entry
+ * cleanup). The backend refuses this for a still-active event (undo it
+ * first) -- this call can fail with that 409 by design, not just on a
+ * network error. Admin-only on the backend, same as above.
+ *
+ * @param {string} id
+ */
+export const deleteFailureForecastOverhaulEvent = async (id) => {
+  try {
+    const response = await apiClient.delete(`/external/failure-forecast/overhaul/${encodeURIComponent(id)}`);
+    return response;
+  } catch (error) {
+    console.error('Error deleting overhaul event:', error);
+    throw error;
+  }
+};
+
+/**
  * Generic API call builder
  * Use this for custom endpoints not covered above
  *
@@ -309,10 +473,19 @@ export default {
   getChartData,
   getStatsTable,
   getAggregatedStats,
+  syncHoneywellLiveData,
+  getLabSamples,
+  createLabSample,
+  importLabSamples,
+  deleteLabSample,
+  getLabComparison,
   getTDSPageData,
   getPressurePageData,
   getTemperaturePageData,
   getFlowPageData,
+  createFailureForecastOverhaulEvent,
+  undoFailureForecastOverhaulEvent,
+  deleteFailureForecastOverhaulEvent,
   customAPICall,
   getAPIConfig,
   getAvailableMetrics,

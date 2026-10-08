@@ -9,6 +9,8 @@ const StatCard = ({
   title,
   value,
   unit,
+  // Unit appended to the values only in the expanded (hover) view, for units too wide for the collapsed card
+  hoverUnit,
   icon,
   iconBgColor = '#9271FF',
   iconColor = '#fff',
@@ -65,6 +67,7 @@ const StatCard = ({
               sx={{ transition: 'font-size 0.18s ease-in-out' }}
             >
               {value}
+              {showAdditional && hoverUnit}
             </Typography>
             {unit && (
               <Typography variant="body1" component="span" color="textSecondary" sx={{ ml: 0.5 }}>
@@ -89,6 +92,7 @@ const StatCard = ({
                 <Box>
                   <Typography variant="h5" component="span">
                     {data.value}
+                    {hoverUnit}
                   </Typography>
                   {data.unit && (
                     <Typography variant="body1" component="span" color="textSecondary" sx={{ ml: 0.5 }}>
@@ -196,6 +200,7 @@ StatCard.propTypes = {
   title: PropTypes.string.isRequired,
   value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
   unit: PropTypes.string,
+  hoverUnit: PropTypes.string,
   icon: PropTypes.node.isRequired,
   iconBgColor: PropTypes.string,
   iconColor: PropTypes.string,

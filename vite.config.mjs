@@ -13,11 +13,43 @@ export default defineConfig(({ mode }) => {
       open: true,
       // this sets a default port to 3000
       port: PORT,
-      host: true
+      host: true,
+      // Tunnel (cloudflared/ngrok) mengirim Host header asing; tanpa ini Vite 6
+      // membalas "Blocked request. This host is not allowed." Dev server kena
+      // ini juga, bukan cuma `preview`.
+      allowedHosts: ['.noouoops.my.id', '.trycloudflare.com', '.ngrok-free.app', '.ts.net'],
+      // Proxy relative /api calls (axios apiClient baseURL, raw fetch() in
+      // hooks like useAi1Data/useAi2Data) to the local backend in dev.
+      //
+      // Target overridable via VITE_PROXY_TARGET. Needed when Vite runs inside
+      // a container: there `localhost` resolves to the frontend container
+      // itself, not the backend, so every /api call fails. Docker compose sets
+      // it to the backend service name (e.g. http://backend:5000). Default is
+      // unchanged, so running natively needs no configuration.
+      proxy: {
+        '/api': {
+          // process.env dulu: variabel dari `docker compose environment:` hanya
+          // muncul di sana, sedangkan loadEnv() cuma membaca berkas .env.
+          target: process.env.VITE_PROXY_TARGET || env.VITE_PROXY_TARGET || 'http://localhost:5000',
+          changeOrigin: true
+        }
+      }
     },
     preview: {
       open: true,
-      host: true
+      host: true,
+      // Tunnel (cloudflared/ngrok) mengirim Host header asing; tanpa ini Vite 6
+      // membalas "Blocked request. This host is not allowed."
+      allowedHosts: ['.noouoops.my.id', '.trycloudflare.com', '.ngrok-free.app', '.ts.net'],
+      // `preview` tidak mewarisi server.proxy, padahal apiConfig.json memakai
+      // baseURL relatif '/api'. Default ke API produksi supaya preview build
+      // menampilkan data nyata; override dengan VITE_PROXY_TARGET untuk backend lokal.
+      proxy: {
+        '/api': {
+          target: process.env.VITE_PROXY_TARGET || env.VITE_PROXY_TARGET || 'https://pertasmart.unpad.ac.id',
+          changeOrigin: true
+        }
+      }
     },
     define: {
       global: 'window'

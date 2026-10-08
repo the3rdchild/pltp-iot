@@ -9,11 +9,13 @@ import { useMetricStats } from '../../hooks/useMetricStatistics';
 import GaugeChart from '../../components/GaugeChart';
 import MainCard from 'components/MainCard';
 import { getLimitData } from '../../utils/limitData';
+import { formatValueWithUnit } from '../../utils/analyticsHelpers';
 import {
   AnalyticsHeader,
   StatCard,
   Ai2Chart,
-  StatisticsTable
+  StatisticsTable,
+  Ai2ProvisionalBadge
 } from '../../components/analytics';
 
 // icons
@@ -27,7 +29,9 @@ const NCG = () => {
     const limitData = getLimitData();
 
     const { liveData, loading } = useAi2Data();
-    const { data: ncgTableData } = useAi2StatsTable('ncg_predict');
+    // Date filter chosen in the statistics table, forwarded to the ai2 stats query
+    const [tableDateRange, setTableDateRange] = useState(null);
+    const { data: ncgTableData } = useAi2StatsTable('ncg_predict', tableDateRange);
     const ncg = liveData?.ncg_predict != null ? parseFloat(liveData.ncg_predict) : NaN;
 
     const [changePct, setChangePct] = useState(null);
@@ -67,45 +71,48 @@ const NCG = () => {
         },
         {
             title: 'Minimum',
-            value: `${ncgStats.min24h}%`,
+            value: formatValueWithUnit(ncgStats.min24h, '%'),
             icon: <RemoveIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#FF7E7E',
             iconColor: '#fff',
             additionalData: [
-                { value: `${ncgStats.min12h}%`, timeLabel: '12 Jam terakhir' },
-                { value: `${ncgStats.min24h}%`, timeLabel: '1 hari terakhir' },
-                { value: `${ncgStats.min7d}%`, timeLabel: '1 minggu terakhir' }
+                { value: formatValueWithUnit(ncgStats.min12h, '%'), timeLabel: '12 Jam terakhir' },
+                { value: formatValueWithUnit(ncgStats.min24h, '%'), timeLabel: '1 hari terakhir' },
+                { value: formatValueWithUnit(ncgStats.min7d, '%'), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Average',
-            value: `${ncgStats.avg24h}%`,
+            value: formatValueWithUnit(ncgStats.avg24h, '%'),
             icon: <DragHandleIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#53A1FF',
             iconColor: '#fff',
             additionalData: [
-              { value: `${ncgStats.avg12h}%`, timeLabel: '12 Jam terakhir' },
-              { value: `${ncgStats.avg24h}%`, timeLabel: '1 hari terakhir' },
-              { value: `${ncgStats.avg7d}%`, timeLabel: '1 minggu terakhir' }
+              { value: formatValueWithUnit(ncgStats.avg12h, '%'), timeLabel: '12 Jam terakhir' },
+              { value: formatValueWithUnit(ncgStats.avg24h, '%'), timeLabel: '1 hari terakhir' },
+              { value: formatValueWithUnit(ncgStats.avg7d, '%'), timeLabel: '1 minggu terakhir' }
             ]
         },
         {
             title: 'Maximum',
-            value: `${ncgStats.max24h}%`,
+            value: formatValueWithUnit(ncgStats.max24h, '%'),
             icon: <AddIcon sx={{ fontSize: '2.5rem' }} />,
             iconBgColor: '#58E58C',
             iconColor: '#fff',
             additionalData: [
-              { value: `${ncgStats.max12h}%`, timeLabel: '12 Jam terakhir' },
-              { value: `${ncgStats.max24h}%`, timeLabel: '1 hari terakhir' },
-              { value: `${ncgStats.max7d}%`, timeLabel: '1 minggu terakhir' }
+              { value: formatValueWithUnit(ncgStats.max12h, '%'), timeLabel: '12 Jam terakhir' },
+              { value: formatValueWithUnit(ncgStats.max24h, '%'), timeLabel: '1 hari terakhir' },
+              { value: formatValueWithUnit(ncgStats.max7d, '%'), timeLabel: '1 minggu terakhir' }
             ]
         }
     ];
 
     return (
         <Box>
-          <AnalyticsHeader title="NCG (Non-Condensable Gas)" subtitle="Analytic" />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <AnalyticsHeader title="NCG (Non-Condensable Gas)" subtitle="Analytic" />
+            <Ai2ProvisionalBadge />
+          </Box>
 
           <Grid
             container
@@ -153,9 +160,8 @@ const NCG = () => {
                     min={limitData.ncg.min}
                     max={limitData.ncg.max}
                     unit={limitData.ncg.unit}
-                    idealHigh={limitData.ncg.idealHigh}
-                    warningHigh={limitData.ncg.warningHigh}
-                    abnormalHigh={limitData.ncg.abnormalHigh}
+                    lowerLimit={limitData.ncg.lowerLimit}
+                    upperLimit={limitData.ncg.upperLimit}
                     changePct={changePct}
                     withCard={false}
                     sx={{ width: '100%', maxWidth: 360 }}
@@ -198,6 +204,7 @@ const NCG = () => {
                 subtitle="Tabel data statistik yang telah diperoleh"
                 metric="ncg"
                 data={ncgTableData}
+                onDateRangeChange={setTableDateRange}
               />
             </Grid>
           </Grid>

@@ -1,0 +1,292 @@
+/*
+ * Map page.
+ *
+ * The page used to draw its own header and a nav sidebar that only opened on
+ * `onMouseEnter`. Both are gone: SiteLayout supplies the shared header, so what
+ * is left here is the map, its search, and the unit panel.
+ */
+
+.stage {
+  position: relative;
+  /* Leaflet needs a resolved height, and the sticky header sits above it. */
+  height: calc(100svh - var(--ls-header-h));
+  min-height: 460px;
+  background: var(--ls-paper-alt);
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+}
+
+/* --- Search -------------------------------------------------------------- */
+
+.search {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 500;
+  width: min(360px, calc(100% - 36px));
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: var(--ls-radius);
+  border: 1px solid var(--ls-line);
+  background: var(--ls-paper);
+  box-shadow: var(--ls-shadow);
+  color: var(--ls-ink-400);
+}
+
+.searchBar:focus-within {
+  border-color: var(--ls-accent);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: var(--ls-small);
+  color: var(--ls-ink-900);
+}
+
+.searchInput::placeholder {
+  color: var(--ls-ink-300);
+}
+
+.results {
+  margin-top: 8px;
+  padding: 6px;
+  border-radius: var(--ls-radius);
+  border: 1px solid var(--ls-line);
+  background: var(--ls-paper);
+  box-shadow: var(--ls-shadow-lift);
+}
+
+.result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--ls-radius-sm);
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ls-ink-900);
+}
+
+.result:hover,
+.result:focus-visible {
+  background: var(--ls-paper-alt);
+  outline: none;
+}
+
+.resultIcon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--ls-accent-soft);
+  color: var(--ls-accent);
+}
+
+.resultName {
+  display: block;
+  font-size: var(--ls-small);
+  font-weight: 600;
+}
+
+.resultRegion {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--ls-eyebrow);
+  color: var(--ls-ink-400);
+}
+
+.empty {
+  padding: 14px 12px;
+  font-size: var(--ls-small);
+  color: var(--ls-ink-400);
+}
+
+/* --- Unit panel ---------------------------------------------------------- */
+
+.panel {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  bottom: 18px;
+  z-index: 500;
+  width: min(340px, calc(100% - 36px));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px;
+  overflow-y: auto;
+  border-radius: var(--ls-radius);
+  border: 1px solid var(--ls-line);
+  background: var(--ls-paper);
+  box-shadow: var(--ls-shadow-lift);
+}
+
+.panelHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panelTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ls-ink-900);
+  margin: 0;
+}
+
+.panelRegion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0;
+  font-size: var(--ls-small);
+  color: var(--ls-ink-400);
+}
+
+.panelRegion svg {
+  flex: none;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: 1px solid var(--ls-line);
+  border-radius: var(--ls-radius-sm);
+  background: var(--ls-paper);
+  color: var(--ls-ink-500);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--ls-paper-alt);
+}
+
+.close:focus-visible {
+  outline: 2px solid var(--ls-accent);
+  outline-offset: 2px;
+}
+
+/* The three steam-quality parameters get the prominent treatment; the
+   operating readings below them are supporting context. */
+.metrics {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.metric {
+  padding: 14px 16px;
+  border-radius: var(--ls-radius-sm);
+  background: var(--ls-paper-alt);
+  border: 1px solid var(--ls-line);
+}
+
+.metricLabel {
+  display: block;
+  font-size: var(--ls-eyebrow);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ls-ink-400);
+}
+
+.metricFull {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ls-ink-300);
+}
+
+.metricValue {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ls-ink-900);
+}
+
+.readings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  border-top: 1px solid var(--ls-line);
+  padding-top: 16px;
+}
+
+.reading {
+  min-width: 0;
+}
+
+.readingLabel {
+  display: block;
+  font-size: var(--ls-eyebrow);
+  color: var(--ls-ink-400);
+}
+
+.readingValue {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ls-ink-800);
+}
+
+.panelFoot {
+  margin-top: auto;
+}
+
+.pendingNote {
+  margin: 0;
+  font-size: var(--ls-small);
+  line-height: 1.6;
+  color: var(--ls-ink-400);
+}
+
+@media (max-width: 760px) {
+  /* The panel becomes a bottom sheet so the map stays readable. */
+  .panel {
+    top: auto;
+    left: 18px;
+    right: 18px;
+    bottom: 18px;
+    width: auto;
+    max-height: 62%;
+  }
+
+  .readings {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
